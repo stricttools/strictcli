@@ -949,6 +949,23 @@ func validateRetiredChoices(
 	seen := make(map[interface{}]bool, len(retired))
 	for _, rc := range retired {
 		formatted := formatValueForError(rc.Value)
+		// The type check comes first: a value of the wrong type can never
+		// match at parse time, so the declaration is dead however it compares
+		// against the live set or against its siblings.
+		switch itemType {
+		case TypeStr:
+			if _, ok := rc.Value.(string); !ok {
+				panic(tpl.typeMismatch(name, formatted, "str"))
+			}
+		case TypeInt:
+			if _, ok := rc.Value.(int); !ok {
+				panic(tpl.typeMismatch(name, formatted, "int"))
+			}
+		case TypeFloat:
+			if _, ok := rc.Value.(float64); !ok {
+				panic(tpl.typeMismatch(name, formatted, "float"))
+			}
+		}
 		if strings.TrimSpace(rc.Message) == "" {
 			panic(tpl.messageEmpty(name, formatted))
 		}
@@ -978,6 +995,7 @@ type retiredChoiceTemplates struct {
 	incompatibleBool func(string) string
 	defaultIsRetired func(string, string) string
 	requireChoices   func(string) string
+	typeMismatch     func(string, string, string) string
 }
 
 var flagRetiredChoiceTemplates = retiredChoiceTemplates{
@@ -987,6 +1005,7 @@ var flagRetiredChoiceTemplates = retiredChoiceTemplates{
 	incompatibleBool: errFlagRetiredChoicesIncompatibleBool,
 	defaultIsRetired: errFlagDefaultIsRetiredChoice,
 	requireChoices:   errFlagRetiredChoicesRequireChoices,
+	typeMismatch:     errFlagRetiredChoiceTypeMismatch,
 }
 
 var argRetiredChoiceTemplates = retiredChoiceTemplates{
@@ -996,6 +1015,7 @@ var argRetiredChoiceTemplates = retiredChoiceTemplates{
 	incompatibleBool: errArgRetiredChoicesIncompatibleBool,
 	defaultIsRetired: errArgDefaultIsRetiredChoice,
 	requireChoices:   errArgRetiredChoicesRequireChoices,
+	typeMismatch:     errArgRetiredChoiceTypeMismatch,
 }
 
 // retiredChoiceMessage returns the message declared for a retired spelling, and

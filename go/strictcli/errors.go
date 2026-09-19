@@ -220,6 +220,14 @@ func errArgDefaultIsRetiredChoice(name string, value string) string {
 	return fmt.Sprintf("Arg %q: default '%s' is a retired choice", name, value)
 }
 
+func errFlagRetiredChoiceTypeMismatch(name string, value string, typeName string) string {
+	return fmt.Sprintf("Flag %q: retired choice '%s' is not of type %s", name, value, typeName)
+}
+
+func errArgRetiredChoiceTypeMismatch(name string, value string, typeName string) string {
+	return fmt.Sprintf("Arg %q: retired choice '%s' is not of type %s", name, value, typeName)
+}
+
 func errFlagRetiredChoicesRequireChoices(name string) string {
 	return fmt.Sprintf("Flag %q: retired choices require choices", name)
 }

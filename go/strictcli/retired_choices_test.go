@@ -266,6 +266,34 @@ func TestArgDefaultNamingARetiredSpellingPanics(t *testing.T) {
 		})
 }
 
+// The seventh guard: a declaration that could never match. RetiredChoice(8080)
+// on a string flag is dead -- the parse-time comparison is type-aware, so no
+// invocation could reach it, and the spelling the author meant to retire stays
+// accepted.
+func TestRetiredChoiceOfTheWrongTypePanics(t *testing.T) {
+	expectRegistrationPanic(t,
+		`Flag "format": retired choice '8080' is not of type str`,
+		func() {
+			simpleApp("cmd", "a command", "x",
+				WithFlags(StringFlag("format", "output format",
+					Choices(Ch("text", ""), Ch("json", "")),
+					RetiredChoices(RetiredChoice(8080, "use 'json'")),
+					Required())))
+		})
+}
+
+func TestArgRetiredChoiceOfTheWrongTypePanics(t *testing.T) {
+	expectRegistrationPanic(t,
+		`Arg "mode": retired choice '8080' is not of type str`,
+		func() {
+			simpleApp("cmd", "a command", "x",
+				WithArgs(NewArg("mode", "the mode",
+					ArgChoices(Ch("fast", ""), Ch("slow", "")),
+					ArgRetiredChoices(RetiredChoice(8080, "use 'fast'")),
+					ArgRequired())))
+		})
+}
+
 func TestRetiredChoicesWithoutChoicesPanics(t *testing.T) {
 	expectRegistrationPanic(t,
 		`Flag "format": retired choices require choices`,
