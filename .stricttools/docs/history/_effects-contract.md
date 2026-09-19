@@ -11989,6 +11989,16 @@ A `bool` flag never has choices, and a `dict` flag is refused them at registrati
 implementation, so the array row applies to list carriers, repeatable scalars and variadic args
 only.
 
+*(Amended 2026-09-19, retired-choices round.)* A declaration carrying `choices` may also declare
+**retired choices**: spellings it used to accept, each with the message naming its replacement.
+They are published in a THIRD key, `retired_choices` (§25.9), and reach neither of the two above.
+A retired spelling is not a valid value, so it never enters the fragment's `enum` -- nor the MCP
+projection that reads the fragment -- and it is not a choice, so it carries no record in
+`choices` and appears in no help line. The parse-time refusal
+(`--<flag>: value '<v>' retired: <message>` and its `argument '<name>': ...` twin) is checked
+before the invalid-value one, and it is the value-level twin of the deprecated-command sentence
+§12.2 pins.
+
 ### 25.6 The selector encoding
 
 §24.11 stated the requirement and left the encoding to this round: the dump must carry the nested
@@ -12213,10 +12223,22 @@ uniform position across the flag and arg entries, and the env-related keys are g
 that removing it leaves the CWD-free core dict byte-identical.
 
 **Flag entry:** `name`, `help`, `value_schema`, `short`, `presence`, `default`, `env`,
-`env_separator`, `prefixed`, `choices`, `elect_by`, `unique`, `conflict_mode`, `negatable`,
+`env_separator`, `prefixed`, `choices`, `retired_choices` *(added 2026-09-19, retired-choices
+round)*, `elect_by`, `unique`, `conflict_mode`, `negatable`,
 `nullable` *(added 2026-08-16, update-command round, §18.33 item 316)*.
 
-**Arg entry:** `name`, `help`, `value_schema`, `presence`, `default`, `variadic`, `choices`.
+**Arg entry:** `name`, `help`, `value_schema`, `presence`, `default`, `variadic`, `choices`,
+`retired_choices` *(added 2026-09-19, retired-choices round)*.
+
+`retired_choices` sits beside `choices`, its live sibling, on both entries. It is a **keyed
+object emitted SORTED ascending by key** -- the third rule's treatment, joining `checks`,
+`deprecated` and `tag_contracts` for the same reason: no implementation retains a declaration
+order for it. Its keys are the retired spellings rendered through each implementation's
+error-value formatter, so an int, a float and a string key identically in all three, and the key
+is omitted entirely when nothing is retired. **`schema_version` does not move**: the key is
+optional and omitted at its baseline, which is the treatment §25.11's behavioral-completeness
+keys and the update round's `nullable` already established at version 2 -- a reader that does not
+know the key reads the document it always read.
 
 **Choice object** (selector): `name`, `help`, `flags`. **Choice record** (value flag): `value`,
 `help`.

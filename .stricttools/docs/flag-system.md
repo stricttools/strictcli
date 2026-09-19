@@ -1,6 +1,6 @@
 +++
 title = "Flag System"
-description = "strictcli's flags and args: the three-way presence declaration, four types, bool tri-state, choice flags, named constraints and update commands."
+description = "strictcli's flags and args: the three-way presence declaration, four types, bool tri-state, choices and retired choices, choice flags, named constraints, and update commands."
 nav_group = "Guides"
 nav_order = 3
 +++
@@ -503,6 +503,115 @@ Rules:
 A `choices` flag restricts one **value**. When one of the alternatives needs
 flags of its own, or needs to be spelled as its own flag, the declaration is a
 [choice flag](#choice-flags-a-choice-is-a-declaration-scope) instead.
+
+## Retired choices
+
+A declaration that carries `choices` may also declare the spellings it **used
+to** accept. Each retired spelling carries the message that names its
+replacement, and a value matching one is refused at parse time:
+
+```
+$ myapp convert --format xml
+error: --format: value 'xml' retired: use 'json' (XML output was dropped)
+```
+
+```
+$ myapp convert turbo
+error: argument 'mode': value 'turbo' retired: use 'fast' (turbo was renamed)
+```
+
+This is the value-level twin of `app.deprecate(name, message=...)`, which
+answers a retired **command** with `command 'old-cmd' is deprecated: <message>`
+and the same exit code 1. The reason both exist is the same: a caller that
+reaches for a spelling which used to work should be told what replaced it, not
+handed the list the spelling is missing from. An agent reading
+`invalid value 'xml', must be one of: text, json` has to guess which of the two
+was meant; an agent reading `use 'json'` does not.
+
+The refusal is checked **before** the invalid-value check, and it reaches every
+source the choices check already reaches -- a command-line token, an env var, a
+config file value, and the programmatic doors. Nothing new is resolved for it.
+
+Here is one declaration, in each language's own shape.
+
+**Python** -- a keyword on `@flag` / `@arg`, taking records beside the
+`Choice` records `choices` takes:
+
+```python
+@strictcli.flag("format", type=str, presence="required", help="output format",
+                choices=[strictcli.Choice("text"), strictcli.Choice("json")],
+                retired_choices=[
+                    strictcli.RetiredChoice(
+                        "xml", message="use 'json' (XML output was dropped)"),
+                ])
+```
+
+A bare entry is refused the way a bare choice entry is:
+
+```
+Flag "format": retired_choices entry 0 is a bare value: declare it as RetiredChoice(<value>, message="<message>")
+```
+
+**Go** -- a functional option beside `Choices`, over records beside `Ch`:
+
+```go
+strictcli.StringFlag("format", "output format",
+    strictcli.Choices(strictcli.Ch("text", ""), strictcli.Ch("json", "")),
+    strictcli.RetiredChoices(
+        strictcli.RetiredChoice("xml", "use 'json' (XML output was dropped)"),
+    ),
+    strictcli.Required(),
+)
+```
+
+Positional args take the same records through `ArgRetiredChoices(...)`.
+
+**TypeScript** -- a member of the options object, typed as the readonly
+non-empty tuple `choices` already uses:
+
+```ts
+format: flag("format", t.str, {
+    help: "output format",
+    choices: [{ value: "text" }, { value: "json" }],
+    retiredChoices: [
+        { value: "xml", message: "use 'json' (XML output was dropped)" },
+    ],
+    presence: "required",
+}),
+```
+
+**A retired value is not a choice.** Help output is unchanged -- a retired
+spelling appears in no help line and no choices block -- and the published
+`value_schema` enum, together with the MCP tool schema derived from it, carries
+the live values only. What a retired spelling means is "this used to be
+accepted", and a surface that lists what a caller may pass would be saying the
+opposite.
+
+**No exhaustiveness story is needed, in any language.** This is not a delivery
+API: a handler never receives a retired value, because the invocation that
+named one never reaches the handler. There is no closed set arriving at a
+consumption site, so there is nothing for `match` / `Match` / `switch` to be
+exhaustive over.
+
+`--dump-schema` publishes the declaration as a `retired_choices` object on the
+flag or arg entry, mapping each retired spelling to its message, sorted
+ascending by key (the treatment a group's `deprecated` map gets) and omitted
+entirely when nothing is retired:
+
+```json
+"retired_choices": {
+  "ascii": "use 'text'",
+  "xml": "use 'json'"
+}
+```
+
+Rules, each a registration-time hard error:
+- A retired spelling may not also be a live choice: a value is live or retired, never both.
+- A retired spelling may not be declared twice.
+- A retired spelling's message is mandatory and non-empty.
+- Retired choices are incompatible with `type=bool`, like `choices` itself.
+- A declared `default` may not name a retired spelling.
+- Retired choices require `choices`. A declaration with no live values to redirect to has nothing to say.
 
 ## Custom validation
 

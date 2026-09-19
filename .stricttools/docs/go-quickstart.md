@@ -1,6 +1,6 @@
 +++
 title = "Go Quickstart"
-description = "Build Go CLIs with strictcli: WithEffect classification, Required/Optional/Default presence, choice flags with Match, constraints and update commands."
+description = "Build Go CLIs with strictcli: WithEffect classification, Required/Optional/Default presence, Choices and RetiredChoices, choice flags with Match, constraints, and update commands."
 nav_group = "Guides"
 nav_order = 1
 +++
@@ -224,12 +224,47 @@ Available options:
 | `Short(s)` | Single-character short form (e.g., `Short("o")` for `-o`). |
 | `Env(name)` | Environment variable to read from. Precedence: CLI > env > config > default. |
 | `Choices(vals...)` | Restrict to specific values, one `Ch(<value>, "<help>")` record each. Not available on bool flags. |
+| `RetiredChoices(vals...)` | The spellings this flag used to accept, one `RetiredChoice(<value>, "<message>")` record each, the message naming the replacement. Requires `Choices`. |
 | `Prefixed(b)` | Whether env var prefix validation is applied (default: true). |
 | `NegatableOpt(b)` | Override negation for bool flags (default: true for bool). |
 | `ValidateFn(fn)` | Custom validation function. Runs on supplied values only -- never on a declared `Default(v)`. |
 | `Repeatable()` | Accept multiple occurrences, collecting into a list. |
 | `Unique(b)` | Reject (or allow) duplicate values on a repeatable flag. Mandatory when `Repeatable()` is applied. |
 | `EnvSeparator(s)` | Character splitting an env var value into elements of a repeatable flag. |
+
+### Retired choices
+
+A flag or arg that declares `Choices` may also declare the spellings it **used
+to** accept, each carrying the message that names its replacement. A value
+matching one is refused at parse time, ahead of the invalid-value check:
+
+```go
+strictcli.StringFlag("format", "Output format",
+    strictcli.Choices(strictcli.Ch("text", ""), strictcli.Ch("json", "")),
+    strictcli.RetiredChoices(
+        strictcli.RetiredChoice("xml", "use 'json' (XML output was dropped)"),
+    ),
+    strictcli.Required(),
+)
+```
+
+```
+error: --format: value 'xml' retired: use 'json' (XML output was dropped)
+```
+
+Positional args take the same records through `ArgRetiredChoices(...)`.
+
+A retired value is not a choice: help never lists it, and the `value_schema`
+enum `--dump-schema` publishes -- together with the MCP tool schema derived
+from it -- carries the live values only. `--dump-schema` publishes the
+declaration separately, as a `retired_choices` map from spelling to message,
+sorted ascending by key and omitted when nothing is retired.
+
+A retired spelling may not also be a live choice, may not repeat, may not carry
+an empty message, may not be what a `Default(v)` names, and may not be declared
+without `Choices`; each is a registration-time hard error. Retired choices are
+incompatible with bool, like `Choices` itself. Full rules:
+[Retired choices](flag-system.md#retired-choices).
 
 ### Presence: required, optional, or a default
 
@@ -367,6 +402,7 @@ Arg options:
 | `ArgDefault(v)` | Presence: the framework supplies `v` when the arg is absent. `ArgDefault(nil)` is a registration error -- use `ArgOptional()`. |
 | `ArgType(t)` | Type (default: `TypeStr`). Accepts `TypeStr`, `TypeBool`, `TypeInt`, `TypeFloat`. |
 | `ArgChoices(vals...)` | Restrict to specific values, one `Ch(<value>, "<help>")` record each. |
+| `ArgRetiredChoices(vals...)` | The spellings this arg used to accept, one `RetiredChoice(<value>, "<message>")` record each, the message naming the replacement. Requires `ArgChoices`. |
 | `Variadic()` | Collect all remaining positional values (must be the last arg). |
 
 ### Variadic Arguments

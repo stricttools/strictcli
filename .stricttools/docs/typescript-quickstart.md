@@ -1,6 +1,6 @@
 +++
 title = "TypeScript Quickstart"
-description = "Build TypeScript CLIs with strictcli: twin command factories, presence-discriminated options, choice flags as derived unions, constraints and updates."
+description = "Build TypeScript CLIs with strictcli: twin command factories, presence-discriminated options, choices and retired choices, choice flags as derived unions, constraints, and updates."
 nav_group = "Guides"
 nav_order = 0
 +++
@@ -372,6 +372,42 @@ flags of its own, or needs to be spelled as its own flag, the declaration is a
 A declared `default` value must be in the choices list, checked at registration.
 `presence: "optional"` declares no value, so nothing is checked at registration
 and absence is never matched against `choices` at parse time.
+
+### Retired choices
+
+A flag or arg that declares `choices` may also declare the spellings it **used
+to** accept, each carrying the message that names its replacement. A value
+matching one is refused at parse time, ahead of the invalid-value check:
+
+```typescript
+format: flag("format", t.str, {
+  help: "Output format",
+  choices: [{ value: "text" }, { value: "json" }],
+  retiredChoices: [
+    { value: "xml", message: "use 'json' (XML output was dropped)" },
+  ],
+  presence: "required",
+}),
+```
+
+The option is typed as the readonly non-empty tuple `choices` already uses, and
+is `never`-typed on the carriers `choices` is `never`-typed on.
+
+```
+error: --format: value 'xml' retired: use 'json' (XML output was dropped)
+```
+
+A retired value is not a choice: help never lists it, and the `value_schema`
+enum `--dump-schema` publishes -- together with the MCP tool schema derived
+from it -- carries the live values only. `--dump-schema` publishes the
+declaration separately, as a `retired_choices` map from spelling to message,
+sorted ascending by key and omitted when nothing is retired.
+
+A retired spelling may not also be a live choice, may not repeat, may not carry
+an empty message, may not be what a `default` names, and may not be declared
+without `choices`; each is a registration-time hard error. Retired choices are
+incompatible with bool, like `choices` itself. Full rules:
+[Retired choices](flag-system.md#retired-choices).
 
 ### Short Aliases
 

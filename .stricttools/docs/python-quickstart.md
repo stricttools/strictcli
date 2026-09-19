@@ -1,6 +1,6 @@
 +++
 title = "Python Quickstart"
-description = "Build Python CLIs with strictcli: effect classification, required/optional/default presence, choice flags, consent, constraints and update commands."
+description = "Build Python CLIs with strictcli: effect classification, required/optional/default presence, choices and retired choices, choice flags, consent, constraints, and update commands."
 nav_group = "Guides"
 nav_order = 2
 +++
@@ -261,10 +261,42 @@ env var splitting for repeatable flags:
 | `short` | Single-character short form (e.g., `short="o"` for `-o`). |
 | `env` | Environment variable name. Precedence: CLI > env > config > default. |
 | `choices` | List of allowed values. Not available on bool flags. |
+| `retired_choices` | List of `RetiredChoice(<value>, message="...")` records: spellings this flag used to accept, each naming its replacement. Requires `choices`. |
 | `validate` | Custom validation function. |
 | `repeatable` | If `True`, the flag can appear multiple times, collecting values into a list. |
 | `unique` | Requires explicit `True` or `False` when `repeatable=True`. Rejects duplicate values when `True`. |
 | `env_separator` | Single character to split env var values for repeatable flags. Required when both `repeatable` and `env` are set. |
+
+### Retired choices
+
+A flag or arg that declares `choices` may also declare the spellings it **used
+to** accept, each carrying the message that names its replacement. A value
+matching one is refused at parse time, ahead of the invalid-value check:
+
+```python
+@strictcli.flag("format", type=str, presence="required", help="Output format",
+                choices=[strictcli.Choice("text"), strictcli.Choice("json")],
+                retired_choices=[
+                    strictcli.RetiredChoice(
+                        "xml", message="use 'json' (XML output was dropped)"),
+                ])
+```
+
+```
+error: --format: value 'xml' retired: use 'json' (XML output was dropped)
+```
+
+A retired value is not a choice: help never lists it, and the `value_schema`
+enum `--dump-schema` publishes -- together with the MCP tool schema derived
+from it -- carries the live values only. `--dump-schema` publishes the
+declaration separately, as a `retired_choices` map from spelling to message,
+sorted ascending by key and omitted when nothing is retired.
+
+A retired spelling may not also be a live choice, may not repeat, may not carry
+an empty message, may not be what a `default` names, and may not be declared
+without `choices`; each is a registration-time hard error. Retired choices are
+incompatible with bool, like `choices` itself. Full rules:
+[Retired choices](flag-system.md#retired-choices).
 
 ### Short Flags
 
@@ -483,6 +515,7 @@ def greet(ctx, title):
 | `type` | Type: `str`, `bool`, `int`, or `float` (default: `str`). |
 | `variadic` | If `True`, collects all remaining positional values. Must be the last arg. |
 | `choices` | List of allowed values. |
+| `retired_choices` | List of `RetiredChoice(<value>, message="...")` records: spellings this arg used to accept, each naming its replacement. Requires `choices`. |
 
 ### Variadic Arguments
 

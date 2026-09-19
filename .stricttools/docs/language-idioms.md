@@ -1,6 +1,6 @@
 +++
 title = "Language Idioms"
-description = "Why strictcli's three declaration surfaces differ on purpose: presence, the choice flag, the constraint member, the update record, and what parity binds."
+description = "Why strictcli's three declaration surfaces differ on purpose: presence, the choice flag, the constraint member, the update record, the retired choice, and what parity binds."
 nav_group = "Guides"
 nav_order = 5
 +++
@@ -550,6 +550,78 @@ has no input that could produce the message, and asserting parity over it would
 be asserting that two implementations carry text no code path can print. Their
 absence elsewhere is a consequence of the spelling, not a parity defect -- and
 the conformance suite records it as such.
+
+## A fifth case: the retired choice
+
+The **retired choice** is the smallest of these cases, and the one that shows
+what the pattern costs when the semantic is simple. A value flag or positional
+arg that declares `choices` may also declare the spellings it used to accept,
+each carrying the message that names its replacement; a value matching one is
+refused ahead of the invalid-value check, with the replacement named. One
+semantic, three records.
+
+**Python** -- a keyword taking records, beside the `Choice` records `choices`
+takes:
+
+```python
+@strictcli.flag("format", type=str, presence="required", help="Output format",
+                choices=[strictcli.Choice("text"), strictcli.Choice("json")],
+                retired_choices=[
+                    strictcli.RetiredChoice("xml", message="use 'json'"),
+                ])
+def convert(ctx, format):
+    ...
+```
+
+**Go** -- a functional option beside `Choices`, over records beside `Ch`:
+
+```go
+strictcli.StringFlag("format", "Output format",
+    strictcli.Choices(strictcli.Ch("text", ""), strictcli.Ch("json", "")),
+    strictcli.RetiredChoices(strictcli.RetiredChoice("xml", "use 'json'")),
+    strictcli.Required(),
+)
+```
+
+**TypeScript** -- a member of the options object, typed as the readonly
+non-empty tuple `choices` already uses:
+
+```ts
+format: flag("format", t.str, {
+    help: "Output format",
+    choices: [{ value: "text" }, { value: "json" }],
+    retiredChoices: [{ value: "xml", message: "use 'json'" }],
+    presence: "required",
+}),
+```
+
+Two things are worth reading off this one.
+
+**The entry-shape refusal is Python-only, and that is the spelling talking.**
+Python's keyword takes a list of anything, so `retired_choices=["xml"]` is
+writable and is refused at registration:
+
+```
+Flag "format": retired_choices entry 0 is a bare value: declare it as RetiredChoice(<value>, message="<message>")
+```
+
+Go's variadic `...RetiredChoiceValue` parameter and TypeScript's
+`RetiredChoiceRecord` tuple make the same mis-declaration a compile error, so
+neither sibling has an input that could produce the sentence. It joins the
+family in [Errors only one language can produce](#errors-only-one-language-can-produce).
+The six *rules* -- a live spelling, a duplicate, an empty message, a bool
+carrier, a retired default, retired choices with no choices -- name the concept
+rather than any language's spelling of the declaration, so all three carry one
+sentence per rule and the parity manifest records nothing for them.
+
+**No exhaustiveness story is needed, and saying so is part of the design.**
+New surface ships with its exhaustiveness story stated per language, and here
+the story is that there is none to tell: a retired value never reaches a
+handler, because the invocation naming one never gets that far. Nothing
+delivers a closed set to a consumption site, so there is no `match`, no
+`Match`/`When`, and no `switch` with `assertNever` to write. The requirement is
+to state the answer, not to manufacture a construct that has nothing to be
+exhaustive over.
 
 ## The same shape, elsewhere in the framework
 
