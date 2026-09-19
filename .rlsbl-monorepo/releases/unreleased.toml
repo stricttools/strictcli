@@ -1,10 +1,10 @@
 [releasables.py-strictcli]
 # Version bump type: patch, minor, major, infra, or prerelease
-bump = ""
+bump = "minor"
 # Short description of this release (required)
-description = ""
+description = "Retired choices on value flags and positional args."
 # Optional context explaining why these changes were made
-context = ""
+context = "A value flag or positional arg that declares choices may now also declare the spellings it used to accept, so a renamed value is refused with a message naming its replacement instead of the generic invalid-value error. The three implementations ship it together, each in its own declaration shape, with conformance cases covering every target."
 # Pre-release channel: alpha, beta, rc, or stable (ordered;
 # demotion is an error). Per package, so one workspace release
 # can ship some packages stable and others as alphas. See
@@ -15,11 +15,11 @@ exclude = []
 
 [releasables.go-strictcli]
 # Version bump type: patch, minor, major, infra, or prerelease
-bump = ""
+bump = "minor"
 # Short description of this release (required)
-description = ""
+description = "Retired choices on value flags and positional args."
 # Optional context explaining why these changes were made
-context = ""
+context = "A value flag or positional arg that declares choices may now also declare the spellings it used to accept, so a renamed value is refused with a message naming its replacement instead of the generic invalid-value error. The three implementations ship it together, each in its own declaration shape, with conformance cases covering every target."
 # Pre-release channel: alpha, beta, rc, or stable (ordered;
 # demotion is an error). Per package, so one workspace release
 # can ship some packages stable and others as alphas. See
@@ -30,11 +30,11 @@ exclude = []
 
 [releasables.ts-strictcli]
 # Version bump type: patch, minor, major, infra, or prerelease
-bump = ""
+bump = "minor"
 # Short description of this release (required)
-description = ""
+description = "Retired choices on value flags and positional args."
 # Optional context explaining why these changes were made
-context = ""
+context = "A value flag or positional arg that declares choices may now also declare the spellings it used to accept, so a renamed value is refused with a message naming its replacement instead of the generic invalid-value error. The three implementations ship it together, each in its own declaration shape, with conformance cases covering every target."
 # Pre-release channel: alpha, beta, rc, or stable (ordered;
 # demotion is an error). Per package, so one workspace release
 # can ship some packages stable and others as alphas. See
