@@ -9,7 +9,7 @@
     "description": "ecf387ce65cac3d1dff0229fe0906c1552e0cc47c57287e02d86941743535556"
   },
   "en/flag-system.md": {
-    "content": "0e1e9f3f3b42cedf4be3154d04ffc6bf82d5f7856bcdd7a68ee89e08cbe0c1c7",
+    "content": "c064b592da43f337eeb954ac472924335510eed89297f0042f75c5ca27a82eac",
     "description": "ece516407be7f96703fca4e0d360747ee1ece8068b4b65cbd1252a6985cec1bc"
   },
   "en/gen-index.md": {
@@ -17,7 +17,7 @@
     "description": "de421ec712350fd2336eb5ecdb2b218864da7af30526828f1b7c7f55293aa31b"
   },
   "en/go-quickstart.md": {
-    "content": "db28a16d06123fdc12c736241fe4ccc6335dbf8cfddfd552a302dede099a005a",
+    "content": "8d6b9e123dc814a7bf582f19157753416748849da16be630d2b6dfa9959b56ab",
     "description": "bd614fe3e6bb0f2fbb0d588d80396e95e9af2fdf48fb8b2af353987afed2c69a"
   },
   "en/go-strictcli-testdata-noncomparable.md": {
@@ -83,7 +83,7 @@
   "en/typescript-src-checks-effects_bypass.md": {
     "content": "22088d7632043cdf3a82cbdd445335174e0b615db1203694406eef96574184df",
     "description": "ec276f5c65e97d9c0cea97b476ee3a669da207e895480aafd08a8e64015120c2",
-    "source_docstring": "ce6e72111bba5575a72dd52bdb9e4be034d5e95ef5522e1d283ee65fa21d8b15"
+    "source_docstring": "4653f8e8680b8c474ca495a376206fe76e75ab365a19b8291d4b24e09266287f"
   },
   "en/typescript-src-checks-framework.md": {
     "content": "139bdeb1dbb42a20f5d00c70ea54daa15405076ce3a1cd1b79d136fa53f402b1",
