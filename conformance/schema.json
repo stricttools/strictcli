@@ -28,6 +28,11 @@
           "default": false,
           "description": "If true, this test case is exempt from schema validation (used for cases that intentionally craft invalid app definitions)."
         },
+        "project_root_not_a_work_tree": {
+          "type": "boolean",
+          "default": false,
+          "description": "If true, the case runs in a fixture directory that is deliberately not a git work tree. The built-in effects-bypass check reads only repository-owned files and refuses a project root git cannot answer for; this is the only way that refusal is reachable."
+        },
         "targets": {
           "type": "array",
           "items": {

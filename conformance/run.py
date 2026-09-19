@@ -593,6 +593,20 @@ def _check_protocol_line(line: str | None, expect: dict, step_no: int) -> list[s
     return errors
 
 
+def _init_fixture_repo(path: str) -> None:
+    """Make a fixture project root a git work tree.
+
+    A project root is a repository in every real use, and the built-in
+    effects-bypass check reads only repository-owned files -- so a fixture root
+    that is not one would be refused by a check the case never meant to
+    exercise. The one case that pins that refusal declares
+    `project_root_not_a_work_tree` and gets a bare directory instead.
+    """
+    subprocess.run(
+        ["git", "init", "-q", path], check=True, capture_output=True,
+    )
+
+
 def _run_protocol_script(
     argv: list[str], env: dict, run_cwd: str, script: list[dict]
 ) -> tuple[subprocess.CompletedProcess, list[str]]:
@@ -887,12 +901,21 @@ def _run_case(case: dict, target: str) -> tuple[bool, list[str], subprocess.Comp
     # A test_coverage_dir case needs a writable temp dir: the declared directory
     # is a path relative to it, and the shard files are written underneath.
     proj_dir = None
-    if "--dump-schema" in case_argv:
+    if case.get("project_root_not_a_work_tree", False):
+        # The one fixture root that is deliberately NOT a repository. The
+        # built-in effects-bypass check reads only repository-owned files and
+        # refuses a root git cannot answer for, and that refusal is reachable
+        # from nowhere else.
+        proj_dir = tempfile.mkdtemp(prefix="strictcli_loose_")
+        run_cwd = proj_dir
+    elif "--dump-schema" in case_argv:
         proj_dir = tempfile.mkdtemp(prefix="strictcli_proj_")
         descriptor.write_project_file(proj_dir, app_def["name"])
+        _init_fixture_repo(proj_dir)
         run_cwd = proj_dir
     elif "test_coverage_dir" in app_def:
         proj_dir = tempfile.mkdtemp(prefix="strictcli_cov_")
+        _init_fixture_repo(proj_dir)
         run_cwd = proj_dir
         # The runner creates the fixture root and NOTHING below it, so the
         # declared path itself carries the existence fact a case is pinning:

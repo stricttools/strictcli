@@ -1,0 +1,28 @@
+[
+  {
+    "name": "effects-bypass: a project root outside a git work tree is refused",
+    "project_root_not_a_work_tree": true,
+    "app": {
+      "name": "testapp",
+      "version": "1.0.0",
+      "help": "test",
+      "commands": [],
+      "checks_toml": "app = \"testapp\"\n"
+    },
+    "argv": [
+      "check",
+      "--name",
+      "effects-bypass"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_contains": [
+        "FAIL",
+        "effects-bypass: project root '.' is not a git work tree; the check reads only repository-owned files"
+      ],
+      "stdout_not_contains": [
+        "route it through"
+      ]
+    }
+  }
+]
