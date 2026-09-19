@@ -148,7 +148,9 @@ func (a *App) collectAllCommands() []commandWithPath {
 // declaration:
 //
 //   - effects-bypass (error) fails on any direct process, filesystem-mutation or
-//     network call REACHABLE FROM A REGISTERED COMMAND HANDLER;
+//     network call REACHABLE FROM A REGISTERED COMMAND HANDLER. It reads only
+//     repository-owned files (see bypassRepoFiles) and refuses a project root
+//     outside a git work tree;
 //   - observe-allowlist-breadth (warn) surfaces short proc_observe_allowlist
 //     prefixes, which authorize real execution under --dry-run;
 //   - consequential-grant-agreement (warn) surfaces commands that declare a
