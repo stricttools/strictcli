@@ -123,7 +123,9 @@ import { ParseError, RegistrationError } from "../src/errors.js";
 // payload-carrying member whose payload already declares one (§24.4, §24.12).
 // Retired choices net +14: the six registration guards twinned across the flag
 // and arg surfaces, plus the two parse-time refusals.
-const EXPECTED_TEMPLATE_COUNT = 402;
+// The effects-bypass input rule nets +1: the refusal of a project root that is
+// not a git work tree.
+const EXPECTED_TEMPLATE_COUNT = 403;
 
 function templateFunctions(): [string, (...args: never[]) => unknown][] {
 	// Widen to unknown first: the module also exports the two error classes,

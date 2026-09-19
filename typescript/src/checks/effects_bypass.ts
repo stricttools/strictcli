@@ -39,8 +39,9 @@
  * TypeScript delivers intra-file.
  */
 
-import { readdirSync, readFileSync, statSync } from "node:fs";
-import { join, relative } from "node:path";
+import { execFileSync } from "node:child_process";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import {
 	computeLineStarts,
 	createScanner,
@@ -48,6 +49,7 @@ import {
 } from "typescript/unstable/ast";
 import type { AppImpl, GroupImpl, RegisteredCommand } from "../app.js";
 import type { Grant } from "../effects.js";
+import { errEffectsBypassNotAWorkTree } from "../errors.js";
 import { type CheckSpec, errorCheckSpec, warnCheckSpec } from "./provider.js";
 
 /** Process starts. Matched on the called name, bare or through a receiver. */
@@ -151,6 +153,12 @@ const BYPASS_NETWORK_RECEIVERS: ReadonlySet<string> = new Set([
 	"agent",
 ]);
 
+/**
+ * Directories the analyser never reads. git lists tracked files wherever they
+ * are, including a vendored tree, a committed `dist` or `build` directory, and
+ * a dot-directory's contents, so the list applies as a filter over git's
+ * answer.
+ */
 const SKIP_DIRS: ReadonlySet<string> = new Set([
 	"node_modules",
 	"dist",
@@ -171,44 +179,51 @@ export interface BypassFinding {
 	readonly kind: "call" | "ceiling";
 }
 
-/** Collects source files under `root`, in directory-then-name order. */
-function collectSourceFiles(root: string): string[] {
-	const out: string[] = [];
-	const walk = (dir: string): void => {
-		let entries: string[];
-		try {
-			entries = readdirSync(dir).sort();
-		} catch {
-			return;
+/**
+ * Thrown when the project root the check was handed is not inside a git work
+ * tree. The check refuses the root rather than reading it another way.
+ */
+export class BypassRootNotAWorkTree extends Error {}
+
+/** True when a repository-owned path sits under a skipped directory. */
+function pathIsSkipped(rel: string): boolean {
+	const parts = rel.split("/");
+	return parts
+		.slice(0, -1)
+		.some((part) => SKIP_DIRS.has(part) || part.startsWith("."));
+}
+
+/**
+ * The repository-owned source files under `root`, relative to it, sorted.
+ *
+ * The input set is what git reports: tracked files plus untracked files
+ * `.gitignore` does not exclude. A release-blocking check reads only inputs the
+ * repository owns, so a gitignored scratch file -- present on one machine and
+ * absent from a fresh clone -- can never decide the verdict. There is no
+ * filesystem-walk fallback: a root outside a work tree is refused.
+ */
+function repoSourceFiles(root: string): string[] {
+	let out: string;
+	try {
+		out = execFileSync(
+			"git",
+			["ls-files", "--cached", "--others", "--exclude-standard", "-z"],
+			{ cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] },
+		);
+	} catch {
+		throw new BypassRootNotAWorkTree(errEffectsBypassNotAWorkTree(root));
+	}
+	const rels = new Set<string>();
+	for (const rel of out.split("\0")) {
+		if (rel === "" || !SOURCE_EXTS.some((ext) => rel.endsWith(ext))) {
+			continue;
 		}
-		const files: string[] = [];
-		const dirs: string[] = [];
-		for (const entry of entries) {
-			if (entry.startsWith(".")) {
-				continue;
-			}
-			const full = join(dir, entry);
-			let isDir = false;
-			try {
-				isDir = statSync(full).isDirectory();
-			} catch {
-				continue;
-			}
-			if (isDir) {
-				if (!SKIP_DIRS.has(entry)) {
-					dirs.push(full);
-				}
-			} else if (SOURCE_EXTS.some((ext) => entry.endsWith(ext))) {
-				files.push(full);
-			}
+		if (pathIsSkipped(rel)) {
+			continue;
 		}
-		out.push(...files);
-		for (const d of dirs) {
-			walk(d);
-		}
-	};
-	walk(root);
-	return out;
+		rels.add(rel);
+	}
+	return [...rels].sort();
 }
 
 interface Tok {
@@ -711,24 +726,17 @@ export function scanTokens(
 }
 
 /**
- * Finds direct effect calls and untrappable carrier uses in sources under
- * `root`. Returns findings in file-then-line order.
+ * Finds direct effect calls and untrappable carrier uses in the
+ * repository-owned sources under `root` (see `repoSourceFiles`). Returns
+ * findings in file-then-line order, and throws `BypassRootNotAWorkTree` when
+ * the root is not inside a git work tree.
  */
 export function scanEffectsBypasses(root: string): BypassFinding[] {
 	const findings: BypassFinding[] = [];
-	let isDir = false;
-	try {
-		isDir = statSync(root).isDirectory();
-	} catch {
-		return findings;
-	}
-	if (!isDir) {
-		return findings;
-	}
-	for (const path of collectSourceFiles(root)) {
+	for (const rel of repoSourceFiles(root)) {
 		let text: string;
 		try {
-			text = readFileSync(path, "utf8");
+			text = readFileSync(join(root, rel), "utf8");
 		} catch {
 			// A file the analyser cannot read is not evidence of a bypass.
 			continue;
@@ -739,7 +747,7 @@ export function scanEffectsBypasses(root: string): BypassFinding[] {
 		} catch {
 			continue;
 		}
-		findings.push(...scanTokens(toks, text, relative(root, path)));
+		findings.push(...scanTokens(toks, text, rel));
 	}
 	return findings;
 }
@@ -834,7 +842,19 @@ export function effectsBypassProvider(_app: AppImpl): () => CheckSpec[] {
 				needsNetwork: false,
 				dependsOn: [],
 				impl: (ctx, reporter) => {
-					const findings = scanEffectsBypasses(ctx.projectRoot);
+					let findings: BypassFinding[];
+					try {
+						findings = scanEffectsBypasses(ctx.projectRoot);
+					} catch (e) {
+						if (!(e instanceof BypassRootNotAWorkTree)) {
+							throw e;
+						}
+						// The input rule is part of the verdict: a root the
+						// repository does not own is refused here, never
+						// scanned some other way.
+						reporter.error(e.message);
+						return reporter.found(e.message);
+					}
 					for (const f of findings) {
 						reporter.error(`${f.file}:${f.line}: ${f.text}`);
 					}

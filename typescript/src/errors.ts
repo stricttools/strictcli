@@ -1516,6 +1516,20 @@ export function errDuplicateCheckDef(name: string): string {
 }
 
 // ---------------------------------------------------------------------------
+// effects_bypass.go — the effects-bypass check's input rule
+//
+// A release-blocking check reads only inputs the repository owns, so the lint
+// enumerates its files through git and refuses a project root that is not
+// inside a work tree. There is no filesystem-walk fallback and no flag that
+// turns the rule off: a root git cannot answer for is a verdict the check
+// declines to give.
+// ---------------------------------------------------------------------------
+
+export function errEffectsBypassNotAWorkTree(root: string): string {
+	return `effects-bypass: project root '${root}' is not a git work tree; the check reads only repository-owned files`;
+}
+
+// ---------------------------------------------------------------------------
 // check.go — parseChecksToml
 // ---------------------------------------------------------------------------
 

@@ -4,12 +4,17 @@
  */
 
 import { strict as assert } from "node:assert";
+import { execFileSync } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 import type { AppImpl } from "../src/app.js";
-import { scanEffectsBypasses } from "../src/checks/effects_bypass.js";
+import {
+	BypassRootNotAWorkTree,
+	scanEffectsBypasses,
+} from "../src/checks/effects_bypass.js";
+import { errEffectsBypassNotAWorkTree } from "../src/errors.js";
 import {
 	type App,
 	type CheckContext,
@@ -19,7 +24,23 @@ import {
 import { envelopePayload } from "./envelope_helpers.js";
 import { tempDir } from "./helpers.js";
 
+/** Runs one git command inside a fixture repository. */
+function git(root: string, ...args: string[]): void {
+	execFileSync("git", args, { cwd: root, stdio: "ignore" });
+}
+
+/**
+ * A fixture project root. It is a git work tree: the lint reads only
+ * repository-owned files, so a root that is not a repository is refused rather
+ * than scanned. `loose` builds the same tree without the repository.
+ */
 function project(files: Record<string, string>): string {
+	const root = loose(files);
+	git(root, "init", "-q");
+	return root;
+}
+
+function loose(files: Record<string, string>): string {
 	const root = tempDir("sc-bypass-");
 	for (const [rel, body] of Object.entries(files)) {
 		const path = join(root, rel);
@@ -28,6 +49,56 @@ function project(files: Record<string, string>): string {
 	}
 	return root;
 }
+
+const OFFENDING = `
+import { rmSync } from "node:fs";
+export function deploy(ctx) {
+	ctx.effects.run(["make"]);
+	rmSync("x");
+}
+`;
+
+test("bypass: only repository-owned files are read", () => {
+	const root = project({
+		"tracked.ts": OFFENDING,
+		"untracked.ts": OFFENDING,
+		".gitignore": "ignored.ts\n",
+		"ignored.ts": OFFENDING,
+	});
+	git(root, "add", "tracked.ts");
+
+	const files = scanEffectsBypasses(root).map((f) => f.file);
+
+	assert.deepEqual(files, ["tracked.ts", "untracked.ts"]);
+});
+
+test("bypass: a project root outside a git work tree is refused", () => {
+	const root = loose({ "cli.ts": OFFENDING });
+
+	assert.throws(
+		() => scanEffectsBypasses(root),
+		(e: unknown) =>
+			e instanceof BypassRootNotAWorkTree &&
+			e.message === errEffectsBypassNotAWorkTree(root),
+	);
+});
+
+test("bypass: the check reports the input-rule refusal", async () => {
+	const app = createApp({
+		name: "t",
+		version: "1",
+		help: "h",
+		checksEmbed: 'app = "t"\n',
+	});
+	const root = loose({ "cli.ts": OFFENDING });
+	app.setCheckContext(() => ({ projectRoot: root }));
+
+	const r = await app.test(["check", "--name", "effects-bypass"]);
+
+	assert.equal(r.exitCode, 1);
+	assert.ok(r.stdout.includes(errEffectsBypassNotAWorkTree(root)));
+	assert.ok(!r.stdout.includes("route it through ctx.effects"));
+});
 
 test("bypass: a handler that opted in must route everything through ctx.effects", () => {
 	const root = project({
@@ -237,10 +308,13 @@ export function g(ctx) { ctx.effects.run([]); require("node:fs").rmSync("x"); }
 	assert.deepEqual(scanEffectsBypasses(root), []);
 });
 
-test("bypass: a missing project root is not evidence of a bypass", () => {
-	assert.deepEqual(
-		scanEffectsBypasses(join(tmpdir(), "sc-does-not-exist")),
-		[],
+test("bypass: a missing project root is refused by the input rule", () => {
+	const missing = join(tmpdir(), "sc-does-not-exist");
+	assert.throws(
+		() => scanEffectsBypasses(missing),
+		(e: unknown) =>
+			e instanceof BypassRootNotAWorkTree &&
+			e.message === errEffectsBypassNotAWorkTree(missing),
 	);
 });
 
