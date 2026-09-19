@@ -1,7 +1,7 @@
 {
   "version": "0.41.1",
   "description": "A CLI framework for the Era of Agents: nothing is inferred, everything is declared. First-class support for Go, Python, and TypeScript",
-  "repo": "https://github.com/smm-h/strictcli",
+  "repo": "https://github.com/stricttools/strictcli",
   "source": [
     {
       "path": "python/strictcli/",
