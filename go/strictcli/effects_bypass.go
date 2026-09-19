@@ -8,11 +8,12 @@ package strictcli
 // degradation.
 
 import (
+	"errors"
 	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
-	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -55,7 +56,9 @@ var bypassNetworkReceivers = map[string]bool{
 	"DefaultClient": true, "transport": true, "ws": true,
 }
 
-// bypassSkipDirs are never walked.
+// bypassSkipDirs are never read. git lists tracked files wherever they are,
+// including a vendored tree, a committed testdata or build directory, and a
+// dot-directory's contents, so the list applies as a filter over git's answer.
 var bypassSkipDirs = map[string]bool{
 	".git": true, "vendor": true, "node_modules": true, "testdata": true,
 	"dist": true, "build": true,
@@ -153,7 +156,13 @@ func (a *App) collectAllCommands() []commandWithPath {
 //     consequential.
 func (a *App) effectsBypassProvider() []CheckSpec {
 	impl := func(ctx CheckContext, reporter *ErrorReporter) CheckOutcome {
-		findings := scanEffectsBypasses(ctx.ProjectRoot())
+		findings, err := scanEffectsBypasses(ctx.ProjectRoot())
+		if err != nil {
+			// The input rule is part of the verdict: a root the repository does
+			// not own is refused here, never scanned some other way.
+			reporter.Error(err.Error())
+			return reporter.Found(err.Error())
+		}
 		for _, f := range findings {
 			reporter.Error(fmt.Sprintf("%s:%d: %s calls %s directly; route it through ctx.Effects()",
 				f.file, f.line, f.fn, f.target))
@@ -245,6 +254,51 @@ type bypassFunc struct {
 	aliases map[string]bool
 }
 
+// bypassPathIsSkipped reports whether a repository-owned path sits under one of
+// the directories the analyser never reads.
+func bypassPathIsSkipped(rel string) bool {
+	parts := strings.Split(filepath.ToSlash(rel), "/")
+	for _, part := range parts[:len(parts)-1] {
+		if bypassSkipDirs[part] || strings.HasPrefix(part, ".") {
+			return true
+		}
+	}
+	return false
+}
+
+// bypassRepoFiles returns the repository-owned Go files under root, relative to
+// it, in sorted order.
+//
+// The input set is what git reports: tracked files plus untracked files
+// .gitignore does not exclude. A release-blocking check reads only inputs the
+// repository owns, so a gitignored scratch file -- present on one machine and
+// absent from a fresh clone -- can never decide the verdict. There is no
+// filesystem-walk fallback: a root outside a work tree is refused.
+func bypassRepoFiles(root string) ([]string, error) {
+	cmd := exec.Command(
+		"git", "ls-files", "--cached", "--others", "--exclude-standard", "-z",
+	)
+	cmd.Dir = root
+	out, err := cmd.Output()
+	if err != nil {
+		return nil, errors.New(errEffectsBypassNotAWorkTree(root))
+	}
+	seen := map[string]bool{}
+	var rels []string
+	for _, rel := range strings.Split(string(out), "\x00") {
+		if rel == "" || seen[rel] || !strings.HasSuffix(rel, ".go") {
+			continue
+		}
+		if bypassPathIsSkipped(rel) {
+			continue
+		}
+		seen[rel] = true
+		rels = append(rels, rel)
+	}
+	sort.Strings(rels)
+	return rels, nil
+}
+
 // scanEffectsBypasses finds direct effect calls REACHABLE FROM A REGISTERED
 // COMMAND HANDLER. Results are in file then line order.
 //
@@ -260,30 +314,16 @@ type bypassFunc struct {
 // package-level functions, transitively, WITHIN ONE PACKAGE (one directory) --
 // the most go/ast can resolve without a type checker, and the boundary at which
 // a bare name stops being unambiguous.
-func scanEffectsBypasses(root string) []bypassFinding {
+func scanEffectsBypasses(root string) ([]bypassFinding, error) {
 	var findings []bypassFinding
-	info, err := os.Stat(root)
-	if err != nil || !info.IsDir() {
-		return findings
+	rels, err := bypassRepoFiles(root)
+	if err != nil {
+		return nil, err
 	}
-	var files []string
-	_ = filepath.Walk(root, func(path string, fi os.FileInfo, err error) error {
-		if err != nil {
-			return nil
-		}
-		if fi.IsDir() {
-			base := filepath.Base(path)
-			if path != root && (bypassSkipDirs[base] || strings.HasPrefix(base, ".")) {
-				return filepath.SkipDir
-			}
-			return nil
-		}
-		if strings.HasSuffix(path, ".go") {
-			files = append(files, path)
-		}
-		return nil
-	})
-	sort.Strings(files)
+	files := make([]string, 0, len(rels))
+	for _, rel := range rels {
+		files = append(files, filepath.Join(root, rel))
+	}
 
 	fset := token.NewFileSet()
 	// Pass 1: parse every file, index package-level funcs per directory, and
@@ -365,7 +405,7 @@ func scanEffectsBypasses(root string) []bypassFinding {
 		}
 	}
 	if len(reachable) == 0 {
-		return findings
+		return findings, nil
 	}
 
 	// Pass 3: report banned calls, once per call site, at the innermost
@@ -425,7 +465,7 @@ func scanEffectsBypasses(root string) []bypassFinding {
 		}
 		return findings[i].line < findings[j].line
 	})
-	return findings
+	return findings, nil
 }
 
 // isNestedAnalysable reports whether a nested function node is itself one of the

@@ -4,6 +4,7 @@ package strictcli
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -21,8 +22,104 @@ func writeGoFile(t *testing.T, dir, name, body string) string {
 	return path
 }
 
-func TestBypassLintFlagsDirectProcessCall(t *testing.T) {
+// gitRun runs one git command inside a fixture repository.
+func gitRun(t *testing.T, dir string, args ...string) {
+	t.Helper()
+	cmd := exec.Command("git", args...)
+	cmd.Dir = dir
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("git %v in %s: %v: %s", args, dir, err, out)
+	}
+}
+
+// gitTempDir is a temp directory that is a git work tree. The lint reads only
+// repository-owned files, so a fixture root that is not a repository is
+// refused rather than scanned.
+func gitTempDir(t *testing.T) string {
+	t.Helper()
 	dir := t.TempDir()
+	gitRun(t, dir, "init", "-q")
+	return dir
+}
+
+// scanRepo scans a fixture repository, failing the test on the input-rule
+// refusal so each caller keeps asserting findings alone.
+func scanRepo(t *testing.T, dir string) []bypassFinding {
+	t.Helper()
+	findings, err := scanEffectsBypasses(dir)
+	if err != nil {
+		t.Fatalf("scanning %s: %v", dir, err)
+	}
+	return findings
+}
+
+// bypassOffender is one fixture file: a handler-shaped function carrying one
+// direct effect call.
+const bypassOffender = `package app
+
+import "os"
+
+func deploy(ctx *Ctx) int {
+	ctx.Effects().Run(nil)
+	os.RemoveAll("x")
+	return 0
+}
+`
+
+func TestBypassLintReadsOnlyRepositoryOwnedFiles(t *testing.T) {
+	dir := gitTempDir(t)
+	writeGoFile(t, dir, "tracked.go", bypassOffender)
+	gitRun(t, dir, "add", "tracked.go")
+	writeGoFile(t, dir, "untracked.go", bypassOffender)
+	writeGoFile(t, dir, ".gitignore", "ignored.go\n")
+	writeGoFile(t, dir, "ignored.go", bypassOffender)
+
+	findings := scanRepo(t, dir)
+
+	if len(findings) != 2 {
+		t.Fatalf("expected the tracked and the unignored file, got %#v", findings)
+	}
+	if findings[0].file != "tracked.go" || findings[1].file != "untracked.go" {
+		t.Fatalf("unexpected files %#v", findings)
+	}
+}
+
+func TestBypassLintRefusesARootOutsideAGitWorkTree(t *testing.T) {
+	dir := t.TempDir()
+	writeGoFile(t, dir, "handler.go", bypassOffender)
+
+	findings, err := scanEffectsBypasses(dir)
+
+	if err == nil {
+		t.Fatalf("expected a refusal, got findings %#v", findings)
+	}
+	if err.Error() != errEffectsBypassNotAWorkTree(dir) {
+		t.Fatalf("unexpected refusal %q", err.Error())
+	}
+}
+
+func TestBypassCheckReportsTheInputRuleRefusal(t *testing.T) {
+	dir := t.TempDir()
+	writeGoFile(t, dir, "handler.go", bypassOffender)
+	app := NewApp("testapp", "1.0.0", "test app")
+	app.RegisterCheckProvider(func() []CheckSpec { return nil })
+	app.SetCheckContext(func() CheckContext { return &testCheckContext{root: dir} })
+
+	r := app.Test([]string{"check", "--name", "effects-bypass"})
+
+	if r.ExitCode == 0 {
+		t.Fatalf("expected a failing check, got exit 0; stdout=%q", r.Stdout)
+	}
+	if !strings.Contains(r.Stdout, errEffectsBypassNotAWorkTree(dir)) {
+		t.Fatalf("expected the input-rule refusal, got %q", r.Stdout)
+	}
+	if strings.Contains(r.Stdout, "route it through ctx.Effects()") {
+		t.Fatalf("a refused root is never scanned, got %q", r.Stdout)
+	}
+}
+
+func TestBypassLintFlagsDirectProcessCall(t *testing.T) {
+	dir := gitTempDir(t)
 	writeGoFile(t, dir, "handler.go", `package app
 
 import "os/exec"
@@ -33,7 +130,7 @@ func deploy(ctx *Ctx) int {
 	return 0
 }
 `)
-	findings := scanEffectsBypasses(dir)
+	findings := scanRepo(t, dir)
 	if len(findings) != 1 {
 		t.Fatalf("expected 1 finding, got %#v", findings)
 	}
@@ -43,7 +140,7 @@ func deploy(ctx *Ctx) int {
 }
 
 func TestBypassLintFlagsFilesystemAndNetwork(t *testing.T) {
-	dir := t.TempDir()
+	dir := gitTempDir(t)
 	writeGoFile(t, dir, "handler.go", `package app
 
 import (
@@ -59,7 +156,7 @@ func publish(ctx *Ctx) int {
 	return 0
 }
 `)
-	findings := scanEffectsBypasses(dir)
+	findings := scanRepo(t, dir)
 	targets := make([]string, 0, len(findings))
 	for _, f := range findings {
 		targets = append(targets, f.target)
@@ -76,7 +173,7 @@ func publish(ctx *Ctx) int {
 }
 
 func TestBypassLintIgnoresFunctionsThatNeverOptIn(t *testing.T) {
-	dir := t.TempDir()
+	dir := gitTempDir(t)
 	writeGoFile(t, dir, "plain.go", `package app
 
 import "os"
@@ -85,13 +182,13 @@ func housekeeping() {
 	os.RemoveAll("scratch")
 }
 `)
-	if findings := scanEffectsBypasses(dir); len(findings) != 0 {
+	if findings := scanRepo(t, dir); len(findings) != 0 {
 		t.Fatalf("a function that never reaches for ctx.Effects() is not a finding: %#v", findings)
 	}
 }
 
 func TestBypassLintDoesNotFlagTheEffectsHandleItself(t *testing.T) {
-	dir := t.TempDir()
+	dir := gitTempDir(t)
 	writeGoFile(t, dir, "clean.go", `package app
 
 func deploy(ctx *Ctx) int {
@@ -101,13 +198,13 @@ func deploy(ctx *Ctx) int {
 	return 0
 }
 `)
-	if findings := scanEffectsBypasses(dir); len(findings) != 0 {
+	if findings := scanRepo(t, dir); len(findings) != 0 {
 		t.Fatalf("routing through the handle must be clean: %#v", findings)
 	}
 }
 
 func TestBypassLintDoesNotFlagOrdinaryMapLookups(t *testing.T) {
-	dir := t.TempDir()
+	dir := gitTempDir(t)
 	writeGoFile(t, dir, "lookup.go", `package app
 
 type store struct{}
@@ -120,13 +217,13 @@ func deploy(ctx *Ctx, s store) int {
 	return 0
 }
 `)
-	if findings := scanEffectsBypasses(dir); len(findings) != 0 {
+	if findings := scanRepo(t, dir); len(findings) != 0 {
 		t.Fatalf("a plain .Get on a non-network receiver is not a finding: %#v", findings)
 	}
 }
 
 func TestBypassLintSkipsUnparseableFilesAndSkipDirs(t *testing.T) {
-	dir := t.TempDir()
+	dir := gitTempDir(t)
 	writeGoFile(t, dir, "broken.go", "package app\nfunc (\n")
 	writeGoFile(t, dir, filepath.Join("vendor", "dep.go"), `package dep
 
@@ -138,19 +235,21 @@ func deploy(ctx *Ctx) int {
 	return 0
 }
 `)
-	if findings := scanEffectsBypasses(dir); len(findings) != 0 {
+	if findings := scanRepo(t, dir); len(findings) != 0 {
 		t.Fatalf("unparseable files and vendor/ are not evidence of a bypass: %#v", findings)
 	}
 }
 
-func TestBypassLintMissingRootIsNotAFinding(t *testing.T) {
-	if findings := scanEffectsBypasses(filepath.Join(t.TempDir(), "nope")); len(findings) != 0 {
-		t.Fatalf("a missing root yields no findings, got %#v", findings)
+func TestBypassLintMissingRootIsRefused(t *testing.T) {
+	missing := filepath.Join(t.TempDir(), "nope")
+	_, err := scanEffectsBypasses(missing)
+	if err == nil || err.Error() != errEffectsBypassNotAWorkTree(missing) {
+		t.Fatalf("a missing root is refused by the input rule, got %v", err)
 	}
 }
 
 func TestBypassCheckRunsThroughTheProviderHook(t *testing.T) {
-	dir := t.TempDir()
+	dir := gitTempDir(t)
 	writeGoFile(t, dir, "handler.go", `package app
 
 import "os/exec"
@@ -245,7 +344,7 @@ func TestObserveAllowlistBreadthPassesOnNarrowPrefixes(t *testing.T) {
 // handle nowhere is the easiest possible bypass, and a lint that only looked at
 // effects-using functions would wave it straight through.
 func TestBypassLintFlagsAHandlerThatNeverMentionsEffects(t *testing.T) {
-	dir := t.TempDir()
+	dir := gitTempDir(t)
 	writeGoFile(t, dir, "handler.go", `package app
 
 import (
@@ -260,7 +359,7 @@ func deploy(ctx *Context, args map[string]interface{}) Outcome {
 	return Exit(0)
 }
 `)
-	findings := scanEffectsBypasses(dir)
+	findings := scanRepo(t, dir)
 	if len(findings) != 3 {
 		t.Fatalf("expected 3 findings, got %#v", findings)
 	}
@@ -273,7 +372,7 @@ func deploy(ctx *Context, args map[string]interface{}) Outcome {
 
 // Escape shape 2: reachability, not the immediate body.
 func TestBypassLintFollowsAHelperCall(t *testing.T) {
-	dir := t.TempDir()
+	dir := gitTempDir(t)
 	writeGoFile(t, dir, "handler.go", `package app
 
 import "os/exec"
@@ -288,7 +387,7 @@ func deploy(ctx *Context, args map[string]interface{}) Outcome {
 	return Exit(0)
 }
 `)
-	findings := scanEffectsBypasses(dir)
+	findings := scanRepo(t, dir)
 	if len(findings) != 1 {
 		t.Fatalf("expected 1 finding, got %#v", findings)
 	}
@@ -298,7 +397,7 @@ func deploy(ctx *Context, args map[string]interface{}) Outcome {
 }
 
 func TestBypassLintReachabilityIsTransitiveAndCrossFile(t *testing.T) {
-	dir := t.TempDir()
+	dir := gitTempDir(t)
 	writeGoFile(t, dir, "handler.go", `package app
 
 func deploy(ctx *Context, args map[string]interface{}) Outcome {
@@ -314,7 +413,7 @@ func inner() { os.Remove("x") }
 
 func outer() { inner() }
 `)
-	findings := scanEffectsBypasses(dir)
+	findings := scanRepo(t, dir)
 	if len(findings) != 1 {
 		t.Fatalf("expected 1 finding, got %#v", findings)
 	}
@@ -325,7 +424,7 @@ func outer() { inner() }
 
 // The scope is reachability, not "every function in the tree".
 func TestBypassLintIgnoresAnUnreachableHelper(t *testing.T) {
-	dir := t.TempDir()
+	dir := gitTempDir(t)
 	writeGoFile(t, dir, "handler.go", `package app
 
 import "os"
@@ -337,7 +436,7 @@ func deploy(ctx *Context, args map[string]interface{}) Outcome {
 	return Exit(0)
 }
 `)
-	if findings := scanEffectsBypasses(dir); len(findings) != 0 {
+	if findings := scanRepo(t, dir); len(findings) != 0 {
 		t.Fatalf("expected no findings, got %#v", findings)
 	}
 }
@@ -345,7 +444,7 @@ func deploy(ctx *Context, args map[string]interface{}) Outcome {
 // Package boundaries are respected: a same-named function in another directory
 // is a different symbol and must not be pulled in.
 func TestBypassLintDoesNotCrossPackageBoundaries(t *testing.T) {
-	dir := t.TempDir()
+	dir := gitTempDir(t)
 	writeGoFile(t, dir, "handler.go", `package app
 
 func deploy(ctx *Context, args map[string]interface{}) Outcome {
@@ -361,7 +460,7 @@ import "os"
 
 func helper() { os.Remove("x") }
 `)
-	if findings := scanEffectsBypasses(dir); len(findings) != 0 {
+	if findings := scanRepo(t, dir); len(findings) != 0 {
 		t.Fatalf("expected no findings, got %#v", findings)
 	}
 }
@@ -369,7 +468,7 @@ func helper() { os.Remove("x") }
 // `e := ctx.Effects()` then `e.Write(...)` is the same call as
 // `ctx.Effects().Write(...)`; the handle itself must never read as a bypass.
 func TestBypassLintAcceptsALocalHandleAlias(t *testing.T) {
-	dir := t.TempDir()
+	dir := gitTempDir(t)
 	writeGoFile(t, dir, "handler.go", `package app
 
 func deploy(ctx *Context, args map[string]interface{}) Outcome {
@@ -379,7 +478,7 @@ func deploy(ctx *Context, args map[string]interface{}) Outcome {
 	return Exit(0)
 }
 `)
-	if findings := scanEffectsBypasses(dir); len(findings) != 0 {
+	if findings := scanRepo(t, dir); len(findings) != 0 {
 		t.Fatalf("expected no findings, got %#v", findings)
 	}
 }
