@@ -9,7 +9,7 @@ It is for developers who would rather see a mistake when the CLI is declared tha
 | Implementation | Install | Docs |
 |---------------|---------|------|
 | **Python** | `pip install strictcli` | [python/README.md](python/README.md) |
-| **Go** | `go get github.com/smm-h/strictcli/go/strictcli` | [go/](go/) |
+| **Go** | `go get github.com/stricttools/strictcli/go/strictcli` | [go/](go/) |
 | **TypeScript** | `npm install strictcli` | [typescript/README.md](typescript/README.md) |
 
 ## Build in your language, not in a shared subset
@@ -79,7 +79,7 @@ package main
 import (
     "strings"
 
-    "github.com/smm-h/strictcli/go/strictcli"
+    "github.com/stricttools/strictcli/go/strictcli"
 )
 
 func main() {
