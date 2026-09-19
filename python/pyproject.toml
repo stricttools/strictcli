@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "strictcli"
-version = "0.42.0"
+version = "0.43.0"
 description = "A CLI framework for the Era of Agents: nothing is inferred, everything is declared. First-class support for Go, Python, and TypeScript (Python implementation)"
 readme = "README.md"
 license = "MIT"
