@@ -1,0 +1,15 @@
+# Archived by rlsbl at release time. This release had no unreleased.toml
+# (a batch member takes its metadata from the batch release file); the
+# archive is written so later changelog regenerations keep the
+# description and context.
+# strictspec document version gate (do not remove)
+format_version = 1
+bump = "minor"
+include = ["go"]
+exclude = []
+description = "Retired choices on value flags and positional args, plus the module path move to github.com/stricttools/strictcli/go."
+context = "A value flag or positional arg that declares choices may now also declare the spellings it used to accept, so a renamed value is refused with a message naming its replacement instead of the generic invalid-value error. The three implementations ship it together, each in its own declaration shape, with conformance cases covering every target. This release also carries a breaking change for Go consumers alone: the repository was transferred from the smm-h account to the stricttools organisation, so the module declares github.com/stricttools/strictcli/go. Versions already published under github.com/smm-h/strictcli/go stay resolvable, because the module proxy keeps serving them and GitHub redirects the transferred repository, but new versions publish under the new path alone. Consumers change their import, their go.mod requirement, and their go get invocation to the new path."
+candidate_sha = "1175c1c4bacfc4e7764a88d20c772f191455acda"
+
+[tree_hashes]
+go = "a7cf0333f325d47cede5d8d7002af1f2a9a7cd1a"
