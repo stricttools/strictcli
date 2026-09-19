@@ -2,7 +2,44 @@
  * Shared test helpers. Not a `.test.ts` file, so the runner does not pick it up.
  */
 
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { type App, type AppImpl, type AppSpec, createApp } from "../src/app.js";
+
+/**
+ * Every directory tempDir() has handed out in this process, in creation order.
+ * The list is what the exit handler removes, so nothing depends on the test
+ * that asked for a directory reaching its own cleanup.
+ */
+const trackedTempDirs: string[] = [];
+let tempDirExitHandlerInstalled = false;
+
+/**
+ * A throwaway directory under the operating system's temp directory that the
+ * process removes before it exits.
+ *
+ * Nothing in the project sweeps the temp directory later, so a directory a
+ * test leaves behind is permanent. Registering the removal here rather than at
+ * each call site is what makes that impossible: the removal runs on the
+ * process's exit, so a test that throws, one that is skipped part-way, and one
+ * that chdirs into its directory and never comes back all leave nothing.
+ * A test that wants its directory gone earlier may still remove it itself --
+ * the exit-time removal is forced, so removing twice is not an error.
+ */
+export function tempDir(prefix: string): string {
+	const dir = mkdtempSync(join(tmpdir(), prefix));
+	trackedTempDirs.push(dir);
+	if (!tempDirExitHandlerInstalled) {
+		tempDirExitHandlerInstalled = true;
+		process.on("exit", () => {
+			for (const tracked of trackedTempDirs.splice(0)) {
+				rmSync(tracked, { recursive: true, force: true });
+			}
+		});
+	}
+	return dir;
+}
 
 /**
  * Strips strictcli's own built-in check providers from an app.

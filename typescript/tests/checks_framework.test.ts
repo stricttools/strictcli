@@ -9,8 +9,7 @@
  */
 
 import { strict as assert } from "node:assert";
-import { mkdtempSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
 import {
@@ -21,7 +20,7 @@ import {
 } from "../src/checks/framework.js";
 import { RegistrationError } from "../src/errors.js";
 import { type App, ErrorReporter, WarnReporter } from "../src/index.js";
-import { createTestApp as createApp } from "./helpers.js";
+import { createTestApp as createApp, tempDir } from "./helpers.js";
 
 const VALID_CHECK_BODY = `tags = ["release"]
 severity = "error"
@@ -225,7 +224,7 @@ test("checksPath must exist", () => {
 });
 
 test("checksPath loads a checks.toml file from disk", async () => {
-	const dir = mkdtempSync(join(tmpdir(), "strictcli-checks-"));
+	const dir = tempDir("strictcli-checks-");
 	const path = join(dir, "checks.toml");
 	writeFileSync(path, `app = "t"\n[checks.lint]\n${VALID_CHECK_BODY}`);
 	const app = createApp({

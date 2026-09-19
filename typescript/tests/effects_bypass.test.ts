@@ -4,7 +4,7 @@
  */
 
 import { strict as assert } from "node:assert";
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
@@ -17,9 +17,10 @@ import {
 	defineMutatingCommand,
 } from "../src/index.js";
 import { envelopePayload } from "./envelope_helpers.js";
+import { tempDir } from "./helpers.js";
 
 function project(files: Record<string, string>): string {
-	const root = mkdtempSync(join(tmpdir(), "sc-bypass-"));
+	const root = tempDir("sc-bypass-");
 	for (const [rel, body] of Object.entries(files)) {
 		const path = join(root, rel);
 		mkdirSync(join(path, ".."), { recursive: true });
@@ -479,7 +480,7 @@ function breadthApp(allowlist: readonly (readonly string[])[]): App {
 		procObserveAllowlist: allowlist,
 	});
 	app.registerCheckProvider(() => []);
-	const root = mkdtempSync(join(tmpdir(), "sc-breadth-"));
+	const root = tempDir("sc-breadth-");
 	app.setCheckContext((): CheckContext => ({ projectRoot: root }));
 	return app;
 }
@@ -561,7 +562,7 @@ function grantApp(
 		}),
 	);
 	app.registerCheckProvider(() => []);
-	const root = mkdtempSync(join(tmpdir(), "sc-grant-"));
+	const root = tempDir("sc-grant-");
 	app.setCheckContext((): CheckContext => ({ projectRoot: root }));
 	return app;
 }
@@ -642,7 +643,7 @@ test("grant agreement: a grouped command is named by its dotted path", async () 
 		}),
 	);
 	app.registerCheckProvider(() => []);
-	const root = mkdtempSync(join(tmpdir(), "sc-grant-"));
+	const root = tempDir("sc-grant-");
 	app.setCheckContext((): CheckContext => ({ projectRoot: root }));
 	const r = await app.test([
 		"check",

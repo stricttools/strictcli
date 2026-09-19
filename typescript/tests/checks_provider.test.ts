@@ -9,8 +9,6 @@
  */
 
 import { strict as assert } from "node:assert";
-import { mkdtempSync } from "node:fs";
-import { tmpdir } from "node:os";
 import { test } from "node:test";
 import type { CheckContext, CheckSpec as CheckSpecType } from "../src/index.js";
 import {
@@ -19,7 +17,11 @@ import {
 	errorCheckSpec,
 	warnCheckSpec,
 } from "../src/index.js";
-import { createTestApp as createApp, EMPTY_PROJECT_ROOT } from "./helpers.js";
+import {
+	createTestApp as createApp,
+	EMPTY_PROJECT_ROOT,
+	tempDir,
+} from "./helpers.js";
 
 // A dedicated EMPTY root: checks that statically analyse the consumer's
 // sources (effects-bypass) walk it, so it must not be a shared scratch dir.
@@ -305,7 +307,7 @@ test("a cwd change re-runs providers; provider defs are dropped first", async ()
 	try {
 		await app.test(["check", "--all"]);
 		assert.equal(calls, 1);
-		process.chdir(mkdtempSync(`${tmpdir()}/strictcli-provcwd-`));
+		process.chdir(tempDir("strictcli-provcwd-"));
 		const result = await app.test(["check", "--all"]);
 		assert.equal(calls, 2);
 		// Re-materialization did not trip the duplicate-name guard: the stale

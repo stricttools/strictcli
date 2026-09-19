@@ -11,14 +11,8 @@
  */
 
 import { strict as assert } from "node:assert";
-import {
-	existsSync,
-	mkdirSync,
-	mkdtempSync,
-	readFileSync,
-	writeFileSync,
-} from "node:fs";
-import { homedir, tmpdir } from "node:os";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { homedir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 import type { AppImpl, AppSpec } from "../src/app.js";
@@ -40,12 +34,13 @@ import {
 	t,
 } from "../src/index.js";
 import { envelopePayloadText } from "./envelope_helpers.js";
+import { tempDir } from "./helpers.js";
 
 // --- Environment scaffolding -------------------------------------------
 
 /** Creates a fresh XDG_CONFIG_HOME with an app config dir; returns the paths. */
 function freshXdg(appName = "myapp"): { xdg: string; dir: string } {
-	const xdg = mkdtempSync(join(tmpdir(), "strictcli-config-"));
+	const xdg = tempDir("strictcli-config-");
 	process.env.XDG_CONFIG_HOME = xdg;
 	const dir = join(xdg, appName);
 	mkdirSync(dir, { recursive: true });
@@ -1686,7 +1681,7 @@ test("config set: --dry-run records the write and changes nothing", async () => 
 });
 
 test("config set: --dry-run previews the missing config directory", async () => {
-	const xdg = mkdtempSync(join(tmpdir(), "strictcli-config-"));
+	const xdg = tempDir("strictcli-config-");
 	process.env.XDG_CONFIG_HOME = xdg;
 	const dir = join(xdg, "drymk");
 	const path = join(dir, "config.json");
@@ -1739,7 +1734,7 @@ test("config init: --dry-run writes nothing", async () => {
 
 test("config edit: --dry-run does not launch the editor", async () => {
 	// The sharpest form of the bug: a dry run must not open $EDITOR.
-	const xdg = mkdtempSync(join(tmpdir(), "strictcli-config-"));
+	const xdg = tempDir("strictcli-config-");
 	process.env.XDG_CONFIG_HOME = xdg;
 	const dir = join(xdg, "dryedit");
 	const path = join(dir, "config.json");
@@ -1760,7 +1755,7 @@ test("config edit: --dry-run does not launch the editor", async () => {
 });
 
 test("config set/init still mutate in live mode", async () => {
-	const xdg = mkdtempSync(join(tmpdir(), "strictcli-config-"));
+	const xdg = tempDir("strictcli-config-");
 	process.env.XDG_CONFIG_HOME = xdg;
 	const path = join(xdg, "livecfg", "config.json");
 	const app = dryConfigApp("livecfg");

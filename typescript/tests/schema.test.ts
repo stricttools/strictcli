@@ -17,14 +17,7 @@
  */
 
 import { strict as assert } from "node:assert";
-import {
-	existsSync,
-	mkdirSync,
-	mkdtempSync,
-	readFileSync,
-	writeFileSync,
-} from "node:fs";
-import { tmpdir } from "node:os";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
 import { deprecated } from "../src/factories.js";
@@ -45,6 +38,7 @@ import {
 	t,
 } from "../src/index.js";
 import { schemaJson } from "../src/schema.js";
+import { tempDir } from "./helpers.js";
 
 const EXPECTED_JSON = `{
   "schema_version": 2,
@@ -1392,9 +1386,9 @@ function buildMinimalApp(): App {
 /** Runs fn with cwd switched to a fresh temp dir; restores cwd afterwards. */
 async function withTempCwd<T>(fn: (dir: string) => Promise<T>): Promise<T> {
 	const oldCwd = process.cwd();
-	process.chdir(mkdtempSync(join(tmpdir(), "strictcli-schema-")));
+	process.chdir(tempDir("strictcli-schema-"));
 	try {
-		// process.cwd() (not the mkdtemp result) so symlinked tmpdirs compare
+		// process.cwd() (not the tempDir result) so symlinked tmpdirs compare
 		// equal to paths produced by resolve().
 		return await fn(process.cwd());
 	} finally {
@@ -1545,7 +1539,7 @@ test("the default --dump-schema location is anchored at construction", async () 
 	await withTempCwd(async (dir) => {
 		writeFileSync("package.json", '{"name": "myapp"}\n');
 		const app = buildMinimalApp();
-		const elsewhere = mkdtempSync(join(tmpdir(), "strictcli-elsewhere-"));
+		const elsewhere = tempDir("strictcli-elsewhere-");
 		// project_id is read from the cwd at dump time -- a separate cwd
 		// dependency this test is not about, so both directories carry one.
 		writeFileSync(join(elsewhere, "package.json"), '{"name": "myapp"}\n');

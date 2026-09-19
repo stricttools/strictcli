@@ -8,9 +8,6 @@
  */
 
 import { strict as assert } from "node:assert";
-import { mkdtempSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 import { test } from "node:test";
 import type { App } from "../src/app.js";
 import {
@@ -28,6 +25,7 @@ import {
 	t,
 } from "../src/index.js";
 import { schemaJson } from "../src/schema.js";
+import { tempDir } from "./helpers.js";
 
 const ok = () => undefined;
 
@@ -1555,7 +1553,7 @@ test("a nullable bool renders all three spellings", async () => {
 
 function dumpText(app: App): string {
 	const old = process.cwd();
-	process.chdir(mkdtempSync(join(tmpdir(), "strictcli-update-")));
+	process.chdir(tempDir("strictcli-update-"));
 	try {
 		return schemaJson(app.dumpSchemaDict());
 	} finally {

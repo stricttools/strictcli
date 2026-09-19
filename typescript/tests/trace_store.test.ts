@@ -21,14 +21,12 @@ import {
 	chmodSync,
 	existsSync,
 	mkdirSync,
-	mkdtempSync,
 	readdirSync,
 	readFileSync,
 	rmSync,
 	statSync,
 	writeFileSync,
 } from "node:fs";
-import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
@@ -55,6 +53,7 @@ import {
 	ulidTimestamp,
 	ulidValid,
 } from "../src/trace.js";
+import { tempDir } from "./helpers.js";
 
 const ENTRY_KEYS = [
 	"id",
@@ -86,7 +85,7 @@ interface HomeState {
 }
 
 function enterHome(): HomeState {
-	const home = mkdtempSync(join(tmpdir(), "sc-trace-"));
+	const home = tempDir("sc-trace-");
 	const state: HomeState = {
 		home,
 		priorHome: process.env.HOME,

@@ -1,18 +1,15 @@
 import { strict as assert } from "node:assert";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { after, test } from "node:test";
+import { test } from "node:test";
 import {
 	AT_PREFIX_MAX_SIZE,
 	newStdinTracker,
 	resolveAtPrefix,
 } from "../src/atprefix.js";
+import { tempDir } from "./helpers.js";
 
-const dir = mkdtempSync(join(tmpdir(), "strictcli-atprefix-"));
-after(() => {
-	rmSync(dir, { recursive: true, force: true });
-});
+const dir = tempDir("strictcli-atprefix-");
 
 function write(name: string, content: string | Buffer): string {
 	const p = join(dir, name);

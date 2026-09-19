@@ -11,12 +11,10 @@ import { strict as assert } from "node:assert";
 import {
 	existsSync,
 	mkdirSync,
-	mkdtempSync,
 	readFileSync,
 	statSync,
 	writeFileSync,
 } from "node:fs";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 import type { AppImpl } from "../src/app.js";
@@ -29,11 +27,12 @@ import {
 	type MutatingContext,
 	type ReadOnlyContext,
 } from "../src/index.js";
+import { tempDir } from "./helpers.js";
 
 const HEADER = "DRY RUN — no changes were made. Would do:\n";
 
 function tmp(): string {
-	return mkdtempSync(join(tmpdir(), "sc-effects-"));
+	return tempDir("sc-effects-");
 }
 
 /**

@@ -13,23 +13,21 @@ import { strict as assert } from "node:assert";
 import {
 	existsSync,
 	mkdirSync,
-	mkdtempSync,
 	readdirSync,
 	readFileSync,
 	writeFileSync,
 } from "node:fs";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 import type { CheckContext } from "../src/index.js";
 import { type App, defineReadOnlyCommand } from "../src/index.js";
-import { createTestApp as createApp } from "./helpers.js";
+import { createTestApp as createApp, tempDir } from "./helpers.js";
 
 const CTX: CheckContext = { projectRoot: "." };
 
 async function inTempDir<T>(fn: (dir: string) => Promise<T>): Promise<T> {
 	const oldCwd = process.cwd();
-	const dir = mkdtempSync(join(tmpdir(), "strictcli-coverage-"));
+	const dir = tempDir("strictcli-coverage-");
 	process.chdir(dir);
 	try {
 		return await fn(dir);
@@ -201,7 +199,7 @@ test("partial manifest fails honestly and rewrites the monotonic union", async (
 test("coverage paths are anchored to the declared directory", async () => {
 	await inTempDir(async (dir) => {
 		const app = coverageApp();
-		const foreign = mkdtempSync(join(tmpdir(), "strictcli-foreign-"));
+		const foreign = tempDir("strictcli-foreign-");
 		process.chdir(foreign);
 		try {
 			// Recording from a foreign cwd still shards into the app's own tree.

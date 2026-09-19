@@ -1,16 +1,13 @@
 import { strict as assert } from "node:assert";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { after, test } from "node:test";
+import { test } from "node:test";
 import { newStdinTracker } from "../src/atprefix.js";
 import { resolveEnvValue } from "../src/env.js";
 import { flag, t } from "../src/index.js";
+import { tempDir } from "./helpers.js";
 
-const dir = mkdtempSync(join(tmpdir(), "strictcli-env-"));
-after(() => {
-	rmSync(dir, { recursive: true, force: true });
-});
+const dir = tempDir("strictcli-env-");
 
 function parseError(message: string): { name: string; message: string } {
 	return { name: "ParseError", message };
