@@ -1,8 +1,8 @@
 {
-  "__rlsbl_version__": "0.118.0",
+  "__rlsbl_version__": "0.124.1",
   "strictcli": "bfa60b4f497b67e71b31336e0373a3730aca9b16e6b35d1f7a3e003ee406c01a",
-  "go-strictcli": "8e9155ca949b8c1d79d9900092604461425cec54bba25632ed93ae69ba00b44c",
+  "go-strictcli": "37d3ecb611ee014f5c7269d0b55835b84922ebd76578887b4bd7063dd1846024",
   "ts-strictcli": "e5e163e6e1b261effbd02cf8d26fdb2d3239094d3694410063d61499323bf7c3",
   "conformance": null,
-  "root": "44b82cd14eb7583c17749bdf95a49fae518266cf2d441c4368e26dd581c7bd2c"
+  "root": "17929fa196697fb06eeeb82c78ba12e70b6ba199901919275c8ce772d8602296"
 }
