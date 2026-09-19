@@ -15,6 +15,8 @@ __all__ = [
     # The scoped-selector construct (contract §24)
     "Choice", "choice", "choice_flag", "sub_flag", "sub_choice_flag",
     "member_value", "provided",
+    # Retired choices: the value-level twin of the deprecated-command construct
+    "RetiredChoice",
     "Grant", "EffectFailed", "Unsettled", "Completed", "Spawned", "Response",
     "PROC_MUTATE", "PROC_SPAWN", "FILE_WRITE", "NET_MUTATE",
     "flag", "arg",
@@ -4604,6 +4606,7 @@ _SCOPE_FIELD_KEY = "strictcli_scope"
 _RECORD_SOURCES_ATTR = "__strictcli_sources__"
 
 _RECORD_SPELLING = "Choice(<value>, help=...)"
+_RETIRED_RECORD_SPELLING = 'RetiredChoice(<value>, message="<message>")'
 _SELECTOR_SPELLING = "choice_flag(...)"
 _MEMBER_SELECTOR_SPELLING = 'choice_flag(..., elect_by="member-flags")'
 # The payload-carrying member's own declaration, which is where its short goes:
@@ -4634,6 +4637,204 @@ class Choice:
     def __post_init__(self) -> None:
         if self.help is not None:
             _require_non_empty_str(self.help, "help", "Choice")
+
+
+@dataclass(frozen=True)
+class RetiredChoice:
+    """One retired spelling of a value flag or positional arg.
+
+    The value-level twin of ``app.deprecate``: a value the declaration used to
+    accept, plus the message that names its replacement. A retired spelling is
+    refused at parse time ahead of the invalid-value check, and it is NOT a
+    choice -- help never lists it, and the published ``value_schema`` enum and
+    the MCP projection derived from it carry the live set only.
+
+    The message is mandatory and non-empty, like every other message the
+    framework prints on a declaration's behalf. There is no exhaustiveness
+    story to tell: a handler never receives a retired value, so no closed set
+    reaches a delivery site.
+    """
+
+    value: object
+    message: str = field(kw_only=True)
+
+
+def _raise_retired_choices_entry_not_record(surface: str, name: str, index: int):
+    """Message template: a bare ``retired_choices=`` entry.
+
+    Python-only. Go's variadic ``RetiredChoices(...RetiredChoiceValue)`` and
+    TypeScript's record type refuse a bare value at compile time, so neither
+    sibling has an input that could produce this line. It mirrors the
+    bare-choice refusal, which is the same mis-declaration one keyword over.
+    """
+    raise ValueError(
+        f'{surface} "{name}": retired_choices entry {index} is a bare value: '
+        f"declare it as {_RETIRED_RECORD_SPELLING}"
+    )
+
+
+def _resolve_retired_choices(
+    surface: str, name: str, entries: object,
+) -> tuple["RetiredChoice", ...]:
+    """Validate a ``retired_choices=`` list's entry SHAPE.
+
+    The per-entry RULES (a live spelling, a duplicate, an empty message) are
+    checked by ``_validate_retired_choices`` once the live choices are known.
+    """
+    if not isinstance(entries, list):
+        _raise_retired_choices_entry_not_record(surface, name, 0)
+    records: list[RetiredChoice] = []
+    for i, entry in enumerate(entries):
+        if not isinstance(entry, RetiredChoice):
+            _raise_retired_choices_entry_not_record(surface, name, i)
+        records.append(entry)
+    return tuple(records)
+
+
+# The registration-time templates, twinned per surface the way Go's err* and
+# TypeScript's err* functions are. Python could parameterize the Flag/Arg
+# prefix into one template, and does elsewhere; here it inlines both so the
+# three implementations share one signature per rule and the parity manifest
+# carries no entry for the family at all.
+
+
+def _raise_flag_retired_choice_is_live(name: str, value: str):
+    raise ValueError(
+        f'Flag "{name}": retired choice \'{value}\' is also a live choice: '
+        f"a value is live or retired, never both"
+    )
+
+
+def _raise_arg_retired_choice_is_live(name: str, value: str):
+    raise ValueError(
+        f'Arg "{name}": retired choice \'{value}\' is also a live choice: '
+        f"a value is live or retired, never both"
+    )
+
+
+def _raise_flag_retired_choice_duplicate(name: str, value: str):
+    raise ValueError(f'Flag "{name}": retired choice \'{value}\' is declared twice')
+
+
+def _raise_arg_retired_choice_duplicate(name: str, value: str):
+    raise ValueError(f'Arg "{name}": retired choice \'{value}\' is declared twice')
+
+
+def _raise_flag_retired_choice_message_empty(name: str, value: str):
+    raise ValueError(
+        f'Flag "{name}": retired choice \'{value}\': message must be a non-empty string'
+    )
+
+
+def _raise_arg_retired_choice_message_empty(name: str, value: str):
+    raise ValueError(
+        f'Arg "{name}": retired choice \'{value}\': message must be a non-empty string'
+    )
+
+
+def _raise_flag_retired_choices_incompatible_bool(name: str):
+    raise ValueError(f'Flag "{name}": retired choices are incompatible with type=bool')
+
+
+def _raise_arg_retired_choices_incompatible_bool(name: str):
+    raise ValueError(f'Arg "{name}": retired choices are incompatible with type=bool')
+
+
+def _raise_flag_default_is_retired_choice(name: str, value: str):
+    raise ValueError(f'Flag "{name}": default \'{value}\' is a retired choice')
+
+
+def _raise_arg_default_is_retired_choice(name: str, value: str):
+    raise ValueError(f'Arg "{name}": default \'{value}\' is a retired choice')
+
+
+def _raise_flag_retired_choices_require_choices(name: str):
+    raise ValueError(f'Flag "{name}": retired choices require choices')
+
+
+def _raise_arg_retired_choices_require_choices(name: str):
+    raise ValueError(f'Arg "{name}": retired choices require choices')
+
+
+_RETIRED_CHOICE_TEMPLATES = {
+    "Flag": (
+        _raise_flag_retired_choice_is_live,
+        _raise_flag_retired_choice_duplicate,
+        _raise_flag_retired_choice_message_empty,
+        _raise_flag_retired_choices_incompatible_bool,
+        _raise_flag_default_is_retired_choice,
+        _raise_flag_retired_choices_require_choices,
+    ),
+    "Arg": (
+        _raise_arg_retired_choice_is_live,
+        _raise_arg_retired_choice_duplicate,
+        _raise_arg_retired_choice_message_empty,
+        _raise_arg_retired_choices_incompatible_bool,
+        _raise_arg_default_is_retired_choice,
+        _raise_arg_retired_choices_require_choices,
+    ),
+}
+
+
+def _validate_retired_choices(
+    surface: str,
+    name: str,
+    retired: tuple["RetiredChoice", ...] | None,
+    choices: list | None,
+    item_type: type,
+    has_default: bool,
+    default: object,
+) -> None:
+    """The registration-time guards, one set over both surfaces.
+
+    Every sentence names the CONCEPT ("retired choice") rather than this
+    language's spelling of the declaration, so all three implementations share
+    one signature per rule.
+    """
+    if retired is None:
+        return
+    (
+        is_live, duplicate, message_empty,
+        incompatible_bool, default_is_retired, require_choices,
+    ) = _RETIRED_CHOICE_TEMPLATES[surface]
+    # The bool refusal comes first so the declaration is named by what it got
+    # wrong: choices are already incompatible with bool, and reporting the
+    # missing choices instead would send a reader to add a declaration the
+    # framework would then refuse for the same reason.
+    if item_type is bool:
+        incompatible_bool(name)
+    if choices is None:
+        require_choices(name)
+    seen: list = []
+    for rc in retired:
+        formatted = _format_value_for_error(rc.value)
+        if not isinstance(rc.message, str) or not rc.message.strip():
+            message_empty(name, formatted)
+        if rc.value in choices:
+            is_live(name, formatted)
+        if rc.value in seen:
+            duplicate(name, formatted)
+        seen.append(rc.value)
+    if has_default and default is not None:
+        for rc in retired:
+            if rc.value == default:
+                default_is_retired(name, _format_value_for_error(default))
+
+
+def _retired_choice_message(
+    value: object, retired: tuple["RetiredChoice", ...] | None,
+) -> tuple[str, bool]:
+    """The message declared for a retired spelling, and whether it is retired.
+
+    Retired lists are short and ordered, so the scan mirrors the choices one
+    rather than building a map.
+    """
+    if retired is None:
+        return "", False
+    for rc in retired:
+        if value == rc.value and type(value) is type(rc.value):
+            return rc.message, True
+    return "", False
 
 
 def _raise_choices_entry_not_record(surface: str, name: str, index: int):
@@ -4761,6 +4962,10 @@ class Flag:
     # value list so per-entry help survives to help rendering. Set by
     # __post_init__ from `choices`, never by the caller.
     choice_records: tuple["Choice", ...] | None = None
+    # The spellings this flag USED to accept, each carrying the message that
+    # names its replacement. A retired value is refused at parse time; it is
+    # not a choice, so help and the published value_schema never name it.
+    retired_choices: list | None = None
 
     def __post_init__(self) -> None:
         _require_non_empty_str(self.help, "help", "Flag")
@@ -4943,6 +5148,20 @@ class Flag:
                     f'Flag "{self.name}": type=float requires a float default, '
                     f"got {type(self.default).__name__!r}"
                 )
+        # Retired choices. The entry SHAPE is resolved first, then the rules --
+        # after the live choices are validated, so a declaration that got its
+        # choices wrong is told that first, and BEFORE the default-in-choices
+        # check, so a default naming a retired spelling is answered by the
+        # sentence that names the reason.
+        if self.retired_choices is not None:
+            self.retired_choices = _resolve_retired_choices(
+                "Flag", self.name, self.retired_choices,
+            )
+        _validate_retired_choices(
+            "Flag", self.name, self.retired_choices, self.choices,
+            self.item_type if self.compound == "list" else self.type,
+            self.presence == _PRESENCE_DEFAULT, self.default,
+        )
         # Validate default is in choices. The check applies to declared VALUES
         # only: a required or optional flag has no value to check, and absence
         # is never matched against choices (§23.5).
@@ -4979,6 +5198,8 @@ class Arg:
     item_type: type | None = None
     # The declared `choices=` records (contract §24.2), same as a flag's.
     choice_records: tuple["Choice", ...] | None = None
+    # The arg twin of Flag.retired_choices.
+    retired_choices: list | None = None
 
     def __post_init__(self) -> None:
         _require_non_empty_str(self.help, "help", "Arg")
@@ -5075,6 +5296,17 @@ class Arg:
                         f'Arg "{self.name}": type=str requires a str default, '
                         f"got {type(self.default).__name__!r}"
                     )
+        # Retired choices, ahead of the default-in-choices check for the reason
+        # stated at the flag surface.
+        if self.retired_choices is not None:
+            self.retired_choices = _resolve_retired_choices(
+                "Arg", self.name, self.retired_choices,
+            )
+        _validate_retired_choices(
+            "Arg", self.name, self.retired_choices, self.choices,
+            self.item_type if self.compound == "list" else self.type,
+            self.presence == _PRESENCE_DEFAULT, self.default,
+        )
         # Validate default is in choices -- declared VALUES only (§23.5)
         if self.choices is not None and self.presence == _PRESENCE_DEFAULT:
             if self.default not in self.choices:
@@ -11419,7 +11651,10 @@ class App:
         # Validate choices for global flags
         for f in self._global_flags:
             if f.name in cli_set:
-                _validate_choices(f.name, cli_set[f.name], f.repeatable, f.choices)
+                _validate_choices(
+                    f.name, cli_set[f.name], f.repeatable, f.choices,
+                    f.retired_choices,
+                )
 
         return cli_set, global_sources, remaining
 
@@ -12734,6 +12969,7 @@ def _validate_choices(
     val: object,
     repeatable: bool,
     choices: list | None,
+    retired: tuple["RetiredChoice", ...] | None = None,
     *,
     is_arg: bool = False,
 ) -> None:
@@ -12745,12 +12981,26 @@ def _validate_choices(
     A None value is exempt from validation: None only arises when the flag or
     arg was not passed (an unset mutex flag, or default=None on an arg) -- a
     CLI-supplied value is never None.
+
+    A RETIRED spelling is checked first, so a reader who typed a value that
+    used to work is told what replaced it instead of being handed the list it
+    is missing from. Every source that reaches this funnel today -- command
+    line, env var, config file, and the programmatic doors -- takes the retired
+    refusal for free; nothing new is resolved here.
     """
-    if choices is None or val is None:
+    if (choices is None and retired is None) or val is None:
         return
     vals = val if repeatable else [val]
     for v in vals:
-        if v not in choices:
+        message, is_retired = _retired_choice_message(v, retired)
+        if is_retired:
+            v_str = _format_value_for_error(v)
+            if is_arg:
+                raise _ParseError(
+                    f"argument '{name}': value '{v_str}' retired: {message}"
+                )
+            raise _ParseError(f"--{name}: value '{v_str}' retired: {message}")
+        if choices is not None and v not in choices:
             choices_str = ", ".join(
                 _format_float_canonical(c) if isinstance(c, float) else str(c)
                 for c in choices
@@ -12913,7 +13163,10 @@ def _validate_and_build_kwargs(
     # Step 5.5: validate choices
     for f in cmd.flags:
         if store.has(f.name):
-            _validate_choices(f.name, store[f.name], f.repeatable, f.choices)
+            _validate_choices(
+                f.name, store[f.name], f.repeatable, f.choices,
+                f.retired_choices,
+            )
 
     # Step 5.6: custom validation. It runs on a SUPPLIED value only: never on
     # absence, and never on a declared default (§23.5's validate row).
@@ -12996,7 +13249,8 @@ def _validate_and_build_kwargs(
     for a in cmd.args:
         if a.name in arg_values:
             _validate_choices(
-                a.name, arg_values[a.name], a.variadic, a.choices, is_arg=True,
+                a.name, arg_values[a.name], a.variadic, a.choices,
+                a.retired_choices, is_arg=True,
             )
 
     # Step 7: build kwargs dict (command flags only)
@@ -13773,7 +14027,7 @@ def _check_scoped_value(
     set and its callback both apply, exactly as they do on the root surface
     (steps 5.5 and 5.6). Only a declared default escapes ``validate``.
     """
-    _validate_choices(f.name, value, f.repeatable, f.choices)
+    _validate_choices(f.name, value, f.repeatable, f.choices, f.retired_choices)
     if f.validate is not None and value is not None:
         for v in (value if f.repeatable else [value]):
             try:
@@ -15606,6 +15860,7 @@ def flag(
     prefixed: bool = True,
     negatable: object = _MISSING,
     choices: list | None = None,
+    retired_choices: list | None = None,
     validate: Callable | None = None,
     repeatable: bool = False,
     unique: object = _MISSING,
@@ -15629,6 +15884,7 @@ def flag(
             prefixed=prefixed,
             negatable=negatable,
             choices=choices,
+            retired_choices=retired_choices,
             validate=validate,
             repeatable=repeatable,
             unique=unique,
@@ -15654,6 +15910,7 @@ def arg(
     variadic: bool = False,
     type: type = str,
     choices: list | None = None,
+    retired_choices: list | None = None,
 ) -> Callable[[F], F]:
     """Module-level decorator to attach an Arg to a command handler."""
 
@@ -15661,6 +15918,7 @@ def arg(
         a = Arg(
             name=name, help=help, presence=presence, default=default,
             variadic=variadic, type=type, choices=choices,
+            retired_choices=retired_choices,
         )
         if not hasattr(func, "_strictcli_args"):
             func._strictcli_args = []
@@ -16859,6 +17117,8 @@ def _serialize_flag(f: Flag) -> dict:
         d["prefixed"] = False
     if f.choice_records is not None:
         d["choices"] = _serialize_choice_records(f.choice_records)
+    if f.retired_choices:
+        d["retired_choices"] = _serialize_retired_choices(f.retired_choices)
     if f.unique is True:
         d["unique"] = True
     # Per-flag conflict mode: serialized only when explicitly set. Absence
@@ -16878,6 +17138,20 @@ def _serialize_flag(f: Flag) -> dict:
     if f.nullable:
         d["nullable"] = True
     return d
+
+
+def _serialize_retired_choices(retired: tuple["RetiredChoice", ...]) -> dict:
+    """A declaration's retired spellings, as a map from spelling to message.
+
+    SORTED ascending by key -- the treatment a group's `deprecated` map already
+    gets, and for the same reason: a keyed object whose declaration order no
+    implementation is required to retain has sort order as its only reachable
+    canon. The key is the spelling rendered through the error-value formatter,
+    so an int, a float and a string key identically in all three
+    implementations. The map is omitted entirely when nothing is retired.
+    """
+    messages = {_format_value_for_error(rc.value): rc.message for rc in retired}
+    return {key: messages[key] for key in sorted(messages)}
 
 
 def _serialize_choice_object(c: "_ChoiceSpec") -> dict:
@@ -16982,6 +17256,8 @@ def _serialize_arg(a: Arg) -> dict:
         d["variadic"] = a.variadic
     if a.choice_records is not None:
         d["choices"] = _serialize_choice_records(a.choice_records)
+    if a.retired_choices:
+        d["retired_choices"] = _serialize_retired_choices(a.retired_choices)
     return d
 
 
