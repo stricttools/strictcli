@@ -864,6 +864,99 @@
     "skip_schema_validation": true
   },
   {
+    "name": "retired choices: a retired spelling of the wrong type does not register",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "format={format}",
+          "flags": [
+            {
+              "name": "format",
+              "type": "str",
+              "help": "output format",
+              "presence": "required",
+              "choices_str": [
+                {
+                  "value": "text"
+                },
+                {
+                  "value": "json"
+                }
+              ],
+              "retired_choices_int": [
+                {
+                  "value": 8080,
+                  "message": "use 'json'"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "error: Flag \"format\": retired choice '8080' is not of type str"
+    },
+    "skip_schema_validation": true
+  },
+  {
+    "name": "retired choices: an arg's retired spelling of the wrong type does not register",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "mode={mode}",
+          "args": [
+            {
+              "name": "mode",
+              "type": "str",
+              "help": "the mode",
+              "presence": "required",
+              "choices_str": [
+                {
+                  "value": "fast"
+                },
+                {
+                  "value": "slow"
+                }
+              ],
+              "retired_choices_int": [
+                {
+                  "value": 8080,
+                  "message": "use 'fast'"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd",
+      "fast"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "error: Arg \"mode\": retired choice '8080' is not of type str"
+    },
+    "skip_schema_validation": true
+  },
+  {
     "name": "retired choices: a bare retired entry does not register (python)",
     "app": {
       "name": "myapp",
