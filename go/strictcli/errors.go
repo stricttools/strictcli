@@ -1037,9 +1037,7 @@ func errDuplicateCheckDef(name string) error {
 // ---------------------------------------------------------------------------
 
 func errEffectsBypassNotAWorkTree(root string) string {
-	return fmt.Sprintf(
-		"effects-bypass: project root '%s' is not a git work tree; "+
-			"the check reads only repository-owned files", root)
+	return fmt.Sprintf("effects-bypass: project root '%s' is not a git work tree; the check reads only repository-owned files", root)
 }
 
 // ---------------------------------------------------------------------------
