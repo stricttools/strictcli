@@ -26,6 +26,7 @@ import {
 	errArgChoicesEntryNotRecord,
 	errArgChoicesIncompatibleBool,
 	errArgChoiceTypeMismatch,
+	errArgDefaultIsRetiredChoice,
 	errArgDefaultNullNotOptional,
 	errArgDefaultValueMissing,
 	errArgDictTypeNotSupportedOnArgs,
@@ -36,6 +37,11 @@ import {
 	errArgNameConsentReserved,
 	errArgPresenceDeclaredTwice,
 	errArgPresenceUndeclared,
+	errArgRetiredChoiceDuplicate,
+	errArgRetiredChoiceIsLive,
+	errArgRetiredChoiceMessageEmpty,
+	errArgRetiredChoicesIncompatibleBool,
+	errArgRetiredChoicesRequireChoices,
 	errArgStrDefaultTypeMismatch,
 	errArgVariadicDefault,
 	errChoiceDuplicateName,
@@ -82,6 +88,7 @@ import {
 	errFlagChoiceTypeMismatch,
 	errFlagConflictModeBad,
 	errFlagDefaultElementTypeMismatch,
+	errFlagDefaultIsRetiredChoice,
 	errFlagDefaultNullNotOptional,
 	errFlagDefaultValueMissing,
 	errFlagDictCannotCombineChoices,
@@ -106,6 +113,11 @@ import {
 	errFlagPresenceUndeclared,
 	errFlagRepeatableEnvRequiresSeparator,
 	errFlagRepeatableIncompatibleBool,
+	errFlagRetiredChoiceDuplicate,
+	errFlagRetiredChoiceIsLive,
+	errFlagRetiredChoiceMessageEmpty,
+	errFlagRetiredChoicesIncompatibleBool,
+	errFlagRetiredChoicesRequireChoices,
 	errFlagUniqueRequiresRepeatable,
 	errForwardingReasonEmpty,
 	errGrantDuplicate,
@@ -266,6 +278,106 @@ export interface ChoiceRecordView {
 	readonly help?: string;
 }
 
+/**
+ * One retired spelling of a value flag or positional arg: a value the
+ * declaration used to accept, plus the message that names its replacement.
+ * The value-level twin of `app.deprecate`.
+ *
+ * A retired value is refused at parse time ahead of the invalid-value check,
+ * and it is NOT a choice -- help never lists it, and the published
+ * `value_schema` enum and the MCP projection derived from it carry the live
+ * set only. The message is mandatory and non-empty, like every other message
+ * the framework prints on a declaration's behalf. There is no exhaustiveness
+ * story to tell: a handler never receives a retired value, so no closed set
+ * reaches a delivery site.
+ */
+export interface RetiredChoiceRecord<V> {
+	readonly value: V;
+	readonly message: string;
+}
+
+/** Runtime view of one `retiredChoices` entry (see FlagOptsView). */
+export interface RetiredChoiceRecordView {
+	readonly value: unknown;
+	readonly message: string;
+}
+
+/**
+ * The registration-time guards, one set over both surfaces. The templates are
+ * twinned per surface, so each caller passes its own; the rules are one set.
+ */
+function validateRetiredChoices(
+	name: string,
+	retired: readonly RetiredChoiceRecordView[] | undefined,
+	choices: readonly ChoiceRecordView[] | undefined,
+	elem: string,
+	dflt: unknown,
+	tpl: {
+		isLive: (name: string, value: string) => string;
+		duplicate: (name: string, value: string) => string;
+		messageEmpty: (name: string, value: string) => string;
+		incompatibleBool: (name: string) => string;
+		defaultIsRetired: (name: string, value: string) => string;
+		requireChoices: (name: string) => string;
+	},
+): void {
+	if (retired === undefined) {
+		return;
+	}
+	// The bool refusal comes first so the declaration is named by what it got
+	// wrong: choices are already incompatible with bool, and reporting the
+	// missing choices instead would send a reader to add a declaration the
+	// framework would then refuse for the same reason.
+	if (elem === "bool") {
+		throw new RegistrationError(tpl.incompatibleBool(name));
+	}
+	if (choices === undefined) {
+		throw new RegistrationError(tpl.requireChoices(name));
+	}
+	const live = choiceValues(choices);
+	const seen: unknown[] = [];
+	for (const rc of retired) {
+		const formatted = formatValueForError(rc.value);
+		if (typeof rc.message !== "string" || rc.message.trim() === "") {
+			throw new RegistrationError(tpl.messageEmpty(name, formatted));
+		}
+		if (live.includes(rc.value)) {
+			throw new RegistrationError(tpl.isLive(name, formatted));
+		}
+		if (seen.includes(rc.value)) {
+			throw new RegistrationError(tpl.duplicate(name, formatted));
+		}
+		seen.push(rc.value);
+	}
+	if (dflt !== undefined) {
+		for (const rc of retired) {
+			if (rc.value === dflt) {
+				throw new RegistrationError(
+					tpl.defaultIsRetired(name, formatValueForError(dflt)),
+				);
+			}
+		}
+	}
+}
+
+const FLAG_RETIRED_TEMPLATES = {
+	isLive: errFlagRetiredChoiceIsLive,
+	duplicate: errFlagRetiredChoiceDuplicate,
+	messageEmpty: errFlagRetiredChoiceMessageEmpty,
+	incompatibleBool: errFlagRetiredChoicesIncompatibleBool,
+	defaultIsRetired: errFlagDefaultIsRetiredChoice,
+	requireChoices: errFlagRetiredChoicesRequireChoices,
+};
+
+const ARG_RETIRED_TEMPLATES = {
+	isLive: errArgRetiredChoiceIsLive,
+	duplicate: errArgRetiredChoiceDuplicate,
+	messageEmpty: errArgRetiredChoiceMessageEmpty,
+	incompatibleBool: errArgRetiredChoicesIncompatibleBool,
+	defaultIsRetired: errArgDefaultIsRetiredChoice,
+	requireChoices: errArgRetiredChoicesRequireChoices,
+};
+
 /** The declared values of a `choices` list, in declaration order. */
 export function choiceValues(
 	choices: readonly ChoiceRecordView[],
@@ -354,6 +466,16 @@ interface FlagCommonOpts<Out, S extends Schema> {
 		: readonly [
 				ChoiceRecord<ElementOf<Out>>,
 				...ChoiceRecord<ElementOf<Out>>[],
+			];
+	/**
+	 * The spellings this flag used to accept. A readonly non-empty tuple, the
+	 * shape `choices` already has, and legal exactly where `choices` is.
+	 */
+	readonly retiredChoices?: S extends "bool" | DictSchema
+		? never
+		: readonly [
+				RetiredChoiceRecord<ElementOf<Out>>,
+				...RetiredChoiceRecord<ElementOf<Out>>[],
 			];
 	readonly envSeparator?: S extends ListSchema ? string : never;
 	readonly repeatable?: S extends ListSchema ? true : never;
@@ -468,6 +590,7 @@ export interface FlagOptsView {
 	readonly default?: unknown;
 	readonly negatable?: boolean;
 	readonly choices?: readonly ChoiceRecordView[];
+	readonly retiredChoices?: readonly RetiredChoiceRecordView[];
 	readonly envSeparator?: string;
 	readonly repeatable?: boolean;
 	readonly unique?: boolean;
@@ -889,6 +1012,19 @@ function validateFlagConfig(
 			);
 		}
 	}
+	// Retired choices. The guards run after the live choices are validated -- a
+	// declaration that got its choices wrong is told that first -- and BEFORE
+	// the default-in-choices check, so a default naming a retired spelling is
+	// answered by the sentence that names the reason rather than by the list
+	// the value is missing from.
+	validateRetiredChoices(
+		name,
+		o.retiredChoices,
+		o.choices,
+		elem,
+		dflt,
+		FLAG_RETIRED_TEMPLATES,
+	);
 	// The default-in-choices check applies to declared VALUES only, never to
 	// absence: an optional flag declares no value, so there is nothing to match
 	// against choices (§23.5's whole-table note).
@@ -940,6 +1076,13 @@ type ArgChoices<Out, S extends ArgSchema> = S extends "bool"
 	? never
 	: readonly [ChoiceRecord<ElementOf<Out>>, ...ChoiceRecord<ElementOf<Out>>[]];
 
+type ArgRetiredChoices<Out, S extends ArgSchema> = S extends "bool"
+	? never
+	: readonly [
+			RetiredChoiceRecord<ElementOf<Out>>,
+			...RetiredChoiceRecord<ElementOf<Out>>[],
+		];
+
 /**
  * Args take scalar carriers only; a variadic arg collects Out[] (the list-arg
  * shape from the siblings is expressed as scalar carrier + `variadic: true`).
@@ -958,6 +1101,7 @@ export type ArgOpts<Out, S extends ArgSchema> =
 			readonly default?: never;
 			readonly variadic?: boolean;
 			readonly choices?: ArgChoices<Out, S>;
+			readonly retiredChoices?: ArgRetiredChoices<Out, S>;
 	  }
 	| {
 			readonly help: string;
@@ -966,6 +1110,7 @@ export type ArgOpts<Out, S extends ArgSchema> =
 			readonly default?: never;
 			readonly variadic?: boolean;
 			readonly choices?: ArgChoices<Out, S>;
+			readonly retiredChoices?: ArgRetiredChoices<Out, S>;
 	  }
 	| {
 			readonly help: string;
@@ -973,6 +1118,7 @@ export type ArgOpts<Out, S extends ArgSchema> =
 			readonly default: Out;
 			readonly variadic?: false;
 			readonly choices?: ArgChoices<Out, S>;
+			readonly retiredChoices?: ArgRetiredChoices<Out, S>;
 	  };
 
 /** A fully typed positional argument descriptor produced by the arg() factory. */
@@ -1018,6 +1164,7 @@ export interface ArgOptsView {
 	readonly variadic?: boolean;
 	readonly default?: unknown;
 	readonly choices?: readonly ChoiceRecordView[];
+	readonly retiredChoices?: readonly RetiredChoiceRecordView[];
 }
 
 /**
@@ -1096,6 +1243,16 @@ export function arg<
 				throw new RegistrationError(errArgBoolDefaultTypeMismatch(name, got));
 		}
 	}
+	// Retired choices, ahead of the default-in-choices check for the reason
+	// stated at the flag surface.
+	validateRetiredChoices(
+		name,
+		o.retiredChoices,
+		o.choices,
+		elem,
+		dflt,
+		ARG_RETIRED_TEMPLATES,
+	);
 	if (
 		o.choices !== undefined &&
 		dflt !== undefined &&

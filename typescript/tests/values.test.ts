@@ -244,31 +244,54 @@ test("formatDictForDisplay sorts keys and uses key=value pairs", () => {
 test("validateChoices produces sibling-exact flag and arg messages", () => {
 	// conformance choices.json: invalid str choice
 	assert.throws(
-		() => validateChoices("format", "xml", false, ["text", "json"], false),
+		() =>
+			validateChoices(
+				"format",
+				"xml",
+				false,
+				["text", "json"],
+				undefined,
+				false,
+			),
 		parseError("--format: invalid value 'xml', must be one of: text, json"),
 	);
 	assert.throws(
-		() => validateChoices("format", "xml", false, ["text", "json"], true),
+		() =>
+			validateChoices(
+				"format",
+				"xml",
+				false,
+				["text", "json"],
+				undefined,
+				true,
+			),
 		parseError(
 			"argument 'format': invalid value 'xml', must be one of: text, json",
 		),
 	);
 	// conformance float_format.json: attempted value echoed canonically
 	assert.throws(
-		() => validateChoices("rate", 1e21, false, [1.5, 2.5], false),
+		() => validateChoices("rate", 1e21, false, [1.5, 2.5], undefined, false),
 		parseError("--rate: invalid value '1e+21', must be one of: 1.5, 2.5"),
 	);
 	assert.throws(
-		() => validateChoices("rate", -0, false, [1.5, 2.5], false),
+		() => validateChoices("rate", -0, false, [1.5, 2.5], undefined, false),
 		parseError("--rate: invalid value '-0.0', must be one of: 1.5, 2.5"),
 	);
 	// Valid values, missing values, and repeatable element-wise checks pass.
-	validateChoices("format", "json", false, ["text", "json"], false);
-	validateChoices("format", undefined, false, ["text", "json"], false);
-	validateChoices("format", null, false, ["text", "json"], false);
-	validateChoices("n", [1n, 2n], true, [1n, 2n, 3n], false);
+	validateChoices("format", "json", false, ["text", "json"], undefined, false);
+	validateChoices(
+		"format",
+		undefined,
+		false,
+		["text", "json"],
+		undefined,
+		false,
+	);
+	validateChoices("format", null, false, ["text", "json"], undefined, false);
+	validateChoices("n", [1n, 2n], true, [1n, 2n, 3n], undefined, false);
 	assert.throws(
-		() => validateChoices("n", [1n, 4n], true, [1n, 2n, 3n], false),
+		() => validateChoices("n", [1n, 4n], true, [1n, 2n, 3n], undefined, false),
 		parseError("--n: invalid value '4', must be one of: 1, 2, 3"),
 	);
 });

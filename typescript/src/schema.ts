@@ -50,6 +50,7 @@ import {
 	CHOICE_VALUE_KEY,
 	type ChoiceRecordView,
 	flagOpts,
+	type RetiredChoiceRecordView,
 	scalarFragment,
 	schemaKind,
 	type UpdateOf,
@@ -58,6 +59,7 @@ import {
 import { formatFloatCanonical } from "./float.js";
 import { isInfraRootPath, serializeInfraMarker } from "./infra.js";
 import { serializeUpdateOf } from "./update.js";
+import { formatValueForError } from "./values.js";
 
 // --- JSON writer (2-space indent, bigint/float machine-channel tokens) ---
 
@@ -215,6 +217,9 @@ function serializeFlag(f: AnyFlag): Record<string, unknown> {
 	if (o.choices !== undefined) {
 		d.choices = serializeChoiceRecords(o.choices);
 	}
+	if (o.retiredChoices !== undefined) {
+		d.retired_choices = serializeRetiredChoices(o.retiredChoices);
+	}
 	if (o.unique === true) {
 		d.unique = true;
 	}
@@ -268,7 +273,35 @@ function serializeArg(a: AnyArg): Record<string, unknown> {
 	if (o.choices !== undefined) {
 		d.choices = serializeChoiceRecords(o.choices);
 	}
+	if (o.retiredChoices !== undefined) {
+		d.retired_choices = serializeRetiredChoices(o.retiredChoices);
+	}
 	return d;
+}
+
+/**
+ * A declaration's retired spellings, as a map from spelling to message,
+ * SORTED ascending by key -- the treatment a group's `deprecated` map already
+ * gets, and for the same reason: a keyed object whose declaration order no
+ * implementation is required to retain has sort order as its only reachable
+ * canon.
+ *
+ * The key is the spelling rendered through the error-value formatter, so an
+ * int, a float and a string key identically in all three implementations. The
+ * map is omitted entirely when nothing is retired.
+ */
+function serializeRetiredChoices(
+	retired: readonly RetiredChoiceRecordView[],
+): Record<string, string> {
+	const messages = new Map<string, string>();
+	for (const rc of retired) {
+		messages.set(formatValueForError(rc.value), rc.message);
+	}
+	const out: Record<string, string> = {};
+	for (const key of [...messages.keys()].sort()) {
+		out[key] = messages.get(key) as string;
+	}
+	return out;
 }
 
 /** Serializes one declaration: an ordinary flag, or a SELECTOR. */

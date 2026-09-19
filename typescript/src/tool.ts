@@ -1141,6 +1141,7 @@ export function flatToCallKwargs(
 					value,
 					f.schema.startsWith("list["),
 					choiceValues(o.choices),
+					o.retiredChoices,
 					false,
 				);
 			} catch (e) {

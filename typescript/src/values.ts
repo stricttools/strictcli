@@ -16,6 +16,7 @@
 import { resolveAtPrefix, type StdinTracker } from "./atprefix.js";
 import {
 	errArgInvalidChoice,
+	errArgRetiredChoice,
 	errArgumentExpectedFloat,
 	errArgumentWrapped,
 	errDictDuplicateKey,
@@ -35,10 +36,14 @@ import {
 	errExpectedInteger,
 	errFlagDuplicateValue,
 	errFlagInvalidChoice,
+	errFlagRetiredChoice,
 	errInfNotAllowed,
 	errNaNNotAllowed,
 	ParseError,
 } from "./errors.js";
+// Type-only, so the factories -> values value import stays the single runtime
+// edge between the two modules.
+import type { RetiredChoiceRecordView } from "./factories.js";
 import { formatFloatCanonical } from "./float.js";
 import type { ScalarSchema } from "./types.js";
 
@@ -264,19 +269,39 @@ export function formatChoices(choices: readonly unknown[]): string {
  * `presence: "optional"`, never from a supplied value, and absence is never
  * matched against choices (contract §23.5). Repeatable values validate
  * element-wise.
+ *
+ * A RETIRED spelling is checked first, so a reader who typed a value that used
+ * to work is told what replaced it instead of being handed the list it is
+ * missing from. Every source that reaches this funnel today -- command line,
+ * env var, config file, and the programmatic doors -- takes the retired
+ * refusal for free; nothing new is resolved here.
  */
 export function validateChoices(
 	name: string,
 	val: unknown,
 	repeatable: boolean,
 	choices: readonly unknown[] | undefined,
+	retired: readonly RetiredChoiceRecordView[] | undefined,
 	isArg: boolean,
 ): void {
-	if (choices === undefined || val === undefined || val === null) {
+	if (
+		(choices === undefined && retired === undefined) ||
+		val === undefined ||
+		val === null
+	) {
 		return;
 	}
 	const check = (v: unknown): void => {
-		if (choices.includes(v)) {
+		const rc = retired?.find((r) => r.value === v);
+		if (rc !== undefined) {
+			const formatted = formatValueForError(v);
+			throw new ParseError(
+				isArg
+					? errArgRetiredChoice(name, formatted, rc.message)
+					: errFlagRetiredChoice(name, formatted, rc.message),
+			);
+		}
+		if (choices === undefined || choices.includes(v)) {
 			return;
 		}
 		const formatted = formatValueForError(v);

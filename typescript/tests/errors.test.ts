@@ -121,7 +121,9 @@ import { ParseError, RegistrationError } from "../src/errors.js";
 // The member-short round nets +2: the two places a short can be declared where
 // no member flag exists to carry it -- on a token-spelled choice, and beside a
 // payload-carrying member whose payload already declares one (§24.4, §24.12).
-const EXPECTED_TEMPLATE_COUNT = 388;
+// Retired choices net +14: the six registration guards twinned across the flag
+// and arg surfaces, plus the two parse-time refusals.
+const EXPECTED_TEMPLATE_COUNT = 402;
 
 function templateFunctions(): [string, (...args: never[]) => unknown][] {
 	// Widen to unknown first: the module also exports the two error classes,

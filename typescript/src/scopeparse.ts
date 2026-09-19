@@ -696,6 +696,7 @@ function resolveScopedFlag(
 			value,
 			f.schema.startsWith("list["),
 			o.choices === undefined ? undefined : choiceValues(o.choices),
+			o.retiredChoices,
 			false,
 		);
 	} catch (e) {

@@ -268,6 +268,7 @@ export const SURFACE = {
 				"prefixed",
 				"presence",
 				"repeatable",
+				"retiredChoices",
 				"short",
 				"unique",
 				"validate",
@@ -300,6 +301,7 @@ export const SURFACE = {
 					"nullable",
 					"prefixed",
 					"presence",
+					"retiredChoices",
 					"short",
 					"validate",
 				],
@@ -316,6 +318,7 @@ export const SURFACE = {
 					"prefixed",
 					"presence",
 					"repeatable",
+					"retiredChoices",
 					"short",
 					"unique",
 					"validate",
@@ -338,11 +341,26 @@ export const SURFACE = {
 		{
 			name: "arg",
 			options_type: "ArgOpts",
-			option_keys: ["choices", "default", "help", "presence", "variadic"],
-			// scalar = str/int/float; bool args cannot take choices.
+			option_keys: [
+				"choices",
+				"default",
+				"help",
+				"presence",
+				"retiredChoices",
+				"variadic",
+			],
+			// scalar = str/int/float; bool args cannot take choices, and a
+			// retired choice is a value of the same set.
 			per_carrier: {
 				bool: ["default", "help", "presence", "variadic"],
-				scalar: ["choices", "default", "help", "presence", "variadic"],
+				scalar: [
+					"choices",
+					"default",
+					"help",
+					"presence",
+					"retiredChoices",
+					"variadic",
+				],
 			},
 		},
 		{

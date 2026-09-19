@@ -291,6 +291,89 @@ export function errArgDefaultNotInChoices(
 }
 
 // ---------------------------------------------------------------------------
+// strictcli.go — retired choices
+//
+// The value-level twin of the deprecated-command construct: a spelling a
+// declaration used to accept, carrying the message that names its
+// replacement. Every sentence names the CONCEPT ("retired choice") rather
+// than a declaration spelling, so all three implementations share one
+// signature and the parity checker needs no per-language exclusion.
+//
+// Values are interpolated pre-formatted through each implementation's own
+// error-value formatter, which is what keeps an int, a float and a string
+// rendering identically in all three.
+// ---------------------------------------------------------------------------
+
+export function errFlagRetiredChoiceIsLive(
+	name: string,
+	value: string,
+): string {
+	return `Flag ${q(name)}: retired choice '${value}' is also a live choice: a value is live or retired, never both`;
+}
+
+export function errArgRetiredChoiceIsLive(name: string, value: string): string {
+	return `Arg ${q(name)}: retired choice '${value}' is also a live choice: a value is live or retired, never both`;
+}
+
+export function errFlagRetiredChoiceDuplicate(
+	name: string,
+	value: string,
+): string {
+	return `Flag ${q(name)}: retired choice '${value}' is declared twice`;
+}
+
+export function errArgRetiredChoiceDuplicate(
+	name: string,
+	value: string,
+): string {
+	return `Arg ${q(name)}: retired choice '${value}' is declared twice`;
+}
+
+export function errFlagRetiredChoiceMessageEmpty(
+	name: string,
+	value: string,
+): string {
+	return `Flag ${q(name)}: retired choice '${value}': message must be a non-empty string`;
+}
+
+export function errArgRetiredChoiceMessageEmpty(
+	name: string,
+	value: string,
+): string {
+	return `Arg ${q(name)}: retired choice '${value}': message must be a non-empty string`;
+}
+
+export function errFlagRetiredChoicesIncompatibleBool(name: string): string {
+	return `Flag ${q(name)}: retired choices are incompatible with type=bool`;
+}
+
+export function errArgRetiredChoicesIncompatibleBool(name: string): string {
+	return `Arg ${q(name)}: retired choices are incompatible with type=bool`;
+}
+
+export function errFlagDefaultIsRetiredChoice(
+	name: string,
+	value: string,
+): string {
+	return `Flag ${q(name)}: default '${value}' is a retired choice`;
+}
+
+export function errArgDefaultIsRetiredChoice(
+	name: string,
+	value: string,
+): string {
+	return `Arg ${q(name)}: default '${value}' is a retired choice`;
+}
+
+export function errFlagRetiredChoicesRequireChoices(name: string): string {
+	return `Flag ${q(name)}: retired choices require choices`;
+}
+
+export function errArgRetiredChoicesRequireChoices(name: string): string {
+	return `Arg ${q(name)}: retired choices require choices`;
+}
+
+// ---------------------------------------------------------------------------
 // strictcli.go — validateFlagConfig
 // ---------------------------------------------------------------------------
 
@@ -1034,6 +1117,27 @@ export function errFlagInvalidChoice(
 	choices: string,
 ): string {
 	return `--${name}: invalid value '${value}', must be one of: ${choices}`;
+}
+
+// The retired-choice refusal, checked before the invalid-value one so a reader
+// who typed a spelling that used to work is told what replaced it rather than
+// being handed the list it is missing from. The command-level twin is
+// "command '<name>' is deprecated: <message>".
+
+export function errArgRetiredChoice(
+	name: string,
+	value: string,
+	message: string,
+): string {
+	return `argument '${name}': value '${value}' retired: ${message}`;
+}
+
+export function errFlagRetiredChoice(
+	name: string,
+	value: string,
+	message: string,
+): string {
+	return `--${name}: value '${value}' retired: ${message}`;
 }
 
 // ---------------------------------------------------------------------------

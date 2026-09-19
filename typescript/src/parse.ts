@@ -56,8 +56,8 @@ import {
 	type AnyCommand,
 	type AnyDecl,
 	type AnyFlag,
+	type ArgOptsView,
 	buildScopeIndex,
-	type ChoiceRecordView,
 	type ConflictMode,
 	choiceValues,
 	elemSchemaOf,
@@ -1336,6 +1336,7 @@ export function validateAndBuildKwargs(
 				store.get(f.name),
 				schemaKind(f.schema) === "list",
 				declared === undefined ? undefined : choiceValues(declared),
+				flagOpts(f).retiredChoices,
 				false,
 			);
 		}
@@ -1381,12 +1382,13 @@ export function validateAndBuildKwargs(
 	// Arg choices (after type coercion)
 	for (const a of args) {
 		if (argValues.has(a.name)) {
-			const opts = a.opts as { readonly choices?: readonly ChoiceRecordView[] };
+			const opts = a.opts as ArgOptsView;
 			validateChoices(
 				a.name,
 				argValues.get(a.name),
 				a.opts.variadic === true,
 				opts.choices === undefined ? undefined : choiceValues(opts.choices),
+				opts.retiredChoices,
 				true,
 			);
 		}
@@ -1602,6 +1604,7 @@ export function extractGlobalFlags(
 				cliSet.get(f.name),
 				schemaKind(f.schema) === "list",
 				declared === undefined ? undefined : choiceValues(declared),
+				flagOpts(f).retiredChoices,
 				false,
 			);
 		}
