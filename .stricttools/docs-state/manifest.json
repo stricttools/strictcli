@@ -3611,6 +3611,26 @@
         },
         {
           "level": 3,
+          "text": "`_BypassRootNotAWorkTree`",
+          "anchor": "_bypassrootnotaworktree"
+        },
+        {
+          "level": 3,
+          "text": "`_msg_effects_bypass_not_a_work_tree`",
+          "anchor": "_msg_effects_bypass_not_a_work_tree"
+        },
+        {
+          "level": 3,
+          "text": "`_bypass_path_is_skipped`",
+          "anchor": "_bypass_path_is_skipped"
+        },
+        {
+          "level": 3,
+          "text": "`_bypass_repo_files`",
+          "anchor": "_bypass_repo_files"
+        },
+        {
+          "level": 3,
           "text": "`_scan_effects_bypasses`",
           "anchor": "_scan_effects_bypasses"
         },
@@ -6353,6 +6373,11 @@
         },
         {
           "level": 3,
+          "text": "`BypassRootNotAWorkTree`",
+          "anchor": "bypassrootnotaworktree"
+        },
+        {
+          "level": 3,
           "text": "`scanTokens`",
           "anchor": "scantokens"
         },
@@ -7476,6 +7501,16 @@
         },
         {
           "level": 3,
+          "text": "`errFlagRetiredChoiceTypeMismatch`",
+          "anchor": "errflagretiredchoicetypemismatch"
+        },
+        {
+          "level": 3,
+          "text": "`errArgRetiredChoiceTypeMismatch`",
+          "anchor": "errargretiredchoicetypemismatch"
+        },
+        {
+          "level": 3,
           "text": "`errFlagRetiredChoicesRequireChoices`",
           "anchor": "errflagretiredchoicesrequirechoices"
         },
@@ -8368,6 +8403,11 @@
           "level": 3,
           "text": "`errDuplicateCheckDef`",
           "anchor": "errduplicatecheckdef"
+        },
+        {
+          "level": 3,
+          "text": "`errEffectsBypassNotAWorkTree`",
+          "anchor": "erreffectsbypassnotaworktree"
         },
         {
           "level": 3,
@@ -11317,6 +11357,6 @@
     }
   ],
   "posts": [],
-  "last_gen": "2026-09-19T20:32:05.973453+00:00",
+  "last_gen": "2026-09-19T22:53:10.686914+00:00",
   "theme": "minimal"
 }
