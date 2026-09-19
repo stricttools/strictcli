@@ -583,6 +583,11 @@
         },
         {
           "level": 2,
+          "text": "Retired choices",
+          "anchor": "retired-choices"
+        },
+        {
+          "level": 2,
           "text": "Custom validation",
           "anchor": "custom-validation"
         },
@@ -859,6 +864,11 @@
           "level": 3,
           "text": "Flag Options",
           "anchor": "flag-options"
+        },
+        {
+          "level": 3,
+          "text": "Retired choices",
+          "anchor": "retired-choices"
         },
         {
           "level": 3,
@@ -1394,6 +1404,11 @@
         },
         {
           "level": 3,
+          "text": "`RetiredChoiceValue`",
+          "anchor": "retiredchoicevalue"
+        },
+        {
+          "level": 3,
           "text": "`ArgOption`",
           "anchor": "argoption"
         },
@@ -1769,6 +1784,16 @@
         },
         {
           "level": 3,
+          "text": "`RetiredChoice`",
+          "anchor": "retiredchoice"
+        },
+        {
+          "level": 3,
+          "text": "`RetiredChoices`",
+          "anchor": "retiredchoices"
+        },
+        {
+          "level": 3,
           "text": "`Repeatable`",
           "anchor": "repeatable"
         },
@@ -1831,6 +1856,11 @@
           "level": 3,
           "text": "`ArgChoices`",
           "anchor": "argchoices"
+        },
+        {
+          "level": 3,
+          "text": "`ArgRetiredChoices`",
+          "anchor": "argretiredchoices"
         },
         {
           "level": 3,
@@ -2498,6 +2528,11 @@
         },
         {
           "level": 2,
+          "text": "A fifth case: the retired choice",
+          "anchor": "a-fifth-case-the-retired-choice"
+        },
+        {
+          "level": 2,
           "text": "The same shape, elsewhere in the framework",
           "anchor": "the-same-shape-elsewhere-in-the-framework"
         },
@@ -2686,6 +2721,11 @@
           "level": 3,
           "text": "Flag Options",
           "anchor": "flag-options"
+        },
+        {
+          "level": 3,
+          "text": "Retired choices",
+          "anchor": "retired-choices"
         },
         {
           "level": 3,
@@ -3933,6 +3973,31 @@
           "level": 3,
           "text": "`Choice`",
           "anchor": "choice"
+        },
+        {
+          "level": 3,
+          "text": "`RetiredChoice`",
+          "anchor": "retiredchoice"
+        },
+        {
+          "level": 3,
+          "text": "`_raise_retired_choices_entry_not_record`",
+          "anchor": "_raise_retired_choices_entry_not_record"
+        },
+        {
+          "level": 3,
+          "text": "`_resolve_retired_choices`",
+          "anchor": "_resolve_retired_choices"
+        },
+        {
+          "level": 3,
+          "text": "`_validate_retired_choices`",
+          "anchor": "_validate_retired_choices"
+        },
+        {
+          "level": 3,
+          "text": "`_retired_choice_message`",
+          "anchor": "_retired_choice_message"
         },
         {
           "level": 3,
@@ -5531,6 +5596,11 @@
         },
         {
           "level": 3,
+          "text": "`_serialize_retired_choices`",
+          "anchor": "_serialize_retired_choices"
+        },
+        {
+          "level": 3,
           "text": "`_serialize_choice_object`",
           "anchor": "_serialize_choice_object"
         },
@@ -5910,6 +5980,11 @@
           "level": 3,
           "text": "Choices",
           "anchor": "choices"
+        },
+        {
+          "level": 3,
+          "text": "Retired choices",
+          "anchor": "retired-choices"
         },
         {
           "level": 3,
@@ -7351,6 +7426,66 @@
         },
         {
           "level": 3,
+          "text": "`errFlagRetiredChoiceIsLive`",
+          "anchor": "errflagretiredchoiceislive"
+        },
+        {
+          "level": 3,
+          "text": "`errArgRetiredChoiceIsLive`",
+          "anchor": "errargretiredchoiceislive"
+        },
+        {
+          "level": 3,
+          "text": "`errFlagRetiredChoiceDuplicate`",
+          "anchor": "errflagretiredchoiceduplicate"
+        },
+        {
+          "level": 3,
+          "text": "`errArgRetiredChoiceDuplicate`",
+          "anchor": "errargretiredchoiceduplicate"
+        },
+        {
+          "level": 3,
+          "text": "`errFlagRetiredChoiceMessageEmpty`",
+          "anchor": "errflagretiredchoicemessageempty"
+        },
+        {
+          "level": 3,
+          "text": "`errArgRetiredChoiceMessageEmpty`",
+          "anchor": "errargretiredchoicemessageempty"
+        },
+        {
+          "level": 3,
+          "text": "`errFlagRetiredChoicesIncompatibleBool`",
+          "anchor": "errflagretiredchoicesincompatiblebool"
+        },
+        {
+          "level": 3,
+          "text": "`errArgRetiredChoicesIncompatibleBool`",
+          "anchor": "errargretiredchoicesincompatiblebool"
+        },
+        {
+          "level": 3,
+          "text": "`errFlagDefaultIsRetiredChoice`",
+          "anchor": "errflagdefaultisretiredchoice"
+        },
+        {
+          "level": 3,
+          "text": "`errArgDefaultIsRetiredChoice`",
+          "anchor": "errargdefaultisretiredchoice"
+        },
+        {
+          "level": 3,
+          "text": "`errFlagRetiredChoicesRequireChoices`",
+          "anchor": "errflagretiredchoicesrequirechoices"
+        },
+        {
+          "level": 3,
+          "text": "`errArgRetiredChoicesRequireChoices`",
+          "anchor": "errargretiredchoicesrequirechoices"
+        },
+        {
+          "level": 3,
           "text": "`errFlagHelpEmpty`",
           "anchor": "errflaghelpempty"
         },
@@ -7938,6 +8073,16 @@
           "level": 3,
           "text": "`errFlagInvalidChoice`",
           "anchor": "errflaginvalidchoice"
+        },
+        {
+          "level": 3,
+          "text": "`errArgRetiredChoice`",
+          "anchor": "errargretiredchoice"
+        },
+        {
+          "level": 3,
+          "text": "`errFlagRetiredChoice`",
+          "anchor": "errflagretiredchoice"
         },
         {
           "level": 3,
@@ -9295,6 +9440,16 @@
           "level": 3,
           "text": "`ChoiceRecordView`",
           "anchor": "choicerecordview"
+        },
+        {
+          "level": 3,
+          "text": "`RetiredChoiceRecord`",
+          "anchor": "retiredchoicerecord"
+        },
+        {
+          "level": 3,
+          "text": "`RetiredChoiceRecordView`",
+          "anchor": "retiredchoicerecordview"
         },
         {
           "level": 3,
@@ -11162,6 +11317,6 @@
     }
   ],
   "posts": [],
-  "last_gen": "2026-09-15T21:21:46.315018+00:00",
+  "last_gen": "2026-09-19T20:32:05.973453+00:00",
   "theme": "minimal"
 }
