@@ -12,9 +12,11 @@ Runnable under pytest (auto-discovered) or standalone (`python3 test_run_registr
 
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 import sys
+import tempfile
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -485,6 +487,50 @@ def test_protocol_script_reports_a_substitution_with_nothing_captured():
 # nothing sweeps that directory afterwards, so a path a run leaves behind is
 # permanent. Both tests below run the real thing rather than inspecting the
 # code that makes the paths.
+
+
+def _case_named(file_name: str, name: str) -> dict:
+    """One case, read straight from its file.
+
+    run._load_cases() validates every case in the suite against the schema,
+    which costs far more than the one case these tests run.
+    """
+    with open(run.CASES_DIR / file_name, encoding="utf-8") as fh:
+        for case in json.load(fh):
+            if case["name"] == name:
+                return case
+    raise AssertionError(f"no case named {name!r} in {file_name}")
+
+
+def test_running_a_checks_case_leaves_nothing_in_the_temp_directory():
+    """Every temp path one case run makes is gone when the run returns.
+
+    The checks cases are the sharp ones: the generated Python reference script
+    has to get its checks.toml to the app somehow, and a file written into the
+    temp directory is a file nobody deletes.
+    """
+    case = _case_named("checks.json", "checks: all passing exits 0")
+    prior_tempdir = tempfile.tempdir
+    prior_env = os.environ.get("TMPDIR")
+    with tempfile.TemporaryDirectory(prefix="strictcli_leakprobe_") as probe:
+        tempfile.tempdir = probe
+        os.environ["TMPDIR"] = probe
+        try:
+            before = set(os.listdir(probe))
+            _ok, errors, result = run._run_case(case, "python")
+            leaked = sorted(set(os.listdir(probe)) - before)
+        finally:
+            tempfile.tempdir = prior_tempdir
+            if prior_env is None:
+                os.environ.pop("TMPDIR", None)
+            else:
+                os.environ["TMPDIR"] = prior_env
+    # Not `assert ok`: whether this case passes is other tests' business, and
+    # a checkout whose own scratch directory trips a built-in check would hide
+    # the leak behind an unrelated red. That the reference script ran at all is
+    # what makes the assertion below meaningful.
+    assert result is not None, errors
+    assert leaked == [], f"the case run left these behind in the temp dir: {leaked}"
 
 
 def test_importing_run_leaves_no_throwaway_home_behind():

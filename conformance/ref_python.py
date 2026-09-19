@@ -1336,8 +1336,6 @@ def generate(app_def: dict) -> str:
     lines = []
     lines.append("import sys")
     lines.append("import os")
-    if has_toml:
-        lines.append("import hashlib")
     if has_checks:
         lines.append("import pathlib")
     lines.append("")
@@ -1437,14 +1435,14 @@ def generate(app_def: dict) -> str:
         lines.append("    pass")
         lines.append("")
 
-    # Write checks.toml to a temp file and pass via checks_path=
+    # Hand checks.toml to the app in memory, through checks_embed=, the way the
+    # Go harness (WithChecksEmbed) and the TypeScript harness (checksEmbed) do.
+    # The earlier spelling wrote the document to a path under the system temp
+    # directory and passed checks_path=; nothing ever deleted those files.
     if has_toml:
         checks_toml = app_def["checks_toml"]
-        lines.append("# Write checks.toml to a deterministic temp path")
-        lines.append(f"_hash = hashlib.sha256({checks_toml!r}.encode()).hexdigest()[:12]")
-        lines.append("_checks_path = os.path.join(os.environ.get('TMPDIR', '/tmp'), f'strictcli-checks-{_hash}.toml')")
-        lines.append(f"with open(_checks_path, 'w') as _f:")
-        lines.append(f"    _f.write({checks_toml!r})")
+        lines.append("# The checks document, embedded rather than written to disk")
+        lines.append(f"_checks_embed = {checks_toml.encode()!r}")
         lines.append("")
 
     # Build app
@@ -1479,7 +1477,7 @@ def generate(app_def: dict) -> str:
     if "handshake_env" in app_def:
         app_parts.append(f"handshake_env={app_def['handshake_env']!r}")
     if has_toml:
-        app_parts.append("checks_path=_checks_path")
+        app_parts.append("checks_embed=_checks_embed")
     if "test_coverage_dir" in app_def:
         app_parts.append(f"test_coverage_dir={app_def['test_coverage_dir']!r}")
     if app_def.get("proc_observe_allowlist"):
