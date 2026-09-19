@@ -1,6 +1,6 @@
 {
 	"name": "strictcli",
-	"version": "0.41.0",
+	"version": "0.42.0",
 	"type": "module",
 	"description": "A CLI framework for the Era of Agents: nothing is inferred, everything is declared. First-class support for Go, Python, and TypeScript (TypeScript implementation)",
 	"engines": {

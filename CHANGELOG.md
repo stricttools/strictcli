@@ -2260,6 +2260,26 @@ RECOVERY OBLIGATION: no description was recoverable for this version (neither th
 
 # ts-strictcli
 
+## 0.42.0
+
+Retired choices on value flags and positional args.
+
+<details>
+<summary>Context</summary>
+
+A value flag or positional arg that declares choices may now also declare the spellings it used to accept, so a renamed value is refused with a message naming its replacement instead of the generic invalid-value error. The three implementations ship it together, each in its own declaration shape, with conformance cases covering every target.
+
+</details>
+
+### Features
+
+- [ts-strictcli] **Retired choices.** A value flag or positional arg that declares `choices` may also declare the spellings it used to accept, through `retiredChoices: [{ value: "old", message: "use 'new'" }]` on the flag and arg option objects. A value matching one is refused at parse time with the message naming its replacement, ahead of the invalid-value check and from every source the choices check already reaches. A retired value is not a choice: help never lists it, and the published `value_schema` enum and MCP tool schema carry the live set only. `--dump-schema` publishes the declaration as a `retired_choices` map.
+
+### Fixes
+
+- [ts-strictcli] **The `effects-bypass` check reads only repository-owned files.** Its inputs are now what `git ls-files --cached --others --exclude-standard` lists from the project root -- tracked files plus untracked files `.gitignore` does not exclude -- so a gitignored scratch file can no longer turn a release-blocking check red on one machine while a fresh clone is green. A project root outside a git work tree is refused (`effects-bypass: project root '<path>' is not a git work tree; the check reads only repository-owned files`), with no filesystem-walk fallback.
+- [ts-strictcli] **A retired choice of the wrong type is refused at registration.** A `retiredChoices` entry whose value is not of the declaration's own type used to register as a dead declaration: the parse-time comparison is type-aware, so the spelling it named stayed accepted and its message never printed. It is now a registration-time error in the twin of the live choice type-mismatch sentence (`Flag "format": retired choice '8080' is not of type str`), on the flag and the arg surface alike.
+
 ## 0.41.0
 
 Test coverage is anchored to a declared directory (test_coverage_dir, WithTestCoverageDir, testCoverageDir) instead of the current directory; the old boolean is refused. The package describes itself with the project's settled line.
