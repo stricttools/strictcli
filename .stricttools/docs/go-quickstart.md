@@ -18,13 +18,13 @@ see [Language idioms](language-idioms.md).
 ## Install
 
 ```bash
-go get github.com/smm-h/strictcli/go/strictcli@latest
+go get github.com/stricttools/strictcli/go/strictcli@latest
 ```
 
 Import the package:
 
 ```go
-import "github.com/smm-h/strictcli/go/strictcli"
+import "github.com/stricttools/strictcli/go/strictcli"
 ```
 
 ## Creating an App
@@ -38,7 +38,7 @@ are passed as functional options after the help text.
 ```go validate
 package main
 
-import "github.com/smm-h/strictcli/go/strictcli"
+import "github.com/stricttools/strictcli/go/strictcli"
 
 func main() {
     app := strictcli.NewApp("mytool", "0.1.0", "A tool that does useful things")
@@ -1343,7 +1343,7 @@ package main
 import (
     "fmt"
 
-    "github.com/smm-h/strictcli/go/strictcli"
+    "github.com/stricttools/strictcli/go/strictcli"
 )
 
 func main() {
