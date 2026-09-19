@@ -2147,6 +2147,44 @@ truthiness test or a `===` comparison against a value the analyser can trace to 
 return. These are the only things the runtime seal cannot catch, so lint is the sole line of
 defence and the check must name them explicitly.
 
+### 11.2 The input rule: repository-owned files only
+
+**The check reads what the repository owns, and nothing else.** Its input set is what
+`git ls-files --cached --others --exclude-standard` lists from the project root: tracked files plus
+untracked files `.gitignore` does not exclude. Everything else under that root -- a gitignored
+scratch tree, a produced artifact, a throwaway probe an agent wrote to find something out -- is one
+machine's, not the repository's, and never reaches the analyser.
+
+The rule follows from what this check IS. `effects-bypass` is `error`-severity and runs in the
+pre-release tag, so it can block a release; a release-blocking check that reads inputs the
+repository does not own gives a verdict nobody else can reproduce. The instance that produced the
+rule: a gitignored scratch file made a pre-release run red on one workstation while CI's fresh
+clone was green.
+
+**A project root that is not inside a git work tree is a hard error**, reported as the check's own
+failure through its reporter, in one sentence pinned in all three catalogs (§12):
+
+```
+effects-bypass: project root '<path>' is not a git work tree; the check reads only repository-owned files
+```
+
+The path is named exactly as the check context declared it, never resolved -- so the three
+implementations print the same bytes for the same declaration. There is **no fallback to a
+filesystem walk** and no flag that turns the rule off: a check that quietly reads a second,
+looser input set on some roots is the silent degradation the framework refuses everywhere else.
+The refusal is delivered through the reporter rather than by raising, because a raised failure is
+rendered with the raising language's own type name (`ValueError`, `string`, `Error`) and the
+sentence would then differ across implementations.
+
+The **directory skip list** survives the change, now as a filter over git's answer rather than as a
+walk pruner: git lists tracked files wherever they are, so a vendored tree, a committed `testdata`,
+`build` or `dist` directory, and a dot-directory's tracked contents would otherwise be parsed for
+the first time.
+
+Running `git` is compatible with the check's `fast` and `pure` declarations: `ls-files` is a local,
+read-only query that mutates nothing, and the purity constraint §11 states is about what a check
+WRITES and how long it takes, not about whether it may ask another program a question.
+
 ---
 
 ## 12. Message templates
