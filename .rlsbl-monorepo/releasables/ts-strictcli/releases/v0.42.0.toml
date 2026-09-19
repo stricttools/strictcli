@@ -1,0 +1,15 @@
+# Archived by rlsbl at release time. This release had no unreleased.toml
+# (a batch member takes its metadata from the batch release file); the
+# archive is written so later changelog regenerations keep the
+# description and context.
+# strictspec document version gate (do not remove)
+format_version = 1
+bump = "minor"
+include = ["npm"]
+exclude = []
+description = "Retired choices on value flags and positional args."
+context = "A value flag or positional arg that declares choices may now also declare the spellings it used to accept, so a renamed value is refused with a message naming its replacement instead of the generic invalid-value error. The three implementations ship it together, each in its own declaration shape, with conformance cases covering every target."
+candidate_sha = "1175c1c4bacfc4e7764a88d20c772f191455acda"
+
+[tree_hashes]
+typescript = "a032dbde058aa1ab1c647f0b41dd46fdaea088b2"
