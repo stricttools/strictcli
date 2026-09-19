@@ -262,6 +262,35 @@ def test_an_arg_default_naming_a_retired_spelling_is_refused():
     assert 'Arg "mode": default \'turbo\' is a retired choice' in str(exc.value)
 
 
+def test_a_retired_spelling_of_the_wrong_type_is_refused():
+    """The seventh guard: a declaration that could never match.
+
+    `RetiredChoice(8080, ...)` on a str flag is a dead declaration -- the
+    parse-time comparison is type-aware, so no invocation could ever reach it.
+    """
+    with pytest.raises(ValueError) as exc:
+        _flag_app(
+            choices=LIVE,
+            retired_choices=[strictcli.RetiredChoice(8080, message="use 'json'")],
+            presence="required",
+        )
+    assert (
+        'Flag "format": retired choice \'8080\' is not of type str' in str(exc.value)
+    )
+
+
+def test_an_arg_retired_spelling_of_the_wrong_type_is_refused():
+    with pytest.raises(ValueError) as exc:
+        _arg_app(
+            choices=[strictcli.Choice("fast"), strictcli.Choice("slow")],
+            retired_choices=[strictcli.RetiredChoice(8080, message="use 'fast'")],
+            presence="required",
+        )
+    assert (
+        'Arg "mode": retired choice \'8080\' is not of type str' in str(exc.value)
+    )
+
+
 def test_retired_choices_without_choices_are_refused():
     with pytest.raises(ValueError) as exc:
         _flag_app(retired_choices=RETIRED_XML, presence="required")

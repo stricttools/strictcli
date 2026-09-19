@@ -4799,6 +4799,18 @@ def _raise_arg_default_is_retired_choice(name: str, value: str):
     raise ValueError(f'Arg "{name}": default \'{value}\' is a retired choice')
 
 
+def _raise_flag_retired_choice_type_mismatch(name: str, value: str, type_name: str):
+    raise ValueError(
+        f'Flag "{name}": retired choice \'{value}\' is not of type {type_name}'
+    )
+
+
+def _raise_arg_retired_choice_type_mismatch(name: str, value: str, type_name: str):
+    raise ValueError(
+        f'Arg "{name}": retired choice \'{value}\' is not of type {type_name}'
+    )
+
+
 def _raise_flag_retired_choices_require_choices(name: str):
     raise ValueError(f'Flag "{name}": retired choices require choices')
 
@@ -4815,6 +4827,7 @@ _RETIRED_CHOICE_TEMPLATES = {
         _raise_flag_retired_choices_incompatible_bool,
         _raise_flag_default_is_retired_choice,
         _raise_flag_retired_choices_require_choices,
+        _raise_flag_retired_choice_type_mismatch,
     ),
     "Arg": (
         _raise_arg_retired_choice_is_live,
@@ -4823,6 +4836,7 @@ _RETIRED_CHOICE_TEMPLATES = {
         _raise_arg_retired_choices_incompatible_bool,
         _raise_arg_default_is_retired_choice,
         _raise_arg_retired_choices_require_choices,
+        _raise_arg_retired_choice_type_mismatch,
     ),
 }
 
@@ -4846,7 +4860,7 @@ def _validate_retired_choices(
         return
     (
         is_live, duplicate, message_empty,
-        incompatible_bool, default_is_retired, require_choices,
+        incompatible_bool, default_is_retired, require_choices, type_mismatch,
     ) = _RETIRED_CHOICE_TEMPLATES[surface]
     # The bool refusal comes first so the declaration is named by what it got
     # wrong: choices are already incompatible with bool, and reporting the
@@ -4859,6 +4873,11 @@ def _validate_retired_choices(
     seen: list = []
     for rc in retired:
         formatted = _format_value_for_error(rc.value)
+        # The type check comes first: a value of the wrong type can never match
+        # at parse time, so the declaration is dead however it compares against
+        # the live set or against its siblings.
+        if not isinstance(rc.value, item_type):
+            type_mismatch(name, formatted, item_type.__name__)
         if not isinstance(rc.message, str) or not rc.message.strip():
             message_empty(name, formatted)
         if rc.value in choices:
