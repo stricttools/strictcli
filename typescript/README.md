@@ -257,7 +257,7 @@ context as `ctx.dryRun`, `ctx.approveConsequential`, `ctx.quiet` and
 
 ## Sibling implementations
 
-strictcli is developed in the [smm-h/strictcli](https://github.com/smm-h/strictcli)
+strictcli is developed in the [stricttools/strictcli](https://github.com/stricttools/strictcli)
 monorepo alongside first-class **Python** (PyPI: `strictcli`) and **Go**
 implementations. All implementations are kept byte-identical in behavior — same
 error messages, same help output, same parsing rules — enforced by a shared
