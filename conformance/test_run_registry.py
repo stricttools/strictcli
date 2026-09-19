@@ -477,3 +477,31 @@ def test_protocol_script_reports_a_capture_path_that_is_not_there():
 def test_protocol_script_reports_a_substitution_with_nothing_captured():
     _, errors = _script(_ECHO_CHILD, [{"send": '{"echo":"{{missing}}"}'}])
     assert any("nothing captured under 'missing'" in e for e in errors), errors
+
+
+# --- Temp-directory hygiene --------------------------------------------------
+#
+# The suite's throwaway paths live in the operating system's temp directory and
+# nothing sweeps that directory afterwards, so a path a run leaves behind is
+# permanent. Both tests below run the real thing rather than inspecting the
+# code that makes the paths.
+
+
+def test_importing_run_leaves_no_throwaway_home_behind():
+    """run.py's module-level throwaway HOME is removed when the process ends.
+
+    Importing run.py creates it, and every process that imports run.py -- the
+    runner, the fuzzer, the trace sweeps, this test file -- creates one more.
+    """
+    probe = subprocess.run(
+        [sys.executable, "-c", "import run; print(run.TRACE_HOME)"],
+        cwd=str(Path(__file__).resolve().parent),
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    home = probe.stdout.strip()
+    assert home, probe.stderr
+    assert not os.path.exists(home), (
+        f"importing run.py left its throwaway HOME behind at {home}"
+    )

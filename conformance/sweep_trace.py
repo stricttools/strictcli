@@ -34,7 +34,6 @@ from __future__ import annotations
 import argparse
 import os
 import re
-import shutil
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -111,10 +110,12 @@ def _prepare_home(condition: Condition) -> str:
 
 
 def _release_home(home: str) -> None:
-    store = _store_dir(home)
-    if os.path.isdir(store):
-        os.chmod(store, 0o700)
-    shutil.rmtree(home, ignore_errors=True)
+    """Remove a condition's home now, rather than at interpreter exit.
+
+    run.make_trace_home already registers the removal, so this is only about
+    when it happens: a later condition must not see the previous one's store.
+    """
+    run.remove_trace_home(home)
 
 
 def _entry_count(home: str) -> int:

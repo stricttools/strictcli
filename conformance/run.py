@@ -11,6 +11,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import atexit
 import json
 import os
 import queue
@@ -58,13 +59,40 @@ HARNESS_TS_ENTRY: str | None = None
 # store sits -- is genuinely fresh.
 
 
+def remove_trace_home(home: str) -> None:
+    """Remove a throwaway HOME, deliberately unwritable directories included.
+
+    A sweep condition chmods the store to 0o500 to make it unwritable, so the
+    tree has to be made removable before it can be removed. os.walk descends
+    top-down and does not follow symlinks, so each directory is widened before
+    it is read and the ~/.local/lib symlink is unlinked rather than followed.
+    """
+    for root, dirs, _files in os.walk(home):
+        for name in dirs:
+            path = os.path.join(root, name)
+            if os.path.islink(path):
+                continue
+            try:
+                os.chmod(path, 0o700)
+            except OSError:
+                pass
+    shutil.rmtree(home, ignore_errors=True)
+
+
 def make_trace_home(prefix: str = "strictcli_conf_home_") -> str:
-    """Create a throwaway HOME whose ~/.local/share is empty."""
+    """Create a throwaway HOME whose ~/.local/share is empty.
+
+    Removal is registered here rather than at the call sites: the module-level
+    TRACE_HOME below has no call site to put it in, and a caller that releases
+    its own home early (sweep_trace) removes an already-removed path without
+    error.
+    """
     home = tempfile.mkdtemp(prefix=prefix)
     os.makedirs(os.path.join(home, ".local"), exist_ok=True)
     real_lib = os.path.join(os.path.expanduser("~"), ".local", "lib")
     if os.path.isdir(real_lib):
         os.symlink(real_lib, os.path.join(home, ".local", "lib"))
+    atexit.register(remove_trace_home, home)
     return home
 
 
