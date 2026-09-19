@@ -365,6 +365,22 @@ export function errArgDefaultIsRetiredChoice(
 	return `Arg ${q(name)}: default '${value}' is a retired choice`;
 }
 
+export function errFlagRetiredChoiceTypeMismatch(
+	name: string,
+	value: string,
+	typeName: string,
+): string {
+	return `Flag ${q(name)}: retired choice '${value}' is not of type ${typeName}`;
+}
+
+export function errArgRetiredChoiceTypeMismatch(
+	name: string,
+	value: string,
+	typeName: string,
+): string {
+	return `Arg ${q(name)}: retired choice '${value}' is not of type ${typeName}`;
+}
+
 export function errFlagRetiredChoicesRequireChoices(name: string): string {
 	return `Flag ${q(name)}: retired choices require choices`;
 }

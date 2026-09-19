@@ -42,6 +42,7 @@ import {
 	errArgRetiredChoiceMessageEmpty,
 	errArgRetiredChoicesIncompatibleBool,
 	errArgRetiredChoicesRequireChoices,
+	errArgRetiredChoiceTypeMismatch,
 	errArgStrDefaultTypeMismatch,
 	errArgVariadicDefault,
 	errChoiceDuplicateName,
@@ -118,6 +119,7 @@ import {
 	errFlagRetiredChoiceMessageEmpty,
 	errFlagRetiredChoicesIncompatibleBool,
 	errFlagRetiredChoicesRequireChoices,
+	errFlagRetiredChoiceTypeMismatch,
 	errFlagUniqueRequiresRepeatable,
 	errForwardingReasonEmpty,
 	errGrantDuplicate,
@@ -310,7 +312,7 @@ function validateRetiredChoices(
 	name: string,
 	retired: readonly RetiredChoiceRecordView[] | undefined,
 	choices: readonly ChoiceRecordView[] | undefined,
-	elem: string,
+	elem: ScalarSchema,
 	dflt: unknown,
 	tpl: {
 		isLive: (name: string, value: string) => string;
@@ -319,6 +321,7 @@ function validateRetiredChoices(
 		incompatibleBool: (name: string) => string;
 		defaultIsRetired: (name: string, value: string) => string;
 		requireChoices: (name: string) => string;
+		typeMismatch: (name: string, value: string, typeName: string) => string;
 	},
 ): void {
 	if (retired === undefined) {
@@ -338,6 +341,12 @@ function validateRetiredChoices(
 	const seen: unknown[] = [];
 	for (const rc of retired) {
 		const formatted = formatValueForError(rc.value);
+		// The type check comes first: a value of the wrong type can never match
+		// at parse time, so the declaration is dead however it compares against
+		// the live set or against its siblings.
+		if (!matchesScalar(elem, rc.value)) {
+			throw new RegistrationError(tpl.typeMismatch(name, formatted, elem));
+		}
 		if (typeof rc.message !== "string" || rc.message.trim() === "") {
 			throw new RegistrationError(tpl.messageEmpty(name, formatted));
 		}
@@ -367,6 +376,7 @@ const FLAG_RETIRED_TEMPLATES = {
 	incompatibleBool: errFlagRetiredChoicesIncompatibleBool,
 	defaultIsRetired: errFlagDefaultIsRetiredChoice,
 	requireChoices: errFlagRetiredChoicesRequireChoices,
+	typeMismatch: errFlagRetiredChoiceTypeMismatch,
 };
 
 const ARG_RETIRED_TEMPLATES = {
@@ -376,6 +386,7 @@ const ARG_RETIRED_TEMPLATES = {
 	incompatibleBool: errArgRetiredChoicesIncompatibleBool,
 	defaultIsRetired: errArgDefaultIsRetiredChoice,
 	requireChoices: errArgRetiredChoicesRequireChoices,
+	typeMismatch: errArgRetiredChoiceTypeMismatch,
 };
 
 /** The declared values of a `choices` list, in declaration order. */

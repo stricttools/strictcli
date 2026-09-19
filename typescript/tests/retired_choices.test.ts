@@ -297,6 +297,48 @@ test("an arg default naming a retired spelling is refused", () => {
 	assert.equal(msg, `Arg "mode": default 'turbo' is a retired choice`);
 });
 
+// The seventh guard: a declaration that could never match. A retired spelling
+// of the wrong type is dead -- the parse-time comparison is type-aware, so no
+// invocation could reach it, and the spelling the author meant to retire stays
+// accepted. TypeScript's `retiredChoices` entries are typed against the
+// declaration, so reaching the runtime guard takes the same `loose` cast the
+// live choice type-mismatch test uses; a JS consumer needs no cast at all.
+function loose(v: unknown): never {
+	return v as never;
+}
+
+test("a retired spelling of the wrong type is refused", () => {
+	const msg = registrationError(() =>
+		flag(
+			"format",
+			t.str,
+			loose({
+				help: "output format",
+				choices: LIVE,
+				retiredChoices: [{ value: 8080n, message: "use 'json'" }],
+				presence: "required",
+			}),
+		),
+	);
+	assert.equal(msg, `Flag "format": retired choice '8080' is not of type str`);
+});
+
+test("an arg retired spelling of the wrong type is refused", () => {
+	const msg = registrationError(() =>
+		arg(
+			"mode",
+			t.str,
+			loose({
+				help: "the mode",
+				choices: [{ value: "fast" }, { value: "slow" }],
+				retiredChoices: [{ value: 8080n, message: "use 'fast'" }],
+				presence: "required",
+			}),
+		),
+	);
+	assert.equal(msg, `Arg "mode": retired choice '8080' is not of type str`);
+});
+
 test("retired choices without choices are refused", () => {
 	const msg = registrationError(() =>
 		flag("format", t.str, {
