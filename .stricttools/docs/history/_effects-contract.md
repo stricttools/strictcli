@@ -2155,11 +2155,11 @@ untracked files `.gitignore` does not exclude. Everything else under that root -
 scratch tree, a produced artifact, a throwaway probe an agent wrote to find something out -- is one
 machine's, not the repository's, and never reaches the analyser.
 
-The rule follows from what this check IS. `effects-bypass` is `error`-severity and runs in the
-pre-release tag, so it can block a release; a release-blocking check that reads inputs the
-repository does not own gives a verdict nobody else can reproduce. The instance that produced the
-rule: a gitignored scratch file made a pre-release run red on one workstation while CI's fresh
-clone was green.
+The rule follows from what this check IS. `effects-bypass` is `error`-severity, so a finding fails
+whichever run selected it -- a consumer's release preflight among them -- and a release-blocking
+check that reads inputs the repository does not own gives a verdict nobody else can reproduce. The
+instance that produced the rule: a gitignored scratch file under the project root made a
+pre-release run red on one workstation while CI's fresh clone was green.
 
 **A project root that is not inside a git work tree is a hard error**, reported as the check's own
 failure through its reporter, in one sentence pinned in all three catalogs (§12):
