@@ -612,6 +612,7 @@ Rules, each a registration-time hard error:
 - Retired choices are incompatible with `type=bool`, like `choices` itself.
 - A declared `default` may not name a retired spelling.
 - Retired choices require `choices`. A declaration with no live values to redirect to has nothing to say.
+- A retired spelling must be of the declaration's own type, the twin of the rule live choices already carry. `RetiredChoice(8080, ...)` on a `str` flag is a dead declaration -- the parse-time comparison is type-aware, so no invocation could ever match it, and the spelling the author meant to retire would stay accepted.
 
 ## Custom validation
 
