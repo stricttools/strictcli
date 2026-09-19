@@ -2819,9 +2819,11 @@ def _bypass_path_is_skipped(rel: str) -> bool:
     still applies, now as a filter over git's answer rather than as a walk
     pruner.
     """
+    # git reports forward slashes on every platform, so the split is on "/"
+    # rather than os.sep.
     return any(
         part in _BYPASS_SKIP_DIRS or part.startswith(".")
-        for part in rel.split(os.sep)[:-1]
+        for part in rel.split("/")[:-1]
     )
 
 
