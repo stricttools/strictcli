@@ -612,7 +612,7 @@ func (st *electionState) resolveElected(ls *liveSel, cliByFlag map[*Flag]interfa
 		// exempted here. The argv and flat doors are untouched.
 		_, fromRecord := cliByFlag[f].(recordSupplied)
 		if !fromRecord {
-			if errMsg := validateChoices(f.Name, val, f.Repeatable, f.Choices, false); errMsg != "" {
+			if errMsg := validateChoices(f.Name, val, f.Repeatable, f.Choices, f.retiredChoices, false); errMsg != "" {
 				return nil, errMsg
 			}
 		}

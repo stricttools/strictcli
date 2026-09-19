@@ -152,6 +152,27 @@ func serializeChoiceRecords(records []ChoiceValue) []interface{} {
 	return out
 }
 
+// serializeRetiredChoices publishes a declaration's retired spellings as a map
+// from the spelling to its message, SORTED ascending by key -- the treatment a
+// group's `deprecated` map already gets, and for the same reason: a keyed
+// object whose declaration order no implementation is required to retain has
+// sort order as its only reachable canon.
+//
+// The key is the spelling rendered through the error-value formatter, so an
+// int, a float and a string key identically in all three implementations. The
+// map is omitted entirely when nothing is retired.
+func serializeRetiredChoices(retired []RetiredChoiceValue) *schemaObject {
+	messages := make(map[string]string, len(retired))
+	for _, rc := range retired {
+		messages[formatValueForError(rc.Value)] = rc.Message
+	}
+	out := newSchemaObject()
+	for _, key := range sortedStringMapKeys(messages) {
+		out.set(key, messages[key])
+	}
+	return out
+}
+
 // serializeFlagMember serializes one member of a command's flag list: a
 // selector when it declares choices, an ordinary flag entry otherwise. Flags
 // and selectors share ONE array, interleaved in declaration order -- a selector
@@ -165,7 +186,8 @@ func serializeFlagMember(f *Flag) *schemaObject {
 
 // serializeFlag converts a Flag to an ordered entry, in §25.9's key order:
 // name, help, value_schema, short, presence, default, env, env_separator,
-// prefixed, choices, elect_by, unique, conflict_mode, negatable, nullable.
+// prefixed, choices, retired_choices, elect_by, unique, conflict_mode,
+// negatable, nullable.
 func serializeFlag(f *Flag) *schemaObject {
 	d := newSchemaObject().
 		set("name", f.Name).
@@ -196,6 +218,9 @@ func serializeFlag(f *Flag) *schemaObject {
 	}
 	if f.choiceRecords != nil {
 		d.set("choices", serializeChoiceRecords(f.choiceRecords))
+	}
+	if len(f.retiredChoices) > 0 {
+		d.set("retired_choices", serializeRetiredChoices(f.retiredChoices))
 	}
 	if f.Unique {
 		d.set("unique", true)
@@ -338,6 +363,9 @@ func serializeArg(a *Arg) *schemaObject {
 	}
 	if a.choiceRecords != nil {
 		d.set("choices", serializeChoiceRecords(a.choiceRecords))
+	}
+	if len(a.retiredChoices) > 0 {
+		d.set("retired_choices", serializeRetiredChoices(a.retiredChoices))
 	}
 	return d
 }

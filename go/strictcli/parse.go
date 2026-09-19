@@ -780,7 +780,7 @@ func validateAndBuildKwargs(cmd *Command, store *sourcedStore, positionals posit
 		if !ok {
 			continue
 		}
-		if errMsg := validateChoices(f.Name, val, f.Repeatable, f.Choices, false); errMsg != "" {
+		if errMsg := validateChoices(f.Name, val, f.Repeatable, f.Choices, f.retiredChoices, false); errMsg != "" {
 			return nil, nil, nil, nil, errMsg
 		}
 	}
@@ -832,7 +832,7 @@ func validateAndBuildKwargs(cmd *Command, store *sourcedStore, positionals posit
 		if !ok {
 			continue
 		}
-		if errMsg := validateChoices(a.Name, val, a.IsVariadic, a.Choices, true); errMsg != "" {
+		if errMsg := validateChoices(a.Name, val, a.IsVariadic, a.Choices, a.retiredChoices, true); errMsg != "" {
 			return nil, nil, nil, nil, errMsg
 		}
 	}
@@ -888,12 +888,24 @@ func validateAndBuildKwargs(cmd *Command, store *sourcedStore, positionals posit
 // ArgOptional() declaration or an unelected mutex member, all meaning "not
 // passed" -- a CLI-supplied value is never nil. Absence is never matched
 // against choices (contract §23.5).
-func validateChoices(name string, val interface{}, repeatable bool, choices []interface{}, isArg bool) string {
-	if choices == nil || val == nil {
+//
+// A RETIRED spelling is checked first, so a reader who typed a value that used
+// to work is told what replaced it instead of being handed the list it is
+// missing from. Every source that reaches this funnel today -- command line,
+// env var, config file, and the programmatic doors -- takes the retired
+// refusal for free; nothing new is resolved here.
+func validateChoices(name string, val interface{}, repeatable bool, choices []interface{}, retired []RetiredChoiceValue, isArg bool) string {
+	if (choices == nil && retired == nil) || val == nil {
 		return ""
 	}
 	check := func(v interface{}) string {
-		if inChoices(v, choices) {
+		if msg, ok := retiredChoiceMessage(v, retired); ok {
+			if isArg {
+				return errArgRetiredChoice(name, formatValueForError(v), msg)
+			}
+			return errFlagRetiredChoice(name, formatValueForError(v), msg)
+		}
+		if choices == nil || inChoices(v, choices) {
 			return ""
 		}
 		if isArg {

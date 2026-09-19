@@ -161,6 +161,74 @@ func errArgDefaultNotInChoices(name string, dflt interface{}, choicesStr string)
 }
 
 // ---------------------------------------------------------------------------
+// strictcli.go — retired choices
+//
+// The value-level twin of the deprecated-command construct: a spelling a
+// declaration used to accept, carrying the message that names its replacement.
+// Every sentence below names the CONCEPT ("retired choice") rather than a
+// declaration spelling, so all three implementations share one signature and
+// the parity checker needs no per-language exclusion for the family.
+//
+// Values are interpolated pre-formatted through each implementation's own
+// error-value formatter, which is what keeps an int, a float and a string
+// rendering identically in all three.
+// ---------------------------------------------------------------------------
+
+func errFlagRetiredChoiceIsLive(name string, value string) string {
+	return fmt.Sprintf(
+		"Flag %q: retired choice '%s' is also a live choice: a value is live or retired, never both",
+		name, value,
+	)
+}
+
+func errArgRetiredChoiceIsLive(name string, value string) string {
+	return fmt.Sprintf(
+		"Arg %q: retired choice '%s' is also a live choice: a value is live or retired, never both",
+		name, value,
+	)
+}
+
+func errFlagRetiredChoiceDuplicate(name string, value string) string {
+	return fmt.Sprintf("Flag %q: retired choice '%s' is declared twice", name, value)
+}
+
+func errArgRetiredChoiceDuplicate(name string, value string) string {
+	return fmt.Sprintf("Arg %q: retired choice '%s' is declared twice", name, value)
+}
+
+func errFlagRetiredChoiceMessageEmpty(name string, value string) string {
+	return fmt.Sprintf("Flag %q: retired choice '%s': message must be a non-empty string", name, value)
+}
+
+func errArgRetiredChoiceMessageEmpty(name string, value string) string {
+	return fmt.Sprintf("Arg %q: retired choice '%s': message must be a non-empty string", name, value)
+}
+
+func errFlagRetiredChoicesIncompatibleBool(name string) string {
+	return fmt.Sprintf("Flag %q: retired choices are incompatible with type=bool", name)
+}
+
+func errArgRetiredChoicesIncompatibleBool(name string) string {
+	return fmt.Sprintf("Arg %q: retired choices are incompatible with type=bool", name)
+}
+
+func errFlagDefaultIsRetiredChoice(name string, value string) string {
+	return fmt.Sprintf("Flag %q: default '%s' is a retired choice", name, value)
+}
+
+func errArgDefaultIsRetiredChoice(name string, value string) string {
+	return fmt.Sprintf("Arg %q: default '%s' is a retired choice", name, value)
+}
+
+func errFlagRetiredChoicesRequireChoices(name string) string {
+	return fmt.Sprintf("Flag %q: retired choices require choices", name)
+}
+
+func errArgRetiredChoicesRequireChoices(name string) string {
+	return fmt.Sprintf("Arg %q: retired choices require choices", name)
+}
+
+// ---------------------------------------------------------------------------
 // strictcli.go — validateFlagConfig
 // ---------------------------------------------------------------------------
 
@@ -743,6 +811,25 @@ func errFlagInvalidChoice(name string, value string, choices string) string {
 	return fmt.Sprintf(
 		"--%s: invalid value '%v', must be one of: %s",
 		name, value, choices,
+	)
+}
+
+// The retired-choice refusal, checked before the invalid-value one so a reader
+// who typed a spelling that used to work is told what replaced it rather than
+// being handed the list it is missing from. The command-level twin is
+// "command '<name>' is deprecated: <message>".
+
+func errArgRetiredChoice(name string, value string, message string) string {
+	return fmt.Sprintf(
+		"argument '%s': value '%v' retired: %s",
+		name, value, message,
+	)
+}
+
+func errFlagRetiredChoice(name string, value string, message string) string {
+	return fmt.Sprintf(
+		"--%s: value '%v' retired: %s",
+		name, value, message,
 	)
 }
 

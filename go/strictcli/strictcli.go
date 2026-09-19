@@ -170,6 +170,13 @@ type Flag struct {
 	// the parser reads Choices (contract §24.2).
 	choiceRecords []ChoiceValue
 
+	// retiredChoices are the spellings this flag used to accept, in
+	// declaration order. A retired value is refused at parse time with its own
+	// message; it is not a choice, so help and the published value_schema
+	// never name it. Unexported: RetiredChoices is the only mint, which keeps
+	// a Flag struct literal from declaring one half of the construct.
+	retiredChoices []RetiredChoiceValue
+
 	// choiceDecls is a SELECTOR's declared choices, in declaration order. It is
 	// unexported on purpose: a Flag struct literal cannot be a selector at all,
 	// which is §23.2's presenceBits guarantee extended to the new construct
@@ -203,9 +210,11 @@ type Arg struct {
 	Choices    []interface{}
 
 	choiceRecords []ChoiceValue
-	hasDefault    bool
-	presence      presenceKind
-	presenceBits  uint8
+	// retiredChoices: the arg twin of Flag.retiredChoices.
+	retiredChoices []RetiredChoiceValue
+	hasDefault     bool
+	presence       presenceKind
+	presenceBits   uint8
 }
 
 // FlagSet is a reusable bundle of flags.
@@ -880,6 +889,127 @@ func Choices(vals ...ChoiceValue) FlagOption {
 	})
 }
 
+// RetiredChoiceValue is one entry of a declaration's retired choices: a
+// spelling the flag or arg used to accept, plus the message naming what
+// replaced it. It is the value-level twin of app.Deprecate's command entry.
+//
+// Unlike ChoiceValue there is no via-constructor bit: both fields are
+// mandatory in the sentence a retired choice produces, so a struct literal has
+// no degenerate form to refuse. A literal that omits the message is caught by
+// the empty-message guard, which is the same refusal under the name that
+// describes it.
+type RetiredChoiceValue struct {
+	// Value is the retired spelling, of the flag's or arg's declared type.
+	Value interface{}
+	// Message names the replacement. It is mandatory and non-empty, like every
+	// other message the framework prints on a declaration's behalf.
+	Message string
+}
+
+// RetiredChoice declares one retired spelling and the message that names its
+// replacement.
+func RetiredChoice(value interface{}, message string) RetiredChoiceValue {
+	return RetiredChoiceValue{Value: value, Message: message}
+}
+
+// RetiredChoices declares the spellings a flag used to accept. A value that
+// matches one is refused at parse time with its own message; it is never a
+// choice, so it appears in neither help nor the published value_schema.
+func RetiredChoices(vals ...RetiredChoiceValue) FlagOption {
+	return flagOptFunc(func(f *Flag) {
+		f.retiredChoices = append([]RetiredChoiceValue{}, vals...)
+	})
+}
+
+// validateRetiredChoices runs the registration-time guards shared by the flag
+// and arg surfaces. The templates are twinned per surface, so each caller
+// passes its own; the rules themselves are one set.
+func validateRetiredChoices(
+	name string,
+	retired []RetiredChoiceValue,
+	choices []interface{},
+	itemType FlagType,
+	hasDefault bool,
+	dflt interface{},
+	tpl retiredChoiceTemplates,
+) {
+	if retired == nil {
+		return
+	}
+	// The bool refusal comes first so the declaration is named by what it got
+	// wrong: choices are already incompatible with bool, and reporting the
+	// missing choices instead would send a reader to add a declaration the
+	// framework would then refuse for the same reason.
+	if itemType == TypeBool {
+		panic(tpl.incompatibleBool(name))
+	}
+	if choices == nil {
+		panic(tpl.requireChoices(name))
+	}
+	seen := make(map[interface{}]bool, len(retired))
+	for _, rc := range retired {
+		formatted := formatValueForError(rc.Value)
+		if strings.TrimSpace(rc.Message) == "" {
+			panic(tpl.messageEmpty(name, formatted))
+		}
+		if inChoices(rc.Value, choices) {
+			panic(tpl.isLive(name, formatted))
+		}
+		if seen[rc.Value] {
+			panic(tpl.duplicate(name, formatted))
+		}
+		seen[rc.Value] = true
+	}
+	if hasDefault && dflt != nil {
+		for _, rc := range retired {
+			if rc.Value == dflt {
+				panic(tpl.defaultIsRetired(name, formatValueForError(dflt)))
+			}
+		}
+	}
+}
+
+// retiredChoiceTemplates carries one surface's half of the twinned message set,
+// so validateRetiredChoices states each rule once.
+type retiredChoiceTemplates struct {
+	isLive           func(string, string) string
+	duplicate        func(string, string) string
+	messageEmpty     func(string, string) string
+	incompatibleBool func(string) string
+	defaultIsRetired func(string, string) string
+	requireChoices   func(string) string
+}
+
+var flagRetiredChoiceTemplates = retiredChoiceTemplates{
+	isLive:           errFlagRetiredChoiceIsLive,
+	duplicate:        errFlagRetiredChoiceDuplicate,
+	messageEmpty:     errFlagRetiredChoiceMessageEmpty,
+	incompatibleBool: errFlagRetiredChoicesIncompatibleBool,
+	defaultIsRetired: errFlagDefaultIsRetiredChoice,
+	requireChoices:   errFlagRetiredChoicesRequireChoices,
+}
+
+var argRetiredChoiceTemplates = retiredChoiceTemplates{
+	isLive:           errArgRetiredChoiceIsLive,
+	duplicate:        errArgRetiredChoiceDuplicate,
+	messageEmpty:     errArgRetiredChoiceMessageEmpty,
+	incompatibleBool: errArgRetiredChoicesIncompatibleBool,
+	defaultIsRetired: errArgDefaultIsRetiredChoice,
+	requireChoices:   errArgRetiredChoicesRequireChoices,
+}
+
+// retiredChoiceMessage returns the message declared for a retired spelling, and
+// whether the value is retired at all. Retired lists are short and ordered, so
+// the scan mirrors inChoices rather than building a map.
+func retiredChoiceMessage(val interface{}, retired []RetiredChoiceValue) (string, bool) {
+	for _, rc := range retired {
+		if val == rc.Value {
+			return rc.Message, true
+		}
+	}
+	return "", false
+}
+
 // Repeatable marks a flag as accepting multiple occurrences.
 func Repeatable() FlagOption {
 	return flagOptFunc(func(f *Flag) {
@@ -999,6 +1129,15 @@ func ArgType(t FlagType) ArgOption {
 func ArgChoices(vals ...ChoiceValue) ArgOption {
 	return func(a *Arg) {
 		a.Choices, a.choiceRecords = choiceValuesToRecords(a.Name, vals, errArgChoicesEntryNotRecord)
+	}
+}
+
+// ArgRetiredChoices is the positional-arg twin of RetiredChoices: the
+// spellings this arg used to accept, each with the message naming its
+// replacement.
+func ArgRetiredChoices(vals ...RetiredChoiceValue) ArgOption {
+	return func(a *Arg) {
+		a.retiredChoices = append([]RetiredChoiceValue{}, vals...)
 	}
 }
 
@@ -1471,6 +1610,12 @@ func NewArg(name, help string, opts ...ArgOption) Arg {
 			}
 		}
 	}
+	// Retired choices, ahead of the default-in-choices check for the reason
+	// stated at the flag surface.
+	validateRetiredChoices(
+		a.Name, a.retiredChoices, a.Choices, ItemType(a.Type),
+		a.hasDefault, a.Default, argRetiredChoiceTemplates,
+	)
 	// Validate default is in choices
 	if a.Choices != nil && a.hasDefault && a.Default != nil {
 		found := false
@@ -1793,6 +1938,15 @@ func validateFlagConfig(f *Flag) {
 	if f.Type != TypeBool {
 		f.Negatable = false
 	}
+	// Retired choices. The guards run after the live choices are validated --
+	// a declaration that got its choices wrong is told that first -- and
+	// BEFORE the default-in-choices check, so a default naming a retired
+	// spelling is answered by the sentence that names the reason rather than
+	// by the list the value is missing from.
+	validateRetiredChoices(
+		f.Name, f.retiredChoices, f.Choices, ItemType(f.Type),
+		f.hasDefault, f.Default, flagRetiredChoiceTemplates,
+	)
 	// Validate default is in choices. The check applies to declared VALUES
 	// only: an optional flag has no value, and absence is never matched
 	// against choices (contract §23.5).
@@ -3813,7 +3967,7 @@ func (a *App) extractGlobalFlags(argv []string, hermetic bool) (map[string]inter
 		if !ok {
 			continue
 		}
-		if errMsg := validateChoices(f.Name, val, f.Repeatable, f.Choices, false); errMsg != "" {
+		if errMsg := validateChoices(f.Name, val, f.Repeatable, f.Choices, f.retiredChoices, false); errMsg != "" {
 			return nil, nil, nil, errMsg
 		}
 	}
