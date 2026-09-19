@@ -9511,7 +9511,9 @@ class App:
           ctx.effects", so a leaf the handle could not carry must never be a
           finding: the handle's closed method set has no in-process-observe
           method, which is why ``platform.system()`` is exempt while
-          ``os.system(...)`` is not (see :data:`_BYPASS_PROCESS_OS_ONLY`);
+          ``os.system(...)`` is not (see :data:`_BYPASS_PROCESS_OS_ONLY`). It
+          reads only repository-owned files (see :func:`_bypass_repo_files`)
+          and refuses a project root outside a git work tree;
         - ``observe-allowlist-breadth`` (warn) surfaces short
           ``proc_observe_allowlist`` prefixes, which authorize real execution
           under ``--dry-run``;
