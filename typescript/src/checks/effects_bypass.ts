@@ -37,6 +37,15 @@
  * through the literal `handler:` spelling or an `.effects` mention. Python and
  * Go, which have real in-process parsers, deliver intra-module reachability;
  * TypeScript delivers intra-file.
+ *
+ * WHAT IT READS (§11.2). Only files the repository owns: what
+ * `git ls-files --cached --others --exclude-standard` lists from the project
+ * root, which is tracked files plus untracked files `.gitignore` does not
+ * exclude. This check can block a release, and a release-blocking check that
+ * reads a gitignored scratch file gives a verdict a fresh clone cannot
+ * reproduce. A project root that is not inside a git work tree is refused with
+ * the sentence naming that requirement -- there is no filesystem-walk fallback
+ * and no flag that turns the rule off.
  */
 
 import { execFileSync } from "node:child_process";
