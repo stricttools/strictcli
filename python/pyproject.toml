@@ -42,6 +42,6 @@ testpaths = ["tests"]
 [project.urls]
 Homepage = "https://smmh.dev/strictcli/"
 Documentation = "https://smmh.dev/strictcli/"
-Repository = "https://github.com/smm-h/strictcli"
-Issues = "https://github.com/smm-h/strictcli/issues"
-Changelog = "https://github.com/smm-h/strictcli/blob/main/CHANGELOG.md"
+Repository = "https://github.com/stricttools/strictcli"
+Issues = "https://github.com/stricttools/strictcli/issues"
+Changelog = "https://github.com/stricttools/strictcli/blob/main/CHANGELOG.md"
