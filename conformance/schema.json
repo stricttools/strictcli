@@ -1296,6 +1296,66 @@
             }
           },
           "description": "Choices for float-type args, in the record spelling (contract §24.2): every entry is a value plus OPTIONAL help. The bare-value entry is deleted -- an entry that may carry help and an entry that carries none would be two spellings of one fact. The split by type survives because its reason is the input side's alone: JSON cannot tell an integer choice from a float one, and each harness must know which typed constructor to call."
+        },
+        "retired_choices_str": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "value",
+              "message"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "value": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          },
+          "description": "The spellings this arg USED to accept, each carrying the message that names its replacement. The typed split mirrors `choices_<T>`'s and exists for the same input-side reason: JSON cannot tell an integer spelling from a float one, and each harness must know which typed constructor to call. A bare entry (a value rather than a record) is spellable so Python's bare-entry refusal has a covering input; the siblings refuse it at compile time."
+        },
+        "retired_choices_int": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "value",
+              "message"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "value": {
+                "type": "integer"
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          },
+          "description": "The spellings this arg USED to accept, each carrying the message that names its replacement. The typed split mirrors `choices_<T>`'s and exists for the same input-side reason: JSON cannot tell an integer spelling from a float one, and each harness must know which typed constructor to call. A bare entry (a value rather than a record) is spellable so Python's bare-entry refusal has a covering input; the siblings refuse it at compile time."
+        },
+        "retired_choices_float": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "value",
+              "message"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "value": {
+                "type": "number"
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          },
+          "description": "The spellings this arg USED to accept, each carrying the message that names its replacement. The typed split mirrors `choices_<T>`'s and exists for the same input-side reason: JSON cannot tell an integer spelling from a float one, and each harness must know which typed constructor to call. A bare entry (a value rather than a record) is spellable so Python's bare-entry refusal has a covering input; the siblings refuse it at compile time."
         }
       }
     },
@@ -1645,6 +1705,66 @@
             }
           },
           "description": "Choices for float-type flags, in the record spelling (contract §24.2): every entry is a value plus OPTIONAL help. The bare-value entry is deleted -- an entry that may carry help and an entry that carries none would be two spellings of one fact. The split by type survives because its reason is the input side's alone: JSON cannot tell an integer choice from a float one, and each harness must know which typed constructor to call."
+        },
+        "retired_choices_str": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "value",
+              "message"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "value": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          },
+          "description": "The spellings this flag USED to accept, each carrying the message that names its replacement. The typed split mirrors `choices_<T>`'s and exists for the same input-side reason: JSON cannot tell an integer spelling from a float one, and each harness must know which typed constructor to call. A bare entry (a value rather than a record) is spellable so Python's bare-entry refusal has a covering input; the siblings refuse it at compile time."
+        },
+        "retired_choices_int": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "value",
+              "message"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "value": {
+                "type": "integer"
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          },
+          "description": "The spellings this flag USED to accept, each carrying the message that names its replacement. The typed split mirrors `choices_<T>`'s and exists for the same input-side reason: JSON cannot tell an integer spelling from a float one, and each harness must know which typed constructor to call. A bare entry (a value rather than a record) is spellable so Python's bare-entry refusal has a covering input; the siblings refuse it at compile time."
+        },
+        "retired_choices_float": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "value",
+              "message"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "value": {
+                "type": "number"
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          },
+          "description": "The spellings this flag USED to accept, each carrying the message that names its replacement. The typed split mirrors `choices_<T>`'s and exists for the same input-side reason: JSON cannot tell an integer spelling from a float one, and each harness must know which typed constructor to call. A bare entry (a value rather than a record) is spellable so Python's bare-entry refusal has a covering input; the siblings refuse it at compile time."
         },
         "repeatable": {
           "type": "boolean",

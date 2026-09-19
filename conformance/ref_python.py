@@ -182,6 +182,35 @@ def _choices_part(decl: dict) -> list[str]:
     return []
 
 
+def _retired_choices_part(decl: dict) -> list[str]:
+    """Emit `retired_choices=` from the record-shaped typed keys.
+
+    The value-level twin of the deprecated-command construct: a spelling the
+    declaration used to accept, plus the message naming its replacement. The
+    typed split mirrors `choices_<T>`'s, for the same input-side reason.
+    """
+    for key, cast in (
+        ("retired_choices_str", lambda v: repr(v)),
+        ("retired_choices_int", lambda v: repr(int(v))),
+        ("retired_choices_float", lambda v: repr(float(v))),
+    ):
+        if key not in decl:
+            continue
+        entries = []
+        for rec in decl[key]:
+            # A BARE entry is spellable so Python's bare-entry refusal has a
+            # covering input; the siblings refuse it at compile time.
+            if not isinstance(rec, dict):
+                entries.append(cast(rec))
+                continue
+            entries.append(
+                f"strictcli.RetiredChoice({cast(rec['value'])}, "
+                f"message={rec['message']!r})"
+            )
+        return [f"retired_choices=[{', '.join(entries)}]"]
+    return []
+
+
 def _is_selector(decl: dict) -> bool:
     """`elect_by` is the input-side discriminator (§13's item-207 box)."""
     return "elect_by" in decl
@@ -296,6 +325,7 @@ class _ChoiceClassEmitter:
             if "prefixed" in sub:
                 parts.append(f"prefixed={sub['prefixed']!r}")
             parts.extend(_choices_part(sub))
+            parts.extend(_retired_choices_part(sub))
             if sub.get("repeatable", False):
                 parts.append("repeatable=True")
             if "unique" in sub:
@@ -447,6 +477,7 @@ def _emit_flag(flag_def: dict, indent: str = "") -> str:
         parts.append(f"prefixed={flag_def['prefixed']!r}")
 
     parts.extend(_choices_part(flag_def))
+    parts.extend(_retired_choices_part(flag_def))
 
     if flag_def.get("repeatable", False):
         parts.append("repeatable=True")
@@ -958,6 +989,7 @@ def _emit_command_registration(
                 if a.get("variadic", False):
                     aparts.append("variadic=True")
                 aparts.extend(_choices_part(a))
+                aparts.extend(_retired_choices_part(a))
                 arg_exprs.append(f"strictcli.Arg({', '.join(aparts)})")
             lines.append(
                 f"{indent}    args=[{', '.join(arg_exprs)}],"
@@ -1031,6 +1063,7 @@ def _emit_command_registration(
             if a.get("variadic", False):
                 aparts.append("variadic=True")
             aparts.extend(_choices_part(a))
+            aparts.extend(_retired_choices_part(a))
             arg_exprs.append(f"strictcli.Arg({', '.join(aparts)})")
         decorator_parts.append(
             f"{indent}    args=[{', '.join(arg_exprs)}],"
@@ -1122,6 +1155,7 @@ def _emit_command_registration(
         if "prefixed" in f:
             fd_parts.append(f"prefixed={f['prefixed']!r}")
         fd_parts.extend(_choices_part(f))
+        fd_parts.extend(_retired_choices_part(f))
         if f.get("repeatable", False):
             fd_parts.append("repeatable=True")
         if "unique" in f:

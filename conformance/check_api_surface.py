@@ -360,6 +360,9 @@ _GLOBAL_SCHEMA_TEST_ONLY: set[str] = {
 # Shared name mappings (applied to any entity that uses them).
 _SHARED_PYTHON_TO_SCHEMA: dict[str, list[str]] = {
     "choices": ["choices_str", "choices_int", "choices_float"],
+    "retired_choices": [
+        "retired_choices_str", "retired_choices_int", "retired_choices_float",
+    ],
     "env_prefix": ["env_prefix"],
     "variadic": ["variadic"],
     "negatable": ["negatable"],
@@ -371,6 +374,7 @@ _SHARED_GO_TO_SCHEMA: dict[str, str] = {
     "EnvPrefix": "env_prefix",
     "EnvSeparator": "env_separator",
     "Choices": "choices_str",
+    "retiredChoices": "retired_choices_str",
     "Type": "type",
     "ConflictMode": "conflict_mode",
     # ConnectionEnv maps by default snake conversion; ConnectionURL needs an
@@ -382,6 +386,9 @@ _SHARED_SCHEMA_TO_PYTHON: dict[str, str] = {
     "choices_str": "choices",
     "choices_int": "choices",
     "choices_float": "choices",
+    "retired_choices_str": "retired_choices",
+    "retired_choices_int": "retired_choices",
+    "retired_choices_float": "retired_choices",
     "env_prefix": "env_prefix",
     "variadic": "variadic",
     "negatable": "negatable",
@@ -391,6 +398,9 @@ _SHARED_SCHEMA_TO_GO: dict[str, str] = {
     "choices_str": "Choices",
     "choices_int": "Choices",
     "choices_float": "Choices",
+    "retired_choices_str": "retiredChoices",
+    "retired_choices_int": "retiredChoices",
+    "retired_choices_float": "retiredChoices",
     "variadic": "IsVariadic",
     "negatable": "Negatable",
     "env_prefix": "EnvPrefix",
@@ -426,6 +436,7 @@ TS_STRUCT_OPTION_CTOR: dict[str, list[str]] = {
 
 _SHARED_TS_TO_SCHEMA: dict[str, str] = {
     "choices": "choices_str",
+    "retiredChoices": "retired_choices_str",
     "schema": "type",
 }
 
@@ -433,6 +444,9 @@ _SHARED_SCHEMA_TO_TS: dict[str, str] = {
     "choices_str": "choices",
     "choices_int": "choices",
     "choices_float": "choices",
+    "retired_choices_str": "retiredChoices",
+    "retired_choices_int": "retiredChoices",
+    "retired_choices_float": "retiredChoices",
     "type": "schema",
 }
 
@@ -1009,6 +1023,10 @@ KNOWN_OPTION_FUNCS: set[str] = {
     "Short", "Default", "Env", "Prefixed", "Choices", "Repeatable",
     "ValidateFn", "NegatableOpt",
     "ArgRequired", "ArgDefault", "Variadic", "ArgType", "ArgChoices",
+    # Retired choices: the spellings a declaration used to accept, each with
+    # the message naming its replacement. One option per surface, beside
+    # Choices / ArgChoices, whose declaration they require.
+    "RetiredChoices", "ArgRetiredChoices",
     # The presence declaration (contract §23.2, §23.3): three sibling
     # FlagOptions and their ArgOption twins, where Default(v) / ArgDefault(v)
     # are the third spelling and were already catalogued above.

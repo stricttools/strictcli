@@ -679,6 +679,40 @@ func choiceRecords(d map[string]interface{}) ([]strictcli.ChoiceValue, bool) {
 	return nil, false
 }
 
+// retiredChoiceRecords converts a declaration's record-shaped
+// `retired_choices_<T>` key into the RetiredChoiceValue list Go's
+// RetiredChoices/ArgRetiredChoices take. The typed split mirrors
+// choiceRecords's, for the same input-side reason.
+func retiredChoiceRecords(d map[string]interface{}) ([]strictcli.RetiredChoiceValue, bool) {
+	for key, conv := range map[string]func(interface{}) interface{}{
+		"retired_choices_str":   func(v interface{}) interface{} { return v.(string) },
+		"retired_choices_int":   func(v interface{}) interface{} { return int(v.(float64)) },
+		"retired_choices_float": func(v interface{}) interface{} { return v.(float64) },
+	} {
+		raw, ok := d[key]
+		if !ok {
+			continue
+		}
+		var out []strictcli.RetiredChoiceValue
+		for _, item := range raw.([]interface{}) {
+			rec, isRecord := item.(map[string]interface{})
+			if !isRecord {
+				// A bare entry is only refusable in Python, whose keyword takes
+				// a list of anything; Go's variadic parameter is typed, so the
+				// bare spelling reaches here as a value with no message and is
+				// answered by the empty-message guard.
+				out = append(out, strictcli.RetiredChoiceValue{Value: conv(item)})
+				continue
+			}
+			out = append(out, strictcli.RetiredChoice(
+				conv(rec["value"]), rec["message"].(string),
+			))
+		}
+		return out, true
+	}
+	return nil, false
+}
+
 // isSelector reports whether a flag definition declares the scoped-selector
 // construct. `elect_by` is the input-side discriminator exactly as it is the
 // dump's (§13's item-207 box, §25.6).
@@ -919,6 +953,9 @@ func buildFlag(fd map[string]interface{}) strictcli.Flag {
 	if vals, ok := choiceRecords(fd); ok {
 		opts = append(opts, strictcli.Choices(vals...))
 	}
+	if vals, ok := retiredChoiceRecords(fd); ok {
+		opts = append(opts, strictcli.RetiredChoices(vals...))
+	}
 	if v, ok := fd["repeatable"]; ok && v.(bool) {
 		opts = append(opts, strictcli.Repeatable())
 	}
@@ -1045,6 +1082,9 @@ func buildArg(ad map[string]interface{}) strictcli.Arg {
 	}
 	if vals, ok := choiceRecords(ad); ok {
 		opts = append(opts, strictcli.ArgChoices(vals...))
+	}
+	if vals, ok := retiredChoiceRecords(ad); ok {
+		opts = append(opts, strictcli.ArgRetiredChoices(vals...))
 	}
 
 	return strictcli.NewArg(name, help, opts...)

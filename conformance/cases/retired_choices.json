@@ -1,0 +1,912 @@
+[
+  {
+    "name": "retired choices: a retired flag value is refused, naming its replacement",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "format={format}",
+          "flags": [
+            {
+              "name": "format",
+              "type": "str",
+              "help": "output format",
+              "presence": "required",
+              "choices_str": [
+                {
+                  "value": "text"
+                },
+                {
+                  "value": "json"
+                }
+              ],
+              "retired_choices_str": [
+                {
+                  "value": "xml",
+                  "message": "use 'json' (XML output was dropped)"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd",
+      "--format",
+      "xml"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "error: --format: value 'xml' retired: use 'json' (XML output was dropped)\ntry 'myapp cmd --help'"
+    }
+  },
+  {
+    "name": "retired choices: a retired arg value is refused, naming its replacement",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "mode={mode}",
+          "args": [
+            {
+              "name": "mode",
+              "type": "str",
+              "help": "the mode",
+              "presence": "required",
+              "choices_str": [
+                {
+                  "value": "fast"
+                },
+                {
+                  "value": "slow"
+                }
+              ],
+              "retired_choices_str": [
+                {
+                  "value": "turbo",
+                  "message": "use 'fast' (turbo was renamed)"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd",
+      "turbo"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "error: argument 'mode': value 'turbo' retired: use 'fast' (turbo was renamed)\ntry 'myapp cmd --help'"
+    }
+  },
+  {
+    "name": "retired choices: a live value is still accepted",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "format={format}",
+          "flags": [
+            {
+              "name": "format",
+              "type": "str",
+              "help": "output format",
+              "presence": "required",
+              "choices_str": [
+                {
+                  "value": "text"
+                },
+                {
+                  "value": "json"
+                }
+              ],
+              "retired_choices_str": [
+                {
+                  "value": "xml",
+                  "message": "use 'json' (XML output was dropped)"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd",
+      "--format",
+      "json"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "format=json"
+    }
+  },
+  {
+    "name": "retired choices: a value that is neither live nor retired takes the invalid-value sentence",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "format={format}",
+          "flags": [
+            {
+              "name": "format",
+              "type": "str",
+              "help": "output format",
+              "presence": "required",
+              "choices_str": [
+                {
+                  "value": "text"
+                },
+                {
+                  "value": "json"
+                }
+              ],
+              "retired_choices_str": [
+                {
+                  "value": "xml",
+                  "message": "use 'json' (XML output was dropped)"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd",
+      "--format",
+      "yaml"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "error: --format: invalid value 'yaml', must be one of: text, json\ntry 'myapp cmd --help'"
+    }
+  },
+  {
+    "name": "retired choices: an int-typed retired spelling formats like every other value",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "port={port}",
+          "flags": [
+            {
+              "name": "port",
+              "type": "int",
+              "help": "the port",
+              "presence": "required",
+              "choices_int": [
+                {
+                  "value": 80
+                },
+                {
+                  "value": 443
+                }
+              ],
+              "retired_choices_int": [
+                {
+                  "value": 8080,
+                  "message": "use 443 (the plaintext port was dropped)"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd",
+      "--port",
+      "8080"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "error: --port: value '8080' retired: use 443 (the plaintext port was dropped)\ntry 'myapp cmd --help'"
+    }
+  },
+  {
+    "name": "retired choices: help never lists a retired value",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "format={format}",
+          "flags": [
+            {
+              "name": "format",
+              "type": "str",
+              "help": "output format",
+              "presence": "required",
+              "choices_str": [
+                {
+                  "value": "text"
+                },
+                {
+                  "value": "json"
+                }
+              ],
+              "retired_choices_str": [
+                {
+                  "value": "xml",
+                  "message": "use 'json' (XML output was dropped)"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd",
+      "--help"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_contains": [
+        "[choices: text, json]"
+      ],
+      "stdout_not_contains": "xml"
+    }
+  },
+  {
+    "name": "retired choices: the dump publishes retired_choices, sorted ascending by key",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "format={format} mode={mode}",
+          "flags": [
+            {
+              "name": "format",
+              "type": "str",
+              "help": "output format",
+              "presence": "required",
+              "choices_str": [
+                {
+                  "value": "text"
+                },
+                {
+                  "value": "json"
+                }
+              ],
+              "retired_choices_str": [
+                {
+                  "value": "xml",
+                  "message": "use 'json'"
+                },
+                {
+                  "value": "ascii",
+                  "message": "use 'text'"
+                }
+              ]
+            }
+          ],
+          "args": [
+            {
+              "name": "mode",
+              "type": "str",
+              "help": "the mode",
+              "presence": "required",
+              "choices_str": [
+                {
+                  "value": "fast"
+                }
+              ],
+              "retired_choices_str": [
+                {
+                  "value": "turbo",
+                  "message": "use 'fast'"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--dump-schema"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "schema_command_keys": {
+        "cmd": {
+          "flags": [
+            {
+              "name": "format",
+              "help": "output format",
+              "value_schema": {
+                "type": "string",
+                "enum": [
+                  "text",
+                  "json"
+                ]
+              },
+              "presence": "required",
+              "choices": [
+                {
+                  "value": "text"
+                },
+                {
+                  "value": "json"
+                }
+              ],
+              "retired_choices": {
+                "ascii": "use 'text'",
+                "xml": "use 'json'"
+              }
+            }
+          ],
+          "args": [
+            {
+              "name": "mode",
+              "help": "the mode",
+              "value_schema": {
+                "type": "string",
+                "enum": [
+                  "fast"
+                ]
+              },
+              "presence": "required",
+              "choices": [
+                {
+                  "value": "fast"
+                }
+              ],
+              "retired_choices": {
+                "turbo": "use 'fast'"
+              }
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "name": "retired choices: the dump omits retired_choices when nothing is retired",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "format={format}",
+          "flags": [
+            {
+              "name": "format",
+              "type": "str",
+              "help": "output format",
+              "presence": "required",
+              "choices_str": [
+                {
+                  "value": "text"
+                },
+                {
+                  "value": "json"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--dump-schema"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "schema_command_keys": {
+        "cmd": {
+          "flags": [
+            {
+              "name": "format",
+              "help": "output format",
+              "value_schema": {
+                "type": "string",
+                "enum": [
+                  "text",
+                  "json"
+                ]
+              },
+              "presence": "required",
+              "choices": [
+                {
+                  "value": "text"
+                },
+                {
+                  "value": "json"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "name": "retired choices: a retired spelling equal to a live choice does not register",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "format={format}",
+          "flags": [
+            {
+              "name": "format",
+              "type": "str",
+              "help": "output format",
+              "presence": "required",
+              "choices_str": [
+                {
+                  "value": "text"
+                },
+                {
+                  "value": "json"
+                }
+              ],
+              "retired_choices_str": [
+                {
+                  "value": "json",
+                  "message": "use 'text'"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "error: Flag \"format\": retired choice 'json' is also a live choice: a value is live or retired, never both"
+    },
+    "skip_schema_validation": true
+  },
+  {
+    "name": "retired choices: an arg's retired spelling equal to a live choice does not register",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "mode={mode}",
+          "args": [
+            {
+              "name": "mode",
+              "type": "str",
+              "help": "the mode",
+              "presence": "required",
+              "choices_str": [
+                {
+                  "value": "fast"
+                },
+                {
+                  "value": "slow"
+                }
+              ],
+              "retired_choices_str": [
+                {
+                  "value": "fast",
+                  "message": "use 'slow'"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd",
+      "fast"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "error: Arg \"mode\": retired choice 'fast' is also a live choice: a value is live or retired, never both"
+    },
+    "skip_schema_validation": true
+  },
+  {
+    "name": "retired choices: a duplicate retired spelling does not register",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "format={format}",
+          "flags": [
+            {
+              "name": "format",
+              "type": "str",
+              "help": "output format",
+              "presence": "required",
+              "choices_str": [
+                {
+                  "value": "text"
+                },
+                {
+                  "value": "json"
+                }
+              ],
+              "retired_choices_str": [
+                {
+                  "value": "xml",
+                  "message": "use 'json'"
+                },
+                {
+                  "value": "xml",
+                  "message": "use 'text'"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "error: Flag \"format\": retired choice 'xml' is declared twice"
+    },
+    "skip_schema_validation": true
+  },
+  {
+    "name": "retired choices: an empty retired message does not register",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "format={format}",
+          "flags": [
+            {
+              "name": "format",
+              "type": "str",
+              "help": "output format",
+              "presence": "required",
+              "choices_str": [
+                {
+                  "value": "text"
+                },
+                {
+                  "value": "json"
+                }
+              ],
+              "retired_choices_str": [
+                {
+                  "value": "xml",
+                  "message": ""
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "error: Flag \"format\": retired choice 'xml': message must be a non-empty string"
+    },
+    "skip_schema_validation": true
+  },
+  {
+    "name": "retired choices: retired choices on a bool do not register",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "cache={cache}",
+          "flags": [
+            {
+              "name": "cache",
+              "type": "bool",
+              "help": "use the cache",
+              "presence": "default",
+              "default": false,
+              "retired_choices_str": [
+                {
+                  "value": "on",
+                  "message": "use --cache"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "error: Flag \"cache\": retired choices are incompatible with type=bool"
+    },
+    "skip_schema_validation": true
+  },
+  {
+    "name": "retired choices: a default naming a retired spelling does not register",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "format={format}",
+          "flags": [
+            {
+              "name": "format",
+              "type": "str",
+              "help": "output format",
+              "presence": "default",
+              "default": "xml",
+              "choices_str": [
+                {
+                  "value": "text"
+                },
+                {
+                  "value": "json"
+                }
+              ],
+              "retired_choices_str": [
+                {
+                  "value": "xml",
+                  "message": "use 'json' (XML output was dropped)"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "error: Flag \"format\": default 'xml' is a retired choice"
+    },
+    "skip_schema_validation": true
+  },
+  {
+    "name": "retired choices: an arg default naming a retired spelling does not register",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "mode={mode}",
+          "args": [
+            {
+              "name": "mode",
+              "type": "str",
+              "help": "the mode",
+              "presence": "default",
+              "default": "turbo",
+              "choices_str": [
+                {
+                  "value": "fast"
+                },
+                {
+                  "value": "slow"
+                }
+              ],
+              "retired_choices_str": [
+                {
+                  "value": "turbo",
+                  "message": "use 'fast' (turbo was renamed)"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "error: Arg \"mode\": default 'turbo' is a retired choice"
+    },
+    "skip_schema_validation": true
+  },
+  {
+    "name": "retired choices: retired choices declared without choices do not register",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "format={format}",
+          "flags": [
+            {
+              "name": "format",
+              "type": "str",
+              "help": "output format",
+              "presence": "required",
+              "retired_choices_str": [
+                {
+                  "value": "xml",
+                  "message": "use 'json' (XML output was dropped)"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "error: Flag \"format\": retired choices require choices"
+    },
+    "skip_schema_validation": true
+  },
+  {
+    "name": "retired choices: an arg's retired choices declared without choices do not register",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "mode={mode}",
+          "args": [
+            {
+              "name": "mode",
+              "type": "str",
+              "help": "the mode",
+              "presence": "required",
+              "retired_choices_str": [
+                {
+                  "value": "turbo",
+                  "message": "use 'fast' (turbo was renamed)"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd",
+      "fast"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "error: Arg \"mode\": retired choices require choices"
+    },
+    "skip_schema_validation": true
+  },
+  {
+    "name": "retired choices: a bare retired entry does not register (python)",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "format={format}",
+          "flags": [
+            {
+              "name": "format",
+              "type": "str",
+              "help": "output format",
+              "presence": "required",
+              "choices_str": [
+                {
+                  "value": "text"
+                },
+                {
+                  "value": "json"
+                }
+              ],
+              "retired_choices_str": [
+                "xml"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "error: Flag \"format\": retired_choices entry 0 is a bare value: declare it as RetiredChoice(<value>, message=\"<message>\")"
+    },
+    "skip_schema_validation": true,
+    "targets": [
+      "python"
+    ]
+  }
+]

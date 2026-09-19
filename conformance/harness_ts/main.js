@@ -219,6 +219,37 @@ function choiceRecord(conv) {
 	};
 }
 
+/**
+ * Converts a declaration's record-shaped `retired_choices_<T>` key into the
+ * record literals the TS surface takes. The typed split mirrors
+ * choiceRecords's, for the same input-side reason.
+ */
+function retiredChoiceRecords(d) {
+	if ("retired_choices_str" in d) {
+		return d.retired_choices_str.map(retiredChoiceRecord((v) => v));
+	}
+	if ("retired_choices_int" in d) {
+		return d.retired_choices_int.map(retiredChoiceRecord((v) => BigInt(v)));
+	}
+	if ("retired_choices_float" in d) {
+		return d.retired_choices_float.map(retiredChoiceRecord((v) => v));
+	}
+	return undefined;
+}
+
+function retiredChoiceRecord(conv) {
+	return (rec) => {
+		// A bare entry is only refusable in Python, whose keyword takes a list
+		// of anything; the TS record type refuses it at compile time, so the
+		// bare spelling reaches the factory as a value with no message and is
+		// answered by the empty-message guard.
+		if (rec === null || typeof rec !== "object") {
+			return { value: conv(rec), message: "" };
+		}
+		return { value: conv(rec.value), message: rec.message };
+	};
+}
+
 /** `elect_by` is the input-side discriminator (§13's item-207 box, §25.6). */
 function isSelector(fd) {
 	return "elect_by" in fd;
@@ -506,6 +537,10 @@ function buildFlag(fd) {
 	if (flagChoices !== undefined) {
 		opts.choices = flagChoices;
 	}
+	const flagRetired = retiredChoiceRecords(fd);
+	if (flagRetired !== undefined) {
+		opts.retiredChoices = flagRetired;
+	}
 	if (repeatable) {
 		opts.repeatable = true;
 	}
@@ -580,6 +615,10 @@ function buildArg(ad) {
 	const argChoices = choiceRecords(ad);
 	if (argChoices !== undefined) {
 		opts.choices = argChoices;
+	}
+	const argRetired = retiredChoiceRecords(ad);
+	if (argRetired !== undefined) {
+		opts.retiredChoices = argRetired;
 	}
 	return arg(ad.name, argCarrier(atype), opts);
 }

@@ -899,6 +899,20 @@ SIGNATURE_STATUS: dict[str, dict[str, str]] = {
         'go': 'excluded:Python parameterizes the Flag/Arg prefix into one template where the siblings twin it (contract §12.13, §18.19 item 219); the twinned signatures carry the assertion',
         'typescript': 'excluded:Python parameterizes the Flag/Arg prefix into one template where the siblings twin it (contract §12.13, §18.19 item 219); the twinned signatures carry the assertion',
     },
+    # -- Retired choices: one Python-only entry-shape refusal --
+    # The rules themselves (a live spelling, a duplicate, an empty message, a
+    # bool carrier, a retired default, and retired choices without choices) are
+    # twinned per surface in all three implementations and match without an
+    # exclusion. Only the ENTRY SHAPE diverges: Python's `retired_choices=`
+    # keyword takes a list of anything, so a bare value is a runtime refusal,
+    # where Go's variadic `...RetiredChoiceValue` and TypeScript's
+    # `RetiredChoiceRecord` tuple make the same mis-declaration a compile
+    # error. cases/retired_choices.json asserts it per target.
+    '* *: retired_choices entry * is a bare value: declare it as *': {
+        'go': "excluded:Python-only: the keyword takes a list of anything, where Go's variadic RetiredChoiceValue parameter refuses a bare value at compile time",
+        'typescript': "excluded:Python-only: the keyword takes a list of anything, where TypeScript's RetiredChoiceRecord tuple refuses a bare value at compile time",
+    },
+
     '* *: choices entry * is the choice class *, which declares a scope: a choice with a scope belongs to a choice flag, declared with *': {
         'go': "excluded:Python-only (contract §12.13, §18.19 item 220): errChoicesEntryIsChoiceClass names the @choice class twin; Go's Ch and TypeScript's record literal are distinct types, so the sibling mis-declaration is a compile error",
         'typescript': "excluded:Python-only (contract §12.13, §18.19 item 220): errChoicesEntryIsChoiceClass names the @choice class twin; Go's Ch and TypeScript's record literal are distinct types, so the sibling mis-declaration is a compile error",
