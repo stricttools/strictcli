@@ -7,12 +7,12 @@
 # scratch file and substitutes its path for {file}; that path arrives as $1.
 #
 # A marked block is a complete `package main` program importing
-# github.com/smm-h/strictcli/go/strictcli. It is compiled inside a throwaway
-# module whose `replace` directive points that import path at THIS checkout,
-# so examples are validated against the working tree rather than whatever
-# version the proxy happens to serve. Compiling is not enough: strictcli's
-# registration guardrails are runtime panics, so the built binary is also
-# executed (with no arguments, which prints help and exits 0).
+# github.com/stricttools/strictcli/go/strictcli. It is compiled inside a
+# throwaway module whose `replace` directive points that import path at THIS
+# checkout, so examples are validated against the working tree rather than
+# whatever version the proxy happens to serve. Compiling is not enough:
+# strictcli's registration guardrails are runtime panics, so the built binary
+# is also executed (with no arguments, which prints help and exits 0).
 #
 # Any failure is a hard error -- no skips, no warnings.
 
@@ -61,9 +61,9 @@ module strictcli.example
 
 go $go_directive
 
-require github.com/smm-h/strictcli/go v0.0.0
+require github.com/stricttools/strictcli/go v0.0.0
 
-replace github.com/smm-h/strictcli/go => $go_module
+replace github.com/stricttools/strictcli/go => $go_module
 EOF
 
 # A go.work file anywhere above the temp directory would silently override the
