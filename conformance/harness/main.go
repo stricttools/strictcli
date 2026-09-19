@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	tomledit "github.com/smm-h/go-toml-edit"
-	"github.com/smm-h/strictcli/go/strictcli"
+	"github.com/stricttools/strictcli/go/strictcli"
 )
 
 // Suppress unused-import errors when templates have no substitutions.

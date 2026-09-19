@@ -1,6 +1,6 @@
 package noncomparable
 
-import "github.com/smm-h/strictcli/go/strictcli"
+import "github.com/stricttools/strictcli/go/strictcli"
 
 // compareSpawned must NOT compile: Spawned's `_ [0]func()` field makes the
 // struct non-comparable. Every other field of Spawned is comparable (the

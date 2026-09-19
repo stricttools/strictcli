@@ -1,6 +1,6 @@
 package noncomparable
 
-import "github.com/smm-h/strictcli/go/strictcli"
+import "github.com/stricttools/strictcli/go/strictcli"
 
 // compareResponse must NOT compile: Response's `_ [0]func()` field makes the
 // struct non-comparable. Because the field is declared FIRST, it is the one the

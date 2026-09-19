@@ -1,6 +1,6 @@
 package noncomparable
 
-import "github.com/smm-h/strictcli/go/strictcli"
+import "github.com/stricttools/strictcli/go/strictcli"
 
 // compareUnsettled must NOT compile: Unsettled's `_ [0]func()` field makes the
 // struct non-comparable.

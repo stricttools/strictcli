@@ -1,6 +1,6 @@
 package noncomparable
 
-import "github.com/smm-h/strictcli/go/strictcli"
+import "github.com/stricttools/strictcli/go/strictcli"
 
 // carrierUse is the POSITIVE half of the pin: the four carriers are perfectly
 // usable in every non-comparing position (parameters, returns, interface

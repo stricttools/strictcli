@@ -1,4 +1,4 @@
-module github.com/smm-h/strictcli/go
+module github.com/stricttools/strictcli/go
 
 go 1.25.7
 
