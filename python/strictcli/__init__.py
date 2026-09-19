@@ -2798,36 +2798,87 @@ def _open_is_write_mode(node) -> bool:
     return any(ch in mode for ch in ("w", "a", "x", "+"))
 
 
+class _BypassRootNotAWorkTree(Exception):
+    """The project root handed to the lint is not inside a git work tree."""
+
+
+def _msg_effects_bypass_not_a_work_tree(root: str) -> str:
+    """Message template: the lint's input rule, refused at its one door."""
+    return (
+        f"effects-bypass: project root '{root}' is not a git work tree; "
+        f"the check reads only repository-owned files"
+    )
+
+
+def _bypass_path_is_skipped(rel: str) -> bool:
+    """True when a repository-owned path sits under a skipped directory.
+
+    git lists tracked files wherever they are, including the directories the
+    analyser never reads -- a vendored tree, a committed ``testdata`` or
+    ``build`` directory, a dot-directory's contents. The skip list therefore
+    still applies, now as a filter over git's answer rather than as a walk
+    pruner.
+    """
+    return any(
+        part in _BYPASS_SKIP_DIRS or part.startswith(".")
+        for part in rel.split(os.sep)[:-1]
+    )
+
+
+def _bypass_repo_files(root: Path) -> list[str]:
+    """The repository-owned Python files under ``root``, relative to it.
+
+    The input set is what git reports: tracked files plus untracked files
+    ``.gitignore`` does not exclude. A release-blocking check reads only inputs
+    the repository owns, so a gitignored scratch file -- present on one machine
+    and absent from a fresh clone -- can never decide the verdict. There is no
+    filesystem-walk fallback: a root outside a work tree is refused.
+    """
+    try:
+        proc = subprocess.run(
+            ["git", "ls-files", "--cached", "--others", "--exclude-standard", "-z"],
+            cwd=str(root),
+            capture_output=True,
+            check=False,
+        )
+    except OSError as exc:
+        raise _BypassRootNotAWorkTree(
+            _msg_effects_bypass_not_a_work_tree(str(root))
+        ) from exc
+    if proc.returncode != 0:
+        raise _BypassRootNotAWorkTree(
+            _msg_effects_bypass_not_a_work_tree(str(root))
+        )
+    listed = proc.stdout.decode("utf-8", "replace").split("\0")
+    return sorted({
+        rel for rel in listed
+        if rel.endswith(".py") and not _bypass_path_is_skipped(rel)
+    })
+
+
 def _scan_effects_bypasses(root: Path) -> list[tuple]:
     """Find direct effect calls REACHABLE FROM a registered command handler.
 
     Returns ``(relative_path, lineno, function_name, target)`` tuples, in file
-    then line order. See :func:`_bypass_reachable_functions` for the scope rule.
+    then line order. See :func:`_bypass_reachable_functions` for the scope rule
+    and :func:`_bypass_repo_files` for the input rule. Raises
+    :class:`_BypassRootNotAWorkTree` when the root is not inside a git work
+    tree.
     """
     findings: list[tuple] = []
-    if not root.is_dir():
-        return findings
-    for dirpath, dirnames, filenames in os.walk(root):
-        dirnames[:] = sorted(
-            d for d in dirnames
-            if d not in _BYPASS_SKIP_DIRS and not d.startswith(".")
-        )
-        for fname in sorted(filenames):
-            if not fname.endswith(".py"):
-                continue
-            path = os.path.join(dirpath, fname)
-            try:
-                tree = ast.parse(Path(path).read_text(encoding="utf-8"), filename=path)
-            except (OSError, SyntaxError, UnicodeDecodeError, ValueError):
-                # A file the analyser cannot read is not evidence of a bypass.
-                continue
-            rel = os.path.relpath(path, root)
-            reachable = _bypass_reachable_functions(tree)
-            if not reachable:
-                continue
-            _bypass_walk(tree, [], reachable, findings, rel,
-                         _bypass_effects_aliases(tree),
-                         _bypass_import_bindings(tree))
+    for rel in _bypass_repo_files(root):
+        path = os.path.join(str(root), rel)
+        try:
+            tree = ast.parse(Path(path).read_text(encoding="utf-8"), filename=path)
+        except (OSError, SyntaxError, UnicodeDecodeError, ValueError):
+            # A file the analyser cannot read is not evidence of a bypass.
+            continue
+        reachable = _bypass_reachable_functions(tree)
+        if not reachable:
+            continue
+        _bypass_walk(tree, [], reachable, findings, rel,
+                     _bypass_effects_aliases(tree),
+                     _bypass_import_bindings(tree))
     return findings
 
 
@@ -9469,7 +9520,13 @@ class App:
           themselves consequential.
         """
         def impl(ctx: CheckContext, reporter: "ErrorReporter") -> "_CheckOutcome":
-            findings = _scan_effects_bypasses(Path(ctx.project_root))
+            try:
+                findings = _scan_effects_bypasses(Path(ctx.project_root))
+            except _BypassRootNotAWorkTree as exc:
+                # The input rule is part of the verdict: a root the repository
+                # does not own is refused here, never scanned another way.
+                reporter.error(str(exc))
+                return reporter.found(str(exc))
             for rel, lineno, func_name, target in findings:
                 reporter.error(
                     f"{rel}:{lineno}: {func_name} calls {target} directly; "

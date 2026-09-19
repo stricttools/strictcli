@@ -1,6 +1,7 @@
 """Tests for the built-in `effects-bypass` check provider."""
 
 import json
+import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -18,7 +19,20 @@ class SimpleContext:
 CHECKS_TOML = 'app = "testapp"\n'
 
 
-def _app(tmp_path, project_root=None):
+def _git(root, *args):
+    """Run one git command inside a fixture repository."""
+    subprocess.run(
+        ["git", *args], cwd=str(root), check=True, capture_output=True,
+    )
+
+
+def _app(tmp_path, project_root=None, git_init=True):
+    """An app whose check context names a project root.
+
+    The root is a git work tree by default: the `effects-bypass` check reads
+    only repository-owned files, so a fixture that is not a repository is
+    refused rather than scanned.
+    """
     toml_file = tmp_path / "checks.toml"
     toml_file.write_text(CHECKS_TOML)
     app = strictcli.App(
@@ -27,6 +41,8 @@ def _app(tmp_path, project_root=None):
     )
     root = project_root if project_root is not None else tmp_path / "src"
     root.mkdir(parents=True, exist_ok=True)
+    if git_init:
+        _git(root, "init", "-q")
     app.set_check_context(lambda: SimpleContext(project_root=root))
     return app, root
 
@@ -327,6 +343,56 @@ async def deploy(ctx):
     os.remove("x")
 ''')
         assert r.exit_code == 1
+
+
+_OFFENDING = '''
+def deploy(ctx):
+    ctx.effects.run(["true"])
+    os.remove("x")
+'''
+
+
+class TestInputsAreRepositoryOwned:
+    """The check enumerates its inputs through git.
+
+    A release-blocking check reads only what the repository owns, so the file
+    set is what `git ls-files --cached --others --exclude-standard` lists from
+    the project root: tracked files plus untracked files `.gitignore` does not
+    exclude. A gitignored scratch file is one machine's, not the repository's,
+    and must never decide a verdict.
+    """
+
+    def test_tracked_and_unignored_files_are_read_and_ignored_ones_are_not(
+        self, tmp_path,
+    ):
+        app, root = _app(tmp_path)
+        (root / "tracked.py").write_text(_OFFENDING)
+        _git(root, "add", "tracked.py")
+        (root / "untracked.py").write_text(_OFFENDING)
+        (root / ".gitignore").write_text("ignored.py\n")
+        (root / "ignored.py").write_text(_OFFENDING)
+
+        r = app.test(["check", "--name", "effects-bypass"])
+
+        assert r.exit_code == 1
+        assert "tracked.py:4: deploy calls os.remove directly" in r.stdout
+        assert "untracked.py:4: deploy calls os.remove directly" in r.stdout
+        assert "ignored.py" not in r.stdout
+        assert "2 direct effect call(s) bypassing ctx.effects" in r.stdout
+
+    def test_a_root_outside_a_git_work_tree_is_refused(self, tmp_path):
+        root = tmp_path / "loose"
+        app, _ = _app(tmp_path, project_root=root, git_init=False)
+        (root / "handlers.py").write_text(_OFFENDING)
+
+        r = app.test(["check", "--name", "effects-bypass"])
+
+        assert r.exit_code == 1
+        assert (
+            f"effects-bypass: project root '{root}' is not a git work tree; "
+            f"the check reads only repository-owned files"
+        ) in r.stdout
+        assert "calls os.remove directly" not in r.stdout
 
 
 class TestSystemIsBannedOnlyThroughOs:
