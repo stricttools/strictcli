@@ -10,11 +10,11 @@
 	"homepage": "https://smmh.dev/strictcli/",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/smm-h/strictcli.git",
+		"url": "git+https://github.com/stricttools/strictcli.git",
 		"directory": "typescript"
 	},
 	"bugs": {
-		"url": "https://github.com/smm-h/strictcli/issues"
+		"url": "https://github.com/stricttools/strictcli/issues"
 	},
 	"exports": {
 		".": {
