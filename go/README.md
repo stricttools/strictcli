@@ -17,7 +17,7 @@ sentence with Go's spellings inside it.
 ## Installation
 
 ```
-go get github.com/smm-h/strictcli/go/strictcli
+go get github.com/stricttools/strictcli/go/strictcli
 ```
 
 Requires Go 1.25+. One dependency: [go-toml-edit](https://github.com/smm-h/go-toml-edit) for TOML config/checks support.
@@ -31,7 +31,7 @@ import (
     "fmt"
     "strings"
 
-    "github.com/smm-h/strictcli/go/strictcli"
+    "github.com/stricttools/strictcli/go/strictcli"
 )
 
 func main() {
@@ -799,8 +799,8 @@ arg  := strictcli.NewArg(name, help, opts ...ArgOption)
 
 ## See also
 
-- [strictcli monorepo](https://github.com/smm-h/strictcli) -- conformance tests, Python implementation, and project documentation
-- [Python implementation](https://github.com/smm-h/strictcli/tree/main/python) -- same semantics, decorator-based API
+- [strictcli monorepo](https://github.com/stricttools/strictcli) -- conformance tests, Python implementation, and project documentation
+- [Python implementation](https://github.com/stricttools/strictcli/tree/main/python) -- same semantics, decorator-based API
 
 ## License
 
