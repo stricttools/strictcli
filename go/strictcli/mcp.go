@@ -111,8 +111,8 @@ var mcpRecognizedReservedMetaKeys = map[string]bool{
 	mcpMetaSubscriptionID:     true,
 }
 
-// mcpFeatureConsequentialConfirmation is the named feature the server declares
-// (campaign decision 26). A NAME, never a version number: a new name appears
+// mcpFeatureConsequentialConfirmation is the named feature the server declares.
+// A NAME, never a version number: a new name appears
 // only if the confirmation dance changes incompatibly.
 const mcpFeatureConsequentialConfirmation = "dev.smmh.strictcli/consequential-confirmation"
 

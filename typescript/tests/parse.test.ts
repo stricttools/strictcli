@@ -1293,8 +1293,7 @@ test("member spelling: env elects nothing (contract §21.3, carried over)", asyn
 });
 
 // =========================================================================
-// Election semantics (effects contract §21, carried over to member spelling;
-// campaign rulings A1-A5)
+// Election semantics (effects contract §21, carried over to member spelling)
 // =========================================================================
 
 function electionApp(out: string[]): AppImpl {

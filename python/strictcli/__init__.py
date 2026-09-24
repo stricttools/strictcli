@@ -17965,7 +17965,7 @@ _MCP_RECOGNIZED_RESERVED_META_KEYS = frozenset({
     _MCP_META_SUBSCRIPTION_ID,
 })
 
-# The named feature the server declares (campaign decision 26). A NAME, never a
+# The named feature the server declares. A NAME, never a
 # version number: a new name appears only if the confirmation dance changes
 # incompatibly.
 _MCP_FEATURE_CONSEQUENTIAL_CONFIRMATION = (

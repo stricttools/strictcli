@@ -7,7 +7,7 @@ import (
 )
 
 // Member-spelled election semantics (effects contract §21, carried over by
-// §24.4; campaign rulings A1-A5, S2).
+// §24.4).
 //
 // MutexGroup is deleted and "exactly one of these" is a member-spelled selector
 // now. Every sentence §21.4 pins survives VERBATIM through member spelling --
