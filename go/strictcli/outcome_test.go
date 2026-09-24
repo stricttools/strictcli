@@ -207,7 +207,7 @@ func TestGlobalsMergedIntoKwargs(t *testing.T) {
 
 // TestTestCaptureLargeOutputNotTruncated verifies Test() captures handler
 // output larger than the OS pipe buffer (~64KB) without truncation or
-// deadlock. Regression for phase 8.3go: fixed 64KB read buffers truncated
+// deadlock. Regression: fixed 64KB read buffers truncated
 // output and a single non-draining read could block the writing handler.
 func TestTestCaptureLargeOutputNotTruncated(t *testing.T) {
 	const n = 500 * 1024 // 500KB, well beyond a 64KB pipe buffer

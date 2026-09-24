@@ -533,7 +533,7 @@ type testCheckContext struct {
 
 func (c *testCheckContext) ProjectRoot() string { return c.root }
 
-// --- Phase 3: Discovery and Registration tests ---
+// --- Discovery and Registration tests ---
 
 const validChecksToml = `
 app = "testapp"
@@ -717,7 +717,7 @@ func TestDoubleEntry_AllRegistered_NoError(t *testing.T) {
 	}
 }
 
-// --- Phase 5: Runner tests ---
+// --- Runner tests ---
 
 func makeCheckDefs(defs map[string]struct {
 	tags      []string
@@ -1331,7 +1331,7 @@ func TestRunChecks_WarnDependency_RunsWhenIgnored(t *testing.T) {
 	}
 }
 
-// --- Phase 6: check command tests ---
+// --- check command tests ---
 
 const twoChecksToml = `
 app = "testapp"
@@ -1790,7 +1790,7 @@ func TestCheckCommand_NoContextFactory_Error(t *testing.T) {
 	}
 }
 
-// --- Phase 7: Schema integration tests ---
+// --- Schema integration tests ---
 
 func TestDumpSchema_WithChecks(t *testing.T) {
 	chdirTemp(t)
@@ -2944,7 +2944,7 @@ func TestEnableChecks_IdempotentCommandRegistration(t *testing.T) {
 	}
 }
 
-// --- Phase 3.1: ceiling-typed outcome / reporter tests ---
+// --- ceiling-typed outcome / reporter tests ---
 
 func TestReporter_PassedWithProblemsPanics(t *testing.T) {
 	defer func() {
@@ -3285,7 +3285,7 @@ func TestFormatCheckResults_MixedOutcomeShowsBothGroups(t *testing.T) {
 	}
 }
 
-// --- Phase 3.2: purity partition tests ---
+// --- purity partition tests ---
 
 // partitionToml mixes pure/network/impure checks and dependency edges so the
 // purity partition can be exercised end to end. pure-a and dep-on-pure execute;

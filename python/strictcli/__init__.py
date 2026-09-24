@@ -156,7 +156,7 @@ def _validate_connection_binding(f: "Flag", connection_env_names) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Source provenance (Phase 0c)
+# Source provenance
 # ---------------------------------------------------------------------------
 
 class _Source:

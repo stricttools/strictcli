@@ -1325,7 +1325,7 @@ def test_config_set_clear_and_default_error(tmp_path, monkeypatch):
     assert "--clear and --default are mutually exclusive" in r.stderr
 
 
-# ---- Phase 1b: --config flag tests ----
+# ---- --config flag tests ----
 
 
 def test_config_flag_selects_file(tmp_path, monkeypatch):
@@ -1449,7 +1449,7 @@ def test_config_flag_not_in_schema(tmp_path, monkeypatch):
         assert gf["name"] != "config", "--config should not appear in schema"
 
 
-# ---- Phase 1c: no-default-config-path tests ----
+# ---- no-default-config-path tests ----
 
 
 def test_no_default_config_path(tmp_path, monkeypatch):
@@ -1497,7 +1497,7 @@ def test_no_default_config_path_with_config_flag(tmp_path, monkeypatch):
     assert "port=3333" in r.stdout
 
 
-# --- Phase 3a: hard-error config loading tests ---
+# --- hard-error config loading tests ---
 
 def test_malformed_toml_hard_error(tmp_path):
     """Malformed TOML config file is a hard error with position info."""
@@ -1612,7 +1612,7 @@ def test_duplicate_key_toml_hard_error(tmp_path):
     assert "config file" in r.stderr
 
 
-# --- Phase 3b: conflict mode tests ---
+# --- conflict mode tests ---
 
 def test_conflict_mode_default(tmp_path, monkeypatch):
     """Default mode (cli-wins): CLI overrides config silently."""
@@ -1738,7 +1738,7 @@ def test_conflict_mode_fires_on_an_elected_member(tmp_path, monkeypatch):
     assert r.exit_code == 0
 
 
-# --- Phase 2.2: divergence-aware conflict mode + per-flag override ---
+# --- divergence-aware conflict mode + per-flag override ---
 
 def _conflict_app(conflict_mode="error", flag_conflict_mode=strictcli._MISSING,
                   flag_type=str, default="default-val", unique=strictcli._MISSING,
@@ -1842,7 +1842,7 @@ def test_flag_conflict_mode_invalid_value_raises():
         strictcli.Flag(name="x", type=str, help="h", conflict_mode="bogus", presence="required")
 
 
-# --- Config set: TOML comment/order preservation (Phase 8.2) ---
+# --- Config set: TOML comment/order preservation ---
 
 
 def test_config_set_toml_preserves_comments_and_order(tmp_path):
@@ -1927,7 +1927,7 @@ def test_config_set_toml_unset_preserves_comments(tmp_path):
     assert "# keep this comment" in text
 
 
-# --- Config edit: editor failure is a hard error (Phase 8.3) ---
+# --- Config edit: editor failure is a hard error ---
 
 
 def _make_config_edit_app(config_file):

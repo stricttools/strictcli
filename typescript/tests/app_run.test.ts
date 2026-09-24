@@ -1,6 +1,6 @@
 /**
- * run()/test() dispatch tests: the execution surface completed in this
- * subphase (async handlers, result interpretation, data emission, capture
+ * run()/test() dispatch tests: the execution surface (async handlers,
+ * result interpretation, data emission, capture
  * mechanics, tag-contract enforcement). Byte expectations follow the Python
  * implementation (the divergence ground truth); e2e.test.ts pins the
  * conformance scenarios.

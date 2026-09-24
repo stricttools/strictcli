@@ -1,4 +1,4 @@
-"""Phase 3.4: global-flag config-conflict position + post-command provenance.
+"""Global-flag config-conflict position + post-command provenance.
 
 Global flags may appear before the command (``tool --g X cmd``) or after it
 (``tool cmd --g X``). Config-conflict detection (error mode) and source

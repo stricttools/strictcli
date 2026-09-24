@@ -8,7 +8,7 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// Phase 2a: Env and config source attribution
+// Env and config source attribution
 // ---------------------------------------------------------------------------
 
 // TestEnvSourceLabel verifies that a flag set by an environment variable
@@ -168,7 +168,7 @@ func TestDefaultWithConfigAvailableButAbsent(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// Phase 2a: Global flag source attribution
+// Global flag source attribution
 // ---------------------------------------------------------------------------
 
 // TestGlobalFlagEnvSource verifies that a global flag set by env var
@@ -260,7 +260,7 @@ func TestGlobalFlagDefaultSource(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// Phase 2b: config show reports env source
+// config show reports env source
 // ---------------------------------------------------------------------------
 
 // TestConfigShowReportsEnv verifies that config show reports "env" for a
@@ -349,7 +349,7 @@ func TestConfigShowReportsDefault(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// Phase 2c: Invoke/call-path provenance
+// Invoke/call-path provenance
 // ---------------------------------------------------------------------------
 
 // TestInvokeProvidedKwargSourceIsCli verifies that a kwarg provided via
@@ -395,7 +395,7 @@ func TestInvokeAbsentKwargSourceIsDefault(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// Phase 2b: Byte-parity: config show output format
+// Byte-parity: config show output format
 // ---------------------------------------------------------------------------
 
 // TestConfigShowPlainFormat verifies that the plain output format matches

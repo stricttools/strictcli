@@ -1038,8 +1038,7 @@ func TestARichDeclarationMatchesTheSiblingImplementationsBytes(t *testing.T) {
 //
 // The `constraints` entry carries the mandatory `name` §25.7's amendment added
 // (§18.30 item 277): the key order is `type`, `name`, `flag`, `depends_on`, and
-// the sibling implementations converge on it in their own rounds of this
-// campaign phase.
+// the sibling implementations converge on it.
 const pythonRichDump = `  "project_id": "testproject",
   "name": "testapp",
   "version": "1.0.0",

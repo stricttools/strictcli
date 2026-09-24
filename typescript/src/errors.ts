@@ -11,8 +11,8 @@
  * - Go %q slots are reproduced via q() (strconv.Quote semantics).
  * - Slots that embed pre-formatted values (Go %v / %T, and any float) take the
  *   already-formatted string as the parameter, so this module stays
- *   formatting-agnostic (the shortest-canonical float formatter lands in
- *   float.ts in a later subphase).
+ *   formatting-agnostic (the shortest-canonical float formatter lives in
+ *   float.ts).
  * - Go %d slots take number parameters.
  * - Go error-typed parameters become errStr: string (the message text).
  */

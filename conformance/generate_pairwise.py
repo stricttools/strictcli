@@ -8,7 +8,7 @@
 Uses allpairspy to produce a covering array of all 2-way combinations, then
 writes JSON test cases to conformance/cases/pairwise.json.
 
-The matrix the presence round asks for (campaign phase L1.8) is
+The presence matrix is
 {required, defaulted, optional} x {str, int, float, bool, list, dict} x
 {plain, choices, env, validate, scoped, co-required, implies}. It is
 spelled here as independent axes rather than one three-column table, so the

@@ -1,4 +1,4 @@
-"""Tests for source-filtered presence semantics (Phase 0c provenance)."""
+"""Tests for source-filtered presence semantics (source provenance)."""
 
 import strictcli
 

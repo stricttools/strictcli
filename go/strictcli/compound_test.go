@@ -1242,8 +1242,8 @@ func TestFlagTypeNames(t *testing.T) {
 }
 
 // TestFormatDictForDisplaySortedKeys verifies that dict values render with
-// keys sorted ascending in canonical "key=value" form. Regression for phase
-// 8.3go: dict display must be deterministic (sorted), not dependent on Go
+// keys sorted ascending in canonical "key=value" form. Regression: dict
+// display must be deterministic (sorted), not dependent on Go
 // map iteration order or the fmt "map[...]" representation.
 func TestFormatDictForDisplaySortedKeys(t *testing.T) {
 	m := map[string]interface{}{

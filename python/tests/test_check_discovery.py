@@ -1,4 +1,4 @@
-"""Tests for check discovery and double-entry registration (Phase 3)."""
+"""Tests for check discovery and double-entry registration."""
 
 import pytest
 

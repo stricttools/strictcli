@@ -99,7 +99,7 @@ import {
 // here, which is the import site the rest of the package already uses.
 export { flagParamName };
 
-// --- Config seam (Phase 5 fills; the default provider supplies no data) ---
+// --- Config seam (the default provider supplies no data) ---
 
 export interface ConfigLoadResult {
 	/** Param-name-keyed raw config values; null when no config file applies. */
@@ -109,8 +109,8 @@ export interface ConfigLoadResult {
 }
 
 /**
- * Injectable config-values provider. Phase 5 implements file loading and
- * per-flag coercion; the parse pipeline owns precedence and conflict
+ * Injectable config-values provider. The provider (config.ts) implements file
+ * loading and per-flag coercion; the parse pipeline owns precedence and conflict
  * semantics so they are already exact here.
  */
 export interface ConfigProvider {

@@ -1,4 +1,4 @@
-"""Tests for the auto-registered 'check' command (Phase 6)."""
+"""Tests for the auto-registered 'check' command."""
 
 import json
 from dataclasses import dataclass

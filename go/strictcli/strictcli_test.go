@@ -6886,7 +6886,7 @@ func TestSchemaTagsInDefaults(t *testing.T) {
 	}
 }
 
-// --- Phase 1 schema enrichment tests ---
+// --- Schema enrichment tests ---
 
 func TestSchemaVersion(t *testing.T) {
 	chdirTemp(t)
@@ -8083,7 +8083,7 @@ func TestAllHiddenGroupsNoGroupsSection(t *testing.T) {
 	}
 }
 
-// --- Phase 3a: hard-error config loading tests ---
+// --- hard-error config loading tests ---
 
 func TestConfigMalformedTOMLHardError(t *testing.T) {
 	tmpDir, cleanup := configTestSetup(t)
@@ -8258,7 +8258,7 @@ func TestConfigDuplicateKeyTOMLHardError(t *testing.T) {
 	}
 }
 
-// --- Phase 3b: conflict mode tests ---
+// --- conflict mode tests ---
 
 func TestConfigConflictModeDefault(t *testing.T) {
 	tmpDir, cleanup := configTestSetup(t)
@@ -8393,7 +8393,7 @@ func TestConfigConflictModeFiresBeforeElection(t *testing.T) {
 	}
 }
 
-// --- Phase 2.2: divergence-aware conflict mode + per-flag override ---
+// --- divergence-aware conflict mode + per-flag override ---
 
 func TestConflictErrorIdenticalScalarPasses(t *testing.T) {
 	tmpDir, cleanup := configTestSetup(t)

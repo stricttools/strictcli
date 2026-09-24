@@ -1287,7 +1287,7 @@ func TestConfigSetDeepNestedField(t *testing.T) {
 	}
 }
 
-// ---- Phase 1b: --config flag tests ----
+// ---- --config flag tests ----
 
 func TestConfigFlagSelectsFile(t *testing.T) {
 	tmpDir, cleanup := configTestSetup(t)
@@ -1464,7 +1464,7 @@ func TestDumpSchemaAfterDoubleDash(t *testing.T) {
 	}
 }
 
-// ---- Phase 1c: no-default-config-path tests ----
+// ---- no-default-config-path tests ----
 
 func TestNoDefaultConfigPath(t *testing.T) {
 	tmpDir, cleanup := configTestSetup(t)
@@ -1519,7 +1519,7 @@ func TestNoDefaultConfigPathWithConfigFlag(t *testing.T) {
 	}
 }
 
-// === Phase 2.3: ConfigField / Flag coexistence ===
+// === ConfigField / Flag coexistence ===
 
 func TestFieldFlagShowPlainRendersOnceWithAnnotation(t *testing.T) {
 	dir := t.TempDir()
@@ -1672,8 +1672,8 @@ func TestFieldFlagOneAbsentDefaultOK(t *testing.T) {
 
 // TestConfigSetTOMLPreservesComments verifies that `config set` on a TOML
 // config file preserves comments and custom key ordering byte-for-byte,
-// changing only the targeted key's value. Regression for phase 8.2: the
-// previous implementation re-marshaled a plain map, destroying comments and
+// changing only the targeted key's value. Regression: a previous
+// implementation re-marshaled a plain map, destroying comments and
 // alphabetizing keys.
 func TestConfigSetTOMLPreservesComments(t *testing.T) {
 	dir := t.TempDir()

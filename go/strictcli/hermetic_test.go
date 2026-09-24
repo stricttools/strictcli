@@ -7,7 +7,7 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// Phase 4: --hermetic reserved flag
+// The --hermetic reserved flag.
 // ---------------------------------------------------------------------------
 
 // TestHermeticReservedName verifies that "hermetic" cannot be used as a

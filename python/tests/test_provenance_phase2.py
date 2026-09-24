@@ -1,4 +1,4 @@
-"""Tests for Phase 2 provenance: env and config source attribution."""
+"""Tests for provenance: env and config source attribution."""
 
 import json
 import os
@@ -10,7 +10,7 @@ import strictcli
 
 
 # ---------------------------------------------------------------------------
-# Phase 2a: Env and config source attribution
+# Env and config source attribution
 # ---------------------------------------------------------------------------
 
 
@@ -141,7 +141,7 @@ def test_default_with_config_available_but_absent():
 
 
 # ---------------------------------------------------------------------------
-# Phase 2a: Global flag source attribution
+# Global flag source attribution
 # ---------------------------------------------------------------------------
 
 
@@ -233,7 +233,7 @@ def test_global_flag_default_source():
 
 
 # ---------------------------------------------------------------------------
-# Phase 2b: config show reports env source
+# config show reports env source
 # ---------------------------------------------------------------------------
 
 
@@ -296,7 +296,7 @@ def test_config_show_reports_default():
 
 
 # ---------------------------------------------------------------------------
-# Phase 2c: Invoke/call-path provenance
+# Invoke/call-path provenance
 # ---------------------------------------------------------------------------
 
 
@@ -329,7 +329,7 @@ def test_invoke_absent_kwarg_source_is_default():
 
 
 # ---------------------------------------------------------------------------
-# Phase 2b: Byte-parity: config show output format
+# Byte-parity: config show output format
 # ---------------------------------------------------------------------------
 
 

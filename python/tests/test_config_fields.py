@@ -1023,7 +1023,7 @@ class TestSchemaWithConfigFields:
         assert "server start" in bound
 
 
-# ---- Phase 2.3: ConfigField / Flag coexistence ----
+# ---- ConfigField / Flag coexistence ----
 
 
 class TestConfigFieldFlagCoexistence:

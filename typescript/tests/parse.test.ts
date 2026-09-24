@@ -2,8 +2,8 @@
  * Parse-pipeline tests. Expected outputs are derived from the conformance
  * suite (conformance/cases/*.json) -- each test names its source case where
  * one exists. The mini-runner below is the smallest seam over doParse:
- * argv in, exact stdout/stderr/exit out. The full run()/test() surface lands
- * in the next subphase.
+ * argv in, exact stdout/stderr/exit out. The full run()/test() surface is
+ * covered in app_run.test.ts.
  */
 
 import { strict as assert } from "node:assert";
@@ -68,7 +68,7 @@ interface RunResult {
  * Runs the parse pipeline and, for command/passthrough outcomes, invokes the
  * handler. Handlers print by pushing onto the shared `out` array (joined with
  * newlines, mirroring conformance stdout comparison). Help outcomes are
- * represented structurally only -- help *rendering* is a later subphase.
+ * represented structurally only -- help *rendering* is tested elsewhere.
  */
 async function run(
 	app: AppImpl,
@@ -2992,7 +2992,7 @@ test("provenance: env label; CLI overrides env with label cli", async () => {
 });
 
 // =========================================================================
-// Config seam (Phase-5 provider injection): precedence and conflicts
+// Config seam (provider injection): precedence and conflicts
 // =========================================================================
 
 test("config: fills flags not set by CLI or env; CLI wins by default", async () => {

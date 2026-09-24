@@ -1,4 +1,4 @@
-"""Tests for --hermetic reserved flag (Phase 4)."""
+"""Tests for the --hermetic reserved flag."""
 
 import json
 import os
@@ -10,7 +10,7 @@ import strictcli
 
 
 # ---------------------------------------------------------------------------
-# Phase 4a: Reserve and intercept
+# Reserve and intercept
 # ---------------------------------------------------------------------------
 
 

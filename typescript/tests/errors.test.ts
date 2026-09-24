@@ -19,15 +19,15 @@ import { ParseError, RegistrationError } from "../src/errors.js";
 // _interpret_handler_return; inexpressible in Go), errOutcomeExitCodeNotInteger
 // (TS-only factory guard), and errCommandFlagRelativeToRootUndeclared (Python
 // _build_and_validate_command; Go validates markers with no command context).
-// The config subphase adds 9 more with no errors.go body: 5 TOML-1.0
+// The config surface adds 9 more with no errors.go body: 5 TOML-1.0
 // acceptance-gate templates and 2 splice-verification templates (TS-only; the
 // siblings' TOML parsers are 1.0-native), plus errAppConfigFormatBad and
 // errAppConfigConflictModeBad (inline f-strings in Python App.__post_init__ /
 // inline panics in Go option constructors).
-// The checks subphase adds 1 more with no errors.go body:
+// The checks surface adds 1 more with no errors.go body:
 // errCheckOutcomeDirectConstruction (Python _CheckOutcome.__post_init__ mint
 // guard; Go seals the outcome structurally with unexported fields).
-// The invoke/tool/MCP subphase adds 2 more with no errors.go body:
+// The invoke/tool/MCP surface adds 2 more with no errors.go body:
 // errCallPathIsGroup (Python call() group-path message; Go inlines "no
 // command resolved from path" in invoke.go) and errRouterCommandMustBeString
 // (inline InvokeError literal in Go makeRouterTool / Python router execute).

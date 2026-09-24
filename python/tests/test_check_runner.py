@@ -1,4 +1,4 @@
-"""Tests for check runner: DAG resolution, execution, and filtering (Phase 5)."""
+"""Tests for check runner: DAG resolution, execution, and filtering."""
 
 from dataclasses import dataclass
 from pathlib import Path

@@ -1,4 +1,4 @@
-"""Tests for check metadata in --dump-schema output (Phase 7)."""
+"""Tests for check metadata in --dump-schema output."""
 
 import json
 
