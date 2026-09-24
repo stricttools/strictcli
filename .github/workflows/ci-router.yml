@@ -76,7 +76,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v6
-      # go.mod: go 1.25.7
+      # setup-go reads go.mod's `toolchain` line first, then its `go` directive.
+      # Declare the development Go in `toolchain` (go mod edit -toolchain=goX.Y.Z)
+      # so CI tests with it; `go` stays the consumers' floor.
     - uses: actions/setup-go@v6
       with:
         go-version-file: go/go.mod
@@ -119,9 +121,12 @@ jobs:
     - uses: actions/checkout@v6
     - uses: astral-sh/setup-uv@v7
     - run: uv python install 3.13
+      # The Go that builds the Go implementation is the one go/go.mod declares
+      # in its toolchain line. rlsbl monorepo sync prefixes this path with the
+      # member path (conformance/), so `../go/go.mod` resolves to go/go.mod.
     - uses: actions/setup-go@v6
       with:
-        go-version: '1.25'
+        go-version-file: conformance/../go/go.mod
         cache-dependency-path: go/go.sum
     - uses: actions/setup-node@v6
       with:
