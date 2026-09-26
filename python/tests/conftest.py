@@ -65,3 +65,28 @@ def envelope(result):
 def payload(result):
     """The ``payload`` member of a machine-mode run's envelope (§19.4)."""
     return envelope(result)["payload"]
+
+
+def run_app_script(tmp_path, body, argv, *, timeout=60):
+    """Run an app through ``app.run()`` in a real child process.
+
+    ``body`` is Python source that builds ``app`` (``strictcli`` and ``sys`` are
+    already imported). The child is what reaches the process-level mechanisms
+    ``test()`` never touches -- file descriptor 1, signal handlers, and the
+    process exit status. Returns the CompletedProcess with bytes stdout and
+    stderr.
+    """
+    import subprocess
+    import sys
+    import textwrap
+
+    script = tmp_path / "app_script.py"
+    script.write_text(
+        "import sys\nimport strictcli\n"
+        + textwrap.dedent(body)
+        + "\napp.run()\n"
+    )
+    return subprocess.run(
+        [sys.executable, str(script), *argv],
+        capture_output=True, timeout=timeout, cwd=tmp_path,
+    )

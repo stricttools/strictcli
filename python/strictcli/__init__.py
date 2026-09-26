@@ -339,6 +339,56 @@ class _MachineOutput:
             reader.join()
 
 
+class _RealStdout:
+    """The process's real stdout, for the bytes the framework itself writes.
+
+    The document writer (§19.6) and an owns-stdout command's child (§19.11)
+    write here. While the runtime guard redirects file descriptor 1 in a
+    ``run()`` dispatch (§19.12), ``fd`` is the saved real descriptor, so these
+    bytes bypass the redirect; otherwise they go through the dispatch's own
+    stdout stream, flushed first so call order is kept.
+    """
+
+    def __init__(self, stream) -> None:
+        self._stream = stream
+        self.fd: int | None = None
+        self._lock = threading.Lock()
+
+    def write(self, data) -> int:
+        view = memoryview(data).cast("B")
+        size = len(view)
+        with self._lock:
+            if self.fd is not None:
+                while view:
+                    view = view[os.write(self.fd, view):]
+                return size
+            self._stream.flush()
+            binary = getattr(self._stream, "buffer", None)
+            if binary is not None:
+                binary.write(view)
+                binary.flush()
+            else:
+                # A text-only stream, such as test()'s capture: the bytes are
+                # decoded by §19.2's replacement rule, the one lossless-enough
+                # form a str can carry.
+                self._stream.write(bytes(view).decode("utf-8", errors="replace"))
+        return size
+
+
+class _DocumentWriter:
+    """What ``ctx.document()`` returns: a binary writer to the real stdout."""
+
+    def __init__(self, real: _RealStdout) -> None:
+        self._real = real
+
+    def write(self, data: bytes) -> int:
+        """Write ``data`` to stdout, synchronously; returns its byte count."""
+        return self._real.write(data)
+
+    def flush(self) -> None:
+        """Nothing to do: every write is already on stdout."""
+
+
 class Context:
     """Structured output context for command handlers.
 
@@ -360,7 +410,8 @@ class Context:
                  unsets: set | None = None,
                  output: "_MachineOutput | None" = None,
                  owns_stdout: bool = False,
-                 payload_renderer_declared: bool = False):
+                 payload_renderer_declared: bool = False,
+                 real_stdout: "_RealStdout | None" = None):
         self._stdout = stdout or sys.stdout
         self._stderr = stderr or sys.stderr
         self._sources = sources or {}  # flag-name -> source label (cli/env/config/default/implied/infra)
@@ -391,6 +442,9 @@ class Context:
         # decide whether ctx.document is available (§19.6).
         self._owns_stdout = owns_stdout
         self._payload_renderer_declared = payload_renderer_declared
+        self._real_stdout = (
+            real_stdout if real_stdout is not None else _RealStdout(self._stdout)
+        )
 
     @property
     def dry_run(self) -> bool:
@@ -492,6 +546,18 @@ class Context:
             self._output.append(data)
             return
         self._stdout.write(data)
+
+    def document(self) -> "_DocumentWriter":
+        """The writer for an owns-stdout command's document (§19.6).
+
+        Bytes go to the real stdout unchanged, in both modes, untouched by
+        ``--quiet`` and ``--json``, and synchronously, so they are on stdout
+        before the exit step runs. The runtime guard does not count them.
+        Refused at call time on a command without the owns-stdout declaration.
+        """
+        if not self._owns_stdout:
+            raise ValueError(_msg_document_without_owns_stdout(self._command_name))
+        return _DocumentWriter(self._real_stdout)
 
     def info(self, msg: str) -> None:
         """Write an informational message to stdout (hidden under --quiet)."""
@@ -12149,6 +12215,7 @@ class App:
         # Store sources for function handlers that need provenance info
         self._last_sources = sources
         machine_output = _MachineOutput()
+        real_stdout = _RealStdout(out)
         ctx = Context(
             stdout=out, stderr=err, sources=sources,
             infra=self._infra_access(self._last_hermetic),
@@ -12165,6 +12232,7 @@ class App:
             output=machine_output,
             owns_stdout=cmd.owns_stdout,
             payload_renderer_declared=cmd.payload_renderer is not None,
+            real_stdout=real_stdout,
         )
         # The would-do log's unnumbered write-set line (contract §27.5, §3.2).
         # It renders in DRY MODE ONLY, immediately after the header and before
