@@ -5,9 +5,8 @@
  * envelope moves to stderr so the artifact's bytes are untouched. Outside
  * machine mode the declaration changes nothing at all.
  *
- * A handler's own document is a RAW stdout write, which app.test()'s captured
- * writers never see -- so the cases that pin the artifact's bytes drive
- * app.run() against patched process streams, the shape effects_exit_paths uses.
+ * The handler writes its document through ctx.document(), which app.test()
+ * captures as stdout.
  */
 
 import { strict as assert } from "node:assert";
@@ -23,34 +22,13 @@ import { envelope } from "./envelope_helpers.js";
 
 const DOC = '{"artifact":"v1"}';
 
-/** Runs app.run(argv) against the real process streams, capturing both. */
+/** Runs app.test(argv), returning both captured streams. */
 async function captureRun(
 	app: App,
 	argv: string[],
 ): Promise<{ stdout: string; stderr: string }> {
-	const out: string[] = [];
-	const err: string[] = [];
-	const realOut = process.stdout.write.bind(process.stdout);
-	const realErr = process.stderr.write.bind(process.stderr);
-	const patch =
-		(sink: string[]) =>
-		(chunk: string | Uint8Array): boolean => {
-			sink.push(
-				typeof chunk === "string" ? chunk : Buffer.from(chunk).toString(),
-			);
-			return true;
-		};
-	(process.stdout as unknown as { write: unknown }).write = patch(out);
-	(process.stderr as unknown as { write: unknown }).write = patch(err);
-	const savedExit = process.exitCode;
-	try {
-		await app.run(argv);
-	} finally {
-		(process.stdout as unknown as { write: unknown }).write = realOut;
-		(process.stderr as unknown as { write: unknown }).write = realErr;
-	}
-	process.exitCode = savedExit;
-	return { stdout: out.join(""), stderr: err.join("") };
+	const r = await app.test(argv);
+	return { stdout: r.stdout, stderr: r.stderr };
 }
 
 function dumpApp(): App {
@@ -59,8 +37,8 @@ function dumpApp(): App {
 		defineReadOnlyCommand("dump", {
 			help: "dump",
 			ownsStdout: true,
-			handler: () => {
-				process.stdout.write(`${DOC}\n`);
+			handler: (_args, ctx) => {
+				ctx.document().write(`${DOC}\n`);
 				return 0;
 			},
 		}),

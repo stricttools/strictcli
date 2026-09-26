@@ -10,9 +10,12 @@
 import type { MutatingEffects, ReadOnlyEffects } from "./effects.js";
 import {
 	errConnectionValueUndeclared,
+	errDocumentWithoutOwnsStdout,
 	errEffectsUnavailable,
 	errInfraValueUndeclared,
 	errNoSourceInfo,
+	errOutOnOwnsStdout,
+	errOutWithRenderer,
 	errPayloadAlreadySet,
 	errPayloadInvalid,
 	errPayloadNoSchema,
@@ -24,6 +27,58 @@ import type { UpdateState } from "./update.js";
 /** Minimal sink for output streams (process.stdout/stderr or test captures). */
 export interface Writer {
 	write(text: string): void;
+	/**
+	 * Writes raw bytes. Optional: a writer without it receives the bytes
+	 * decoded as UTF-8 (the document writer's only binary route, §19.6).
+	 */
+	writeBytes?(chunk: Uint8Array): void;
+}
+
+/**
+ * The byte writer `ctx.document()` returns (contract §19.6's box): each write
+ * goes to the real stdout synchronously, in call order; a string is written as
+ * its UTF-8 bytes.
+ */
+export interface DocumentWriter {
+	write(chunk: Uint8Array | string): void;
+}
+
+/**
+ * The `--json` document's `output` member for one dispatch (contract §19.2's
+ * box): the bytes `ctx.out` would have written in human mode plus every
+ * captured child's stdout, concatenated in the order the framework received
+ * them. Null when nothing was written.
+ */
+export class OutputMember {
+	private readonly parts: string[] = [];
+
+	append(text: string): void {
+		this.parts.push(text);
+	}
+
+	value(): string | null {
+		return this.parts.length === 0 ? null : this.parts.join("");
+	}
+}
+
+/**
+ * The per-dispatch facts a Context needs beyond its streams and flags. Every
+ * member is optional so a Context constructed outside a dispatch (a unit test)
+ * still works: it owns no stdout, declares no renderer, collects its own
+ * output, and its signal is never aborted until the Context is ended.
+ */
+export interface ContextOptions {
+	/** The command declared stdout ownership (§19.6). */
+	readonly ownsStdout?: boolean;
+	/** The command declared a payload renderer (§19.10). */
+	readonly hasRenderer?: boolean;
+	/** Where machine mode's `ctx.out` text and captured child stdout go. */
+	readonly output?: OutputMember;
+}
+
+/** The human-mode prefix of the never-suppressed diagnostic writers (§19.14). */
+export function humanPrefixed(level: "warn" | "error", msg: string): string {
+	return `${level === "warn" ? "warning: " : "error: "}${msg}`;
 }
 
 /**
@@ -121,6 +176,15 @@ interface ContextBase {
 	readonly json: boolean;
 	/** Supplies this dispatch's machine payload (contract §19.4). */
 	payload(value: unknown): void;
+	/** Writes the command's human-readable answer (contract §19.10). */
+	out(text: string): void;
+	/** The owns-stdout command's document writer (contract §19.6's box). */
+	document(): DocumentWriter;
+	/**
+	 * Aborted when the command is canceled: by SIGINT or SIGTERM under
+	 * `app.run()` (contract §19.13), and when the dispatch ends.
+	 */
+	readonly signal: AbortSignal;
 	info(msg: string): void;
 	warn(msg: string): void;
 	debug(msg: string): void;
@@ -184,6 +248,11 @@ export class Context implements MutatingContext {
 	// biome-ignore lint/correctness/noUnusedPrivateClassMembers: read via the widened cast in contextWrites
 	private writes: UpdateState | null = null;
 	private unsets: ReadonlySet<string> = new Set();
+	private readonly ownsStdout: boolean;
+	private readonly hasRenderer: boolean;
+	private readonly output: OutputMember;
+	// The source of ctx.signal, aborted by the signal watch and by endDispatch.
+	private readonly controller = new AbortController();
 
 	constructor(
 		stdout: Writer,
@@ -194,6 +263,7 @@ export class Context implements MutatingContext {
 		effects: MutatingEffects | null = null,
 		commandName = "",
 		payloadSchema: Readonly<Record<string, unknown>> | null = null,
+		options: ContextOptions = {},
 	) {
 		this.stdout = stdout;
 		this.stderr = stderr;
@@ -203,6 +273,9 @@ export class Context implements MutatingContext {
 		this.effectsHandle = effects;
 		this.commandName = commandName;
 		this.payloadSchema = payloadSchema;
+		this.ownsStdout = options.ownsStdout ?? false;
+		this.hasRenderer = options.hasRenderer ?? false;
+		this.output = options.output ?? new OutputMember();
 	}
 
 	/** True when the framework-owned --dry-run flag was passed. */
@@ -268,6 +341,67 @@ export class Context implements MutatingContext {
 	}
 
 	/**
+	 * Writes the command's human-readable answer (contract §19.10): `text` and
+	 * one newline to stdout in human mode, never hidden by `--quiet` and not
+	 * affected by `--verbose`. In machine mode nothing reaches stdout and the
+	 * same bytes are appended to the `--json` document's `output` member.
+	 *
+	 * Refused at call time on a command that declares a payload renderer (the
+	 * rendering is its human output) and on a command that owns stdout (its
+	 * document is written through `document()`).
+	 */
+	out(text: string): void {
+		if (this.hasRenderer) {
+			throw new Error(errOutWithRenderer(this.commandName));
+		}
+		if (this.ownsStdout) {
+			throw new Error(errOutOnOwnsStdout(this.commandName));
+		}
+		if (this.reserved.json) {
+			this.output.append(`${text}\n`);
+			return;
+		}
+		this.stdout.write(`${text}\n`);
+	}
+
+	/**
+	 * The owns-stdout command's document writer (contract §19.6's box). Each
+	 * write goes to the real stdout synchronously, in call order, in both
+	 * modes, untouched by `--quiet` and `--json`; a string is written as its
+	 * UTF-8 bytes. The runtime guard does not count these bytes.
+	 *
+	 * Refused at call time on a command that did not declare stdout ownership.
+	 */
+	document(): DocumentWriter {
+		if (!this.ownsStdout) {
+			throw new Error(errDocumentWithoutOwnsStdout(this.commandName));
+		}
+		const sink = this.stdout;
+		return {
+			write(chunk: Uint8Array | string): void {
+				if (typeof chunk === "string") {
+					sink.write(chunk);
+				} else if (sink.writeBytes !== undefined) {
+					sink.writeBytes(chunk);
+				} else {
+					sink.write(new TextDecoder("utf-8").decode(chunk));
+				}
+			},
+		};
+	}
+
+	/**
+	 * Aborted when the command is canceled (contract §19.13): by the first
+	 * SIGINT or SIGTERM while the handler runs under `app.run()`, and when the
+	 * dispatch ends, so work the handler hands it to is released either way.
+	 * Node delivers a signal on the event loop, so a synchronous stretch of a
+	 * handler sees the abort only when it next yields.
+	 */
+	get signal(): AbortSignal {
+		return this.controller.signal;
+	}
+
+	/**
 	 * The effects handle for this run: the eight recorded operations. Under
 	 * --dry-run they are recorded instead of executed. Throws when the Context
 	 * was constructed outside a command dispatch.
@@ -306,12 +440,16 @@ export class Context implements MutatingContext {
 		this.stdout.write(`${msg}\n`);
 	}
 
-	/** Writes a warning message to stderr (never suppressed). */
+	/**
+	 * Writes a warning to stderr as `warning: <msg>` (never suppressed). The
+	 * prefix is added once, before the whole message, whatever the message
+	 * already says (§19.14); machine mode stores the message unprefixed.
+	 */
 	warn(msg: string): void {
 		if (this.#diagnostic("warn", msg)) {
 			return;
 		}
-		this.stderr.write(`${msg}\n`);
+		this.stderr.write(`${humanPrefixed("warn", msg)}\n`);
 	}
 
 	/**
@@ -328,12 +466,16 @@ export class Context implements MutatingContext {
 		this.stdout.write(`${msg}\n`);
 	}
 
-	/** Writes an error message to stderr (never suppressed). */
+	/**
+	 * Writes an error to stderr as `error: <msg>` (never suppressed). The
+	 * prefix is added once, before the whole message, whatever the message
+	 * already says (§19.14); machine mode stores the message unprefixed.
+	 */
 	error(msg: string): void {
 		if (this.#diagnostic("error", msg)) {
 			return;
 		}
-		this.stderr.write(`${msg}\n`);
+		this.stderr.write(`${humanPrefixed("error", msg)}\n`);
 	}
 
 	/**
@@ -530,4 +672,53 @@ export function contextIsHermetic(ctx: Context): boolean {
 	return (
 		(ctx as unknown as { infra: InfraAccess | null }).infra?.hermetic ?? false
 	);
+}
+
+/**
+ * Package-internal (NOT re-exported from index.ts): the `--json` document's
+ * `output` member for this dispatch (§19.2's box), null when nothing was
+ * written.
+ */
+export function contextOutput(ctx: Context): string | null {
+	return (ctx as unknown as { output: OutputMember }).output.value();
+}
+
+/**
+ * Package-internal (NOT re-exported from index.ts): the controller behind
+ * `ctx.signal`, which the CLI path's signal watch aborts (§19.13).
+ */
+export function contextController(ctx: Context): AbortController {
+	return (ctx as unknown as { controller: AbortController }).controller;
+}
+
+/**
+ * Package-internal (NOT re-exported from index.ts): ends the dispatch for the
+ * handler's work, aborting `ctx.signal` if nothing aborted it yet (§19.13).
+ */
+export function endDispatch(ctx: Context): void {
+	const controller = contextController(ctx);
+	if (!controller.signal.aborted) {
+		controller.abort(new Error("the dispatch ended"));
+	}
+}
+
+/**
+ * Package-internal (NOT re-exported from index.ts): reports one error the exit
+ * step appends (§19.2's box) -- the early exit's message, the process-exit
+ * trap, the runtime guard's failure, or the signal. Machine mode records it as
+ * the next `error` diagnostic; human mode prints it to stderr with the
+ * `error: ` prefix (§19.14), never suppressed by `--quiet`.
+ */
+export function reportExitError(
+	ctx: Context,
+	stderr: Writer,
+	msg: string,
+): void {
+	if (ctx.json) {
+		(
+			ctx as unknown as { diagnosticRecords: DiagnosticRecord[] }
+		).diagnosticRecords.push({ level: "error", message: msg });
+		return;
+	}
+	stderr.write(`${humanPrefixed("error", msg)}\n`);
 }

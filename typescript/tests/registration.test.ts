@@ -1532,7 +1532,7 @@ test("createApp: version and help are required non-empty", () => {
 	);
 });
 
-test("createApp: all eight reserved global flag names are rejected", () => {
+test("createApp: the reserved global flag names are rejected", () => {
 	for (const name of [
 		"help",
 		"h",
@@ -1542,6 +1542,7 @@ test("createApp: all eight reserved global flag names are rejected", () => {
 		"mcp",
 		"config",
 		"hermetic",
+		"lint-framework-use",
 	]) {
 		const key = name.replaceAll("-", "_");
 		rejects(

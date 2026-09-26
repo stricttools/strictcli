@@ -91,6 +91,7 @@ async function run(
 	switch (outcome.kind) {
 		case "help":
 		case "dump-schema":
+		case "lint-framework-use":
 		case "mcp":
 			return done("", "", 0);
 		case "version":

@@ -55,12 +55,17 @@ import { confirmConsequential } from "./confirm.js";
 import {
 	attachUpdateState,
 	Context,
+	contextController,
 	contextDiagnostics,
+	contextOutput,
 	contextPayload,
 	contextWrites,
 	type DiagnosticRecord,
+	endDispatch,
 	type InfraAccess,
+	OutputMember,
 	type ReservedFlags,
+	reportExitError,
 	validateEmittedPayload,
 	type Writer,
 } from "./context.js";
@@ -119,6 +124,7 @@ import {
 	errTestCoverageBooleanRetired,
 	RegistrationError,
 } from "./errors.js";
+import { ExitNow, ProcessExitCalled } from "./exits.js";
 import {
 	type AnyArg,
 	type AnyCommand,
@@ -133,6 +139,7 @@ import {
 	type GlobalFlagMap,
 	type MutatingCommandSpec,
 	type PassthroughDef,
+	type PayloadRenderer,
 	pyRepr,
 	RESERVED_FRAMEWORK_FLAG_NAMES,
 	RESERVED_MACHINE_FLAG_NAME,
@@ -140,6 +147,12 @@ import {
 	validateAndDedupTags,
 	validateUpdateAgainstGlobals,
 } from "./factories.js";
+import {
+	processExitDiagnostic,
+	RuntimeGuard,
+	realStdoutWriter,
+	takeIfGuarded,
+} from "./guard.js";
 import { formatAppHelp, formatCommandHelp, formatGroupHelp } from "./help.js";
 import {
 	buildInfraAccess,
@@ -150,10 +163,12 @@ import {
 	validateFlagInfraMarker,
 } from "./infra.js";
 import { type CallOptions, invokeApp } from "./invoke.js";
+import { runFrameworkUseLint } from "./lint_framework_use.js";
 import { type McpIO, serveMcp } from "./mcp.js";
 import { interpretHandlerReturn, jsonCompact } from "./outcome.js";
 import { doParse, flagParamName, formatParseErrorOutput } from "./parse.js";
 import { dumpSchemaCore, writeSchema } from "./schema.js";
+import { SignalWatch } from "./signals.js";
 import { asToolsForApp, jsonSchemaForApp, type Tool } from "./tool.js";
 import type { HandlerReturn } from "./types.js";
 import type { WritesEnvelope } from "./update.js";
@@ -440,6 +455,8 @@ export const RESERVED_GLOBAL_SHORT_NAMES: ReadonlySet<string> = new Set([
 	"mcp",
 	"config",
 	"hermetic",
+	// A whole-program action, beside --dump-schema (contract §7.1's box, §28.1).
+	"lint-framework-use",
 ]);
 
 export const RESERVED_GLOBAL_FLAG_NAMES: ReadonlySet<string> = new Set([
@@ -1245,9 +1262,12 @@ export class AppImpl implements App {
 
 	async run(argv?: readonly string[]): Promise<void> {
 		const tokens = argv ?? process.argv.slice(2);
+		// The framework's own stdout writes go through the write the stream
+		// carries NOW, so they keep reaching the real stdout while the runtime
+		// guard has replaced it during a machine-mode handler (§19.12).
 		const r = await this.dispatch(
 			tokens,
-			process.stdout,
+			realStdoutWriter(),
 			process.stderr,
 			"run",
 		);
@@ -1267,10 +1287,17 @@ export class AppImpl implements App {
 		const stderrChunks: string[] = [];
 		const out: Writer = { write: (s) => stdoutChunks.push(s) };
 		const err: Writer = { write: (s) => stderrChunks.push(s) };
+		// A stdout-bound console call made inside a guarded machine-mode
+		// handler is a stray stdout write, counted by the guard rather than
+		// captured beside the --json document (§19.12).
 		const consolePatch =
-			(w: Writer) =>
+			(w: Writer, stdoutBound: boolean) =>
 			(...args: unknown[]): void => {
-				w.write(`${format(...args)}\n`);
+				const text = `${format(...args)}\n`;
+				if (stdoutBound && takeIfGuarded(text)) {
+					return;
+				}
+				w.write(text);
 			};
 		const saved = {
 			log: console.log,
@@ -1279,11 +1306,11 @@ export class AppImpl implements App {
 			warn: console.warn,
 			error: console.error,
 		};
-		console.log = consolePatch(out);
-		console.info = consolePatch(out);
-		console.debug = consolePatch(out);
-		console.warn = consolePatch(err);
-		console.error = consolePatch(err);
+		console.log = consolePatch(out, true);
+		console.info = consolePatch(out, true);
+		console.debug = consolePatch(out, true);
+		console.warn = consolePatch(err, false);
+		console.error = consolePatch(err, false);
 		let r: DispatchResult;
 		try {
 			r = await this.dispatch(argv, out, err, "test");
@@ -1351,6 +1378,12 @@ export class AppImpl implements App {
 				out.write(`${path}\n`);
 				return { exitCode: 0, hasPayload: false, payload: undefined };
 			}
+			case "lint-framework-use":
+				return {
+					exitCode: runFrameworkUseLint(out, err),
+					hasPayload: false,
+					payload: undefined,
+				};
 			case "mcp":
 				if (mode === "test") {
 					// Python's in-process test surface (the divergence ground truth).
@@ -1376,6 +1409,7 @@ export class AppImpl implements App {
 						exitCode: 1,
 						dryRun: outcome.reserved.dryRun,
 						payload: null,
+						output: null,
 						preview: [],
 						previewError: null,
 						diagnostics: [],
@@ -1390,23 +1424,31 @@ export class AppImpl implements App {
 				if (mode === "test" && this.coverageShardPath !== undefined) {
 					recordCoverage(this, outcome.cmdPath);
 				}
+				const def = outcome.cmd.def as PassthroughDef<string>;
+				const output = new OutputMember();
+				const effects = this.armEffects(
+					outcome.cmd,
+					outcome.cmdPath,
+					outcome.reserved.dryRun,
+					outcome.reserved,
+					out,
+					output,
+				);
 				const ctx = new Context(
 					out,
 					err,
 					{},
 					this.infraAccess(outcome.hermetic),
 					outcome.reserved,
-					this.armEffects(
-						outcome.cmd,
-						outcome.cmdPath,
-						outcome.reserved.dryRun,
-						outcome.reserved,
-						out,
-					),
+					effects,
 					outcome.cmd.name,
-					(outcome.cmd.def as PassthroughDef<string>).payloadSchema ?? null,
+					def.payloadSchema ?? null,
+					{
+						ownsStdout: def.ownsStdout,
+						hasRenderer: def.payloadRenderer !== undefined,
+						output,
+					},
 				);
-				const def = outcome.cmd.def as PassthroughDef<string>;
 				const declined = this.runConfirm(mode, outcome.cmd, outcome, err);
 				if (declined !== undefined) {
 					return declined;
@@ -1421,12 +1463,17 @@ export class AppImpl implements App {
 							},
 							ctx,
 						),
-					outcome.reserved.dryRun,
-					outcome.cmdPath,
-					out,
-					err,
-					ctx,
-					(outcome.cmd.def as PassthroughDef<string>).ownsStdout === true,
+					{
+						dryRun: outcome.reserved.dryRun,
+						cmdPath: outcome.cmdPath,
+						out,
+						err,
+						ctx,
+						ownsStdout: def.ownsStdout,
+						renderer: def.payloadRenderer,
+						mode,
+						effects,
+					},
 				);
 			}
 			case "command": {
@@ -1435,21 +1482,30 @@ export class AppImpl implements App {
 				if (mode === "test" && this.coverageShardPath !== undefined) {
 					recordCoverage(this, outcome.cmdPath);
 				}
+				const def = outcome.cmd.def as AnyCommand;
+				const output = new OutputMember();
+				const effects = this.armEffects(
+					outcome.cmd,
+					outcome.cmdPath,
+					outcome.reserved.dryRun,
+					outcome.reserved,
+					out,
+					output,
+				);
 				const ctx = new Context(
 					out,
 					err,
 					outcome.sources,
 					this.infraAccess(outcome.hermetic),
 					outcome.reserved,
-					this.armEffects(
-						outcome.cmd,
-						outcome.cmdPath,
-						outcome.reserved.dryRun,
-						outcome.reserved,
-						out,
-					),
+					effects,
 					outcome.cmd.name,
-					(outcome.cmd.def as AnyCommand).payloadSchema ?? null,
+					def.payloadSchema ?? null,
+					{
+						ownsStdout: def.ownsStdout,
+						hasRenderer: def.payloadRenderer !== undefined,
+						output,
+					},
 				);
 				attachUpdateState(ctx, outcome.writes, outcome.unsets);
 				// The write set's human rendering: ONE unnumbered line between the
@@ -1469,19 +1525,23 @@ export class AppImpl implements App {
 				for (const line of outcome.skippedBindings) {
 					ctx.debug(line);
 				}
-				const def = outcome.cmd.def as AnyCommand;
 				const declined = this.runConfirm(mode, outcome.cmd, outcome, err);
 				if (declined !== undefined) {
 					return declined;
 				}
 				return await this.runHandler(
 					() => def.handler(outcome.kwargs as never, ctx),
-					outcome.reserved.dryRun,
-					outcome.cmdPath,
-					out,
-					err,
-					ctx,
-					(outcome.cmd.def as AnyCommand).ownsStdout === true,
+					{
+						dryRun: outcome.reserved.dryRun,
+						cmdPath: outcome.cmdPath,
+						out,
+						err,
+						ctx,
+						ownsStdout: def.ownsStdout,
+						renderer: def.payloadRenderer,
+						mode,
+						effects,
+					},
 				);
 			}
 		}
@@ -1520,51 +1580,113 @@ export class AppImpl implements App {
 	}
 
 	/**
-	 * Runs the handler under the runtime seal: an extraction from an Unsettled
-	 * carrier truncates the preview honestly instead of inventing a value. The
-	 * post-return check on the log's `truncated` record is the TS-specific
-	 * backstop -- unlike Python's BaseException-derived twin, a handler's
-	 * `catch (e)` here CAN swallow the throw, and the run still fails closed.
+	 * Runs the handler and then the one exit step every way out of a dispatch
+	 * passes through (contract §3.5, §19.9, §19.12, §19.13).
+	 *
+	 * Around the handler: in machine mode the runtime guard replaces the
+	 * process stdout and traps `process.exit`; under `app.run()` the signal
+	 * watch catches SIGINT and SIGTERM. Both are released the moment the
+	 * handler settles, before the exit step writes anything.
+	 *
+	 * The runtime seal: an extraction from an Unsettled carrier truncates the
+	 * preview honestly instead of inventing a value. The check on the log's
+	 * `truncated` record after the handler settles is the TS-specific backstop
+	 * -- unlike Python's BaseException-derived twin, a handler's `catch (e)`
+	 * here CAN swallow the throw, and the run still fails.
 	 */
 	private async runHandler(
 		invoke: () => unknown,
-		dryRun: boolean,
-		cmdPath: string,
-		out: Writer,
-		err: Writer,
-		ctx: Context,
-		ownsStdout: boolean,
+		d: HandlerDispatch,
 	): Promise<DispatchResult> {
-		let exitCode: number;
+		const { ctx, err } = d;
 		try {
-			const result = await invoke();
+			const guard = ctx.json
+				? RuntimeGuard.install(d.mode === "run" ? "process" : "handler")
+				: null;
+			const signals =
+				d.mode === "run" ? SignalWatch.install(contextController(ctx)) : null;
+			let ending: HandlerEnding;
+			try {
+				const result = await (guard === null ? invoke() : guard.within(invoke));
+				ending = {
+					kind: "return",
+					code: interpretHandlerReturn(result).exitCode,
+				};
+			} catch (e) {
+				ending = classifyUnwind(e);
+			} finally {
+				guard?.release();
+				signals?.release();
+			}
+			// A spawned child whose stdout the framework captures has written
+			// everything into the output member before the exit step reads it
+			// (§19.11).
+			d.effects.drainCapturedSpawns();
 			const swallowed = this.effectLogState.truncated;
-			if (swallowed !== null) {
-				return this.emitTruncated(swallowed, out, err, ctx, ownsStdout);
+			if (swallowed !== null && ending.kind !== "throw") {
+				ending = { kind: "truncated", trunc: swallowed };
 			}
-			exitCode = interpretHandlerReturn(result).exitCode;
-		} catch (e) {
-			if (e instanceof DryRunTruncated) {
-				return this.emitTruncated(e, out, err, ctx, ownsStdout);
+
+			// The errors the exit step appends, in the pinned order: the early
+			// exit's message, the process-exit trap, the guard's failure, the
+			// signal (§19.2's box).
+			let code: number;
+			switch (ending.kind) {
+				case "return":
+					code = ending.code;
+					break;
+				case "exit-now":
+					code = ending.exit.code;
+					reportExitError(ctx, err, ending.exit.message);
+					break;
+				case "trapped":
+					code = ending.called.status;
+					reportExitError(ctx, err, processExitDiagnostic(ending.called));
+					break;
+				case "truncated":
+				case "throw":
+					code = 1;
+					break;
 			}
-			// Every other way out of the dispatch still owes the operator the
-			// effects recorded so far: they asked for a preview and the
-			// framework has one. The marker says the list may not be all of it,
-			// because the dispatch did not finish. The throw continues
-			// untouched -- nothing here swallows it or changes the exit status.
-			this.finishDispatch(ctx, 1, dryRun, cmdPath, out, err, true, ownsStdout);
-			throw e;
+			const stray = guard?.failure() ?? null;
+			if (stray !== null) {
+				reportExitError(ctx, err, stray);
+				if (code === 0) {
+					code = 1;
+				}
+			}
+			const signaled = signals?.ending() ?? null;
+			if (
+				signaled !== null &&
+				(ending.kind === "return" || ending.kind === "exit-now")
+			) {
+				reportExitError(ctx, err, signaled.message);
+				code = signaled.status;
+			}
+
+			switch (ending.kind) {
+				case "truncated":
+					return this.emitTruncated(ending.trunc, d);
+				case "throw":
+					// Every other way out of the dispatch still owes the operator
+					// the effects recorded so far: they asked for a preview and
+					// the framework has one. The marker says the list may not be
+					// all of it, because the dispatch did not finish. The throw
+					// continues untouched -- nothing here swallows it or changes
+					// the exit status.
+					this.finishDispatch(d, 1, true, false);
+					throw ending.error;
+				default:
+					return this.finishDispatch(
+						d,
+						code,
+						false,
+						ending.kind === "return" || ending.kind === "exit-now",
+					);
+			}
+		} finally {
+			endDispatch(ctx);
 		}
-		return this.finishDispatch(
-			ctx,
-			exitCode,
-			dryRun,
-			cmdPath,
-			out,
-			err,
-			false,
-			ownsStdout,
-		);
 	}
 
 	/**
@@ -1574,16 +1696,14 @@ export class AppImpl implements App {
 	 */
 	private emitTruncated(
 		trunc: DryRunTruncated,
-		out: Writer,
-		err: Writer,
-		ctx: Context,
-		ownsStdout: boolean,
+		d: HandlerDispatch,
 	): DispatchResult {
+		const { ctx, out, err } = d;
 		const supplied = contextPayload(ctx);
 		if (ctx.json) {
 			this.emitDispatchEnvelope(
 				ctx,
-				ownsStdout ? err : out,
+				d.ownsStdout ? err : out,
 				1,
 				ctx.dryRun,
 				trunc.cmdPath,
@@ -1628,6 +1748,7 @@ export class AppImpl implements App {
 			exitCode,
 			dryRun,
 			payload: supplied.set ? supplied.value : null,
+			output: contextOutput(ctx),
 			writes: writes === null ? null : writes.envelopeMember(),
 			preview: this.effectLogState.toList(),
 			previewError,
@@ -1652,6 +1773,11 @@ export class AppImpl implements App {
 			readonly dryRun: boolean;
 			readonly payload: unknown;
 			/**
+			 * What `ctx.out` wrote plus every captured child's stdout (§19.2's
+			 * box), null when nothing was written. NEVER absent.
+			 */
+			readonly output: string | null;
+			/**
 			 * The write set of a command declaring `updateOf` (§27.5), and null
 			 * on every command that declares none. NEVER absent, and populated
 			 * in BOTH modes, for preview's reason: it is a function of the
@@ -1670,6 +1796,8 @@ export class AppImpl implements App {
 			command: parts.command,
 			exit_code: parts.exitCode,
 			payload: parts.payload ?? null,
+			// The command's human answer, beside its machine answer.
+			output: parts.output,
 			dry_run: parts.dryRun,
 			// What the run writes, beside the preview of how (§19.2's amendment).
 			writes: parts.writes ?? null,
@@ -1702,11 +1830,18 @@ export class AppImpl implements App {
 		dryRun: boolean,
 		reserved: ReservedFlags,
 		out?: Writer,
+		output?: OutputMember,
 	): Effects {
 		const def = cmd.def as {
 			readonly effect: Effect;
 			readonly grants?: readonly Grant[];
+			readonly ownsStdout?: boolean;
 		};
+		// In machine mode a child's stdout is captured into the output member
+		// instead of reaching stdout beside the --json document -- except on an
+		// owns-stdout command, where it is part of the document (§19.11).
+		const captureChildren =
+			reserved.json && def.ownsStdout !== true && output !== undefined;
 		return new Effects(
 			{ cmdPath, effect: def.effect, grants: def.grants ?? [] },
 			dryRun,
@@ -1725,6 +1860,7 @@ export class AppImpl implements App {
 			},
 			out,
 			reserved.json,
+			captureChildren ? (text) => output.append(text) : undefined,
 		);
 	}
 
@@ -1759,29 +1895,27 @@ export class AppImpl implements App {
 		);
 	}
 
-	/** Interprets a handler return and prints the data line when present. */
 	/**
-	 * The ONE ordered exit step: payload, then the would-do log. Reachable from
-	 * every way out of a dispatch (a normal return, a truncated preview and an
+	 * The ONE ordered exit step: the payload rendering, then the would-do log,
+	 * or in machine mode the --json document. Reachable from every way out of
+	 * a dispatch (a return, an early exit, a trapped process exit, and an
 	 * unwinding abort), so there is exactly one place that decides what the
 	 * framework emits at the end of a run and in what order.
 	 */
 	private finishDispatch(
-		ctx: Context,
+		d: HandlerDispatch,
 		exitCode: number,
-		dryRun: boolean,
-		cmdPath: string,
-		out: Writer,
-		err: Writer,
 		aborted: boolean,
-		ownsStdout: boolean,
+		render: boolean,
 	): DispatchResult {
+		const { ctx, out, err, dryRun, cmdPath } = d;
 		const supplied = contextPayload(ctx);
 		if (ctx.json) {
 			// In machine mode this step emits the envelope INSTEAD of the human
 			// stream's would-do log and abort marker: those texts become the
 			// envelope's preview and preview_error members (§19.1, §19.3), and
-			// stdout carries exactly one document.
+			// stdout carries exactly one document. A declared renderer is never
+			// called: machine mode emits the payload (§19.10).
 			//
 			// A command that declared stdout ownership keeps stdout for its own
 			// document, and the envelope moves to stderr with the diagnostics it
@@ -1789,7 +1923,7 @@ export class AppImpl implements App {
 			// two-documents-on-one-stream collision §19.1 exists to remove.
 			this.emitDispatchEnvelope(
 				ctx,
-				ownsStdout ? err : out,
+				d.ownsStdout ? err : out,
 				exitCode,
 				dryRun,
 				cmdPath,
@@ -1811,6 +1945,12 @@ export class AppImpl implements App {
 				hasPayload: supplied.set,
 				payload: supplied.value,
 			};
+		}
+		// The declared rendering of the payload (§19.10): after everything the
+		// handler wrote and before the would-do log, never hidden by --quiet,
+		// and not validated first -- human mode emits no --json document.
+		if (render && d.renderer !== undefined && supplied.set) {
+			out.write(`${d.renderer(supplied.value)}\n`);
 		}
 		if (dryRun) {
 			// The would-do log is dry mode's primary output and is NEVER
@@ -1835,18 +1975,53 @@ export class AppImpl implements App {
 	}
 }
 
+/** One handler dispatch's facts, as the exit step reads them. */
+interface HandlerDispatch {
+	readonly dryRun: boolean;
+	readonly cmdPath: string;
+	readonly out: Writer;
+	readonly err: Writer;
+	readonly ctx: Context;
+	readonly ownsStdout: boolean;
+	readonly renderer: PayloadRenderer | undefined;
+	/** The argv door: `run()` installs signal handling, `test()` does not. */
+	readonly mode: "run" | "test";
+	readonly effects: Effects;
+}
+
+/** How a handler's span ended, as the exit step reads it. */
+type HandlerEnding =
+	| { readonly kind: "return"; readonly code: number }
+	| { readonly kind: "exit-now"; readonly exit: ExitNow }
+	| { readonly kind: "trapped"; readonly called: ProcessExitCalled }
+	| { readonly kind: "truncated"; readonly trunc: DryRunTruncated }
+	| { readonly kind: "throw"; readonly error: unknown };
+
+/**
+ * Reads a throw out of the handler's span: the truncation signal, the early
+ * exit (§19.9), the process-exit trap (§19.12), or an unexpected unwind.
+ */
+function classifyUnwind(e: unknown): HandlerEnding {
+	if (e instanceof DryRunTruncated) {
+		return { kind: "truncated", trunc: e };
+	}
+	if (e instanceof ExitNow) {
+		return { kind: "exit-now", exit: e };
+	}
+	if (e instanceof ProcessExitCalled) {
+		return { kind: "trapped", called: e };
+	}
+	return { kind: "throw", error: e };
+}
+
 /**
  * The envelope contract's own version (§19.2). Changed only by a later
- * amendment to that section.
+ * amendment to that section. Each growth of the key set by a member that is
+ * never absent moves it, so a consumer validating the key set can tell which
+ * document it holds: `writes` made it 2 (§18.33 item 313), `output` made it 3
+ * (§18.37 item 338).
  */
-/**
- * The envelope contract's own version (§19.2). Changed only by a later
- * amendment to that section -- and §18.33 item 313 is one: the key set grew a
- * `writes` member that is never absent, so a consumer validating the
- * envelope's key set against version 1 must be able to tell which document it
- * holds.
- */
-const INTERFACE_VERSION = 2;
+const INTERFACE_VERSION = 3;
 
 /**
  * The terminal condition of a preview that did not finish (§19.3). `brand` is

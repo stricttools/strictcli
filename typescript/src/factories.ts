@@ -134,6 +134,8 @@ import {
 	errMutatingDefault,
 	errNullableNotProperty,
 	errPayloadSchemaInvalid,
+	errRendererOnOwnsStdout,
+	errRendererWithoutPayloadSchema,
 	errScopedNameChoiceReserved,
 	errScopedNameCollidesRoot,
 	errScopedNameCollidesSelector,
@@ -3312,6 +3314,12 @@ export interface CommandDef<
 	 * Outside machine mode the declaration changes nothing at all.
 	 */
 	readonly ownsStdout: boolean;
+	/**
+	 * How the command's payload reads in human mode (contract §19.10), or
+	 * undefined when the command declares none. Called by the exit step with
+	 * the payload as supplied; never called in machine mode.
+	 */
+	readonly payloadRenderer: PayloadRenderer | undefined;
 	readonly flags: F;
 	readonly args: A;
 	readonly flagSets: FS;
@@ -3359,6 +3367,12 @@ export interface AnyCommand {
 	 * Outside machine mode the declaration changes nothing at all.
 	 */
 	readonly ownsStdout: boolean;
+	/**
+	 * How the command's payload reads in human mode (contract §19.10), or
+	 * undefined when the command declares none. Called by the exit step with
+	 * the payload as supplied; never called in machine mode.
+	 */
+	readonly payloadRenderer: PayloadRenderer | undefined;
 	readonly flags: FlagMap;
 	readonly args: readonly AnyArg[];
 	readonly flagSets: readonly AnyFlagSet[];
@@ -3427,6 +3441,14 @@ export interface ReadOnlyCommandSpec<
 	 * nothing.
 	 */
 	readonly ownsStdout?: boolean;
+	/**
+	 * Declares how the command's payload reads in human mode (contract
+	 * §19.10): human mode prints the returned text and a newline, never hidden
+	 * by `--quiet`, and machine mode emits only the payload. It requires a
+	 * declared `payloadSchema`, is refused on an owns-stdout command, and makes
+	 * `ctx.out` a call-time error: the rendering is the command's human output.
+	 */
+	readonly payloadRenderer?: PayloadRenderer;
 	readonly tags?: readonly string[];
 	readonly hidden?: boolean;
 	readonly interactive?: boolean;
@@ -3485,6 +3507,14 @@ export interface MutatingCommandSpec<
 	 * nothing.
 	 */
 	readonly ownsStdout?: boolean;
+	/**
+	 * Declares how the command's payload reads in human mode (contract
+	 * §19.10): human mode prints the returned text and a newline, never hidden
+	 * by `--quiet`, and machine mode emits only the payload. It requires a
+	 * declared `payloadSchema`, is refused on an owns-stdout command, and makes
+	 * `ctx.out` a call-time error: the rendering is the command's human output.
+	 */
+	readonly payloadRenderer?: PayloadRenderer;
 	readonly tags?: readonly string[];
 	readonly hidden?: boolean;
 	readonly interactive?: boolean;
@@ -3579,6 +3609,31 @@ export function validatePayloadSchemaDeclaration(
 	}
 }
 
+/** How a command's payload reads in human mode (contract §19.10). */
+export type PayloadRenderer = (payload: unknown) => string;
+
+/**
+ * Validates a declared payload renderer at registration time (contract
+ * §19.10): it renders a payload, so it needs a declared payload schema, and an
+ * owns-stdout command's stdout is its document, which a rendering would enter.
+ */
+export function validatePayloadRendererDeclaration(
+	cmdName: string,
+	payloadSchema: Readonly<Record<string, unknown>> | undefined,
+	ownsStdout: boolean | undefined,
+	renderer: PayloadRenderer | undefined,
+): void {
+	if (renderer === undefined) {
+		return;
+	}
+	if (payloadSchema === undefined) {
+		throw new RegistrationError(errRendererWithoutPayloadSchema(cmdName));
+	}
+	if (ownsStdout === true) {
+		throw new RegistrationError(errRendererOnOwnsStdout(cmdName));
+	}
+}
+
 /** Validates a declared-forwarding declaration at registration time. */
 export function validateForwarding(
 	cmdName: string,
@@ -3656,6 +3711,12 @@ function buildCommandDef<
 		spec.dryRunUnsupportedReason,
 	);
 	validatePayloadSchemaDeclaration(name, spec.payloadSchema);
+	validatePayloadRendererDeclaration(
+		name,
+		spec.payloadSchema,
+		spec.ownsStdout,
+		spec.payloadRenderer,
+	);
 	// The empty fallbacks are safe: the type params only default when the
 	// corresponding spec properties are absent.
 	const flags = spec.flags ?? ({} as F);
@@ -3760,6 +3821,7 @@ function buildCommandDef<
 		updateOf: updateOf as UpdateOf | undefined,
 		payloadSchema: spec.payloadSchema,
 		ownsStdout: spec.ownsStdout ?? false,
+		payloadRenderer: spec.payloadRenderer,
 		flags,
 		args,
 		flagSets,
@@ -3863,6 +3925,12 @@ export interface PassthroughDef<N extends string, C = MutatingContext> {
 	 * Outside machine mode the declaration changes nothing at all.
 	 */
 	readonly ownsStdout: boolean;
+	/**
+	 * How the command's payload reads in human mode (contract §19.10), or
+	 * undefined when the command declares none. Called by the exit step with
+	 * the payload as supplied; never called in machine mode.
+	 */
+	readonly payloadRenderer: PayloadRenderer | undefined;
 	readonly handler: PassthroughHandler<C>;
 	readonly tags: readonly string[];
 	readonly hidden: boolean;
@@ -3890,6 +3958,14 @@ interface PassthroughSpec<C> {
 	 * nothing.
 	 */
 	readonly ownsStdout?: boolean;
+	/**
+	 * Declares how the command's payload reads in human mode (contract
+	 * §19.10): human mode prints the returned text and a newline, never hidden
+	 * by `--quiet`, and machine mode emits only the payload. It requires a
+	 * declared `payloadSchema`, is refused on an owns-stdout command, and makes
+	 * `ctx.out` a call-time error: the rendering is the command's human output.
+	 */
+	readonly payloadRenderer?: PayloadRenderer;
 	readonly tags?: readonly string[];
 	readonly hidden?: boolean;
 	readonly grants?: readonly Grant[];
@@ -3913,6 +3989,12 @@ function buildPassthroughDef<N extends string, C>(
 		spec.dryRunUnsupportedReason,
 	);
 	validatePayloadSchemaDeclaration(name, spec.payloadSchema);
+	validatePayloadRendererDeclaration(
+		name,
+		spec.payloadSchema,
+		spec.ownsStdout,
+		spec.payloadRenderer,
+	);
 	const tags = validateAndDedupTags(spec.tags ?? []);
 	return {
 		kind: "passthrough",
@@ -3925,6 +4007,7 @@ function buildPassthroughDef<N extends string, C>(
 		updateOf: spec.updateOf,
 		payloadSchema: spec.payloadSchema,
 		ownsStdout: spec.ownsStdout ?? false,
+		payloadRenderer: spec.payloadRenderer,
 		handler: spec.handler,
 		tags,
 		hidden: spec.hidden ?? false,

@@ -1381,7 +1381,7 @@ test("the envelope carries the write set in both modes", async () => {
 		];
 		const r = await updateFixture().test(dry ? ["--dry-run", ...argv] : argv);
 		const env = JSON.parse(r.stdout) as Record<string, unknown>;
-		assert.equal(env.interface_version, 2);
+		assert.equal(env.interface_version, 3);
 		assert.deepEqual(env.writes, {
 			resource: "dns-record",
 			write_mode: "sparse",

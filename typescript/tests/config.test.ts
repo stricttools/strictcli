@@ -520,10 +520,10 @@ test("config set: unknown key / bad int / bad bool errors", async () => {
 		"value",
 	]);
 	assert.equal(r.exitCode, 1);
-	assert.equal(r.stderr, "config set: unknown key 'nonexistent'\n");
+	assert.equal(r.stderr, "error: config set: unknown key 'nonexistent'\n");
 	r = await basicApp().test(["config", "set", "count", "--value", "abc"]);
 	assert.equal(r.exitCode, 1);
-	assert.match(r.stderr, /^config set: key 'count': /);
+	assert.match(r.stderr, /^error: config set: key 'count': /);
 	const app = createApp({
 		name: "myapp",
 		version: "1.0.0",
@@ -545,7 +545,7 @@ test("config set: unknown key / bad int / bad bool errors", async () => {
 	);
 	r = await app.test(["config", "set", "debug", "--value", "maybe"]);
 	assert.equal(r.exitCode, 1);
-	assert.match(r.stderr, /^config set: key 'debug': /);
+	assert.match(r.stderr, /^error: config set: key 'debug': /);
 });
 
 test("config show without flags prints the table; --plain --json is legal", async () => {
@@ -733,6 +733,21 @@ test("config show on broken config shows the load error", async () => {
 	const r = await basicApp().test(["config", "show", "--plain"]);
 	assert.equal(r.exitCode, 1);
 	assert.match(r.stderr, /config file/);
+});
+
+test("config show on broken config prints the load error with one error: prefix", async () => {
+	const { dir } = freshXdg();
+	const p = join(dir, "config.json");
+	writeFileSync(p, "{broken");
+	const r = await basicApp().test(["config", "show", "--plain"]);
+	assert.equal(r.exitCode, 1);
+	assert.match(r.stderr, /^error: config file /);
+	assert.doesNotMatch(r.stderr, /error: error:/);
+	const json = await basicApp().test(["--json", "config", "show"]);
+	const diags = (
+		JSON.parse(json.stdout) as { diagnostics: { message: string }[] }
+	).diagnostics;
+	assert.match(diags[0]?.message ?? "", /^config file /);
 });
 
 function conflictApp(mode: "cli-wins" | "error"): App {
@@ -1097,7 +1112,10 @@ test("config set: list value splits on comma; duplicate on unique flag errors", 
 	);
 	r = await setApp().test(["config", "set", "tags", "--value", "a,a"]);
 	assert.equal(r.exitCode, 1);
-	assert.equal(r.stderr, "config set: key 'tags': duplicate value 'a'\n");
+	assert.equal(
+		r.stderr,
+		"error: config set: key 'tags': duplicate value 'a'\n",
+	);
 });
 
 test("config set: dict value takes a JSON object; bad JSON carries Python decode string", async () => {
@@ -1111,7 +1129,7 @@ test("config set: dict value takes a JSON object; bad JSON carries Python decode
 	assert.equal(r.exitCode, 1);
 	assert.equal(
 		r.stderr,
-		"config set: key 'meta': invalid JSON: Expecting value: line 1 column 1 (char 0)\n",
+		"error: config set: key 'meta': invalid JSON: Expecting value: line 1 column 1 (char 0)\n",
 	);
 });
 
@@ -1126,12 +1144,15 @@ test("config set: --clear and --default", async () => {
 	// --clear on scalar flag errors.
 	r = await setApp().test(["config", "set", "count", "--clear"]);
 	assert.equal(r.exitCode, 1);
-	assert.equal(r.stderr, "config set: --clear is only for repeatable flags\n");
+	assert.equal(
+		r.stderr,
+		"error: config set: --clear is only for repeatable flags\n",
+	);
 	// --default when key not in config errors.
 	writeFileSync(p, "{}");
 	r = await setApp().test(["config", "set", "count", "--default"]);
 	assert.equal(r.exitCode, 1);
-	assert.equal(r.stderr, "config set: key 'count' not in config\n");
+	assert.equal(r.stderr, "error: config set: key 'count' not in config\n");
 });
 
 // The write is an exactly-one selection over a value, a clear and a reset to
@@ -1522,7 +1543,10 @@ test("config init: existing file is an error (Python spelling)", async () => {
 	writeFileSync(p, "{}\n");
 	const r = await basicApp().test(["config", "init"]);
 	assert.equal(r.exitCode, 1);
-	assert.equal(r.stderr, `config init: config file already exists: ${p}\n`);
+	assert.equal(
+		r.stderr,
+		`error: config init: config file already exists: ${p}\n`,
+	);
 });
 
 // =========================================================================

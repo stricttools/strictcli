@@ -44,6 +44,7 @@ import {
 	errHermeticConfigMutuallyExclusive,
 	errHermeticWithConfigCommands,
 	errImpliesConflict,
+	errLintFrameworkUseArgs,
 	errMissingRequiredArgument,
 	errMutexDeclineClause,
 	errUnexpectedArgument,
@@ -1817,6 +1818,39 @@ export function preScanReservedFlags(
 }
 
 /**
+ * Whether `--lint-framework-use` appears in the pre-command region of argv:
+ * before a bare "--" and before the first non-flag token, skipping the values
+ * of `--config` and of known value-taking global flags.
+ */
+function lintFlagInPreCommandRegion(
+	app: AppImpl,
+	argv: readonly string[],
+): boolean {
+	const takesValue = new Set<string>(["--config"]);
+	for (const f of app.globalFlags) {
+		if (f.schema !== "bool") {
+			takesValue.add(`--${f.name}`);
+			const short = flagOpts(f).short;
+			if (short !== undefined && short !== "") {
+				takesValue.add(`-${short}`);
+			}
+		}
+	}
+	let i = 0;
+	while (i < argv.length) {
+		const tok = argv[i] as string;
+		if (tok === "--" || !tok.startsWith("-") || tok === "-") {
+			return false;
+		}
+		if (tok === "--lint-framework-use") {
+			return true;
+		}
+		i += takesValue.has(tok) ? 2 : 1;
+	}
+	return false;
+}
+
+/**
  * Recognizes the reserved quartet in the command region of argv.
  *
  * Contract §7.2 (amended 2026-08-04): the quartet's four tokens are
@@ -1926,6 +1960,7 @@ export type ParseOutcome =
 	| { readonly kind: "help"; readonly target: HelpTarget }
 	| { readonly kind: "version"; readonly text: string }
 	| { readonly kind: "dump-schema" }
+	| { readonly kind: "lint-framework-use" }
 	| { readonly kind: "mcp" }
 	| {
 			readonly kind: "parse-error";
@@ -2017,6 +2052,23 @@ export function doParse(
 ): ParseOutcome {
 	// Fresh stdin tracking per parse invocation (@- is single-use).
 	const tracker = newStdinTracker();
+
+	// --lint-framework-use is a whole-program action that must be the only
+	// argument (contract §28.1): any other token, before or after it, is a
+	// parse error. After the command word it is an ordinary unknown flag.
+	if (lintFlagInPreCommandRegion(app, argv)) {
+		if (argv.length === 1) {
+			return { kind: "lint-framework-use" };
+		}
+		// The refusal is printed as every parse error is, so a --json beside
+		// it still earns the --json document.
+		const rest = argv.filter((t) => t !== "--lint-framework-use");
+		return {
+			kind: "parse-error",
+			message: errLintFrameworkUseArgs(),
+			reserved: reservedFlagsOf(preScanReservedFlags(app, rest)),
+		};
+	}
 
 	// App-level --help/-h and --version/-v as the only token
 	if (

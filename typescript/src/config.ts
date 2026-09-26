@@ -1307,7 +1307,7 @@ function writeConfigSet(
 		try {
 			newText = tomlSetKey(text, key, value);
 		} catch (e) {
-			ctx.error(`error: cannot update config: ${(e as Error).message}`);
+			ctx.error(`cannot update config: ${(e as Error).message}`);
 			return 1;
 		}
 		ctx.effects.write(path, newText);
@@ -1338,7 +1338,7 @@ function writeConfigUnset(
 		try {
 			newText = tomlDeleteKey(text, key);
 		} catch (e) {
-			ctx.error(`error: cannot update config: ${(e as Error).message}`);
+			ctx.error(`cannot update config: ${(e as Error).message}`);
 			return 1;
 		}
 		ctx.effects.write(path, newText);
@@ -1584,7 +1584,7 @@ function configShowHandler(app: AppImpl, ctx: Context): number {
 	// so a config value machine mode could not carry -- a float above 2^53 --
 	// costs the human rendering nothing.
 	if (app.configParseErr !== undefined) {
-		ctx.error(`error: ${app.configParseErr}`);
+		ctx.error(app.configParseErr);
 		return 1;
 	}
 	const configData = (app.configData ?? {}) as Record<string, unknown>;
@@ -1875,7 +1875,7 @@ export function registerConfigGroup(app: AppImpl): void {
 				try {
 					ctx.effects.run([editor, path], { stream: true });
 				} catch (e) {
-					ctx.error(`error: editor failed: ${(e as Error).message}`);
+					ctx.error(`editor failed: ${(e as Error).message}`);
 					return 1;
 				}
 				return 0;

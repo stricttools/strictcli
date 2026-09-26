@@ -23,7 +23,8 @@ import {
 import { createInterface } from "node:readline";
 import type { AppImpl } from "./app.js";
 import type { Writer } from "./context.js";
-import { errConfirmDeclined } from "./errors.js";
+import { errConfirmDeclined, errEarlyExitToolResult } from "./errors.js";
+import { ExitError } from "./exits.js";
 import { formatFloatCanonical } from "./float.js";
 import { commandClassification } from "./invoke.js";
 import { jsonCompact } from "./outcome.js";
@@ -540,13 +541,15 @@ async function handleToolsCall(
 			approveConsequential: consented,
 		});
 	} catch (e) {
-		return toolResult(
-			app,
-			reqId,
-			e instanceof Error ? e.message : String(e),
-			modern,
-			true,
-		);
+		// A command that ended through an early exit answers with its status
+		// as well as its reason (contract §19.9).
+		const text =
+			e instanceof ExitError
+				? errEarlyExitToolResult(e.code, e.message)
+				: e instanceof Error
+					? e.message
+					: String(e);
+		return toolResult(app, reqId, text, modern, true);
 	}
 
 	// jsonCompact serializes undefined as "null" (Python json.dumps(None))

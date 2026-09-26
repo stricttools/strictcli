@@ -33,7 +33,11 @@ import {
 /** A started child whose exit status can be awaited synchronously later. */
 export interface SpawnedChild {
 	readonly pid: number;
-	/** Blocks until the child exits and returns its exit code. */
+	/**
+	 * Blocks until the child exits and returns its exit code. When the child
+	 * was started with its stdout captured, `onStdout` receives every captured
+	 * byte exactly once, on the first call, before the code is returned.
+	 */
 	wait(): number;
 }
 
@@ -41,7 +45,7 @@ export interface SpawnedChild {
 const SPAWN_WORKER_SOURCE = `
 const { workerData } = require("node:worker_threads");
 const { spawn } = require("node:child_process");
-const { argv, cwd, env, pidBuf, doneBuf, pidPort, donePort } = workerData;
+const { argv, cwd, env, captureStdout, pidBuf, doneBuf, pidPort, donePort } = workerData;
 const pidFlag = new Int32Array(pidBuf);
 const doneFlag = new Int32Array(doneBuf);
 function signal(flag, port, msg) {
@@ -53,8 +57,12 @@ try {
 	const child = spawn(argv[0], argv.slice(1), {
 		cwd: cwd === null ? undefined : cwd,
 		env: env === null ? process.env : env,
-		stdio: "inherit",
+		stdio: captureStdout ? ["inherit", "pipe", "inherit"] : "inherit",
 	});
+	const captured = [];
+	if (captureStdout) {
+		child.stdout.on("data", (chunk) => captured.push(chunk));
+	}
 	let started = false;
 	child.on("spawn", () => {
 		started = true;
@@ -69,7 +77,10 @@ try {
 		signal(doneFlag, donePort, { error: message });
 	});
 	child.on("close", (code) => {
-		signal(doneFlag, donePort, { code: code === null ? 1 : code });
+		signal(doneFlag, donePort, {
+			code: code === null ? 1 : code,
+			stdout: captureStdout ? new Uint8Array(Buffer.concat(captured)) : null,
+		});
 	});
 } catch (e) {
 	const message = String((e && e.message) || e);
@@ -90,11 +101,17 @@ function blockingReceive(flag: Int32Array, port: MessagePort): unknown {
 /**
  * Starts a child concurrently and returns a handle whose `wait()` blocks the
  * main thread synchronously. Throws if the child cannot be started.
+ *
+ * With `onStdout`, the child's stdout is read through a pipe instead of
+ * inheriting the process stdout, and every byte it wrote is handed to
+ * `onStdout` when the child is waited on (contract §19.11). Its stderr is
+ * inherited either way.
  */
 export function spawnConcurrent(
 	argv: readonly string[],
 	cwd: string | undefined,
 	env: Readonly<Record<string, string>> | undefined,
+	onStdout?: (bytes: Uint8Array) => void,
 ): SpawnedChild {
 	const pidBuf = new SharedArrayBuffer(4);
 	const doneBuf = new SharedArrayBuffer(4);
@@ -106,6 +123,7 @@ export function spawnConcurrent(
 			argv: [...argv],
 			cwd: cwd ?? null,
 			env: env === undefined ? null : { ...env },
+			captureStdout: onStdout !== undefined,
 			pidBuf,
 			doneBuf,
 			pidPort: pidChannel.port2,
@@ -137,7 +155,9 @@ export function spawnConcurrent(
 			const done = blockingReceive(
 				new Int32Array(doneBuf),
 				doneChannel.port1,
-			) as { code?: number; error?: string } | undefined;
+			) as
+				| { code?: number; error?: string; stdout?: Uint8Array | null }
+				| undefined;
 			void worker.terminate();
 			if (done === undefined || done.error !== undefined) {
 				throw new Error(
@@ -145,6 +165,13 @@ export function spawnConcurrent(
 				);
 			}
 			exitCode = done.code as number;
+			if (
+				onStdout !== undefined &&
+				done.stdout !== undefined &&
+				done.stdout !== null
+			) {
+				onStdout(done.stdout);
+			}
 			return exitCode;
 		},
 	};

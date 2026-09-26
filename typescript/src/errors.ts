@@ -3159,3 +3159,156 @@ export function errUpdateNoProperty(
 export function errUpdateValueAndUnset(x: string): string {
 	return `--${x} and --unset-${x} are mutually exclusive: a property is either written or cleared`;
 }
+
+// ---------------------------------------------------------------------------
+// exits.go, context.go — the early exit and the output writers (call-time)
+//
+// Call-time refusals take the registration-time category on §12.4's
+// precedent: they fire when a handler calls something, not at parse time.
+// The early-exit refusals throw from the ExitNow constructor, before anything
+// unwinds, so a refused early exit is a programming error and never an early
+// exit with a substituted code.
+// ---------------------------------------------------------------------------
+
+export function errExitNowCode(code: number): string {
+	return `early exit requires an exit code between 1 and 255, got ${code}: a successful run ends with a return from the handler`;
+}
+
+export function errExitNowMessageEmpty(): string {
+	return "early exit requires a non-empty message";
+}
+
+export function errOutWithRenderer(name: string): string {
+	return `command ${q(name)}: ctx.out is refused on a command that declares a payload renderer: the rendering is its human output`;
+}
+
+export function errOutOnOwnsStdout(name: string): string {
+	return `command ${q(name)}: ctx.out is refused on a command that owns stdout: write the document through ctx.document`;
+}
+
+export function errDocumentWithoutOwnsStdout(name: string): string {
+	return `command ${q(name)}: ctx.document requires the owns-stdout declaration`;
+}
+
+// ---------------------------------------------------------------------------
+// strictcli.go — the payload renderer declaration (registration-time)
+// ---------------------------------------------------------------------------
+
+export function errRendererWithoutPayloadSchema(name: string): string {
+	return `command ${q(name)}: a payload renderer requires a declared payload schema`;
+}
+
+export function errRendererOnOwnsStdout(name: string): string {
+	return `command ${q(name)}: a payload renderer cannot be declared on a command that owns stdout`;
+}
+
+// ---------------------------------------------------------------------------
+// strictcli.go — run outcomes the exit step appends (parse-time)
+//
+// None of them is thrown: each is the message of an error diagnostic the exit
+// step appends, printed with the "error: " prefix in human mode.
+// ---------------------------------------------------------------------------
+
+export function errStdoutWrittenOutsideFramework(
+	n: number,
+	excerpt: string,
+): string {
+	return `stdout written outside the framework: ${n} bytes: ${excerpt}`;
+}
+
+export function errProcessExitOutsideFramework(code: string): string {
+	return `process exit called outside the framework with code ${code}`;
+}
+
+export function errCanceledBySignal(signal: string): string {
+	return `canceled by signal ${signal}`;
+}
+
+// ---------------------------------------------------------------------------
+// mcp.go — the early exit over the programmatic doors
+// ---------------------------------------------------------------------------
+
+export function errEarlyExitToolResult(code: number, message: string): string {
+	return `exit code ${code}: ${message}`;
+}
+
+// ---------------------------------------------------------------------------
+// strictcli.go — the --lint-framework-use argument refusal (parse-time)
+// ---------------------------------------------------------------------------
+
+export function errLintFrameworkUseArgs(): string {
+	return "--lint-framework-use takes no other arguments";
+}
+
+// ---------------------------------------------------------------------------
+// lint_framework_use.go — scan refusals and finding messages
+//
+// A conformance case cannot reach a program's source tree, so these take the
+// registration-time category. Each language-specific spelling (a manifest file
+// name, a Context method, the early-exit call) is an interpolated parameter,
+// so the three catalogs carry one signature per template.
+// ---------------------------------------------------------------------------
+
+export function errLintFrameworkUseNotWorkTree(path: string): string {
+	return `--lint-framework-use: project root '${path}' is not a git work tree; the scan reads only repository-owned files`;
+}
+
+export function errLintFrameworkUseNoManifest(
+	manifest: string,
+	path: string,
+): string {
+	return `--lint-framework-use: no ${manifest} in the working directory '${path}'; run the program from its project root`;
+}
+
+export function errLintFrameworkUseManifestMismatch(
+	manifest: string,
+	path: string,
+): string {
+	return `--lint-framework-use: the ${manifest} in '${path}' does not declare this program`;
+}
+
+/**
+ * A source file the scan must read and cannot. `detail` is the reader's own
+ * message and is not pinned; TypeScript's reader is the compiler's scanner, so
+ * its detail names a lexical fault and the line it is on.
+ */
+export function errLintFrameworkUseUnparsable(
+	path: string,
+	detail: string,
+): string {
+	return `--lint-framework-use: source file '${path}' does not parse: ${detail}`;
+}
+
+/** TypeScript-only: only a `bin` entry names a built file mapped back to source. */
+export function errLintFrameworkUseBinUnresolved(name: string): string {
+	return `--lint-framework-use: bin entry '${name}' resolves to no repository-owned source file`;
+}
+
+export function errLintProcessExit(construct: string, early: string): string {
+	return `${construct} ends the process outside the framework's exit step; return from the handler, or end the command early with ${early}`;
+}
+
+export function errLintStdoutWrite(
+	construct: string,
+	out: string,
+	payload: string,
+	document: string,
+): string {
+	return `${construct} writes to stdout outside the framework; write the command's answer with ${out}, its machine output with ${payload}, or a document with ${document} on a command that owns stdout`;
+}
+
+export function errLintStderrWrite(
+	construct: string,
+	warn: string,
+	error: string,
+): string {
+	return `${construct} writes to stderr outside the framework; report through ${warn} or ${error}`;
+}
+
+export function errLintArgvAccess(construct: string): string {
+	return `${construct} reads or edits the command line outside the framework; declare a flag or an argument`;
+}
+
+export function errLintEnvironmentRead(construct: string): string {
+	return `${construct} reads the environment outside the declared mechanisms; declare a flag's environment binding, a handshake, a connection, or a location root`;
+}

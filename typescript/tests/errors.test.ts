@@ -125,7 +125,11 @@ import { ParseError, RegistrationError } from "../src/errors.js";
 // flag and arg surfaces, plus the two parse-time refusals.
 // The effects-bypass input rule nets +1: the refusal of a project root that is
 // not a git work tree.
-const EXPECTED_TEMPLATE_COUNT = 405;
+// Framework-owned exits and output net +21: the early-exit and writer call-time
+// refusals, the renderer registration refusals, the run outcomes, the early
+// exit's tool-result text, and the framework-use lint's argument refusal, scan
+// refusals, and finding messages, the unparsable-source refusal among them.
+const EXPECTED_TEMPLATE_COUNT = 427;
 
 function templateFunctions(): [string, (...args: never[]) => unknown][] {
 	// Widen to unknown first: the module also exports the two error classes,

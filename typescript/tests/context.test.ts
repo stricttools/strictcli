@@ -17,7 +17,7 @@ test("context: info writes to stdout, warn/error to stderr, debug is gated", () 
 	ctx.warn("w");
 	ctx.error("e");
 	assert.deepEqual(out.chunks, ["i\n"]);
-	assert.deepEqual(err.chunks, ["w\n", "e\n"]);
+	assert.deepEqual(err.chunks, ["warning: w\n", "error: e\n"]);
 });
 
 test("context: source accepts underscored and dashed names", () => {

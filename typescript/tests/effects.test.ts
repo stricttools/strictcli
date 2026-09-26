@@ -972,12 +972,12 @@ test("effects: a passthrough under a group keeps the quartet opaque", async () =
 
 test("effects: --quiet dominates --verbose in the gating table", async () => {
 	const rows: [string[], string[]][] = [
-		[[], ["i", "w", "e"]],
-		[["--verbose"], ["i", "d", "w", "e"]],
-		[["--quiet"], ["w", "e"]],
+		[[], ["i", "warning: w", "error: e"]],
+		[["--verbose"], ["i", "d", "warning: w", "error: e"]],
+		[["--quiet"], ["warning: w", "error: e"]],
 		[
 			["--quiet", "--verbose"],
-			["w", "e"],
+			["warning: w", "error: e"],
 		],
 	];
 	for (const [flags, expected] of rows) {

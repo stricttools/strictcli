@@ -701,6 +701,14 @@ export class Effects implements MutatingEffects {
 	 */
 	private readonly out: { write(text: string): void } | undefined;
 	private readonly json: boolean;
+	/**
+	 * Where a child's stdout goes instead of the process stdout, or undefined
+	 * when children inherit it (contract §19.11): set in machine mode on a
+	 * command that does not own stdout.
+	 */
+	private readonly childStdout: ((text: string) => void) | undefined;
+	/** Captured spawns not yet waited on, drained by the exit step. */
+	private readonly pendingSpawns: { wait(): number }[] = [];
 
 	constructor(
 		cmd: EffectsCommandView,
@@ -710,6 +718,7 @@ export class Effects implements MutatingEffects {
 		trace: TraceIdentity,
 		out?: { write(text: string): void },
 		json = false,
+		childStdout?: (text: string) => void,
 	) {
 		this.cmdPath = cmd.cmdPath;
 		this.effect = cmd.effect;
@@ -720,6 +729,27 @@ export class Effects implements MutatingEffects {
 		this.trace = trace;
 		this.out = out;
 		this.json = json;
+		this.childStdout = childStdout;
+	}
+
+	/**
+	 * Package-internal: waits for every captured spawn the handler never
+	 * waited on, so its stdout reaches the `output` member no later than the
+	 * exit step (contract §19.11).
+	 */
+	drainCapturedSpawns(): void {
+		for (const child of this.pendingSpawns.splice(0)) {
+			child.wait();
+		}
+	}
+
+	/** The capture callback for a child's raw stdout bytes, or undefined. */
+	private stdoutCapture(): ((bytes: Uint8Array) => void) | undefined {
+		const sink = this.childStdout;
+		if (sink === undefined) {
+			return undefined;
+		}
+		return (bytes) => sink(decodeChildStdout(bytes));
 	}
 
 	// -- claimed rendering (contract §19.7) ------------------------------
@@ -1086,11 +1116,16 @@ export class Effects implements MutatingEffects {
 			grant: declared,
 			recorded: false,
 		});
+		const capture = this.stdoutCapture();
 		const child = spawnConcurrent(
 			this.settledArgv(runtime, "spawn"),
 			opts.cwd,
 			traceChildEnv(this.mergedEnv(opts.env), this.trace),
+			capture,
 		);
+		if (capture !== undefined) {
+			this.pendingSpawns.push(child);
+		}
 		return new SpawnedResult(child.pid, child, this.cmdPath, joined);
 	}
 
@@ -1361,12 +1396,26 @@ export class Effects implements MutatingEffects {
 	): Completed {
 		const argv = this.settledArgv(runtime, method);
 		const stream = opts.stream === true;
+		// A streamed child in machine mode writes into the `output` member
+		// instead of beside the --json document (§19.11).
+		const capture = stream ? this.stdoutCapture() : undefined;
 		const res = spawnSync(argv[0] as string, argv.slice(1), {
 			cwd: opts.cwd,
 			env: traceChildEnv(this.mergedEnv(opts.env), this.trace),
-			stdio: stream ? "inherit" : "pipe",
+			stdio: !stream
+				? "pipe"
+				: capture !== undefined
+					? ["inherit", "pipe", "inherit"]
+					: "inherit",
 			maxBuffer: 256 * 1024 * 1024,
 		});
+		if (
+			capture !== undefined &&
+			res.stdout !== null &&
+			res.stdout !== undefined
+		) {
+			capture(res.stdout);
+		}
 		if (res.error !== undefined && res.error !== null) {
 			throw res.error;
 		}
@@ -1402,4 +1451,13 @@ export class Effects implements MutatingEffects {
 		}
 		return new ResponseResult(res.status, res.body, res.headers);
 	}
+}
+
+/**
+ * Decodes a captured child's stdout for the `output` member (contract §19.2's
+ * box): UTF-8, each maximal invalid subsequence replaced by one U+FFFD -- the
+ * WHATWG decoder's rule, which is TextDecoder's default.
+ */
+function decodeChildStdout(bytes: Uint8Array): string {
+	return new TextDecoder("utf-8").decode(bytes);
 }

@@ -65,6 +65,7 @@ export { assertNever, provided } from "./elected.js";
 // __all__ and Go both export only InvokeError -- registration failures are
 // Go panics / Python ValueError, parse failures print to stderr and exit 1).
 export { EffectFailed, InvokeError } from "./errors.js";
+export { ExitError, ExitNow } from "./exits.js";
 export type {
 	AllOrNone,
 	AnyArg,

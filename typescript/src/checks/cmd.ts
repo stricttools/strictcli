@@ -221,7 +221,7 @@ async function checkHandler(
 	// rendered as the would-run plan.
 	if (app.checks.contextFactory === undefined) {
 		ctx.error(
-			"error: no check context configured. " +
+			"no check context configured. " +
 				"Call app.setCheckContext(factory) before running.",
 		);
 		return 1;

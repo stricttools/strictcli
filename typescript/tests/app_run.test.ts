@@ -33,7 +33,7 @@ test("test: result surface is stdout/stderr/exitCode with optional data", async 
 	const r = await app.test(["run"]);
 	assert.deepEqual(r, {
 		stdout: "out-line\n",
-		stderr: "err-line\n",
+		stderr: "warning: err-line\n",
 		exitCode: 3,
 	});
 	assert.equal("data" in r, false);
@@ -71,7 +71,7 @@ test("test: async handlers are awaited", async () => {
 	const r = await app.test(["run", "--json"]);
 	assert.equal(
 		r.stdout,
-		'{"interface_version":2,"app":"myapp","app_version":"1.0.0","command":"run","exit_code":2,"payload":{"done":true},"dry_run":false,"writes":null,"preview":[],"preview_error":null,"diagnostics":[{"level":"info","message":"after-await"}]}\n',
+		'{"interface_version":3,"app":"myapp","app_version":"1.0.0","command":"run","exit_code":2,"payload":{"done":true},"output":null,"dry_run":false,"writes":null,"preview":[],"preview_error":null,"diagnostics":[{"level":"info","message":"after-await"}]}\n',
 	);
 	assert.equal(r.exitCode, 2);
 	assert.deepEqual(r.data, { done: true });
@@ -99,7 +99,7 @@ test("test: outcome data prints one compact JSON line with BigInt tokens", async
 	const r = await app.test(["run", "--count", "9007199254740992", "--json"]);
 	assert.equal(
 		r.stdout,
-		'{"interface_version":2,"app":"myapp","app_version":"1.0.0","command":"run","exit_code":0,"payload":{"count":9007199254740992,"name":"x"},"dry_run":false,"writes":null,"preview":[],"preview_error":null,"diagnostics":[]}\n',
+		'{"interface_version":3,"app":"myapp","app_version":"1.0.0","command":"run","exit_code":0,"payload":{"count":9007199254740992,"name":"x"},"output":null,"dry_run":false,"writes":null,"preview":[],"preview_error":null,"diagnostics":[]}\n',
 	);
 	assert.deepEqual(r.data, { count: 9007199254740992n, name: "x" });
 });
@@ -186,7 +186,7 @@ test("test: passthrough handlers flow through the result contract", async () => 
 	const r = await app.test(["--json", "exec", "-x", "y"]);
 	assert.equal(
 		r.stdout,
-		'{"interface_version":2,"app":"myapp","app_version":"1.0.0","command":"exec","exit_code":4,"payload":{"forwarded":2},"dry_run":false,"writes":null,"preview":[],"preview_error":null,"diagnostics":[{"level":"info","message":"exec:-x,y"}]}\n',
+		'{"interface_version":3,"app":"myapp","app_version":"1.0.0","command":"exec","exit_code":4,"payload":{"forwarded":2},"output":null,"dry_run":false,"writes":null,"preview":[],"preview_error":null,"diagnostics":[{"level":"info","message":"exec:-x,y"}]}\n',
 	);
 	assert.equal(r.exitCode, 4);
 	assert.deepEqual(r.data, { forwarded: 2 });
@@ -335,7 +335,7 @@ test("run: writes to process streams and sets process.exitCode", async () => {
 	}
 	assert.equal(
 		chunks.join(""),
-		'{"interface_version":2,"app":"myapp","app_version":"1.0.0","command":"run","exit_code":5,"payload":{"via":"run"},"dry_run":false,"writes":null,"preview":[],"preview_error":null,"diagnostics":[{"level":"info","message":"hello-from-run"}]}\n',
+		'{"interface_version":3,"app":"myapp","app_version":"1.0.0","command":"run","exit_code":5,"payload":{"via":"run"},"output":null,"dry_run":false,"writes":null,"preview":[],"preview_error":null,"diagnostics":[{"level":"info","message":"hello-from-run"}]}\n',
 	);
 	assert.equal(process.exitCode, 5);
 	process.exitCode = origExitCode;

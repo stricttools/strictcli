@@ -226,8 +226,8 @@ function envelopeText(
 ): string {
 	const cmd = command === null ? "null" : JSON.stringify(command);
 	return (
-		`{"interface_version":2,"app":"a","app_version":"1","command":${cmd},` +
-		`"exit_code":${exitCode},"payload":${payload},` +
+		`{"interface_version":3,"app":"a","app_version":"1","command":${cmd},` +
+		`"exit_code":${exitCode},"payload":${payload},"output":null,` +
 		`"dry_run":${opts.dryRun ?? false},"writes":${opts.writes ?? "null"},` +
 		`"preview":${opts.preview ?? "[]"},` +
 		`"preview_error":${opts.previewError ?? "null"},` +
@@ -310,10 +310,10 @@ test("quiet cannot reach the envelope", async () => {
 	);
 });
 
-test("diagnostics are unchanged outside machine mode", async () => {
+test("diagnostics go to the human stream outside machine mode", async () => {
 	const r = await diagnosticsApp().test(["run"]);
 	assert.equal(r.stdout, "starting\n");
-	assert.equal(r.stderr, "careful\nbad\n");
+	assert.equal(r.stderr, "warning: careful\nerror: bad\n");
 });
 
 test("an unknown command emits an envelope with a null command", async () => {

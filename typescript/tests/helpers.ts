@@ -2,6 +2,7 @@
  * Shared test helpers. Not a `.test.ts` file, so the runner does not pick it up.
  */
 
+import { spawnSync } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -89,4 +90,48 @@ export function createTestApp(spec: AppSpec): App {
 		dropBuiltinCheckProviders(app);
 	};
 	return app;
+}
+
+/** What a child process running an app produced. */
+export interface ChildRun {
+	readonly stdout: string;
+	readonly stderr: string;
+	readonly status: number | null;
+	readonly signal: NodeJS.Signals | null;
+}
+
+/**
+ * The script a child node process runs: `body` defines `app` with the public
+ * API in scope, then the script awaits `app.run(argv)`. The API is imported
+ * from this suite's own build of the sources.
+ */
+export function childAppScript(body: string, argv: readonly string[]): string {
+	const index = new URL("../src/index.js", import.meta.url).href;
+	return [
+		`import * as strictcli from ${JSON.stringify(index)};`,
+		"const { createApp, defineReadOnlyCommand, defineMutatingCommand, ExitNow } = strictcli;",
+		body,
+		`await app.run(${JSON.stringify(argv)});`,
+	].join("\n");
+}
+
+/**
+ * Runs an app's `run()` in a child node process and returns what it wrote.
+ * The tests that drive the process-wide mechanisms -- the runtime guard under
+ * `run()`, which counts every stdout write, and signal handling -- run there,
+ * because inside the test runner's own process those mechanisms would see the
+ * runner's reporter frames and signals.
+ */
+export function runAppInChild(body: string, argv: readonly string[]): ChildRun {
+	const r = spawnSync(
+		process.execPath,
+		["--input-type=module", "-e", childAppScript(body, argv)],
+		{ encoding: "utf8", timeout: 30_000 },
+	);
+	return {
+		stdout: r.stdout,
+		stderr: r.stderr,
+		status: r.status,
+		signal: r.signal,
+	};
 }

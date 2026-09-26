@@ -19,6 +19,7 @@ import {
 	attachUpdateState,
 	Context,
 	contextPayload,
+	endDispatch,
 	NO_RESERVED_FLAGS,
 	type ReservedFlags,
 	type Writer,
@@ -42,6 +43,7 @@ import {
 	InvokeError,
 	ParseError,
 } from "./errors.js";
+import { ExitError, ExitNow } from "./exits.js";
 import {
 	type AnyChoiceFlag,
 	type AnyCommand,
@@ -349,6 +351,29 @@ function interpretForCall(result: unknown, ctx: Context): unknown {
 }
 
 /**
+ * Runs a handler for call() and interprets how it ended. A command that ended
+ * through an early exit rejects with ExitError carrying its code and message
+ * (contract §19.9); every other throw propagates untouched. `ctx.signal` is
+ * aborted when the dispatch ends, however it ends (§19.13).
+ */
+async function callHandler(
+	invoke: () => unknown,
+	ctx: Context,
+): Promise<unknown> {
+	try {
+		const result = await invoke();
+		return interpretForCall(result, ctx);
+	} catch (e) {
+		if (e instanceof ExitNow) {
+			throw new ExitError(e.code, e.message);
+		}
+		throw e;
+	} finally {
+		endDispatch(ctx);
+	}
+}
+
+/**
  * The implementation behind App.call(). Resolves the command, populates a
  * SourcedStore from kwargs (marked "cli" so mutex/dependency checks see
  * them), runs the shared validation pipeline, and awaits the handler.
@@ -638,10 +663,13 @@ export async function invokeApp(
 		app.armEffects(cmd, commandPath, false, reserved),
 		cmd.name,
 		def.payloadSchema ?? null,
+		{
+			ownsStdout: def.ownsStdout,
+			hasRenderer: def.payloadRenderer !== undefined,
+		},
 	);
 	attachUpdateState(ctx, writes, unsets);
-	const result = await def.handler(validated as never, ctx);
-	return interpretForCall(result, ctx);
+	return await callHandler(() => def.handler(validated as never, ctx), ctx);
 }
 
 async function invokePassthrough(
@@ -691,6 +719,7 @@ async function invokePassthrough(
 		}
 	}
 
+	const def = cmd.def as PassthroughDef<string>;
 	const ctx = new Context(
 		discard,
 		discard,
@@ -704,11 +733,16 @@ async function invokePassthrough(
 		reserved,
 		app.armEffects(cmd, commandPath, false, reserved),
 		cmd.name,
-		(cmd.def as PassthroughDef<string>).payloadSchema ?? null,
+		def.payloadSchema ?? null,
+		{
+			ownsStdout: def.ownsStdout,
+			hasRenderer: def.payloadRenderer !== undefined,
+		},
 	);
-	const def = cmd.def as PassthroughDef<string>;
-	const result = await def.handler({ name: cmd.name, args, globals }, ctx);
-	return interpretForCall(result, ctx);
+	return await callHandler(
+		() => def.handler({ name: cmd.name, args, globals }, ctx),
+		ctx,
+	);
 }
 
 // --- Elected records on the programmatic front door (contract §24.11) ---
