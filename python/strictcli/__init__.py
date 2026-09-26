@@ -8607,6 +8607,10 @@ class Command:
     # in machine mode the envelope moves to stderr so the artifact's bytes are
     # untouched. Outside machine mode the declaration changes nothing at all.
     owns_stdout: bool = False
+    # The declared rendering of the payload (contract §19.10): human mode
+    # prints it at the exit step; machine mode never calls it. Code, not
+    # data, so --dump-schema does not publish it.
+    payload_renderer: "Callable[[Any], str] | None" = None
     flags: tuple[Flag, ...] = ()
     args: tuple[Arg, ...] = ()
     flag_sets: tuple[FlagSet, ...] = ()
@@ -8651,6 +8655,11 @@ class Command:
                 raise ValueError(
                     _msg_payload_schema_invalid(self.name, found[0], found[1])
                 )
+        if self.payload_renderer is not None:
+            if self.payload_schema is None:
+                raise ValueError(f'command "{self.name}": a payload renderer requires a declared payload schema')
+            if self.owns_stdout:
+                raise ValueError(f'command "{self.name}": a payload renderer cannot be declared on a command that owns stdout')
         for tag in self.tags:
             if not _IDENTIFIER_RE.fullmatch(tag):
                 raise ValueError(f'invalid tag name "{tag}": must match [a-z][a-z0-9-]*')
@@ -8741,6 +8750,7 @@ class Group:
         dry_run_unsupported_reason: str | None = None,
         update_of: "UpdateOf | None" = None,
         payload_schema: dict | None = None,
+        payload_renderer: "Callable[[Any], str] | None" = None,
         owns_stdout: bool = False,
         args: list[Arg] | None = None,
         flag_sets: list[FlagSet] | None = None,
@@ -8768,6 +8778,7 @@ class Group:
                 dry_run_unsupported_reason=dry_run_unsupported_reason,
                 update_of=update_of,
                 payload_schema=payload_schema,
+                payload_renderer=payload_renderer,
                 owns_stdout=owns_stdout,
                 handler=func, args=args, flag_sets=flag_sets,
                 constraints=constraints,
@@ -10523,6 +10534,7 @@ class App:
         dry_run_unsupported_reason: str | None = None,
         update_of: "UpdateOf | None" = None,
         payload_schema: dict | None = None,
+        payload_renderer: "Callable[[Any], str] | None" = None,
         owns_stdout: bool = False,
         args: list[Arg] | None = None,
         flag_sets: list[FlagSet] | None = None,
@@ -10548,6 +10560,7 @@ class App:
                 dry_run_unsupported_reason=dry_run_unsupported_reason,
                 update_of=update_of,
                 payload_schema=payload_schema,
+                payload_renderer=payload_renderer,
                 owns_stdout=owns_stdout,
                 handler=func,
                 args=args,
@@ -12151,6 +12164,7 @@ class App:
             unsets=self._last_unsets,
             output=machine_output,
             owns_stdout=cmd.owns_stdout,
+            payload_renderer_declared=cmd.payload_renderer is not None,
         )
         # The would-do log's unnumbered write-set line (contract §27.5, §3.2).
         # It renders in DRY MODE ONLY, immediately after the header and before
@@ -12265,6 +12279,16 @@ class App:
                 output=ctx._output.value(),
             )
             return _DispatchResult(exit_code, ctx._payload_value)
+        # The declared rendering (§19.10): after everything the handler wrote
+        # and before the would-do log, on a return or an early exit -- a
+        # deliberate sys.exit is a return spelled another way (§3.5). No
+        # payload, no rendering; nothing validates the payload first.
+        if (
+            cmd.payload_renderer is not None
+            and ctx._payload_value is not _MISSING
+            and ending in (_ENDING_RETURN, _ENDING_SYS_EXIT, _ENDING_EARLY_EXIT)
+        ):
+            out.write(cmd.payload_renderer(ctx._payload_value) + "\n")
         if truncated is not None:
             # The truncation path ends the preview for its own pinned reason:
             # it renders the log it already has and its own error, and never
@@ -12474,6 +12498,7 @@ class App:
                 command_name=cmd.name,
                 payload_schema=cmd.payload_schema,
                 owns_stdout=cmd.owns_stdout,
+                payload_renderer_declared=cmd.payload_renderer is not None,
             )
             try:
                 result = cmd.passthrough.handler(
@@ -12643,6 +12668,7 @@ class App:
             payload_schema=cmd.payload_schema,
             unsets=unsets,
             owns_stdout=cmd.owns_stdout,
+            payload_renderer_declared=cmd.payload_renderer is not None,
         )
         try:
             result = cmd.handler(ctx, **final_kwargs)
@@ -15771,6 +15797,7 @@ def _build_and_validate_command(
     dry_run_unsupported_reason: str | None = None,
     update_of: "UpdateOf | None" = None,
     payload_schema: dict | None = None,
+    payload_renderer: "Callable[[Any], str] | None" = None,
     owns_stdout: bool = False,
     handler: Callable,
     args: list[Arg] | None,
@@ -15893,6 +15920,7 @@ def _build_and_validate_command(
             # can declare no flags, so it can name no property).
             update_of=update_of,
             payload_schema=payload_schema,
+            payload_renderer=payload_renderer,
             owns_stdout=owns_stdout,
             passthrough=passthrough,
             tags=effective_tags,
@@ -16222,6 +16250,7 @@ def _build_and_validate_command(
         dry_run_unsupported_reason=dry_run_unsupported_reason,
         update_of=update_of,
         payload_schema=payload_schema,
+        payload_renderer=payload_renderer,
         owns_stdout=owns_stdout,
         flags=tuple(all_flags),
         args=tuple(all_args),
