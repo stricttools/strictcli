@@ -15,11 +15,11 @@ def _app():
 
 
 def _dump(app):
-    """A command that writes its own document straight to stdout."""
+    """A command that writes its own document through the document writer."""
 
     @app.command("dump", help="dump", effect="read_only", owns_stdout=True)
     def _dump_handler(ctx):
-        print('{"artifact":"v1"}')
+        ctx.document().write(b'{"artifact":"v1"}\n')
         return 0
 
     return app
@@ -61,7 +61,7 @@ class TestMachineMode:
         def _dump_handler(ctx):
             ctx.info("wrote 1 row")
             ctx.warn("provisional")
-            print('{"artifact":"v1"}')
+            ctx.document().write(b'{"artifact":"v1"}\n')
             return 0
 
         r = app.test(["--json", "dump"])
@@ -89,7 +89,7 @@ class TestMachineMode:
         @app.command("dump", help="dump", effect="mutating", owns_stdout=True)
         def _dump_handler(ctx):
             ctx.effects.write("out.sql", "x")
-            print("-- sql")
+            ctx.document().write(b"-- sql\n")
             return 0
 
         r = app.test(["--json", "--dry-run", "dump"])
@@ -107,7 +107,7 @@ class TestMachineMode:
         )
         def _dump_handler(ctx):
             ctx.payload({"rows": 3})
-            print("-- sql")
+            ctx.document().write(b"-- sql\n")
             return 0
 
         r = app.test(["--json", "dump"])

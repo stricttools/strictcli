@@ -50,6 +50,7 @@ import json
 import math
 import os
 import re
+import select
 import subprocess
 import sys
 import threading
@@ -297,6 +298,7 @@ _HUMAN_PREFIX_WARN = "warning: "
 _ENDING_RETURN = "return"
 _ENDING_SYS_EXIT = "sys_exit"
 _ENDING_EARLY_EXIT = "early_exit"
+_ENDING_TRAPPED_EXIT = "trapped_exit"
 _ENDING_TRUNCATED = "truncated"
 _ENDING_ABORTED = "aborted"
 
@@ -373,6 +375,194 @@ class _RealStdout:
                 # form a str can carry.
                 self._stream.write(bytes(view).decode("utf-8", errors="replace"))
         return size
+
+
+class _ProcessExitTrapped(BaseException):
+    """The unwind a trapped ``os._exit`` starts during a guarded handler."""
+
+    def __init__(self, code: object) -> None:
+        super().__init__(code)
+        self.code = code
+
+
+class _GuardedBinaryStream(io.RawIOBase):
+    """``sys.stdout.buffer`` while the guard swaps ``sys.stdout`` (test())."""
+
+    def __init__(self, feed: Callable[[bytes], None]) -> None:
+        super().__init__()
+        self._feed = feed
+
+    def writable(self) -> bool:
+        return True
+
+    def write(self, data) -> int:
+        chunk = bytes(data)
+        self._feed(chunk)
+        return len(chunk)
+
+
+class _GuardedTextStream(io.TextIOBase):
+    """``sys.stdout`` while the guard runs inside ``test()``.
+
+    ``test()`` has already swapped ``sys.stdout`` for its own capture, so the
+    descriptor redirect alone cannot see a ``print`` there; this stream counts
+    what reaches it exactly as the pipe counts what reaches descriptor 1.
+    """
+
+    encoding = "utf-8"
+
+    def __init__(self, feed: Callable[[bytes], None]) -> None:
+        super().__init__()
+        self._feed = feed
+        self.buffer = _GuardedBinaryStream(feed)
+
+    def writable(self) -> bool:
+        return True
+
+    def write(self, text: str) -> int:
+        self._feed(text.encode("utf-8", errors="replace"))
+        return len(text)
+
+
+class _StdoutGuard:
+    """Machine mode's runtime guard, for the span of the handler (§19.12).
+
+    Descriptor 1 is duplicated aside and replaced by a pipe the framework
+    drains on its own thread, so nothing reaches the real stdout except
+    through the framework: the saved descriptor is what the document writer
+    and an owns-stdout command's child write to in ``run()``. The bytes are
+    counted, the first :attr:`EXCERPT` of them kept, and all of them
+    discarded. ``sys.stdout`` is flushed before the redirect starts and before
+    descriptor 1 is restored.
+    """
+
+    EXCERPT = 4096
+
+    def __init__(self, real: "_RealStdout", *, owns_descriptor: bool,
+                 swap_sys_stdout: bool) -> None:
+        self._real = real
+        self._owns_descriptor = owns_descriptor
+        self._swap_sys_stdout = swap_sys_stdout
+        self._lock = threading.Lock()
+        self.count = 0
+        self.head = b""
+
+    def _feed(self, data: bytes) -> None:
+        with self._lock:
+            self.count += len(data)
+            room = self.EXCERPT - len(self.head)
+            if room > 0:
+                self.head += data[:room]
+
+    @staticmethod
+    def _flush_stdout() -> None:
+        for stream in (sys.stdout, sys.__stdout__):
+            if stream is not None and not stream.closed:
+                stream.flush()
+
+    def start(self) -> None:
+        self._flush_stdout()
+        self._saved = os.dup(1)
+        read_end, write_end = os.pipe()
+        os.dup2(write_end, 1)
+        os.close(write_end)
+        self._read_end = read_end
+        self._stop = threading.Event()
+        self._pump = threading.Thread(
+            target=self._drain, name="strictcli-stdout-guard", daemon=True,
+        )
+        self._pump.start()
+        if self._swap_sys_stdout:
+            self._previous_sys_stdout = sys.stdout
+            sys.stdout = _GuardedTextStream(self._feed)
+        if self._owns_descriptor:
+            self._real.fd = self._saved
+
+    def _drain(self) -> None:
+        while True:
+            ready, _, _ = select.select([self._read_end], [], [], 0.05)
+            if ready:
+                data = os.read(self._read_end, 65536)
+                if not data:
+                    return
+                self._feed(data)
+            elif self._stop.is_set():
+                return
+
+    def stop(self) -> None:
+        self._flush_stdout()
+        if self._swap_sys_stdout:
+            sys.stdout = self._previous_sys_stdout
+        self._real.fd = None
+        os.dup2(self._saved, 1)
+        os.close(self._saved)
+        # Restoring descriptor 1 closed the pipe's last write end unless a
+        # child the handler started still holds it; the thread then stops at
+        # its next poll, and whatever it had not read yet is read here.
+        self._stop.set()
+        self._pump.join()
+        os.set_blocking(self._read_end, False)
+        while True:
+            try:
+                data = os.read(self._read_end, 65536)
+            except BlockingIOError:
+                break
+            if not data:
+                break
+            self._feed(data)
+        os.close(self._read_end)
+
+    def failure(self) -> str | None:
+        """The guard's error diagnostic, or ``None`` when nothing leaked."""
+        if not self.count:
+            return None
+        excerpt = json.dumps(
+            self.head.decode("utf-8", errors="replace"), ensure_ascii=False,
+        )
+        return _msg_stdout_written_outside_framework(self.count, excerpt)
+
+
+def _trapped_process_exit(n):
+    """``os._exit`` while a guarded handler runs: unwind instead (§19.12).
+
+    The argument is checked as ``os._exit`` checks it, so a call the real
+    function would refuse is refused the same way.
+    """
+    import operator
+    raise _ProcessExitTrapped(operator.index(n))
+
+
+class _HandlerSpan:
+    """What the framework holds in place while a CLI handler runs.
+
+    In machine mode, through the argv door: the runtime guard and the
+    process-exit trap (§19.12). Nothing in human mode, and nothing on the
+    programmatic doors.
+    """
+
+    def __init__(self, *, machine: bool, mode: str,
+                 real_stdout: "_RealStdout") -> None:
+        self.guard = (
+            _StdoutGuard(
+                real_stdout,
+                owns_descriptor=(mode == "run"),
+                swap_sys_stdout=(mode == "test"),
+            )
+            if machine else None
+        )
+
+    def start(self) -> None:
+        if self.guard is None:
+            return
+        self.guard.start()
+        self._os_exit = os._exit
+        os._exit = _trapped_process_exit
+
+    def stop(self) -> None:
+        if self.guard is None:
+            return
+        os._exit = self._os_exit
+        self.guard.stop()
 
 
 class _DocumentWriter:
@@ -12254,28 +12444,41 @@ class App:
         # an exception still owes them the list. The clause set below is
         # exhaustive by construction -- BaseException is the root of the
         # hierarchy, so no unwind can slip past it.
+        span = _HandlerSpan(
+            machine=ctx._json, mode=mode, real_stdout=real_stdout,
+        )
+        span.start()
         try:
-            if cmd.passthrough is not None:
-                handler_return = cmd.passthrough.handler(
-                    ctx, cmd.name, data, self._last_global_values,
-                )
-            else:
-                handler_return = cmd.handler(ctx, **data)
-            exit_code = _interpret_handler_return(handler_return)
+            try:
+                if cmd.passthrough is not None:
+                    handler_return = cmd.passthrough.handler(
+                        ctx, cmd.name, data, self._last_global_values,
+                    )
+                else:
+                    handler_return = cmd.handler(ctx, **data)
+                exit_code = _interpret_handler_return(handler_return)
+            finally:
+                span.stop()
         except _DryRunTruncated as trunc:
             return self._finish_dispatch(
-                ctx, cmd, cmd_path, 1, out, err,
+                ctx, cmd, cmd_path, 1, out, err, span=span,
                 ending=_ENDING_TRUNCATED, truncated=trunc,
             )
         except _EarlyExit as early:
             return self._finish_dispatch(
-                ctx, cmd, cmd_path, early.code, out, err,
+                ctx, cmd, cmd_path, early.code, out, err, span=span,
                 ending=_ENDING_EARLY_EXIT, early_exit=early,
+            )
+        except _ProcessExitTrapped as trapped:
+            return self._finish_dispatch(
+                ctx, cmd, cmd_path, trapped.code or 1, out, err, span=span,
+                ending=_ENDING_TRAPPED_EXIT, trapped_exit=trapped,
             )
         except SystemExit as e:
             code = e.code if isinstance(e.code, int) else (1 if e.code else 0)
             result = self._finish_dispatch(
-                ctx, cmd, cmd_path, code, out, err, ending=_ENDING_SYS_EXIT,
+                ctx, cmd, cmd_path, code, out, err, span=span,
+                ending=_ENDING_SYS_EXIT,
             )
             if mode == "run" and result.exit_code == code:
                 # The real CLI path lets the exit propagate untouched, so a
@@ -12285,18 +12488,21 @@ class App:
             return result
         except BaseException:
             self._finish_dispatch(
-                ctx, cmd, cmd_path, 1, out, err, ending=_ENDING_ABORTED,
+                ctx, cmd, cmd_path, 1, out, err, span=span,
+                ending=_ENDING_ABORTED,
             )
             raise
         return self._finish_dispatch(
-            ctx, cmd, cmd_path, exit_code, out, err, ending=_ENDING_RETURN,
+            ctx, cmd, cmd_path, exit_code, out, err, span=span,
+            ending=_ENDING_RETURN,
         )
 
     def _finish_dispatch(
         self, ctx: "Context", cmd: "Command", cmd_path: str, exit_code: int,
-        out, err, *, ending: str,
+        out, err, *, ending: str, span: "_HandlerSpan",
         truncated: "_DryRunTruncated | None" = None,
         early_exit: "_EarlyExit | None" = None,
+        trapped_exit: "_ProcessExitTrapped | None" = None,
     ) -> "_DispatchResult":
         """The ONE ordered exit step: payload, preview log, exit code.
 
@@ -12317,6 +12523,16 @@ class App:
         closing: list[str] = []
         if early_exit is not None:
             closing.append(early_exit.message)
+        if trapped_exit is not None:
+            closing.append(
+                _msg_process_exit_outside_framework(trapped_exit.code)
+            )
+        guard_failure = span.guard.failure() if span.guard is not None else None
+        if guard_failure is not None:
+            # A status the command already ended with is kept when nonzero.
+            if exit_code == 0:
+                exit_code = 1
+            closing.append(guard_failure)
         if ctx._json:
             # The emission seam owns instance validation (§19.4, §19.5): the
             # value is checked here, where the envelope is about to carry it,
