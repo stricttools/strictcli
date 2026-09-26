@@ -31,6 +31,7 @@ import {
 	defineMutatingCommand,
 	defineReadOnlyCommand,
 	deprecated,
+	ExitNow,
 	errorCheckSpec,
 	flag,
 	flagSet,
@@ -49,6 +50,10 @@ import {
 // The message a `handler_aborts` handler throws, identical in all three
 // harnesses so an aborting case's stderr line is byte-identical across targets.
 const HANDLER_ABORT_MESSAGE = "conformance: handler aborted";
+
+// The message a `handler_signals_self` handler aborts with when its Context
+// never reports cancellation, identical in all three harnesses.
+const SIGNAL_NOT_CANCELED_MESSAGE = "conformance: context was not canceled";
 
 /**
  * Reads one line from fd 0 synchronously, WITHOUT its trailing newline -- the
@@ -833,6 +838,51 @@ function runHandlerEffects(ctx, entries) {
 	}
 }
 
+/**
+ * The signal, output and raw-stdout steps of a generated handler (effects
+ * contract §14.4's box). They run after handler_diagnostics and before the
+ * terminal step, in the order the case schema pins: handler_signals_self,
+ * handler_out, handler_document, handler_raw_stdout. Node delivers a signal on
+ * the event loop, so the wait yields until ctx.signal reports it.
+ */
+async function runExitsAndOutput(ctx, cmdDef) {
+	const sig = cmdDef.handler_signals_self;
+	if (sig !== undefined) {
+		process.kill(process.pid, sig);
+		const deadline = Date.now() + 10_000;
+		while (!ctx.signal.aborted) {
+			if (Date.now() > deadline) {
+				throw new Error(SIGNAL_NOT_CANCELED_MESSAGE);
+			}
+			await new Promise((resolve) => setTimeout(resolve, 10));
+		}
+	}
+	for (const text of cmdDef.handler_out ?? []) {
+		ctx.out(text);
+	}
+	if ("handler_document" in cmdDef) {
+		ctx.document().write(Buffer.from(cmdDef.handler_document, "utf8"));
+	}
+	if ("handler_raw_stdout" in cmdDef) {
+		process.stdout.write(cmdDef.handler_raw_stdout);
+	}
+}
+
+/**
+ * The terminal steps that replace the return (§14.4's box): the language's own
+ * process exit, and the early exit. The code and message are passed through
+ * unchecked, so a case can assert the call-time refusals.
+ */
+function runTerminalExit(cmdDef) {
+	if ("handler_process_exit" in cmdDef) {
+		process.exit(cmdDef.handler_process_exit);
+	}
+	if ("handler_exit_now" in cmdDef) {
+		const en = cmdDef.handler_exit_now;
+		throw new ExitNow(en.code, en.message);
+	}
+}
+
 function makeHandler(cmdDef, globalFlags) {
 	// handler_effects runs BEFORE the handler_prints / handler_returns path and
 	// does not replace it (§14.4). handler_diagnostics follows it, still before
@@ -845,11 +895,22 @@ function makeHandler(cmdDef, globalFlags) {
 	// the identical message and surface it identically, which is what makes an
 	// aborting case comparable across all three targets.
 	if (cmdDef.handler_aborts === true) {
-		return (_args, ctx) => {
+		return async (_args, ctx) => {
 			runHandlerEffects(ctx, handlerEffects);
 			runHandlerClaim(ctx, cmdDef);
 			runHandlerDiagnostics(ctx, handlerDiagnostics);
+			await runExitsAndOutput(ctx, cmdDef);
 			throw new Error(HANDLER_ABORT_MESSAGE);
+		};
+	}
+
+	if ("handler_process_exit" in cmdDef || "handler_exit_now" in cmdDef) {
+		return async (_args, ctx) => {
+			runHandlerEffects(ctx, handlerEffects);
+			runHandlerClaim(ctx, cmdDef);
+			runHandlerDiagnostics(ctx, handlerDiagnostics);
+			await runExitsAndOutput(ctx, cmdDef);
+			runTerminalExit(cmdDef);
 		};
 	}
 
@@ -871,10 +932,11 @@ function makeHandler(cmdDef, globalFlags) {
 					"or the case must restrict its targets",
 			);
 		}
-		return (_args, ctx) => {
+		return async (_args, ctx) => {
 			runHandlerEffects(ctx, handlerEffects);
 			runHandlerClaim(ctx, cmdDef);
 			runHandlerDiagnostics(ctx, handlerDiagnostics);
+			await runExitsAndOutput(ctx, cmdDef);
 			switch (hr.kind) {
 				case "data":
 					ctx.payload(hr.data);
@@ -899,10 +961,11 @@ function makeHandler(cmdDef, globalFlags) {
 	const allFlags = collectAllFlagDefs(cmdDef, globalFlags);
 	const argDefs = cmdDef.args ?? [];
 
-	return (args, ctx) => {
+	return async (args, ctx) => {
 		runHandlerEffects(ctx, handlerEffects);
 		runHandlerClaim(ctx, cmdDef);
 		runHandlerDiagnostics(ctx, handlerDiagnostics);
+		await runExitsAndOutput(ctx, cmdDef);
 		// A handler_effects-only command declares no template and prints
 		// nothing; the effect calls above are its whole body.
 		if (template === undefined) {
@@ -1173,6 +1236,7 @@ function spliceDryRun(spec, cmdDef) {
 		spec.dryRunUnsupportedReason = cmdDef.dry_run_unsupported_reason;
 	}
 	splicePayloadSchema(spec, cmdDef);
+	splicePayloadRenderer(spec, cmdDef);
 	spliceOwnsStdout(spec, cmdDef);
 }
 
@@ -1200,6 +1264,25 @@ function splicePayloadSchema(spec, cmdDef) {
 	if (cmdDef.handler_payloads_recorded === true) {
 		spec.payloadSchema = {};
 	}
+}
+
+/**
+ * The declared payload rendering (§19.10), built from the case's template:
+ * every `{key}` becomes the payload's top-level member of that name, a string
+ * verbatim and an integer in decimal (§14.4's box).
+ */
+function splicePayloadRenderer(spec, cmdDef) {
+	if (cmdDef.payload_renderer === undefined) {
+		return;
+	}
+	const template = cmdDef.payload_renderer.template;
+	spec.payloadRenderer = (payload) => {
+		let text = template;
+		for (const [key, value] of Object.entries(payload)) {
+			text = text.replaceAll(`{${key}}`, String(value));
+		}
+		return text;
+	};
 }
 
 /**
