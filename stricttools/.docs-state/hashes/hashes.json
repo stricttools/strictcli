@@ -158,7 +158,8 @@
   "en/typescript-src-exits.md": {
     "content": "2224dfddc1fe9830760061a882ee654f0dcc1774ed8da6e3ed4dfd062822419d",
     "description": "b6a2fa89b48f52abbdedbdd3b6558d5b9a226451052bfdfc26b4eb7c16743317",
-    "seed_hash": "b6a2fa89b48f52abbdedbdd3b6558d5b9a226451052bfdfc26b4eb7c16743317"
+    "seed_hash": "b6a2fa89b48f52abbdedbdd3b6558d5b9a226451052bfdfc26b4eb7c16743317",
+    "source_docstring": "b41a9a43847889c4b8d680586124b149d94f358643e45152116f322f8c30f47f"
   },
   "en/typescript-src-factories.md": {
     "content": "cc7953623f5d6ef77ee0d53122cdcf0a51c351b68c67e64c09c3f31b08fb3805",
@@ -173,7 +174,8 @@
   "en/typescript-src-guard.md": {
     "content": "a7eb3713c2a6115b076f15fd9e6d4ab5bc87e16ad5e04e4c85101bc5c7819b4d",
     "description": "65607e13cc433825f9d2b8e64a287ab08633a36134be91462a486d835599ad7c",
-    "seed_hash": "65607e13cc433825f9d2b8e64a287ab08633a36134be91462a486d835599ad7c"
+    "seed_hash": "65607e13cc433825f9d2b8e64a287ab08633a36134be91462a486d835599ad7c",
+    "source_docstring": "7959c1213795d344bd936e4e2b09808e8140b45c05047e117c10c584e12bb568"
   },
   "en/typescript-src-help.md": {
     "content": "5e6dfd16b5b3a36d4bddfe65dcb2703413758a5b5b3e0c49c6d157205ac0918d",
@@ -203,7 +205,8 @@
   "en/typescript-src-lint_framework_use.md": {
     "content": "533c503b734c2cc684ae31d3a1da987e2ff018a04c6f341d386ae222c75762e3",
     "description": "db6639358a80ac54d756a3ccac208d92cabbe8aa7a2d2a71a01522d9ab18f86f",
-    "seed_hash": "db6639358a80ac54d756a3ccac208d92cabbe8aa7a2d2a71a01522d9ab18f86f"
+    "seed_hash": "db6639358a80ac54d756a3ccac208d92cabbe8aa7a2d2a71a01522d9ab18f86f",
+    "source_docstring": "9fac9e770a70f15fc3cb6b3a672ef3ab791e5839031daac9b6e5713648cf4827"
   },
   "en/typescript-src-mcp.md": {
     "content": "c63c97d975acb74a5fb7658fd295458bd7e926ac0caecd731dcc806dc9457def",
@@ -243,7 +246,8 @@
   "en/typescript-src-signals.md": {
     "content": "711b92b65dcce6c7efb653b74efc5069de033bfba1fc545976b3a302b1ea44f9",
     "description": "fc7b3a144f1a644fced2f7f6a6c13612386007b100f3dedc945a7425287f5024",
-    "seed_hash": "fc7b3a144f1a644fced2f7f6a6c13612386007b100f3dedc945a7425287f5024"
+    "seed_hash": "fc7b3a144f1a644fced2f7f6a6c13612386007b100f3dedc945a7425287f5024",
+    "source_docstring": "d72dc8813e382eb32d5f124b385c926789f81c22c85fca6b3e4e3fec8d3dde0d"
   },
   "en/typescript-src-sources.md": {
     "content": "02fcdd654b46be28226b39558c840355982ed6169ee585eb5d3d714d4e8fba6f",
@@ -253,7 +257,8 @@
   "en/typescript-src-tokens.md": {
     "content": "66973fdb30721a673e2b76419f0576bbb3b097d1b46bf7adeb318dd75ee7e5a1",
     "description": "024a9b36250f4a184a57a70780b5f745403b0de3044607ceb409d4559052a7de",
-    "seed_hash": "024a9b36250f4a184a57a70780b5f745403b0de3044607ceb409d4559052a7de"
+    "seed_hash": "024a9b36250f4a184a57a70780b5f745403b0de3044607ceb409d4559052a7de",
+    "source_docstring": "8d3d41d9389737201b7d8e0929222d89319256905f6d27f7e1b0bd754a3f04a0"
   },
   "en/typescript-src-toml.md": {
     "content": "2b8c6c47afea69800aaf3b76837d2a49332eb7bc4afeddf22507ef5aed5792ce",
