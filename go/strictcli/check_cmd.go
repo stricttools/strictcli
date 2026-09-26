@@ -245,7 +245,7 @@ func (a *App) checkDryRunPlan(ctx *Context, listed []string) {
 // would-run plan after the results.
 func (a *App) checkRun(frameworkCtx *Context, runAll bool, tagExpr, nameGlob string, ignoreWarnings, verbose, dryRun bool) int {
 	if a.checkContextFactory == nil {
-		frameworkCtx.Error("error: no check context factory set (call SetCheckContext before running checks)")
+		frameworkCtx.Error("no check context factory set (call SetCheckContext before running checks)")
 		return 1
 	}
 
@@ -258,7 +258,7 @@ func (a *App) checkRun(frameworkCtx *Context, runAll bool, tagExpr, nameGlob str
 		PureOnly:       dryRun,
 	})
 	if err != nil {
-		frameworkCtx.Error(fmt.Sprintf("error: %s", err))
+		frameworkCtx.Error(err.Error())
 		return 1
 	}
 

@@ -826,7 +826,7 @@ func (a *App) registerConfigGroup() {
 	registerFrameworkSubcommand(grp, "show", "Show every flag and config field with its effective value and where that value came from, resolved through the precedence chain environment variable, then config file, then declared default. Declared infrastructure roots, handshake and connection environment variables are listed too. Choose --plain for an aligned human-readable table; the framework-owned --json yields the same information as a machine-readable object carrying each entry's type, default and help text.", EffectReadOnly, func(ctx *Context, args map[string]interface{}) Outcome {
 		// If there was a config parse error, show it instead of values
 		if a.configParseErr != "" {
-			ctx.Error(fmt.Sprintf("error: %s", a.configParseErr))
+			ctx.Error(a.configParseErr)
 			return Exit(1)
 		}
 		// --json is framework-owned (contract §19.1): the object below is this

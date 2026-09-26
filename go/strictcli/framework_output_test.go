@@ -3,6 +3,7 @@ package strictcli
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -264,5 +265,50 @@ func TestAnOwnsStdoutCommandsChildWritesTheDocument(t *testing.T) {
 	r := app.Test([]string{"--json", "cmd"})
 	if r.ExitCode != 0 || r.Stdout != "dumped\n" || !strings.Contains(r.Stderr, `"output":null`) {
 		t.Fatalf("exit=%d stdout=%q stderr=%q", r.ExitCode, r.Stdout, r.Stderr)
+	}
+}
+
+// --- framework messages carry no prefix of their own (§19.14) ---------------
+
+// The prefix is the writer's: a framework message that spelled its own
+// "error: " would print "error: error: ..." and carry the prefix into the
+// --json diagnostics, where the level already says it.
+func TestFrameworkErrorMessagesAreNotSelfPrefixed(t *testing.T) {
+	checksPath := writeChecksFile(t, twoChecksToml)
+	app := NewApp("testapp", "1.0.0", "test app", WithChecks(checksPath))
+	dropBuiltinCheckProviders(app)
+	app.RegisterErrorCheck("version-consistency", func(ctx CheckContext, _ *ErrorReporter) CheckOutcome {
+		return passOutcome("ok")
+	})
+	app.RegisterErrorCheck("changelog-coverage", func(ctx CheckContext, _ *ErrorReporter) CheckOutcome {
+		return passOutcome("ok")
+	})
+	r := app.Test([]string{"check", "--all"})
+	if r.Stderr != "error: no check context factory set (call SetCheckContext before running checks)\n" {
+		t.Fatalf("stderr=%q", r.Stderr)
+	}
+	r = app.Test([]string{"--json", "check", "--all"})
+	if !strings.Contains(r.Stdout, `{"level":"error","message":"no check context factory set`) {
+		t.Fatalf("stdout=%q", r.Stdout)
+	}
+}
+
+func TestConfigShowParseErrorIsNotSelfPrefixed(t *testing.T) {
+	tmpDir, cleanup := configTestSetup(t)
+	defer cleanup()
+	dir := filepath.Join(tmpDir, "testapp")
+	os.MkdirAll(dir, 0o755)
+	os.WriteFile(filepath.Join(dir, "config.json"), []byte("{bad json"), 0o644)
+	app := NewApp("testapp", "1.0.0", "test app", WithConfig())
+	app.Command("serve", "start server", func(ctx *Context, args map[string]interface{}) Outcome {
+		return Exit(0)
+	}, WithFlags(IntFlag("port", "port number", Default(8080))), WithEffect(EffectReadOnly))
+	r := app.Test([]string{"config", "show"})
+	if r.ExitCode != 1 || !strings.HasPrefix(r.Stderr, "error: ") || strings.HasPrefix(r.Stderr, "error: error: ") {
+		t.Fatalf("exit=%d stderr=%q", r.ExitCode, r.Stderr)
+	}
+	r = app.Test([]string{"--json", "config", "show"})
+	if strings.Contains(r.Stdout, `"message":"error: `) {
+		t.Fatalf("stdout=%q", r.Stdout)
 	}
 }
