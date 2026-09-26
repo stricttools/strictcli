@@ -1,1 +1,21 @@
 format_version = 1
+
+[[accepted]]
+word = "goroutine"
+meaning = "A Go lightweight thread; ExitNow and panics are delivered only on the handler's own goroutine."
+
+[[accepted]]
+word = "rethrow"
+meaning = "To throw a caught error again, so a TypeScript handler's catch block does not swallow it."
+
+[[accepted]]
+word = "rlsbl"
+meaning = "The release tool that manages each sub-project's version, changelog, and release cycle, and reads the CLI schema during release."
+
+[[accepted]]
+word = "SCF"
+meaning = "Strictcli canonical form: the one canonical decimal form for floats, byte-identical across the Python, Go, and TypeScript implementations."
+
+[[accepted]]
+word = "unprefixed"
+meaning = "Printed without a leading severity prefix such as 'warning:' or 'error:'."
