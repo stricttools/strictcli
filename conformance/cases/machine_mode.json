@@ -231,7 +231,7 @@
     ],
     "expect": {
       "exit_code": 0,
-      "stdout_equals": "{\"interface_version\":2,\"app\":\"myapp\",\"app_version\":\"1.0.0\",\"command\":\"cmd\",\"exit_code\":0,\"payload\":{\"ok\":true},\"dry_run\":false,\"writes\":null,\"preview\":[],\"preview_error\":null,\"diagnostics\":[]}\n"
+      "stdout_equals": "{\"interface_version\":3,\"app\":\"myapp\",\"app_version\":\"1.0.0\",\"command\":\"cmd\",\"exit_code\":0,\"payload\":{\"ok\":true},\"output\":null,\"dry_run\":false,\"writes\":null,\"preview\":[],\"preview_error\":null,\"diagnostics\":[]}\n"
     }
   },
   {
@@ -260,7 +260,7 @@
     ],
     "expect": {
       "exit_code": 0,
-      "stdout_equals": "{\"interface_version\":2,\"app\":\"myapp\",\"app_version\":\"1.0.0\",\"command\":\"cmd\",\"exit_code\":0,\"payload\":{\"ok\":true},\"dry_run\":false,\"writes\":null,\"preview\":[],\"preview_error\":null,\"diagnostics\":[]}\n"
+      "stdout_equals": "{\"interface_version\":3,\"app\":\"myapp\",\"app_version\":\"1.0.0\",\"command\":\"cmd\",\"exit_code\":0,\"payload\":{\"ok\":true},\"output\":null,\"dry_run\":false,\"writes\":null,\"preview\":[],\"preview_error\":null,\"diagnostics\":[]}\n"
     }
   },
   {
@@ -297,7 +297,7 @@
     ],
     "expect": {
       "exit_code": 0,
-      "stdout_equals": "{\"interface_version\":2,\"app\":\"myapp\",\"app_version\":\"1.0.0\",\"command\":\"grp.cmd\",\"exit_code\":0,\"payload\":{\"ok\":true},\"dry_run\":false,\"writes\":null,\"preview\":[],\"preview_error\":null,\"diagnostics\":[]}\n"
+      "stdout_equals": "{\"interface_version\":3,\"app\":\"myapp\",\"app_version\":\"1.0.0\",\"command\":\"grp.cmd\",\"exit_code\":0,\"payload\":{\"ok\":true},\"output\":null,\"dry_run\":false,\"writes\":null,\"preview\":[],\"preview_error\":null,\"diagnostics\":[]}\n"
     }
   },
   {
@@ -392,7 +392,7 @@
     ],
     "expect": {
       "exit_code": 0,
-      "stdout_equals": "{\"interface_version\":2,\"app\":\"myapp\",\"app_version\":\"1.0.0\",\"command\":\"cmd\",\"exit_code\":0,\"payload\":{\"ok\":true},\"dry_run\":false,\"writes\":null,\"preview\":[],\"preview_error\":null,\"diagnostics\":[{\"level\":\"info\",\"message\":\"info-line\"}]}\n"
+      "stdout_equals": "{\"interface_version\":3,\"app\":\"myapp\",\"app_version\":\"1.0.0\",\"command\":\"cmd\",\"exit_code\":0,\"payload\":{\"ok\":true},\"output\":null,\"dry_run\":false,\"writes\":null,\"preview\":[],\"preview_error\":null,\"diagnostics\":[{\"level\":\"info\",\"message\":\"info-line\"}]}\n"
     }
   },
   {
@@ -421,7 +421,7 @@
     ],
     "expect": {
       "exit_code": 0,
-      "stdout_equals": "{\"interface_version\":2,\"app\":\"myapp\",\"app_version\":\"1.0.0\",\"command\":\"cmd\",\"exit_code\":0,\"payload\":{\"text\":\"héllo <b>&</b> 日本語 — ünïcode\"},\"dry_run\":false,\"writes\":null,\"preview\":[],\"preview_error\":null,\"diagnostics\":[]}\n"
+      "stdout_equals": "{\"interface_version\":3,\"app\":\"myapp\",\"app_version\":\"1.0.0\",\"command\":\"cmd\",\"exit_code\":0,\"payload\":{\"text\":\"héllo <b>&</b> 日本語 — ünïcode\"},\"output\":null,\"dry_run\":false,\"writes\":null,\"preview\":[],\"preview_error\":null,\"diagnostics\":[]}\n"
     }
   },
   {
@@ -532,7 +532,7 @@
     ],
     "expect": {
       "exit_code": 0,
-      "stdout_equals": "{\"interface_version\":2,\"app\":\"myapp\",\"app_version\":\"1.0.0\",\"command\":\"cmd\",\"exit_code\":0,\"payload\":{\"ok\":true},\"dry_run\":false,\"writes\":null,\"preview\":[],\"preview_error\":null,\"diagnostics\":[]}\n"
+      "stdout_equals": "{\"interface_version\":3,\"app\":\"myapp\",\"app_version\":\"1.0.0\",\"command\":\"cmd\",\"exit_code\":0,\"payload\":{\"ok\":true},\"output\":null,\"dry_run\":false,\"writes\":null,\"preview\":[],\"preview_error\":null,\"diagnostics\":[]}\n"
     }
   },
   {
@@ -561,7 +561,7 @@
     },
     "expect": {
       "exit_code": 0,
-      "stdout_equals": "{\"interface_version\":2,\"app\":\"myapp\",\"app_version\":\"1.0.0\",\"command\":\"config.path\",\"exit_code\":0,\"payload\":null,\"dry_run\":false,\"writes\":null,\"preview\":[],\"preview_error\":null,\"diagnostics\":[{\"level\":\"info\",\"message\":\"/tmp/fake-config/myapp/config.json\"}]}\n"
+      "stdout_equals": "{\"interface_version\":3,\"app\":\"myapp\",\"app_version\":\"1.0.0\",\"command\":\"config.path\",\"exit_code\":0,\"payload\":null,\"output\":null,\"dry_run\":false,\"writes\":null,\"preview\":[],\"preview_error\":null,\"diagnostics\":[{\"level\":\"info\",\"message\":\"/tmp/fake-config/myapp/config.json\"}]}\n"
     }
   },
   {
@@ -591,7 +591,7 @@
     },
     "expect": {
       "exit_code": 0,
-      "stdout_matches": "^\\{\"interface_version\":2,[^\\n]*\\}$",
+      "stdout_matches": "^\\{\"interface_version\":3,[^\\n]*\\}$",
       "stdout_contains": [
         "\"dry_run\":true",
         "\"level\":\"info\",\"message\":\"/tmp/strictcli-conformance-absent/myapp/config.json\""
@@ -620,7 +620,7 @@
     ],
     "expect": {
       "exit_code": 0,
-      "stdout_matches": "^\\{\"interface_version\":2,[^\\n]*\\}$",
+      "stdout_matches": "^\\{\"interface_version\":3,[^\\n]*\\}$",
       "stdout_contains": [
         "\"command\":\"check\"",
         "\"level\":\"info\"",
@@ -652,7 +652,7 @@
     ],
     "expect": {
       "exit_code": 0,
-      "stdout_equals": "{\"interface_version\":2,\"app\":\"testapp\",\"app_version\":\"1.0.0\",\"command\":\"check\",\"exit_code\":0,\"payload\":null,\"dry_run\":false,\"writes\":null,\"preview\":[],\"preview_error\":null,\"diagnostics\":[{\"level\":\"info\",\"message\":\"No checks matched the given filters.\"}]}\n"
+      "stdout_equals": "{\"interface_version\":3,\"app\":\"testapp\",\"app_version\":\"1.0.0\",\"command\":\"check\",\"exit_code\":0,\"payload\":null,\"output\":null,\"dry_run\":false,\"writes\":null,\"preview\":[],\"preview_error\":null,\"diagnostics\":[{\"level\":\"info\",\"message\":\"No checks matched the given filters.\"}]}\n"
     }
   },
   {
@@ -680,7 +680,7 @@
     ],
     "expect": {
       "exit_code": 0,
-      "stdout_equals": "{\"interface_version\":2,\"app\":\"testapp\",\"app_version\":\"1.0.0\",\"command\":\"check\",\"exit_code\":0,\"payload\":[],\"dry_run\":true,\"writes\":null,\"preview\":[],\"preview_error\":null,\"diagnostics\":[{\"level\":\"info\",\"message\":\"Would run 1 check:\\n  1. lint [impure]\"}]}\n"
+      "stdout_equals": "{\"interface_version\":3,\"app\":\"testapp\",\"app_version\":\"1.0.0\",\"command\":\"check\",\"exit_code\":0,\"payload\":[],\"output\":null,\"dry_run\":true,\"writes\":null,\"preview\":[],\"preview_error\":null,\"diagnostics\":[{\"level\":\"info\",\"message\":\"Would run 1 check:\\n  1. lint [impure]\"}]}\n"
     }
   }
 ]

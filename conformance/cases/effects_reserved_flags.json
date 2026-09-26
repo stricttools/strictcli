@@ -797,7 +797,7 @@
     "expect": {
       "exit_code": 0,
       "stdout_equals": "",
-      "stderr_equals": "warn-line\n"
+      "stderr_equals": "warning: warn-line\n"
     }
   },
   {

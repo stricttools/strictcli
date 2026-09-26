@@ -248,6 +248,9 @@
     ],
     "expect": {
       "exit_code": 1,
+      "exit_code_by_target": {
+        "go": 2
+      },
       "stderr_contains": "early exit requires an exit code between 1 and 255, got 0: a successful run ends with a return from the handler"
     }
   },
@@ -274,6 +277,9 @@
     ],
     "expect": {
       "exit_code": 1,
+      "exit_code_by_target": {
+        "go": 2
+      },
       "stderr_contains": "early exit requires an exit code between 1 and 255, got 256: a successful run ends with a return from the handler"
     }
   },
@@ -300,6 +306,9 @@
     ],
     "expect": {
       "exit_code": 1,
+      "exit_code_by_target": {
+        "go": 2
+      },
       "stderr_contains": "early exit requires a non-empty message"
     }
   },
@@ -566,6 +575,9 @@
     ],
     "expect": {
       "exit_code": 1,
+      "exit_code_by_target": {
+        "go": 2
+      },
       "stderr_contains": "command \"dump\": ctx.out is refused on a command that owns stdout: write the document through ctx.document"
     }
   },
@@ -597,6 +609,9 @@
     ],
     "expect": {
       "exit_code": 1,
+      "exit_code_by_target": {
+        "go": 2
+      },
       "stderr_contains": "command \"status\": ctx.out is refused on a command that declares a payload renderer: the rendering is its human output"
     }
   },
@@ -943,6 +958,9 @@
     ],
     "expect": {
       "exit_code": 1,
+      "exit_code_by_target": {
+        "go": 2
+      },
       "stderr_contains": "command \"dump\": ctx.document requires the owns-stdout declaration"
     }
   },

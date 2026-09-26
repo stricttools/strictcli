@@ -124,7 +124,7 @@
     ],
     "expect": {
       "exit_code": 0,
-      "stdout_equals": "{\"interface_version\":2,\"app\":\"myapp\",\"app_version\":\"1.0.0\",\"command\":\"config.show\",\"exit_code\":0,\"payload\":{\"__infrastructure__\":{\"MYAPP_HOME\":{\"kind\":\"root\",\"resolved\":\"/opt/myhome\",\"source\":\"default\"}},\"db\":{\"source\":\"default\",\"value\":{\"relative_to_root\":{\"env_var\":\"MYAPP_HOME\",\"parts\":[\"db.sqlite\"]}}}},\"dry_run\":false,\"writes\":null,\"preview\":[],\"preview_error\":null,\"diagnostics\":[{\"level\":\"info\",\"message\":\"db = RelativeToRoot('MYAPP_HOME', 'db.sqlite')  (source: default)\"},{\"level\":\"info\",\"message\":\"\"},{\"level\":\"info\",\"message\":\"Infrastructure:\"},{\"level\":\"info\",\"message\":\"  MYAPP_HOME (root) = /opt/myhome  (source: default)\"}]}\n",
+      "stdout_equals": "{\"interface_version\":3,\"app\":\"myapp\",\"app_version\":\"1.0.0\",\"command\":\"config.show\",\"exit_code\":0,\"payload\":{\"__infrastructure__\":{\"MYAPP_HOME\":{\"kind\":\"root\",\"resolved\":\"/opt/myhome\",\"source\":\"default\"}},\"db\":{\"source\":\"default\",\"value\":{\"relative_to_root\":{\"env_var\":\"MYAPP_HOME\",\"parts\":[\"db.sqlite\"]}}}},\"output\":null,\"dry_run\":false,\"writes\":null,\"preview\":[],\"preview_error\":null,\"diagnostics\":[{\"level\":\"info\",\"message\":\"db = RelativeToRoot('MYAPP_HOME', 'db.sqlite')  (source: default)\"},{\"level\":\"info\",\"message\":\"\"},{\"level\":\"info\",\"message\":\"Infrastructure:\"},{\"level\":\"info\",\"message\":\"  MYAPP_HOME (root) = /opt/myhome  (source: default)\"}]}\n",
       "stderr_equals": ""
     }
   }

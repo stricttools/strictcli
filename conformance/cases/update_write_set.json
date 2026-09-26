@@ -792,7 +792,7 @@
     "expect": {
       "exit_code": 0,
       "stderr_equals": "",
-      "stdout_equals": "{\"interface_version\":2,\"app\":\"myapp\",\"app_version\":\"1.0.0\",\"command\":\"update-record\",\"exit_code\":0,\"payload\":null,\"dry_run\":false,\"writes\":{\"resource\":\"dns-record\",\"write_mode\":\"sparse\",\"written\":[\"content\"],\"cleared\":[],\"resent\":[],\"untouched\":[\"ttl\",\"proxied\"]},\"preview\":[],\"preview_error\":null,\"diagnostics\":[]}\n"
+      "stdout_equals": "{\"interface_version\":3,\"app\":\"myapp\",\"app_version\":\"1.0.0\",\"command\":\"update-record\",\"exit_code\":0,\"payload\":null,\"output\":null,\"dry_run\":false,\"writes\":{\"resource\":\"dns-record\",\"write_mode\":\"sparse\",\"written\":[\"content\"],\"cleared\":[],\"resent\":[],\"untouched\":[\"ttl\",\"proxied\"]},\"preview\":[],\"preview_error\":null,\"diagnostics\":[]}\n"
     }
   },
   {
@@ -880,7 +880,7 @@
     "expect": {
       "exit_code": 0,
       "stderr_equals": "",
-      "stdout_equals": "{\"interface_version\":2,\"app\":\"myapp\",\"app_version\":\"1.0.0\",\"command\":\"update-record\",\"exit_code\":0,\"payload\":null,\"dry_run\":true,\"writes\":{\"resource\":\"dns-record\",\"write_mode\":\"sparse\",\"written\":[\"content\"],\"cleared\":[\"ttl\"],\"resent\":[],\"untouched\":[\"proxied\"]},\"preview\":[{\"detail\":\"PATCH https://api.example.com/zones/z1/dns_records/r7\",\"kind\":\"net_mutate\",\"recorded\":true,\"seq\":1,\"verb\":\"net\"}],\"preview_error\":null,\"diagnostics\":[]}\n"
+      "stdout_equals": "{\"interface_version\":3,\"app\":\"myapp\",\"app_version\":\"1.0.0\",\"command\":\"update-record\",\"exit_code\":0,\"payload\":null,\"output\":null,\"dry_run\":true,\"writes\":{\"resource\":\"dns-record\",\"write_mode\":\"sparse\",\"written\":[\"content\"],\"cleared\":[\"ttl\"],\"resent\":[],\"untouched\":[\"proxied\"]},\"preview\":[{\"detail\":\"PATCH https://api.example.com/zones/z1/dns_records/r7\",\"kind\":\"net_mutate\",\"recorded\":true,\"seq\":1,\"verb\":\"net\"}],\"preview_error\":null,\"diagnostics\":[]}\n"
     }
   },
   {
@@ -959,7 +959,7 @@
     "expect": {
       "exit_code": 0,
       "stderr_equals": "",
-      "stdout_equals": "{\"interface_version\":2,\"app\":\"myapp\",\"app_version\":\"1.0.0\",\"command\":\"update-record\",\"exit_code\":0,\"payload\":null,\"dry_run\":false,\"writes\":{\"resource\":\"dns-record\",\"write_mode\":\"full_replace\",\"written\":[\"ttl\"],\"cleared\":[],\"resent\":[\"content\",\"proxied\"],\"untouched\":[]},\"preview\":[],\"preview_error\":null,\"diagnostics\":[]}\n"
+      "stdout_equals": "{\"interface_version\":3,\"app\":\"myapp\",\"app_version\":\"1.0.0\",\"command\":\"update-record\",\"exit_code\":0,\"payload\":null,\"output\":null,\"dry_run\":false,\"writes\":{\"resource\":\"dns-record\",\"write_mode\":\"full_replace\",\"written\":[\"ttl\"],\"cleared\":[],\"resent\":[\"content\",\"proxied\"],\"untouched\":[]},\"preview\":[],\"preview_error\":null,\"diagnostics\":[]}\n"
     }
   },
   {
@@ -986,7 +986,7 @@
     "expect": {
       "exit_code": 0,
       "stderr_equals": "",
-      "stdout_equals": "{\"interface_version\":2,\"app\":\"myapp\",\"app_version\":\"1.0.0\",\"command\":\"plain\",\"exit_code\":0,\"payload\":null,\"dry_run\":false,\"writes\":null,\"preview\":[],\"preview_error\":null,\"diagnostics\":[]}\n"
+      "stdout_equals": "{\"interface_version\":3,\"app\":\"myapp\",\"app_version\":\"1.0.0\",\"command\":\"plain\",\"exit_code\":0,\"payload\":null,\"output\":null,\"dry_run\":false,\"writes\":null,\"preview\":[],\"preview_error\":null,\"diagnostics\":[]}\n"
     }
   },
   {
@@ -1067,7 +1067,7 @@
     "expect": {
       "exit_code": 0,
       "stderr_equals": "",
-      "stdout_equals": "{\"interface_version\":2,\"app\":\"myapp\",\"app_version\":\"1.0.0\",\"command\":\"update-record\",\"exit_code\":0,\"payload\":null,\"dry_run\":false,\"writes\":{\"resource\":\"dns-record\",\"write_mode\":\"sparse\",\"written\":[\"content\"],\"cleared\":[],\"resent\":[],\"untouched\":[\"ttl\",\"proxied\"]},\"preview\":[],\"preview_error\":null,\"diagnostics\":[]}\n"
+      "stdout_equals": "{\"interface_version\":3,\"app\":\"myapp\",\"app_version\":\"1.0.0\",\"command\":\"update-record\",\"exit_code\":0,\"payload\":null,\"output\":null,\"dry_run\":false,\"writes\":{\"resource\":\"dns-record\",\"write_mode\":\"sparse\",\"written\":[\"content\"],\"cleared\":[],\"resent\":[],\"untouched\":[\"ttl\",\"proxied\"]},\"preview\":[],\"preview_error\":null,\"diagnostics\":[]}\n"
     }
   },
   {
@@ -1143,7 +1143,7 @@
     "expect": {
       "exit_code": 0,
       "stderr_equals": "",
-      "stdout_equals": "{\"interface_version\":2,\"app\":\"myapp\",\"app_version\":\"1.0.0\",\"command\":\"update-record\",\"exit_code\":0,\"payload\":null,\"dry_run\":false,\"writes\":{\"resource\":\"dns-record\",\"write_mode\":\"sparse\",\"written\":[\"content\"],\"cleared\":[],\"resent\":[],\"untouched\":[\"ttl\"]},\"preview\":[],\"preview_error\":null,\"diagnostics\":[]}\n"
+      "stdout_equals": "{\"interface_version\":3,\"app\":\"myapp\",\"app_version\":\"1.0.0\",\"command\":\"update-record\",\"exit_code\":0,\"payload\":null,\"output\":null,\"dry_run\":false,\"writes\":{\"resource\":\"dns-record\",\"write_mode\":\"sparse\",\"written\":[\"content\"],\"cleared\":[],\"resent\":[],\"untouched\":[\"ttl\"]},\"preview\":[],\"preview_error\":null,\"diagnostics\":[]}\n"
     }
   },
   {
@@ -1225,7 +1225,7 @@
     "expect": {
       "exit_code": 0,
       "stderr_equals": "",
-      "stdout_equals": "{\"interface_version\":2,\"app\":\"myapp\",\"app_version\":\"1.0.0\",\"command\":\"update-record\",\"exit_code\":0,\"payload\":null,\"dry_run\":false,\"writes\":{\"resource\":\"dns-record\",\"write_mode\":\"sparse\",\"written\":[\"content\"],\"cleared\":[],\"resent\":[],\"untouched\":[\"ttl\"]},\"preview\":[],\"preview_error\":null,\"diagnostics\":[]}\n"
+      "stdout_equals": "{\"interface_version\":3,\"app\":\"myapp\",\"app_version\":\"1.0.0\",\"command\":\"update-record\",\"exit_code\":0,\"payload\":null,\"output\":null,\"dry_run\":false,\"writes\":{\"resource\":\"dns-record\",\"write_mode\":\"sparse\",\"written\":[\"content\"],\"cleared\":[],\"resent\":[],\"untouched\":[\"ttl\"]},\"preview\":[],\"preview_error\":null,\"diagnostics\":[]}\n"
     }
   },
   {

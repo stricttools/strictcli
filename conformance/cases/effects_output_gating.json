@@ -37,7 +37,7 @@
     "expect": {
       "exit_code": 0,
       "stdout_equals": "info-line\n",
-      "stderr_equals": "warn-line\nerror-line\n"
+      "stderr_equals": "warning: warn-line\nerror: error-line\n"
     }
   },
   {
@@ -79,7 +79,7 @@
     "expect": {
       "exit_code": 0,
       "stdout_equals": "debug-line\ninfo-line\n",
-      "stderr_equals": "warn-line\nerror-line\n"
+      "stderr_equals": "warning: warn-line\nerror: error-line\n"
     }
   },
   {
@@ -121,7 +121,7 @@
     "expect": {
       "exit_code": 0,
       "stdout_equals": "",
-      "stderr_equals": "warn-line\nerror-line\n"
+      "stderr_equals": "warning: warn-line\nerror: error-line\n"
     }
   },
   {
@@ -164,7 +164,7 @@
     "expect": {
       "exit_code": 0,
       "stdout_equals": "",
-      "stderr_equals": "warn-line\nerror-line\n"
+      "stderr_equals": "warning: warn-line\nerror: error-line\n"
     }
   },
   {
@@ -276,7 +276,7 @@
     "expect": {
       "exit_code": 0,
       "stdout_equals": "DRY RUN — no changes were made. Would do:\n  1. mkdir: build\n",
-      "stderr_equals": "warn-line\n"
+      "stderr_equals": "warning: warn-line\n"
     }
   }
 ]

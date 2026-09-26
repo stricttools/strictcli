@@ -514,8 +514,7 @@
                 }
               ]
             }
-          ],
-          "handler_prints": "via={via}"
+          ]
         }
       ]
     },

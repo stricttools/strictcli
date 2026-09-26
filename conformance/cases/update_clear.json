@@ -363,7 +363,7 @@
     },
     "expect": {
       "exit_code": 0,
-      "stdout_equals": "{\"interface_version\":2,\"app\":\"myapp\",\"app_version\":\"1.0.0\",\"command\":\"update-record\",\"exit_code\":0,\"payload\":null,\"dry_run\":false,\"writes\":{\"resource\":\"dns-record\",\"write_mode\":\"sparse\",\"written\":[],\"cleared\":[\"ttl\"],\"resent\":[],\"untouched\":[\"content\"]},\"preview\":[],\"preview_error\":null,\"diagnostics\":[]}\n",
+      "stdout_equals": "{\"interface_version\":3,\"app\":\"myapp\",\"app_version\":\"1.0.0\",\"command\":\"update-record\",\"exit_code\":0,\"payload\":null,\"output\":null,\"dry_run\":false,\"writes\":{\"resource\":\"dns-record\",\"write_mode\":\"sparse\",\"written\":[],\"cleared\":[\"ttl\"],\"resent\":[],\"untouched\":[\"content\"]},\"preview\":[],\"preview_error\":null,\"diagnostics\":[]}\n",
       "stderr_equals": ""
     }
   },

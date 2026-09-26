@@ -9,6 +9,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"syscall"
+	"time"
 
 	tomledit "github.com/smm-h/go-toml-edit"
 	"github.com/stricttools/strictcli/go/strictcli"
@@ -1259,6 +1261,10 @@ func buildCmdOptions(cmdDef map[string]interface{}) []strictcli.CmdOption {
 	if v, ok := cmdDef["owns_stdout"].(bool); ok && v {
 		opts = append(opts, strictcli.OwnsStdout())
 	}
+	// The declared payload rendering (§19.10).
+	if v, ok := cmdDef["payload_renderer"].(map[string]interface{}); ok {
+		opts = append(opts, strictcli.PayloadRenderer(payloadRenderer(v["template"].(string))))
+	}
 	if v, ok := cmdDef["grants"]; ok {
 		var grants []strictcli.Grant
 		for _, item := range v.([]interface{}) {
@@ -1742,6 +1748,78 @@ func runHandlerClaim(ctx *strictcli.Context, cmdDef map[string]interface{}) {
 	}
 }
 
+// runHandlerOutput performs the output and signal keys of the handler
+// vocabulary (effects contract §14.4's amendment), in its pinned order:
+// handler_signals_self, handler_out, handler_document, handler_raw_stdout.
+// They run after handler_diagnostics and before the terminal step.
+func runHandlerOutput(ctx *strictcli.Context, cmdDef map[string]interface{}) {
+	if v, ok := cmdDef["handler_signals_self"].(string); ok {
+		sig := syscall.SIGTERM
+		if v == "SIGINT" {
+			sig = syscall.SIGINT
+		}
+		syscall.Kill(os.Getpid(), sig)
+		select {
+		case <-ctx.Done():
+		case <-time.After(10 * time.Second):
+			panic("conformance: context was not canceled")
+		}
+	}
+	if v, ok := cmdDef["handler_out"].([]interface{}); ok {
+		for _, text := range v {
+			ctx.Out(text.(string))
+		}
+	}
+	if v, ok := cmdDef["handler_document"].(string); ok {
+		ctx.Document().Write([]byte(v))
+	}
+	if v, ok := cmdDef["handler_raw_stdout"].(string); ok {
+		os.Stdout.WriteString(v)
+	}
+	if _, ok := cmdDef["handler_process_exit"]; ok {
+		// Go's os.Exit cannot be trapped (§17), so a case using the key
+		// restricts its targets; reaching here means it did not.
+		panic("conformance harness: handler_process_exit is inexpressible in Go; the case must restrict its targets")
+	}
+}
+
+// earlyExitFromHelper ends the command early from a frame below the handler's
+// own, which is the shape strictcli.ExitNow exists for (§19.9).
+func earlyExitFromHelper(code int, message string) {
+	strictcli.ExitNow(code, message)
+}
+
+// runHandlerExitNow performs handler_exit_now, the terminal step, when the
+// command declares it. Code and message pass through unchecked.
+func runHandlerExitNow(cmdDef map[string]interface{}) {
+	if v, ok := cmdDef["handler_exit_now"].(map[string]interface{}); ok {
+		earlyExitFromHelper(int(v["code"].(float64)), v["message"].(string))
+	}
+}
+
+// payloadRenderer builds the renderer a command's payload_renderer declares:
+// every {key} in the template is replaced by the payload's top-level member of
+// that name, a string verbatim and an integer in decimal.
+func payloadRenderer(template string) func(payload interface{}) string {
+	return func(payload interface{}) string {
+		out := template
+		m, _ := payload.(map[string]interface{})
+		for k, v := range m {
+			var text string
+			switch x := v.(type) {
+			case string:
+				text = x
+			case float64:
+				text = strconv.FormatInt(int64(x), 10)
+			default:
+				text = fmt.Sprintf("%v", x)
+			}
+			out = strings.ReplaceAll(out, "{"+k+"}", text)
+		}
+		return out
+	}
+}
+
 // makeHandler builds a normal command handler function from a command definition.
 func makeHandler(cmdDef map[string]interface{}, globalFlags []map[string]interface{}) func(ctx *strictcli.Context, args map[string]interface{}) strictcli.Outcome {
 	// handler_aborts: the handler unwinds instead of returning, after its
@@ -1755,6 +1833,7 @@ func makeHandler(cmdDef map[string]interface{}, globalFlags []map[string]interfa
 			runHandlerEffects(ctx, effects)
 			runHandlerClaim(ctx, cmdDef)
 			runHandlerDiagnostics(ctx, diags)
+			runHandlerOutput(ctx, cmdDef)
 			panic(handlerAbortMessage)
 		}
 	}
@@ -1789,6 +1868,7 @@ func makeHandler(cmdDef map[string]interface{}, globalFlags []map[string]interfa
 			runHandlerEffects(ctx, effects)
 			runHandlerClaim(ctx, cmdDef)
 			runHandlerDiagnostics(ctx, diags)
+			runHandlerOutput(ctx, cmdDef)
 			switch kind {
 			case "data":
 				ctx.Payload(data)
@@ -1834,6 +1914,8 @@ func makeHandler(cmdDef map[string]interface{}, globalFlags []map[string]interfa
 		runHandlerEffects(ctx, handlerEffects)
 		runHandlerClaim(ctx, cmdDef)
 		runHandlerDiagnostics(ctx, handlerDiagnostics)
+		runHandlerOutput(ctx, cmdDef)
+		runHandlerExitNow(cmdDef)
 		if !hasTemplate {
 			return strictcli.Exit(ec)
 		}

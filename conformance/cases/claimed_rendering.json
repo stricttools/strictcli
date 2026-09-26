@@ -266,7 +266,7 @@
     ],
     "expect": {
       "exit_code": 0,
-      "stdout_equals": "{\"interface_version\":2,\"app\":\"myapp\",\"app_version\":\"1.0.0\",\"command\":\"build\",\"exit_code\":0,\"payload\":null,\"dry_run\":true,\"writes\":null,\"preview\":[{\"detail\":\"build\",\"kind\":\"file_write\",\"recorded\":true,\"seq\":1,\"verb\":\"mkdir\"},{\"bytes\":5,\"detail\":\"VERSION (5 bytes)\",\"kind\":\"file_write\",\"recorded\":true,\"seq\":2,\"verb\":\"write\"}],\"preview_error\":null,\"diagnostics\":[]}\n",
+      "stdout_equals": "{\"interface_version\":3,\"app\":\"myapp\",\"app_version\":\"1.0.0\",\"command\":\"build\",\"exit_code\":0,\"payload\":null,\"output\":null,\"dry_run\":true,\"writes\":null,\"preview\":[{\"detail\":\"build\",\"kind\":\"file_write\",\"recorded\":true,\"seq\":1,\"verb\":\"mkdir\"},{\"bytes\":5,\"detail\":\"VERSION (5 bytes)\",\"kind\":\"file_write\",\"recorded\":true,\"seq\":2,\"verb\":\"write\"}],\"preview_error\":null,\"diagnostics\":[]}\n",
       "stdout_not_contains": "DRY RUN",
       "stderr_equals": ""
     }
@@ -304,7 +304,7 @@
     ],
     "expect": {
       "exit_code": 0,
-      "stdout_equals": "{\"interface_version\":2,\"app\":\"myapp\",\"app_version\":\"1.0.0\",\"command\":\"build\",\"exit_code\":0,\"payload\":[\"mkdir\",\"write\"],\"dry_run\":true,\"writes\":null,\"preview\":[{\"detail\":\"build\",\"kind\":\"file_write\",\"recorded\":true,\"seq\":1,\"verb\":\"mkdir\"},{\"bytes\":5,\"detail\":\"VERSION (5 bytes)\",\"kind\":\"file_write\",\"recorded\":true,\"seq\":2,\"verb\":\"write\"}],\"preview_error\":null,\"diagnostics\":[]}\n"
+      "stdout_equals": "{\"interface_version\":3,\"app\":\"myapp\",\"app_version\":\"1.0.0\",\"command\":\"build\",\"exit_code\":0,\"payload\":[\"mkdir\",\"write\"],\"output\":null,\"dry_run\":true,\"writes\":null,\"preview\":[{\"detail\":\"build\",\"kind\":\"file_write\",\"recorded\":true,\"seq\":1,\"verb\":\"mkdir\"},{\"bytes\":5,\"detail\":\"VERSION (5 bytes)\",\"kind\":\"file_write\",\"recorded\":true,\"seq\":2,\"verb\":\"write\"}],\"preview_error\":null,\"diagnostics\":[]}\n"
     }
   },
   {

@@ -52,7 +52,7 @@
     ],
     "expect": {
       "exit_code": 0,
-      "stdout_equals": "{\"interface_version\":2,\"app\":\"outcomeapp\",\"app_version\":\"1.0.0\",\"command\":\"run\",\"exit_code\":0,\"payload\":{\"count\":3,\"name\":\"strictcli\"},\"dry_run\":false,\"writes\":null,\"preview\":[],\"preview_error\":null,\"diagnostics\":[]}"
+      "stdout_equals": "{\"interface_version\":3,\"app\":\"outcomeapp\",\"app_version\":\"1.0.0\",\"command\":\"run\",\"exit_code\":0,\"payload\":{\"count\":3,\"name\":\"strictcli\"},\"output\":null,\"dry_run\":false,\"writes\":null,\"preview\":[],\"preview_error\":null,\"diagnostics\":[]}"
     }
   },
   {
@@ -82,7 +82,7 @@
     ],
     "expect": {
       "exit_code": 2,
-      "stdout_equals": "{\"interface_version\":2,\"app\":\"outcomeapp\",\"app_version\":\"1.0.0\",\"command\":\"run\",\"exit_code\":2,\"payload\":{\"ok\":false},\"dry_run\":false,\"writes\":null,\"preview\":[],\"preview_error\":null,\"diagnostics\":[]}"
+      "stdout_equals": "{\"interface_version\":3,\"app\":\"outcomeapp\",\"app_version\":\"1.0.0\",\"command\":\"run\",\"exit_code\":2,\"payload\":{\"ok\":false},\"output\":null,\"dry_run\":false,\"writes\":null,\"preview\":[],\"preview_error\":null,\"diagnostics\":[]}"
     }
   },
   {
