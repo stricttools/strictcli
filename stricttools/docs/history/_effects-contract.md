@@ -236,6 +236,13 @@ refuses the bypass constructs statically in every program built on strictcli (§
 gains an `output` member and becomes `interface_version` 3 (§19.2's box). §3.5, §7.1, §7.4, §12,
 §14.4, §17, §19.1, §19.2 and §19.6 are amended in place, and §19.9-§19.14 and §28 are added.
 
+Amended 2026-09-27 with the owner's **rulings after the framework-owned exits** (§18.38): a child
+still running when its handler ends is killed and fails the run, `Spawned` can signal and kill, the
+exit step keeps signal handling until the children are settled, `ExitError` carries the payload,
+the framework's own commands report through the error writer, the Go runtime guard redirects at
+the operating-system level on every platform that allows it, and TypeScript streams a child's
+stdout in arrival order and keeps Node running while a handler waits for a signal.
+
 Placement note: this file uses the `.stricttools/docs/history/_*.md` convention established by
 `.stricttools/docs/history/_ts-port-spec.md`. The underscore prefix keeps it off the published docs site --
 selfdoc's `resolve_all_docs` walks `.stricttools/docs/` recursively and treats every non-underscore `.md`
@@ -1038,6 +1045,16 @@ idiomatic way a Python handler reports failure.
 > TypeScript's `process.exit` are trapped during the handler in machine mode by the runtime guard
 > (§19.12), which turns them into a failed run through this seam; in human mode they remain outside
 > the guarantee and are refused by the lint. §17 records what is left.
+
+> **Amendment (2026-09-27, rulings after the framework-owned exits, §18.38 items 350 and 351):
+> the seam settles the dispatch's children before it renders.** On every row of the table above,
+> before anything is rendered or written, the exit step settles every child the handler started
+> through `spawn` and did not wait on (§19.11's box): a child that has exited is reaped and its
+> captured stdout drained, and a child still running is killed and adds an `error` diagnostic
+> naming it. A killed child changes the status of a return, a deliberate exit, and an early exit
+> (1 unless already nonzero, §19.11's box); a truncation keeps `1`, and an unexpected unwind keeps
+> the language's own status and still propagates untouched. Dry mode runs no child, so a dry run
+> has nothing to settle.
 
 ---
 
@@ -3904,6 +3921,16 @@ set.
 | `errProcessExitOutsideFramework(code)` | `_msg_process_exit_outside_framework(code)` | `process exit called outside the framework with code <code>` |
 | `errCanceledBySignal(signal)` | `_msg_canceled_by_signal(signal)` | `canceled by signal <signal>` |
 
+> **Amendment (2026-09-27, §18.38 item 350): one more run outcome.**
+>
+> | Go / TypeScript | Python | Text |
+> |-----------------|--------|------|
+> | `errChildKilledAtExit(pid, argv)` | `_msg_child_killed_at_exit(pid, argv)` | `child process <pid> was still running when the handler ended and was killed: <argv>` |
+>
+> `<pid>` is the child's process id in decimal; `<argv>` is the child's command line as the
+> spawn's effect record renders it (§3.2's `detail`, the words joined by single spaces). The
+> sentence is appended by the exit step as §19.11's box describes.
+
 `<excerpt>` is a JSON string literal, quotes included (§19.12 pins its bytes); `<signal>` is the
 signal's conventional name, `SIGINT` or `SIGTERM` (§19.13). `errProcessExitOutsideFramework` exists
 in Python and TypeScript only: Go cannot trap `os.Exit` (§17), so the Go catalog carries no template
@@ -4686,6 +4713,16 @@ that only `run` accepts at the call, which is exactly the shape the error covers
 > `handler_out`, `handler_document`, `handler_raw_stdout`, then the terminal step, which is
 > one of `handler_process_exit`, `handler_exit_now`, `handler_aborts`, `handler_returns`, or the
 > `handler_prints` path.
+
+> **Amendment (2026-09-27, §18.38 item 357): two vocabulary additions for the rulings after the
+> framework-owned exits.**
+>
+> - A `spawn` entry of `handler_effects` may carry `"wait": true`: the generated handler calls the
+>   returned handle's wait (`Wait()` / `wait()`) with its default `check` immediately after the
+>   spawn, before the next entry. It is not an effect option and is never passed to `spawn`.
+> - A `pre_call` whose command ends through an early exit prints one line to stderr,
+>   `call exit error: <code>: <message>: payload=<json>`, where `<json>` is the `ExitError`'s payload
+>   in compact JSON with sorted keys, and `null` when the command supplied none.
 
 ### 14.5 Fixture app and parity checks
 
@@ -9754,6 +9791,70 @@ section.
 release tool's validation, which is designed to run `--lint-framework-use` and is not part of this
 repository (§28.4); and the consumers' migration, which follows the release that ships this.
 
+### 18.38 Rulings added after the framework-owned exits (2026-09-27)
+
+Items numbered on from §18.37. This section amends §3.5, §12.17, §14.4, §19.2, §19.9, §19.11,
+§19.12, §19.13 and §19.14 in place, each with a box naming its items. The owner ruled the tagged
+items after §18.37 was implemented, on findings of its review; each was the owner's pick of the
+**recommended option** of its question, so each is `[%%]`, freely reversible, and never to be cited
+back as a deliberate directive. Untagged items are authored in the §18.3 class, picked here because
+the rulings left them open.
+
+350. **[%%] An unwaited child is a hard error (§19.11's box, §19.2's box, §3.5's box, §12.17's
+     box).** A handler that ends while a child it started through `spawn` is still running fails
+     the run: the framework kills the child, the status is 1 unless already nonzero, and an
+     `error` diagnostic names the child by its argv and pid, in both modes. Authored: SIGTERM, then
+     SIGKILL after 1 second, and an immediate kill where there is no SIGTERM; the template
+     `errChildKilledAtExit` and its wording; the diagnostic's position after the process-exit trap
+     and before the guard's failure, one per child in spawn order; the settling on every door
+     (`run()`, `test()`, `call()`, MCP), with `call()` reporting the status and not the
+     diagnostic; the settling on an unexpected unwind too, keeping the language's status.
+
+351. **[%%] The exit step drains only children that have exited (§19.11's box).** Settling
+     replaces waiting: an exited child is reaped and drained, a running one is killed first.
+     Authored: an exited child left unwaited is not an error; a streamed `run` is not settled,
+     because it cannot outlive the handler in any of the three languages.
+
+352. **[%%] `ExitError` carries the payload (§19.9's box).** The payload a command supplied before
+     its early exit rides the error `call()` raises or returns, `null` when none, consistent with
+     `test()`. Authored: the three member spellings and the absence values; no validation against
+     the declared schema.
+
+353. **[%%] The framework's own errors go through the error writer (§19.14's box, §19.2's box).**
+     `config set`, `config init`, and the `check` command print `error: <message>` in human mode and
+     enter `diagnostics` under `--json`, with no self-spelled `error: `, and conformance asserts the
+     exact stderr bytes. Authored: `config edit` joins them; the one message table, which takes
+     `config init: config file already exists: <path>` for Go too; a `check` tag expression that does
+     not parse is reported rather than unwinding; Go's own file-operation failures read
+     `cannot <operation>: <detail>`.
+
+354. **[%%] `Spawned` can signal and kill (§19.11's box).** Authored: the method names per language;
+     kill waits for the child and counts as a wait; both leave an exited child alone; both truncate
+     on an unsettled handle.
+
+355. **[%%] Signal handling lasts until the children are settled (§19.13's box, §19.12's box).** A
+     review found every port releasing signal handling before the drain. Authored: the runtime
+     guard's span ends at the same point.
+
+356. **[%%] The Go runtime guard redirects at the operating-system level on every platform
+     (§19.12's box).** `dup`/`dup2` from `golang.org/x/sys/unix` where the standard library lacks
+     them, and `SetStdHandle` on Windows. Authored: `golang.org/x/sys/unix` on every Unix rather than
+     only where `syscall` lacks `dup2`, so one file serves them all; `os.Stdout` swapped beside the
+     standard handle on Windows; the C runtime's descriptor left alone; Plan 9 and WebAssembly keep
+     the variable replacement.
+
+357. **The conformance vocabulary (§14.4's box).** Authored: the `wait` key on a `spawn` entry and
+     the `call exit error` line of a `pre_call`.
+
+358. **[%%] A TypeScript handler that only awaits `ctx.signal` keeps Node running (§19.13's box).**
+     Authored: a timer holds the event loop while the handler's promise is pending, on the `run()`
+     path only.
+
+359. **[%%] TypeScript capture streams in arrival order (§19.11's box).** A review found the
+     TypeScript drain delivering a spawned child's bytes only at its exit. Authored: the worker
+     forwards each chunk, and the main thread appends pending chunks on its event loop, before each
+     `ctx.out` append, at `wait`, and at the exit step.
+
 ---
 
 ## 19. Machine mode and the envelope
@@ -9933,6 +10034,17 @@ how a terminal was configured.
 > early exit's message (§19.9), the process-exit trap (§19.12), the runtime guard's failure
 > (§19.12), and the signal (§19.13). Each is also what human mode prints for the condition, with
 > the `error: ` prefix, where the condition exists in human mode at all.
+
+> **Amendment (2026-09-27, §18.38 items 350 and 353): a killed child joins the appended
+> diagnostics, and the framework's own command errors are diagnostics.** The exit step's appended
+> list gains one entry per child it had to kill (§19.11's box), in the order the children were
+> spawned, after the process-exit trap and before the runtime guard's failure. The full order is
+> therefore: the early exit's message, the process-exit trap, each killed child, the runtime
+> guard's failure, and the signal.
+>
+> The errors the framework's own commands report -- `config set`, `config init`, `config edit`,
+> and the `check` command -- are written through the error writer (§19.14's box), so under `--json`
+> they are `error` entries of `diagnostics` like any handler's, and stderr carries nothing.
 
 ### 19.3 The `preview` member
 
@@ -10290,6 +10402,22 @@ Python and TypeScript get no counterpart: an `exit_now` raised in a Python threa
 own exception, and a TypeScript `ExitNow` thrown inside an awaited promise propagates to the handler
 through the `await`, which is the language's own delivery.
 
+> **Amendment (2026-09-27, §18.38 item 352): `ExitError` carries the payload.** A payload the
+> handler supplied before its early exit is kept (above), and the in-process door now hands it to
+> the caller on the error itself, so `call()` and `test()` agree on what a run that ended early
+> produced:
+>
+> | Impl | Member | When the command supplied none |
+> |------|--------|--------------------------------|
+> | Python | `ExitError.payload` | `None` |
+> | Go | `ExitError.Payload interface{}` | `nil` |
+> | TypeScript | `ExitError.payload: unknown` | `null` |
+>
+> The value is the one the handler passed to `ctx.payload`, as supplied: it is not validated
+> against the declared schema, for §19.4's reason (validation happens where the `--json` document is
+> written, and the in-process door writes none). `test()` already reports the same value as its
+> result's payload. The error's string form is unchanged: the message alone.
+
 ### 19.10 The main-output writer and declared payload rendering
 
 *(Added 2026-09-26, §18.37 items 338 and 339.)*
@@ -10352,6 +10480,67 @@ as part of the document (§19.6's box) -- in Go and Python that means the saved 
 file descriptor the runtime guard redirected (§19.12). A `run` with `stream` false captures the
 child's stdout into the returned `Completed` as before, and none of it reaches `output`.
 
+> **Amendment (2026-09-27, §18.38 items 350, 351, 354 and 355): a child still running when the
+> handler ends is a hard error, and `Spawned` can signal and kill.** The paragraph above let the
+> exit step wait for a child the handler never waited on. It no longer waits for a running child:
+> a handler owns every child it starts, and one it walked away from is a defect the run reports.
+>
+> **Settling the children.** When the handler has ended -- by a return, a deliberate exit, an early
+> exit, a trapped process exit, or an unexpected unwind, and in Go after every function started
+> through `strictcli.Go` has returned (§19.9) -- the exit step takes every child started through
+> `spawn` in this dispatch that the handler neither waited on nor killed, in the order they were
+> spawned:
+>
+> - **A child that has exited** is reaped, and its captured stdout (in machine mode, §19.11 above)
+>   is read to end of file into `output`. Nothing else happens: it is not an error to leave an
+>   exited child unwaited.
+> - **A child still running** is sent SIGTERM. If it is still running **1 second** later it is sent
+>   SIGKILL. Either way it is then reaped and its captured stdout drained as above, and the exit
+>   step appends one `error` diagnostic, `child process <pid> was still running when the handler
+>   ended and was killed: <argv>` (`errChildKilledAtExit`, §12.17's box), printed with the `error: `
+>   prefix in human mode (§19.14) and carried in `diagnostics` in machine mode, in the position
+>   §19.2's box pins. The status becomes `1` unless the command already ended with a nonzero
+>   status, which is kept; a signal still replaces it (§19.13), and an unexpected unwind keeps the
+>   language's own status (§3.5). Where the platform has no SIGTERM (Go on Windows), the child is
+>   killed at once.
+>
+> The same happens on every door that runs a handler: `run()`, `test()`, `call()`, and the MCP
+> server. On `call()` there is no stream to print to and no `--json` document, so the diagnostic is
+> not reported; the child is killed all the same, and the exit status the call reports is the one
+> above. A streamed `run` needs no settling: in all three languages it returns only after its
+> child has exited, so it cannot outlive the handler.
+>
+> **Signaling and killing.** `Spawned` gains two methods:
+>
+> | Impl | Send a signal | Kill |
+> |------|---------------|------|
+> | Python | `send_signal(signum: int) -> None` | `kill() -> None` |
+> | Go | `Signal(sig os.Signal) error` | `Kill() error` |
+> | TypeScript | `sendSignal(signal: NodeJS.Signals \| number): void` | `kill(): void` |
+>
+> - **Sending a signal** delivers it and returns at once; it does not wait for the child, which is
+>   still the handler's to wait on or kill.
+> - **Killing** sends SIGKILL (the platform's forced termination on Windows) and waits for the child
+>   to exit. A killed child counts as waited on: the exit step does not settle it again, and a
+>   later `wait` returns its result as for any child that has exited, so with the default `check`
+>   a killed child's nonzero status is the same effect failure `wait` reports for any other.
+> - **A child that has already exited** is left alone by both: nothing is sent, because its process
+>   id may already name another process.
+> - Both are extraction on an unsettled `Spawned` in dry mode (§4.4): they truncate, as `wait` and
+>   the pid do.
+>
+> **Draining keeps the signal handling.** The runtime guard and the signal handling of §19.12 and
+> §19.13 stay in place until the children are settled, so a signal that arrives while the exit step
+> waits for a child to die is the run's first signal as §19.13 describes, and a second one still
+> gets the default action.
+>
+> **Arrival order in TypeScript.** Node reads a spawned child's stdout on a worker thread. The
+> worker forwards each chunk as it arrives, and the main thread appends forwarded chunks to
+> `output` whenever its event loop runs, before every `ctx.out` append, at `wait`, and at the exit
+> step, so a child's bytes and the handler's own `ctx.out` text are in the order the framework
+> received them, as in the other two languages, rather than all of the child's bytes arriving at
+> its exit.
+
 ### 19.12 The runtime guard
 
 *(Added 2026-09-26, §18.37 items 343 and 344.)* In machine mode, while the handler runs, the
@@ -10396,6 +10585,27 @@ absent, plus an `error` diagnostic `process exit called outside the framework wi
 `sys.exit` is not trapped: it already unwinds through the exit step (§3.5). Go has no equivalent
 (§17).
 
+> **Amendment (2026-09-27, §18.38 item 356): Go redirects at the operating-system level on every
+> platform that has one.** The Go row above held only where the standard `syscall` package offers a
+> `dup2`; elsewhere Go fell back to replacing the `os.Stdout` variable, which a direct write to
+> descriptor 1, a C library, or a child the handler started outside the effects handle walks
+> straight past. The redirect is now made by the operating system everywhere it can be:
+>
+> | Platform | Mechanism |
+> |----------|-----------|
+> | Every Unix Go supports (Linux, the BSDs, macOS, Solaris, illumos, AIX) | descriptor 1 is duplicated aside with `dup` and replaced with `dup2` from `golang.org/x/sys/unix`, which offers both where the standard `syscall` package lacks `dup2` |
+> | Windows | the process's standard output handle is replaced with `SetStdHandle` (`golang.org/x/sys/windows`), and `os.Stdout` is pointed at the same pipe, because on Windows `os.Stdout` holds the handle it was created with rather than reading the standard handle on every write; both are restored after the handler |
+>
+> The Windows C runtime's own descriptor table is not touched: a Go program without cgo never
+> writes through it. The remaining Go targets, Plan 9 and WebAssembly, keep the variable
+> replacement. `golang.org/x/sys` is a dependency of the Go module, declared with a
+> version floor and no upper bound.
+
+> **Amendment (2026-09-27, §18.38 items 350 and 355): the guard is released after the children
+> are settled.** The span the guard covers ends when the exit step has settled the dispatch's
+> children (§19.11's box), not when the handler returns, so a child the exit step kills is still
+> inside the span while it dies.
+
 ### 19.13 Signals
 
 *(Added 2026-09-26, §18.37 item 342.)* On the CLI dispatch path -- `run()` / `Run()` -- strictcli
@@ -10425,6 +10635,23 @@ handles SIGINT and SIGTERM while the handler runs:
   keep their default action. `test()`, `call()`, and the MCP server install nothing: an in-process
   caller owns its own process's signals.
 
+> **Amendment (2026-09-27, §18.38 items 355 and 358): the handling lasts until the children are
+> settled, and a TypeScript handler that only waits for a signal keeps Node running.**
+>
+> - **The span.** "While the handler runs" now ends when the exit step has settled the dispatch's
+>   children (§19.11's box). Every port used to release the handling the moment the handler
+>   returned, before the children were drained, so a SIGINT during that wait took the default
+>   action and killed the process mid-drain. A signal that arrives while the exit step kills a
+>   child is the run's first signal: it decides the status and the diagnostic as above.
+> - **TypeScript's event loop.** Node exits with status 13 when the only thing left is a pending
+>   top-level `await` and nothing holds its event loop, and a signal listener does not hold it. A
+>   handler whose only work is `await` on `ctx.signal` (the idiomatic way to wait until a signal
+>   arrives) therefore ended the process with 13 before any signal could arrive. On the `run()`
+>   path the framework now holds the event loop open with a timer for as long as the handler's
+>   promise is pending, and releases it the moment the handler settles. `test()` and `call()` hold
+>   nothing: no signal can reach a handler there, so a handler waiting for one never settles, and
+>   holding the loop would turn Node's diagnosis into a silent hang.
+
 ### 19.14 Human-mode prefixes
 
 *(Added 2026-09-26, §18.37 item 337.)* In human mode the never-suppressed diagnostic writers
@@ -10442,6 +10669,32 @@ added unconditionally, once, before the whole message -- a message that already 
 `error: ` is printed as `error: error: ...`, because the framework does not inspect what a handler
 wrote -- and a multi-line message is not prefixed per line. `ctx.info` and `ctx.debug` stay
 unprefixed. In machine mode no diagnostic carries a prefix (§19.2's box).
+
+> **Amendment (2026-09-27, §18.38 item 353): the framework's own commands report through the error
+> writer.** The auto-registered `config set`, `config init`, and `config edit` commands and the
+> `check` command wrote some of their errors to stderr directly, bypassing the error writer: each
+> port spelled them differently (some with a self-spelled `error: `, some bare, one through the
+> writer), none of them reached `diagnostics` under `--json` except where a port used the writer,
+> and a tag expression the `check` command could not parse unwound Python and TypeScript's
+> handler as an uncaught error. Every such message now goes through the error writer, with no
+> `error: ` of its own, so it prints once as `error: <message>` in human mode and is an `error`
+> diagnostic, unprefixed, under `--json`. The messages, identical in all three languages:
+>
+> | Command | Message |
+> |---------|---------|
+> | `config set` | `config set: unknown key '<key>'` |
+> | `config set` | `config set: --clear is only for repeatable flags` |
+> | `config set` | `config set: key '<key>' not in config` |
+> | `config set` | `config set: key '<key>': <reason>`, where `<reason>` is the value's coercion error, `duplicate value '<value>'`, or, for a dict flag (Python and TypeScript), `invalid JSON: <detail>`, `expected JSON object`, or `value for '<entry>': <reason>` |
+> | `config init` | `config init: config file already exists: <path>` |
+> | `config edit` | `editor failed: <detail>` |
+> | `check` | the tag expression's parse error, `tag expression: <detail>` |
+>
+> Failures of the file operations themselves (a directory that cannot be created, a file that
+> cannot be written) are the effect handle's own errors (§2.5.4) in Python and TypeScript, where
+> they unwind; in Go, whose effect methods return errors, they are reported through the same
+> writer as `cannot <operation>: <detail>`. Conformance pins the exact stderr bytes of the
+> reachable rows in all three languages.
 
 ---
 
