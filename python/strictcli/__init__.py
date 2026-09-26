@@ -12,6 +12,8 @@ __all__ = [
     "UpdateOf",
     "Passthrough", "Forwarding", "DeprecatedCommand", "Result",
     "InvokeError",
+    # The early exit (contract §19.9)
+    "exit_now", "ExitError",
     # The scoped-selector construct (contract §24)
     "Choice", "choice", "choice_flag", "sub_flag", "sub_choice_flag",
     "member_value", "provided",
@@ -289,6 +291,14 @@ class _InfraAccess:
 # The exit step prints its own error diagnostics with the error prefix too.
 _HUMAN_PREFIX_ERROR = "error: "
 _HUMAN_PREFIX_WARN = "warning: "
+
+
+# How a handler left the dispatch: the exit step's rows (§3.5's table).
+_ENDING_RETURN = "return"
+_ENDING_SYS_EXIT = "sys_exit"
+_ENDING_EARLY_EXIT = "early_exit"
+_ENDING_TRUNCATED = "truncated"
+_ENDING_ABORTED = "aborted"
 
 
 class _MachineOutput:
@@ -660,6 +670,58 @@ class EffectFailed(Exception):
     nonzero and an ``http`` whose status is outside 200-299 raise this, as does
     invalid UTF-8 on a captured stream. ``check=False`` opts a single call out.
     """
+
+
+class _EarlyExit(BaseException):
+    """The unwind :func:`exit_now` starts (contract §19.9).
+
+    A ``BaseException`` for ``_DryRunTruncated``'s reason: the common
+    ``except Exception`` must not swallow it. The exit step recognizes it
+    around command and passthrough handlers; raised anywhere else it unwinds
+    as any other error does.
+    """
+
+    def __init__(self, code: int, message: str) -> None:
+        super().__init__(message)
+        self.code = code
+        self.message = message
+
+
+def exit_now(code: int, message: str) -> typing.NoReturn:
+    """End the running command early, from anywhere in its call stack (§19.9).
+
+    The handler's frames unwind (``finally`` blocks run), then the exit step
+    ends the command with ``code``: the message is recorded as an ``error``
+    diagnostic, printed as ``error: <message>`` in human mode and carried in
+    the --json document's ``diagnostics`` in machine mode, and a dry run still
+    renders its would-do log. ``call()`` raises :class:`ExitError` instead.
+
+    ``code`` must be an integer from 1 to 255 -- a successful run ends with a
+    return from the handler -- and ``message`` must be non-empty. Both are
+    refused here, at the call, before anything unwinds.
+    """
+    if isinstance(code, bool) or not isinstance(code, int) or not 1 <= code <= 255:
+        raise ValueError(_msg_exit_now_code(code))
+    if not isinstance(message, str) or not message:
+        raise ValueError(_msg_exit_now_message_empty())
+    raise _EarlyExit(code, message)
+
+
+class ExitError(Exception):
+    """A command invoked through ``call()`` ended through an early exit (§19.9).
+
+    Not an :class:`InvokeError`: an invocation error means the call was refused
+    before the handler ran, and this means the handler ran and ended with a
+    failure. ``str()`` is the handler's message alone.
+    """
+
+    def __init__(self, code: int, message: str) -> None:
+        super().__init__(message)
+        self.code = code
+        self.message = message
+
+    def __str__(self) -> str:
+        return self.message
 
 
 class _DryRunTruncated(BaseException):
@@ -12120,49 +12182,59 @@ class App:
             exit_code = _interpret_handler_return(handler_return)
         except _DryRunTruncated as trunc:
             return self._finish_dispatch(
-                ctx, cmd_path, 1, out, err,
-                truncated=trunc, aborted=False,
-                owns_stdout=cmd.owns_stdout,
+                ctx, cmd, cmd_path, 1, out, err,
+                ending=_ENDING_TRUNCATED, truncated=trunc,
+            )
+        except _EarlyExit as early:
+            return self._finish_dispatch(
+                ctx, cmd, cmd_path, early.code, out, err,
+                ending=_ENDING_EARLY_EXIT, early_exit=early,
             )
         except SystemExit as e:
             code = e.code if isinstance(e.code, int) else (1 if e.code else 0)
-            self._finish_dispatch(
-                ctx, cmd_path, code, out, err, aborted=False,
-                owns_stdout=cmd.owns_stdout,
+            result = self._finish_dispatch(
+                ctx, cmd, cmd_path, code, out, err, ending=_ENDING_SYS_EXIT,
             )
-            if mode == "run":
+            if mode == "run" and result.exit_code == code:
                 # The real CLI path lets the exit propagate untouched, so a
-                # non-integer sys.exit() argument keeps printing itself.
+                # non-integer sys.exit() argument keeps printing itself. An
+                # exit step that changed the status ends with its own.
                 raise
-            return _DispatchResult(code, ctx._payload_value)
+            return result
         except BaseException:
             self._finish_dispatch(
-                ctx, cmd_path, 1, out, err, aborted=True,
-                owns_stdout=cmd.owns_stdout,
+                ctx, cmd, cmd_path, 1, out, err, ending=_ENDING_ABORTED,
             )
             raise
         return self._finish_dispatch(
-            ctx, cmd_path, exit_code, out, err,
-            owns_stdout=cmd.owns_stdout,
+            ctx, cmd, cmd_path, exit_code, out, err, ending=_ENDING_RETURN,
         )
 
     def _finish_dispatch(
-        self, ctx: "Context", cmd_path: str, exit_code: int, out, err,
-        *, truncated: "_DryRunTruncated | None" = None,
-        aborted: bool = False, owns_stdout: bool = False,
+        self, ctx: "Context", cmd: "Command", cmd_path: str, exit_code: int,
+        out, err, *, ending: str,
+        truncated: "_DryRunTruncated | None" = None,
+        early_exit: "_EarlyExit | None" = None,
     ) -> "_DispatchResult":
         """The ONE ordered exit step: payload, preview log, exit code.
 
-        Reachable from all four ways out of a dispatch (normal return, an
-        explicit ``sys.exit``, a truncated preview and an unwinding abort), so
-        there is exactly one place that decides what the framework emits at the
-        end of a run and in what order.
+        Reachable from every way out of a dispatch (a return, an explicit
+        ``sys.exit``, an early exit, a truncated preview and an unwinding
+        abort), so there is exactly one place that decides what the framework
+        emits at the end of a run and in what order.
 
         In machine mode this step emits the envelope INSTEAD of the human
         stream's would-do log, truncation error and abort marker: those texts
         become the envelope's ``preview`` and ``preview_error`` members
         (§19.1, §19.3), and stdout carries exactly one document.
+
+        The error diagnostics the exit step itself appends (§19.2's box) come
+        after every diagnostic the handler emitted, in the box's order.
         """
+        aborted = ending == _ENDING_ABORTED
+        closing: list[str] = []
+        if early_exit is not None:
+            closing.append(early_exit.message)
         if ctx._json:
             # The emission seam owns instance validation (§19.4, §19.5): the
             # value is checked here, where the envelope is about to carry it,
@@ -12174,7 +12246,7 @@ class App:
             # it carries (contract §19.6). Leaving it on stdout would re-create
             # the two-documents-on-one-stream collision §19.1 exists to remove.
             self._emit_envelope(
-                err if owns_stdout else out,
+                err if cmd.owns_stdout else out,
                 command=cmd_path,
                 exit_code=exit_code,
                 dry_run=ctx._dry_run,
@@ -12183,7 +12255,9 @@ class App:
                 preview_error=self._preview_error(
                     cmd_path, ctx._dry_run, truncated, aborted,
                 ),
-                diagnostics=ctx._diagnostics,
+                diagnostics=ctx._diagnostics + [
+                    {"level": "error", "message": m} for m in closing
+                ],
                 writes=(
                     self._last_writes.envelope_member()
                     if self._last_writes is not None else None
@@ -12200,6 +12274,8 @@ class App:
             print(truncated.message, file=err)
         else:
             self._render_dry_log(cmd_path, out, err, aborted=aborted)
+        for message in closing:
+            print(_HUMAN_PREFIX_ERROR + message, file=err)
         return _DispatchResult(exit_code, ctx._payload_value)
 
     def _validate_emitted_payload(self, ctx: "Context") -> None:
@@ -12399,9 +12475,12 @@ class App:
                 payload_schema=cmd.payload_schema,
                 owns_stdout=cmd.owns_stdout,
             )
-            result = cmd.passthrough.handler(
-                ctx, cmd.name, raw_args, global_values,
-            )
+            try:
+                result = cmd.passthrough.handler(
+                    ctx, cmd.name, raw_args, global_values,
+                )
+            except _EarlyExit as early:
+                raise ExitError(early.code, early.message) from None
             _interpret_handler_return(result)  # validate return type
             # The programmatic surface keeps its capture: it returns the
             # payload the handler supplied (contract §19.4).
@@ -12565,7 +12644,12 @@ class App:
             unsets=unsets,
             owns_stdout=cmd.owns_stdout,
         )
-        result = cmd.handler(ctx, **final_kwargs)
+        try:
+            result = cmd.handler(ctx, **final_kwargs)
+        except _EarlyExit as early:
+            # The in-process door: the handler ran and ended with a failure,
+            # which the caller receives as a typed error (§19.9).
+            raise ExitError(early.code, early.message) from None
         _interpret_handler_return(result)  # validate return type
         # The programmatic surface keeps its capture: it returns the payload
         # the handler supplied (contract §19.4).
@@ -12606,6 +12690,8 @@ class App:
             InvokeError: if validation fails (unknown command, missing
                 required flags, mutex violations, dependency errors, etc.),
                 or if the command is consequential and no consent was given.
+            ExitError: if the handler ended through ``strictcli.exit_now``;
+                it carries the code and the message.
         """
         return self._call_with_kwargs(
             command_path, kwargs,
@@ -19053,6 +19139,12 @@ def _mcp_handle_tools_call(
         result = app._call_with_kwargs(
             tool_name, dict(arguments),
             approve_consequential=approve_consequential, flat=True,
+        )
+    except ExitError as e:
+        # The status as well as the reason (§19.9).
+        return _mcp_tool_result(
+            app, req_id, _msg_early_exit_tool_result(e.code, e.message),
+            modern=modern, is_error=True,
         )
     except InvokeError as e:
         return _mcp_tool_result(app, req_id, str(e), modern=modern, is_error=True)
