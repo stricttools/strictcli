@@ -17732,12 +17732,15 @@ def _run_checks(
         _start = time.perf_counter()
         try:
             outcome = cdef.impl(check_context)
-        except Exception as exc:  # noqa: BLE001 -- containment is the point
+        except (Exception, _EarlyExit) as exc:  # noqa: BLE001 -- containment is the point
             # A raising impl is contained here and reported as that check's own
             # failure: one broken check must not abort the whole run, and every
             # other selected check still executes. BaseException (a
             # KeyboardInterrupt, a SystemExit) is deliberately NOT contained --
             # those are the operator ending the process, not a broken check.
+            # The early exit is contained like any other error: a check
+            # implementation is not a handler, so it must never reach the check
+            # command's exit step as that command's early exit (§19.9).
             duration_ms = int((time.perf_counter() - _start) * 1000)
             outcome = _mint_check_abort(name, exc)
             results.append((name, outcome, duration_ms))

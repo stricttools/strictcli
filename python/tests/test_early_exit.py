@@ -251,3 +251,46 @@ class TestProgrammaticDoors:
         assert resp["result"]["content"][0]["text"] == (
             "exit code 3: no manifest at ./m.toml"
         )
+
+
+class TestOutsideAHandler:
+    def test_a_check_implementation_is_not_a_handler(self):
+        """Inside a check it unwinds as any other error: the runner contains
+        it as that check's abort, and the check command is not ended early."""
+        from pathlib import Path
+
+        from strictcli import _CheckDef, _run_checks
+
+        def impl(ctx):
+            strictcli.exit_now(4, "gave up")
+
+        defs = {"a": _CheckDef(
+            name="a", tags=["t"], severity="error", fast=True, pure=True,
+            needs_network=False, depends_on=[], impl=impl,
+        )}
+
+        class _Ctx:
+            project_root = Path(".")
+
+        results, _, exit_code = _run_checks(defs, ["a"], _Ctx(), False)
+        assert exit_code == 1
+        (_, outcome, _), = results
+        assert outcome.status == "fail"
+        assert outcome.message.endswith(": gave up")
+
+    def test_a_validate_callback_is_not_a_handler(self):
+        app = _app()
+
+        def refuse(value):
+            strictcli.exit_now(4, "gave up")
+
+        @app.command("cmd", effect="read_only", help="cmd")
+        @strictcli.flag("x", type=str, presence="required", help="x",
+                        validate=refuse)
+        def _cmd(ctx, x):
+            return 0
+
+        with pytest.raises(BaseException) as e:
+            app.test(["cmd", "--x", "v"])
+        assert not isinstance(e.value, Exception)
+        assert str(e.value) == "gave up"
