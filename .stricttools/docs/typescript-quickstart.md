@@ -90,7 +90,7 @@ app.command(
       name: flag("name", t.str, { help: "Who to greet", presence: "required" }),
     },
     handler: (args, ctx) => {
-      ctx.info(`Hello, ${args.name}!`);
+      ctx.out(`Hello, ${args.name}!`);
     },
   }),
 );
@@ -101,7 +101,7 @@ app.run();
 Handlers receive two arguments:
 
 - `args` -- a typed object with all flag and arg values. The type is inferred from the flag and arg declarations.
-- `ctx` -- a `Context` with structured output methods: `ctx.info()`, `ctx.warn()`, `ctx.error()`, `ctx.debug()`.
+- `ctx` -- a `Context` with the command's output writer `ctx.out()` and the diagnostic writers `ctx.info()`, `ctx.warn()` (printed as `warning: <msg>`), `ctx.error()` (printed as `error: <msg>`), and `ctx.debug()`. `ctx.out()` prints the command's answer and is never hidden by `--quiet`; under `--json` its text goes into the `--json` document's `output` member. `ctx.info()` is a diagnostic, and `--quiet` hides it.
 
 ### Handler return values
 
@@ -144,8 +144,78 @@ defineReadOnlyCommand("status", {
 
 ```
 $ mytool status --json
-{"count":42,"status":"done"}
+{"interface_version":3,"app":"mytool","app_version":"0.1.0","command":"status","exit_code":0,"payload":{"count":42,"status":"done"},"output":null,"dry_run":false,"writes":null,"preview":[],"preview_error":null,"diagnostics":[]}
 ```
+
+A command with a payload schema can declare how its payload reads to a person
+with `payloadRenderer:`. In human mode the framework prints the rendering after
+the handler returns, never hidden by `--quiet`; under `--json` it emits only the
+payload. `ctx.out()` is refused on such a command.
+
+```typescript
+defineReadOnlyCommand("status", {
+  help: "Show status",
+  payloadSchema: { type: "object" },
+  payloadRenderer: (p) => {
+    const { count, status } = p as { count: number; status: string };
+    return `${status}: ${count}`;
+  },
+  handler: (args, ctx) => {
+    ctx.payload({ count: 42, status: "done" });
+  },
+});
+```
+
+### Ending a command early
+
+A handler ends the command by returning. To end it from deep inside a helper,
+`throw new ExitNow(code, message)`: the command exits with `code`, the message
+is printed as `error: <message>` (an `error` diagnostic under `--json`),
+`finally` blocks run, and a dry run still prints its would-do log. The code must
+be 1 to 255 and the message non-empty; the constructor throws otherwise. A
+`catch` in the handler that does not rethrow swallows it, as it would any error.
+
+```typescript
+import { ExitNow } from "strictcli";
+
+function loadManifest(path: string): string {
+  if (!existsSync(path)) {
+    throw new ExitNow(2, `no manifest at ${path}`);
+  }
+  return readFileSync(path, "utf8");
+}
+```
+
+Through `app.call(...)`, a command that ends early rejects with `ExitError`,
+whose `code` and `message` carry what it passed.
+
+### Signals
+
+While a handler runs, SIGINT and SIGTERM abort `ctx.signal` (an `AbortSignal`)
+and do nothing else; pass it to `fetch` or check `ctx.signal.aborted` to stop
+cleanly. When the handler returns, the command exits with 128 plus the signal
+number (130 for SIGINT, 143 for SIGTERM) and prints
+`error: canceled by signal SIGTERM`. A second signal ends the process
+immediately. Node delivers signals on the event loop, so a synchronous stretch
+of a handler sees the abort only when it next yields.
+
+### Commands that own stdout
+
+A command whose stdout is the artifact declares `ownsStdout: true` and writes
+it through `ctx.document()`, whose `write(chunk)` puts bytes on the real stdout
+untouched by `--quiet` and `--json`; under `--json` the `--json` document moves
+to stderr. `ctx.document()` on any other command, and `ctx.out()` on this one,
+throw at the call.
+
+### Machine mode keeps stdout to one document
+
+Under `--json`, stdout carries only the `--json` document. The framework
+replaces `process.stdout.write` while the handler runs; anything written to
+stdout directly -- a stray `console.log` -- fails the run with exit status 1
+(unless the command already failed) and an `error` diagnostic
+`stdout written outside the framework: <n> bytes: "<first 4096 bytes>"`. A call
+to `process.exit` inside the handler is trapped the same way and ends the run
+through the framework with an `error` diagnostic.
 
 ## Flag Types
 
@@ -1242,7 +1312,7 @@ inside a choice's scope at any depth:
 |------|-------------|---------|
 | `--dry-run` | `ctx.dryRun` | Record effects instead of performing them, then print the would-do log |
 | `--approve-consequential` | `ctx.approveConsequential` | Answer the confirm prompt in advance |
-| `--quiet` | `ctx.quiet` | Suppress `ctx.info()` output; warnings and errors still print |
+| `--quiet` | `ctx.quiet` | Suppress `ctx.info()` output; `ctx.out()`, warnings, and errors still print |
 | `--verbose` | `ctx.verbose` | Enable `ctx.debug()` output |
 
 ```typescript
@@ -1467,6 +1537,28 @@ release.effect; // "mutating"
 release.consequential; // true
 await release.execute({}, { approveConsequential: true });
 ```
+
+## Linting the program for framework bypasses
+
+Every app answers `--lint-framework-use`, run from the package root (the
+directory holding `package.json`) as the only argument. It maps each `bin` entry
+back to its source through `tsconfig.json`'s `outDir` and `rootDir`, follows
+relative imports from there, skips test files, and reports each construct that
+bypasses the framework:
+
+```
+$ mytool --lint-framework-use
+src/cli.ts:22: process-exit: process.exit ends the process outside the framework's exit step; return from the handler, or end the command early with throw new ExitNow(code, message)
+src/report.ts:8: stdout-write: console.log writes to stdout outside the framework; write the command's answer with ctx.out, its machine output with ctx.payload, or a document with ctx.document() on a command that owns stdout
+```
+
+It exits 1 on any finding and 0, silently, on none, and there is no
+allow-list: fix the code. The refused constructs are `process.exit`,
+`process.abort`, assigning `process.exitCode`, every `console` member,
+`process.stdout`, `process.stderr`, `process.argv`, `process.argv0`,
+`process.execArgv`, `parseArgs` from `util`, and `process.env` -- including
+through `import process from "node:process"`, named imports, and
+`const { env } = process`.
 
 ## TypeScript Type Safety
 

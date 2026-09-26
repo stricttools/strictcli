@@ -1,6 +1,6 @@
 +++
 title = "Language Idioms"
-description = "Why strictcli's three declaration surfaces differ on purpose: presence, the choice flag, the constraint member, the update record, the retired choice, and what parity binds."
+description = "Why strictcli's three declaration surfaces differ on purpose: presence, the choice flag, the constraint member, the update record, the retired choice, the early exit, and what parity binds."
 nav_group = "Guides"
 nav_order = 5
 +++
@@ -622,6 +622,64 @@ delivers a closed set to a consumption site, so there is no `match`, no
 `Match`/`When`, and no `switch` with `assertNever` to write. The requirement is
 to state the answer, not to manufacture a construct that has nothing to be
 exhaustive over.
+
+## A sixth case: ending a command early
+
+The **early exit** ends a command from anywhere in its call stack through the
+framework's one exit step: the command exits with a declared code, the message
+is reported as an error, cleanup code runs, and a dry run still prints its
+would-do log. One semantic. Each language already has a way to unwind a stack
+with a value, and each surface is that way:
+
+**Python** -- a function annotated `NoReturn`, raising a private exception:
+
+```python
+strictcli.exit_now(2, f"no manifest at {path}")
+```
+
+**Go** -- a package-level function that panics with a private value the exit
+step recovers, because a Go handler returns an `Outcome` and a helper three
+calls down has no other way to reach it:
+
+```go
+strictcli.ExitNow(2, "no manifest at "+path)
+```
+
+**TypeScript** -- a class, thrown, because `throw` is how a TypeScript program
+leaves a stack with a value, and a type annotated as returning `never` would
+hide the throw from a reader:
+
+```ts
+throw new ExitNow(2, `no manifest at ${path}`);
+```
+
+Each surface bought something its siblings do not have:
+
+- **Python's value derives from `BaseException`**, so the common
+  `except Exception:` in handler code does not swallow it, as it does not
+  swallow `SystemExit`. A handler that catches `BaseException` owns the result.
+- **Go needs one more piece.** A panic is recovered only on the goroutine that
+  raised it, so Go alone gets `strictcli.Go(ctx, fn)`, which starts `fn` on a
+  goroutine whose `ExitNow` or panic is delivered to the command when the
+  handler returns. The lint refuses `ExitNow` inside a raw `go func() { ... }()`
+  literal. Python threads and TypeScript promises need no counterpart: an
+  awaited promise already carries a throw back to the handler.
+- **TypeScript's refusal happens in the constructor**, so an `ExitNow` with code
+  0 is a thrown error before it is ever a thrown `ExitNow`.
+
+The cancellation a signal triggers follows the same principle: Go closes
+`ctx.Done()`, the channel shape every Go library waits on; TypeScript aborts
+`ctx.signal`, an `AbortSignal` that `fetch` and the Node APIs accept directly;
+Python sets `ctx.canceled`, a property a synchronous handler checks between
+steps. The same goes for a command that owns stdout: `ctx.Document()` returns an
+`io.Writer`, Python's `ctx.document()` a binary writer with `write(bytes)`, and
+TypeScript's `ctx.document()` an object whose `write` takes a `Uint8Array` or a
+string -- each the byte sink its language's own libraries accept.
+
+**No exhaustiveness story is needed here either**, and it is stated rather than
+left out: none of these delivers a closed set to a handler. The lint's rule
+identifiers are a closed set, but a handler never consumes them; they are read
+by a person or a release tool from the lint's output.
 
 ## The same shape, elsewhere in the framework
 

@@ -43,7 +43,7 @@ import "github.com/stricttools/strictcli/go/strictcli"
 func main() {
     app := strictcli.NewApp("mytool", "0.1.0", "A tool that does useful things")
     app.Command("hello", "Print a greeting", func(ctx *strictcli.Context, kwargs map[string]interface{}) strictcli.Outcome {
-        ctx.Info("Hello, world!")
+        ctx.Out("Hello, world!")
         return strictcli.Exit(0)
     }, strictcli.WithEffect(strictcli.EffectReadOnly))
     app.Run()
@@ -107,9 +107,10 @@ returns a branded `Outcome` type that wraps the exit code:
 func(ctx *strictcli.Context, kwargs map[string]interface{}) strictcli.Outcome
 ```
 
-- `ctx` provides structured output (`ctx.Info`, `ctx.Warn`, `ctx.Error`, `ctx.Debug`), provenance (`ctx.Source`), the four reserved-quartet values (`ctx.DryRun()`, `ctx.ApproveConsequential()`, `ctx.Quiet()`, `ctx.Verbose()`), and the effects handle (`ctx.Effects()`).
+- `ctx` provides the command's output writer (`ctx.Out`), diagnostics (`ctx.Info`, `ctx.Warn` printed as `warning: <msg>`, `ctx.Error` printed as `error: <msg>`, `ctx.Debug`), value sources (`ctx.Source`), the four reserved-quartet values (`ctx.DryRun()`, `ctx.ApproveConsequential()`, `ctx.Quiet()`, `ctx.Verbose()`), and the effects handle (`ctx.Effects()`).
 - `kwargs` is a map of flag and arg values, keyed by parameter name (dashes converted to underscores: `--log-file` becomes `log_file`). The reserved quartet is never in `kwargs` -- it arrives on `ctx`.
 - Return `Exit(code)`. Structured output goes through `ctx.Payload(value)` on a command that declares `PayloadSchema(...)`, and is emitted under the framework-owned `--json`.
+- `ctx.Out(text)` prints the command's answer: stdout plus a newline in human mode, never hidden by `--quiet`, and appended to the `--json` document's `output` member under `--json`. `ctx.Info` is a diagnostic and `--quiet` hides it.
 
 Use the typed helpers `Get` and `GetOpt` to extract values from kwargs:
 
@@ -122,13 +123,86 @@ app.Command("greet", "Greet someone", func(ctx *strictcli.Context, kwargs map[st
     if provided && loud {
         msg = "HELLO, " + name + "!!!"
     }
-    ctx.Info(msg)
+    ctx.Out(msg)
     return strictcli.Exit(0)
 }, strictcli.WithEffect(strictcli.EffectReadOnly), strictcli.WithFlags(
     strictcli.StringFlag("name", "Who to greet", strictcli.Required()),
     strictcli.BoolFlag("loud", "Shout the greeting", strictcli.Optional()),
 ))
 ```
+
+### Ending a command early
+
+A handler ends the command by returning `Exit(code)`. To end it from a helper
+deep in the call stack, call `strictcli.ExitNow(code, message)`: it panics with a
+private value the framework recovers, deferred functions run, the message is
+printed as `error: <message>` (an `error` diagnostic under `--json`), a dry run
+still prints its would-do log, and the command exits with `code`. The code must
+be 1 to 255 and the message non-empty; anything else panics as a programming
+error.
+
+```go
+func loadManifest(path string) []byte {
+    data, err := os.ReadFile(path)
+    if err != nil {
+        strictcli.ExitNow(2, "no manifest at "+path)
+    }
+    return data
+}
+```
+
+`ExitNow` only works on the handler's own goroutine. To run work concurrently,
+start it with `strictcli.Go(ctx, fn)`: an `ExitNow` or panic inside `fn` cancels
+the handler's context (`ctx.Done()` closes), and when the handler returns the
+framework waits for every such function and ends the command with the first
+failure. `ExitNow` inside a `go func() { ... }()` literal is a lint finding.
+
+Through `app.Call(...)`, a command that ends early returns a
+`*strictcli.ExitError` carrying `Code` and `Message`.
+
+### Signals
+
+While a handler runs, SIGINT and SIGTERM close `ctx.Done()` and do nothing else,
+so the handler can stop cleanly. When it returns, the command exits with 128
+plus the signal number (130 for SIGINT, 143 for SIGTERM) and prints
+`error: canceled by signal SIGTERM`. A second signal ends the process
+immediately.
+
+### Declared payload rendering
+
+A command with a payload schema can declare how its payload reads to a person
+with `PayloadRenderer(fn)`. In human mode the framework prints `fn(payload)`
+after the handler returns, never hidden by `--quiet`; under `--json` it emits
+only the payload. `ctx.Out` is refused on such a command.
+
+```go
+app.Command("status", "Show status", func(ctx *strictcli.Context, kwargs map[string]interface{}) strictcli.Outcome {
+    ctx.Payload(map[string]interface{}{"healthy": true, "uptime": 3600})
+    return strictcli.Exit(0)
+}, strictcli.WithEffect(strictcli.EffectReadOnly),
+    strictcli.PayloadSchema(map[string]interface{}{"type": "object"}),
+    strictcli.PayloadRenderer(func(p interface{}) string {
+        m := p.(map[string]interface{})
+        return fmt.Sprintf("healthy=%v uptime=%vs", m["healthy"], m["uptime"])
+    }))
+```
+
+### Commands that own stdout
+
+A command whose stdout is the artifact declares `OwnsStdout()` and writes it
+through `ctx.Document()`, an `io.Writer` on the real stdout that `--quiet` and
+`--json` leave alone; under `--json` the `--json` document moves to stderr.
+`ctx.Document()` on any other command, and `ctx.Out` on this one, panic at the
+call.
+
+### Machine mode keeps stdout to one document
+
+Under `--json`, stdout carries only the `--json` document. The framework
+redirects the process stdout while the handler runs; anything written to it
+directly -- a stray `fmt.Println` -- fails the run with exit status 1 (unless
+the command already failed) and an `error` diagnostic
+`stdout written outside the framework: <n> bytes: "<first 4096 bytes>"`.
+
 
 `Get[T]` panics if the key is absent, nil, or the wrong type. `GetOpt[T]` returns
 `(zero, false)` when the value is nil, which is what an `Optional()` declaration
@@ -541,7 +615,7 @@ inside a choice's scope at any depth:
 |------|-------------|---------|
 | `--dry-run` | `ctx.DryRun()` | Record effects instead of performing them, then print the would-do log |
 | `--approve-consequential` | `ctx.ApproveConsequential()` | Answer the confirm prompt in advance |
-| `--quiet` | `ctx.Quiet()` | Suppress `ctx.Info` output; warnings and errors still print |
+| `--quiet` | `ctx.Quiet()` | Suppress `ctx.Info` output; `ctx.Out`, warnings, and errors still print |
 | `--verbose` | `ctx.Verbose()` | Enable `ctx.Debug` output |
 
 ```go
@@ -1287,7 +1361,7 @@ func TestGreet(t *testing.T) {
     app := strictcli.NewApp("mytool", "0.1.0", "test app")
     app.Command("greet", "Say hello", func(ctx *strictcli.Context, kwargs map[string]interface{}) strictcli.Outcome {
         name := strictcli.Get[string](kwargs, "name")
-        ctx.Info("Hello, " + name + "!")
+        ctx.Out("Hello, " + name + "!")
         return strictcli.Exit(0)
     }, strictcli.WithEffect(strictcli.EffectReadOnly), strictcli.WithFlags(
         strictcli.StringFlag("name", "Who to greet", strictcli.Required()),
@@ -1304,6 +1378,30 @@ func TestGreet(t *testing.T) {
 ```
 
 The `Result` struct contains `Stdout`, `Stderr`, `ExitCode`, and `Data` (the machine payload the handler supplied through `ctx.Payload`).
+
+## Linting the program for framework bypasses
+
+Every app answers `--lint-framework-use`, run from the module root (the
+directory holding `go.mod`) as the only argument, for example with
+`go run ./cmd/mytool --lint-framework-use`. It reads every `main` package of the
+module that imports strictcli and every package of the module those import,
+test files excluded, and reports each construct that bypasses the framework:
+
+```
+$ mytool --lint-framework-use
+cmd/mytool/main.go:41: process-exit: os.Exit ends the process outside the framework's exit step; return from the handler, or end the command early with strictcli.ExitNow(code, message)
+internal/report/print.go:12: stdout-write: fmt.Println writes to stdout outside the framework; write the command's answer with ctx.Out, its machine output with ctx.Payload, or a document with ctx.Document() on a command that owns stdout
+```
+
+It exits 1 on any finding and 0, silently, on none, and there is no allow-list:
+fix the code. Imports are resolved, so `import o "os"` does not hide `o.Exit`.
+The refused constructs are `os.Exit`, `syscall.Exit`, `log.Fatal*`,
+`fmt.Print*`, `os.Stdout`, `os.Stderr`, the builtins `print` and `println`,
+`log.Print*`, `log.Panic*`, `os.Args`, the `flag` package, `os.Getenv`,
+`os.LookupEnv`, `os.Environ`, `os.ExpandEnv`, `syscall.Getenv`,
+`syscall.Environ`, and `strictcli.ExitNow` inside a `go` statement's function
+literal. Read an environment variable by declaring it -- a flag's `Env(...)`
+binding, a handshake, a connection, or a location root -- never raw.
 
 ## Deprecated Commands
 

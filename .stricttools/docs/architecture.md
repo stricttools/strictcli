@@ -45,16 +45,19 @@ identical by the conformance test suite.
 ### Stage 1: reserved flag pre-scan
 
 Before any global flag or command parsing begins, a pre-scan examines argv for
-the 9 framework-reserved flags and removes the ones it consumes. The scan splits
-argv into 2 regions with 2 different rulesets: the pre-command region recognizes
-all 9, while the command region recognizes only 5 -- the 4 flags of the
-effects-regime quartet plus `--json`. Both regions stop at a bare `--`, and the
-command region also stops at a passthrough command's name.
+the framework-reserved flags and removes the ones it consumes. The scan splits
+argv into two regions with different rulesets: the pre-command region recognizes
+every reserved flag, while the command region recognizes only the effects-regime
+quartet plus `--json`. Both regions stop at a bare `--`, and the command region
+also stops at a passthrough command's name.
 
 **The pre-command region** -- everything before the first non-flag token or a
 `--` separator -- recognizes every reserved flag:
 
 - `--dump-schema`: triggers schema generation and exits immediately.
+- `--lint-framework-use`: scans the program's own source for constructs that
+  bypass the framework and exits (see [The framework-use lint](#the-framework-use-lint)).
+  It must be the only argument.
 - `--mcp`: starts the MCP JSON-RPC server on stdin/stdout.
 - `--hermetic`: enables hermetic mode (suppresses env vars and config file
   loading for the rest of the parse).
@@ -67,8 +70,9 @@ command region also stops at a passthrough command's name.
 
 The pre-scan does not consume these tokens from argv for `--hermetic`,
 `--config`, the quartet and `--json`; instead it records their presence and
-builds a "cleaned argv" with them stripped out. `--dump-schema` and `--mcp`
-cause an immediate return (no further parsing occurs).
+builds a "cleaned argv" with them stripped out. `--dump-schema`,
+`--lint-framework-use` and `--mcp` cause an immediate return (no further parsing
+occurs).
 
 The pre-scan also skips over known global flags (long, short, and negation
 forms) so a global-flag value that happens to look like a command name does not
@@ -77,8 +81,8 @@ end the region early.
 **The command region** -- from the command token onward -- recognizes the
 **quartet and `--json` only**, anywhere, exactly like `--help` / `-h`. `myapp deploy --dry-run`
 and `myapp --dry-run deploy` are equivalent; `myapp dns zone create --dry-run`
-works at any nesting depth. `--hermetic`, `--config`, `--dump-schema` and `--mcp`
-are *not* recognized here and become unknown-flag errors after the command token.
+works at any nesting depth. `--hermetic`, `--config`, `--dump-schema`,
+`--lint-framework-use` and `--mcp` are *not* recognized here and become unknown-flag errors after the command token.
 
 The command-region scan stops for good at two boundaries:
 
@@ -317,32 +321,87 @@ dispatch, and only on a command that declared a schema. The payload is printed
 only under the framework-owned `--json`; `Test()` / `test()` and `Call()` /
 `call()` capture it in either mode.
 
+#### Output writers
+
+The Context carries one writer for the command's answer and four for diagnostics:
+
+| Writer | Human mode | Under `--quiet` | Under `--json` |
+|--------|-----------|-----------------|----------------|
+| `ctx.out` / `ctx.Out` | stdout, text plus `\n` | shown | appended to the `output` member |
+| `ctx.debug` / `ctx.Debug` | stdout, only with `--verbose` | hidden | a `debug` diagnostic |
+| `ctx.info` / `ctx.Info` | stdout | hidden | an `info` diagnostic |
+| `ctx.warn` / `ctx.Warn` | stderr, as `warning: <message>` | shown | a `warn` diagnostic, unprefixed |
+| `ctx.error` / `ctx.Error` | stderr, as `error: <message>` | shown | an `error` diagnostic, unprefixed |
+
+`ctx.out` is refused at call time on a command that declares a payload renderer
+and on a command that owns stdout. A command with a payload schema may declare a
+renderer (`payload_renderer=` / `PayloadRenderer(fn)` / `payloadRenderer:`):
+in human mode the exit step prints the rendering of the supplied payload, never
+hidden by `--quiet`; under `--json` only the payload is emitted. A command that
+declares stdout ownership writes its document through `ctx.document()` /
+`ctx.Document()`, a byte writer to the real stdout in both modes, usable only on
+such a command.
+
+Under `--json`, a child started through `spawn`, or through `run` with `stream`
+true, does not write to stdout: the framework captures its stdout into the
+`output` member. On a command that owns stdout the child's stdout is part of
+the document and goes to the real stdout in both modes.
+
+#### Ending a command
+
+A handler ends a command by returning, or early, from anywhere in its call
+stack, through the same exit step: `strictcli.ExitNow(code, message)` (Go),
+`strictcli.exit_now(code, message)` (Python), `throw new ExitNow(code, message)`
+(TypeScript). The code is 1 to 255 -- a successful run returns -- and the
+message is non-empty; either refusal is a programming error at the call. The
+handler's deferred functions and `finally` blocks run, the message becomes an
+`error` diagnostic (`error: <message>` on stderr in human mode), the would-do
+log of a dry run renders as for a return, and the command exits with `code`.
+Through `call()` / `Call()` the caller receives an `ExitError` carrying the code
+and the message instead of a value. In Go, work started with a plain `go`
+statement cannot end the command this way; `strictcli.Go(ctx, fn)` starts `fn`
+on a goroutine whose `ExitNow` or panic is delivered to the command when the
+handler returns.
+
+On the CLI path, SIGINT and SIGTERM received while the handler runs cancel the
+handler's context (`ctx.Done()` in Go, `ctx.canceled` in Python, `ctx.signal`
+in TypeScript). When the handler returns, the command exits with 128 plus the
+signal number and an `error` diagnostic `canceled by signal <SIGNAL>`. A second
+signal gets the default action.
+
+Process exits from handler code (`os.Exit`, `sys.exit`, `os._exit`,
+`process.exit`) skip the exit step. They are refused statically by
+`--lint-framework-use`, and in machine mode Python's `os._exit` and TypeScript's
+`process.exit` are trapped while the handler runs and turned into a failed run
+through the exit step.
+
 ### Machine mode and the envelope
 
-Under `--json` the framework's stdout carries exactly one document: the envelope,
-serialized as JSON and terminated by a single `\n`. Its `interface_version` is
-the envelope contract's own version and is currently **2**.
+Under `--json` the framework's stdout carries one document, serialized as JSON
+and terminated by a single `\n`. Its `interface_version` is the document
+contract's own version: **3**.
 
 | Key | Type | Meaning |
 |-----|------|---------|
-| `interface_version` | integer | The envelope contract's own version -- `2`. |
+| `interface_version` | integer | The document contract's own version -- `3`. |
 | `app` / `app_version` | string | The app's declared name and version. |
 | `command` | string \| null | The dotted command path, `null` when the run ended before a command resolved. |
 | `exit_code` | integer | The process's exit status. |
 | `payload` | any \| null | The machine payload the handler supplied, validated against the declared schema. |
+| `output` | string \| null | The bytes `ctx.out` would have printed in human mode, plus the stdout of any child the framework captured, in arrival order. `null` when nothing was written. **Never absent.** |
 | `dry_run` | boolean | Whether the run was in dry mode. |
 | `writes` | object \| null | The write set of a command declaring an update; `null` on every command that declares none. **Never absent**, and populated in **both** modes. |
 | `preview` | array | The structured effects; `[]` when nothing was recorded. |
 | `preview_error` | object \| null | The terminal condition of a preview that did not finish. |
-| `diagnostics` | array | Every diagnostic the run emitted, in emission order. |
+| `diagnostics` | array | Every diagnostic the run emitted, in emission order, with unprefixed messages. |
 
 The `writes` member carries the resource, the write mode, and four arrays of
 **underscored parameter names** in declaration order that partition the declared
 property set exactly:
 
 ```json
-{"interface_version":2,"app":"mytool","app_version":"0.1.0","command":"update-record",
- "exit_code":0,"payload":null,"dry_run":true,
+{"interface_version":3,"app":"mytool","app_version":"0.1.0","command":"update-record",
+ "exit_code":0,"payload":null,"output":null,"dry_run":true,
  "writes":{"resource":"dns-record","write_mode":"sparse","written":["content"],
            "cleared":["ttl"],"resent":[],"untouched":["proxied"]},
  "preview":[],"preview_error":null,"diagnostics":[]}
@@ -356,6 +415,16 @@ See [update commands](flag-system.md#update-commands).
 **No timing fields.** No duration, no timestamps, no clock-derived counters: this
 is a document three implementations must produce identically and the conformance
 suite compares structurally.
+
+**The runtime guard.** While the handler runs under `--json`, the framework
+redirects the process stdout (at the file-descriptor level in Go and Python, by
+replacing `process.stdout.write` in TypeScript). Bytes that reach it outside the
+framework are discarded and fail the run: the exit status becomes 1 unless it is
+already nonzero, and an `error` diagnostic names them --
+`stdout written outside the framework: <n> bytes: "<the first 4096 bytes>"`, the
+excerpt as a JSON string. The declared routes to stdout in machine mode are the
+`payload` and `output` members, and `ctx.document()` on a command that owns
+stdout.
 
 ## Source provenance
 
@@ -1295,6 +1364,43 @@ A bool declaring `Default(true)` or `Default(false)` falls through to that value
 A bool declaring `optional` is a genuine three-valued flag: `--flag` is true,
 `--no-flag` is false, and absence is delivered as absence -- which is what
 retires the "use a string and treat the empty string as unset" idiom.
+
+## The framework-use lint
+
+`--lint-framework-use` is reserved in every strictcli app, with no opt-in. Run
+from the program's project root -- the directory holding its `go.mod`,
+`pyproject.toml` or `package.json` -- it reads the repository-owned source files
+linked into the program (test files and the repository's other programs
+excluded) and reports every construct that bypasses the framework, one per line
+on stdout:
+
+```
+<path>:<line>: <rule>: <message>
+```
+
+It exits 1 when there is a finding and 0, printing nothing, when there is none.
+The rules are `process-exit`, `stdout-write`, `stderr-write`, `argv-access`,
+`environment-read` and, in Go, `exit-now-in-goroutine`. Names are resolved
+through each file's imports, so an alias of `os` does not hide `os.Exit`. There
+is no allow-list, no skip flag, and no severity to lower: a finding is fixed in
+the code. Environment variables an app needs are declared through a flag's
+environment binding, a handshake, a connection, or a location root, and read
+through the framework, never read raw.
+
+| Rule | Go | Python | TypeScript |
+|------|----|--------|------------|
+| `process-exit` | `os.Exit`, `syscall.Exit`, `log.Fatal*` | `sys.exit`, `raise SystemExit`, `os._exit`, `exit()`, `quit()` | `process.exit`, `process.abort`, assigning `process.exitCode` |
+| `stdout-write` | `fmt.Print*`, `os.Stdout` | `print(...)` without `file=`, `sys.stdout`, `os.write(1, ...)` | `console.log` and every `console` member not listed for stderr, `process.stdout` |
+| `stderr-write` | `os.Stderr`, `print`, `println`, `log.Print*`, `log.Panic*` | `sys.stderr`, `os.write(2, ...)` | `console.error`, `console.warn`, `console.trace`, `console.assert`, `process.stderr` |
+| `argv-access` | `os.Args`, the `flag` package | `sys.argv`, `sys.orig_argv`, `argparse`, `optparse`, `getopt` | `process.argv`, `process.argv0`, `process.execArgv`, `parseArgs` |
+| `environment-read` | `os.Getenv`, `os.LookupEnv`, `os.Environ`, `os.ExpandEnv`, `syscall.Getenv`, `syscall.Environ` | `os.environ`, `os.environb`, `os.getenv`, `os.getenvb` | `process.env` |
+| `exit-now-in-goroutine` | `strictcli.ExitNow` inside a function literal started by `go` | -- | -- |
+
+What is scanned: in Go, every `main` package of the module that imports
+strictcli and every package of the module it imports; in Python, the top-level
+package behind each `[project.scripts]` entry that imports strictcli; in
+TypeScript, the modules reachable from the `bin` entries through relative
+imports. Only files git reports as belonging to the repository are read.
 
 ## Error handling philosophy
 

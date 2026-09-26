@@ -41,7 +41,7 @@ app = strictcli.App(name="mytool", version="0.1.0", help="A tool that does usefu
 
 @app.command("hello", help="Print a greeting", effect="read_only")
 def hello(ctx):
-    ctx.info("Hello, world!")
+    ctx.out("Hello, world!")
 
 app.run()
 ```
@@ -114,20 +114,22 @@ def greet(ctx, name, loud):
     msg = f"Hello, {name}!"
     if loud:
         msg = f"HELLO, {name}!!!"
-    ctx.info(msg)
+    ctx.out(msg)
 ```
 
-- `ctx` provides structured output (`ctx.info`, `ctx.warn`, `ctx.error`, `ctx.debug`), provenance (`ctx.source`), the four reserved-quartet values, and the effects handle (`ctx.effects`).
+- `ctx` provides the command's output writer (`ctx.out`), diagnostics (`ctx.info`, `ctx.warn`, `ctx.error`, `ctx.debug`), value sources (`ctx.source`), the four reserved-quartet values, and the effects handle (`ctx.effects`).
 - Return `int` for an exit code, `None` for exit 0, or `strictcli.outcome(exit_code)`. Any other return type is a hard error. Structured output goes through `ctx.payload(...)` instead (see below).
 
 ### Context Methods
 
 | Method | Stream | Purpose |
 |--------|--------|---------|
+| `ctx.out(msg)` | stdout | The command's answer (never suppressed; under `--json` it goes into the `output` member) |
 | `ctx.info(msg)` | stdout | Informational messages (suppressed under `--quiet`) |
-| `ctx.warn(msg)` | stderr | Warnings (never suppressed) |
-| `ctx.error(msg)` | stderr | Errors (never suppressed) |
+| `ctx.warn(msg)` | stderr | Warnings, printed as `warning: <msg>` (never suppressed) |
+| `ctx.error(msg)` | stderr | Errors, printed as `error: <msg>` (never suppressed) |
 | `ctx.debug(msg)` | stdout | Debug output (shown only under `--verbose`) |
+| `ctx.document()` | stdout | A binary writer for the document of a command declared `owns_stdout=True` |
 | `ctx.source(name)` | -- | Provenance of a flag value (`"cli"`, `"env"`, `"config"`, `"default"`, `"implied"`, `"infra"`) |
 | `ctx.provided(name)` | -- | Whether the *invocation* caused the value: `True` for `cli`/`env`/`config`/`implied`, `False` for `default`/`infra` |
 
@@ -142,6 +144,8 @@ handler kwargs -- the framework parses them and delivers them on `ctx`:
 | `ctx.approve_consequential` | `--approve-consequential` |
 | `ctx.quiet` | `--quiet` |
 | `ctx.verbose` | `--verbose` |
+| `ctx.json` | `--json` |
+| `ctx.canceled` | becomes `True` when SIGINT or SIGTERM arrives while the handler runs |
 
 `ctx.effects` is the recorded-effects handle. Under `--dry-run` its operations
 are recorded and rendered as a would-do log instead of being performed, which is
@@ -166,7 +170,62 @@ def status(ctx):
 
 ```
 $ mytool status --json
-{"healthy":true,"uptime":3600}
+{"interface_version":3,"app":"mytool","app_version":"0.1.0","command":"status","exit_code":0,"payload":{"healthy":true,"uptime":3600},"output":null,"dry_run":false,"writes":null,"preview":[],"preview_error":null,"diagnostics":[]}
+```
+
+A command with a payload schema can also say how its payload reads to a person,
+with `payload_renderer=`. In human mode the framework prints the rendering after
+the handler returns (never hidden by `--quiet`); under `--json` it emits only
+the payload. Such a command writes its human answer through the renderer, so
+`ctx.out` is refused on it:
+
+```python
+@app.command("status", help="Show status", effect="read_only",
+             payload_schema={"type": "object"},
+             payload_renderer=lambda p: f"healthy={p['healthy']} uptime={p['uptime']}s")
+def status(ctx):
+    ctx.payload({"healthy": True, "uptime": 3600})
+```
+
+```
+$ mytool status
+healthy=True uptime=3600s
+```
+
+### Ending a command early
+
+A handler ends the command by returning. To end it from deep inside a helper,
+call `strictcli.exit_now(code, message)`: the command exits with `code`, and the
+message is printed as `error: <message>` (under `--json` it is an `error`
+diagnostic). `finally` blocks run on the way out, and a dry run still prints its
+would-do log. The code must be 1 to 255 and the message non-empty; anything else
+raises `ValueError` at the call.
+
+```python
+def load_manifest(path):
+    if not os.path.exists(path):
+        strictcli.exit_now(2, f"no manifest at {path}")
+    ...
+```
+
+`exit_now` raises a private `BaseException` subclass, so an `except Exception`
+in the handler does not swallow it. Do not call `sys.exit`, `os._exit`, `print`,
+or read `sys.argv` or `os.environ` in the program's code: each bypasses the
+framework, and `mytool --lint-framework-use` reports every one of them (see
+[Error Handling](#error-handling)).
+
+### Commands that own stdout
+
+A command whose stdout **is** the artifact (a SQL dump, an SVG) declares
+`owns_stdout=True` and writes it through `ctx.document()`, a binary writer to
+the real stdout that `--quiet` and `--json` leave alone. Under `--json` the
+`--json` document moves to stderr. `ctx.document()` on any other command, and
+`ctx.out` on this one, are refused at the call.
+
+```python
+@app.command("dump", help="Dump the database", effect="read_only", owns_stdout=True)
+def dump(ctx):
+    ctx.document().write(b"CREATE TABLE t (id int);\n")
 ```
 
 ## Flags
@@ -671,7 +730,7 @@ inside a choice's scope at any depth:
 |------|-------------|---------|
 | `--dry-run` | `ctx.dry_run` | Record effects instead of performing them, then print the would-do log |
 | `--approve-consequential` | `ctx.approve_consequential` | Answer the confirm prompt in advance |
-| `--quiet` | `ctx.quiet` | Suppress `ctx.info` output; warnings and errors still print |
+| `--quiet` | `ctx.quiet` | Suppress `ctx.info` output; `ctx.out`, warnings, and errors still print |
 | `--verbose` | `ctx.verbose` | Enable `ctx.debug` output |
 
 ```python
@@ -1429,7 +1488,7 @@ def test_greet():
     @app.command("greet", help="Say hello", effect="read_only")
     @strictcli.flag("name", type=str, presence="required", help="Who to greet")
     def greet(ctx, name):
-        ctx.info(f"Hello, {name}!")
+        ctx.out(f"Hello, {name}!")
 
     r = app.test(["greet", "--name", "Alice"])
     assert r.exit_code == 0
@@ -1449,7 +1508,7 @@ programmatically without constructing argv strings:
 result = app.call("deploy", target="staging", region="us-west")
 ```
 
-The `command_path` is dot-separated for nested commands: `"dns.zone.create"`. Failures raise `InvokeError`.
+The `command_path` is dot-separated for nested commands: `"dns.zone.create"`. Failures raise `InvokeError`. A handler that ends through `strictcli.exit_now(...)` makes the call raise `strictcli.ExitError`, whose `code` and `message` attributes carry what it passed.
 
 ## Deprecated Commands
 
@@ -1507,6 +1566,42 @@ $ mytool deploy
 error: flag '--target' is required
 try 'mytool deploy --help'
 ```
+
+### Signals
+
+While a handler runs, SIGINT and SIGTERM set `ctx.canceled` and do nothing
+else, so a long handler can check it and stop cleanly. When the handler
+returns, the command exits with 128 plus the signal number (130 for SIGINT, 143
+for SIGTERM) and prints `error: canceled by signal SIGTERM`. A second signal
+ends the process immediately.
+
+### Machine mode keeps stdout to one document
+
+Under `--json`, stdout carries only the `--json` document. The framework
+redirects the process stdout while the handler runs, and anything written to it
+directly -- a stray `print` -- fails the run: exit status 1 (unless the command
+already failed) and an `error` diagnostic `stdout written outside the framework:
+<n> bytes: "<first 4096 bytes>"`. A call to `os._exit` inside the handler is
+trapped the same way. Write through `ctx.out`, `ctx.payload`, or `ctx.document()`.
+
+### Linting the program for framework bypasses
+
+Every app answers `--lint-framework-use`, run from the project root as the only
+argument. It reads the package behind the project's `[project.scripts]` entries
+(test files excluded) and reports each construct that bypasses the framework:
+
+```
+$ mytool --lint-framework-use
+mytool/cli.py:14: process-exit: sys.exit ends the process outside the framework's exit step; return from the handler, or end the command early with strictcli.exit_now(code, message)
+mytool/util.py:3: environment-read: os.environ reads the environment outside the declared mechanisms; declare a flag's environment binding, a handshake, a connection, or a location root
+```
+
+It exits 1 on any finding and 0, silently, on none. There is no allow-list and
+no way to skip a rule: fix the code. The refused constructs are `sys.exit`,
+`raise SystemExit`, `os._exit`, `exit()`, `quit()`, `print(...)` without
+`file=`, `sys.stdout`, `sys.stderr`, `os.write(1, ...)`, `os.write(2, ...)`,
+`sys.argv`, `sys.orig_argv`, `argparse`, `optparse`, `getopt`, `os.environ`,
+`os.environb`, `os.getenv`, and `os.getenvb`.
 
 ## Full Example
 

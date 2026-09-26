@@ -50,13 +50,14 @@ check, and any divergence in these areas blocks a release:
 - **Config subsystem.** `config show`, `config set`, `config path`, `config edit`, `config init` produce identical output and behavior.
 - **Check system.** Tag DSL evaluation, DAG-ordered execution, dependency pull-in, cascade skips, and result formatting all behave identically.
 - **Hermetic mode.** `--hermetic` suppresses env and config identically; mutual exclusion with `--config` and config subcommands produces identical errors.
-- **Machine mode.** The framework-owned `--json` is refused identically at every declaration level (command flag, app global, flag-set, and a choice's scope at any depth), is recognized in the same argv positions with the same two boundaries (a bare `--`, a passthrough command's name), and prints the same payload bytes -- plain UTF-8 with no HTML escaping, and structurally exempt from `--quiet`.
+- **Machine mode.** The framework-owned `--json` is refused identically at every declaration level (command flag, app global, flag-set, and a choice's scope at any depth), is recognized in the same argv positions with the same two boundaries (a bare `--`, a passthrough command's name), and prints the same payload bytes -- plain UTF-8 with no HTML escaping, and structurally exempt from `--quiet`. The document is `interface_version` 3 and carries the `output` member in every run; a stray direct write to stdout fails the run with the same diagnostic in all three.
+- **Exits and output.** The early exit (`ExitNow` / `exit_now` / `throw new ExitNow`) ends a command with the same stderr line, `--json` document, dry-run log, and exit code in all three; `ctx.out` prints the same bytes in every mode and is untouched by `--quiet`; a declared payload renderer and the owns-stdout document writer behave identically; `ctx.error` and `ctx.warn` print the same `error: ` and `warning: ` prefixes; and a SIGINT or SIGTERM during a handler ends the command with the same exit status and diagnostic.
 
 ## How testing works
 
 ### JSON test cases
 
-The core of the suite is 121 JSON files in `conformance/cases/`, containing 1437
+The core of the suite is the JSON files in `conformance/cases/`, holding the
 individual test cases organized by feature area (flags, config,
 checks, choice flags, groups, etc.). Each case is a self-contained JSON object specifying an app definition,
 argv input, optional environment variables, and expected output assertions
@@ -95,6 +96,22 @@ reach the framework's unwinding paths, such as the aborted-preview marker --
 unlike `handler_returns` kind `bad`, which Go's `Outcome` type makes
 unrepresentable. Only `true` is declarable, and it excludes `handler_returns`:
 an aborting handler has no return.
+
+#### Exits, output writers, and signals
+
+A family of command keys drives the framework's exit step and output writers
+from a case, in a fixed order after `handler_effects` and `handler_diagnostics`:
+`handler_signals_self` (the handler sends itself `SIGINT` or `SIGTERM` and waits
+for its context to be canceled), `handler_out` (one `ctx.out` call per string),
+`handler_document` (bytes written through `ctx.document()`), and
+`handler_raw_stdout` (bytes written to the process stdout directly, outside the
+framework, which is how a case reaches the runtime guard). The last step is one
+of `handler_exit_now` (`{code, message}`, made from a helper function in Go so
+the early exit starts below the handler's own frame), `handler_process_exit`
+(the language's own process exit, Python and TypeScript only), `handler_aborts`,
+`handler_returns`, or the `handler_prints` path. A command-level
+`payload_renderer: {"template": ...}` declares a payload renderer that replaces
+each `{key}` with the payload's top-level member of that name.
 
 #### The `$ANY` wildcard
 
