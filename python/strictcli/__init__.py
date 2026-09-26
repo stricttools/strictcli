@@ -12775,7 +12775,8 @@ class App:
         after every diagnostic the handler emitted, in the box's order.
         """
         aborted = ending == _ENDING_ABORTED
-        # A spawned child never waited on is drained here, no later (§19.11).
+        # Every spawned child was settled when the handler ended (§19.11's
+        # box); this joins any capture reader still finishing its last read.
         ctx._output.drain()
         closing: list[str] = []
         if early_exit is not None:
