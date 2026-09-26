@@ -334,7 +334,8 @@
     ],
     "expect": {
       "exit_code": 1,
-      "stderr_contains": "config set: unknown key 'nonexistent'"
+      "stdout_equals": "",
+      "stderr_equals": "error: config set: unknown key 'nonexistent'\n"
     }
   },
   {
@@ -373,7 +374,8 @@
     ],
     "expect": {
       "exit_code": 1,
-      "stderr_contains": "config set: key 'count'"
+      "stdout_equals": "",
+      "stderr_equals": "error: config set: key 'count': expected integer, got 'abc'\n"
     }
   },
   {
@@ -412,7 +414,8 @@
     ],
     "expect": {
       "exit_code": 1,
-      "stderr_contains": "config set: key 'debug'"
+      "stdout_equals": "",
+      "stderr_equals": "error: config set: key 'debug': expected boolean, got 'maybe'\n"
     }
   },
   {
@@ -659,6 +662,122 @@
     "expect": {
       "exit_code": 0,
       "stdout_equals": "port=5555"
+    }
+  },
+  {
+    "name": "config: config set unknown key under --json is an error diagnostic and stderr stays empty",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "config": true,
+      "config_format": "toml",
+      "config_content": "",
+      "commands": [
+        {
+          "name": "run",
+          "help": "run command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "count",
+              "help": "a count",
+              "presence": "default",
+              "type": "int",
+              "default": 0
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--json",
+      "config",
+      "set",
+      "nonexistent",
+      "--value",
+      "value"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "",
+      "stdout_equals": "{\"interface_version\":3,\"app\":\"myapp\",\"app_version\":\"1.0.0\",\"command\":\"config.set\",\"exit_code\":1,\"payload\":null,\"output\":null,\"dry_run\":false,\"writes\":null,\"preview\":[],\"preview_error\":null,\"diagnostics\":[{\"level\":\"error\",\"message\":\"config set: unknown key 'nonexistent'\"}]}\n"
+    }
+  },
+  {
+    "name": "config: config init refuses an existing file through the error writer",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "config": true,
+      "config_format": "toml",
+      "config_content": "",
+      "commands": [
+        {
+          "name": "run",
+          "help": "run command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "count",
+              "help": "a count",
+              "presence": "default",
+              "type": "int",
+              "default": 0
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "config",
+      "init"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_matches": "\\Aerror: config init: config file already exists: [^\\n]+\\.toml\\n\\Z"
+    }
+  },
+  {
+    "name": "config: config init's refusal under --json is an error diagnostic",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "config": true,
+      "config_format": "toml",
+      "config_content": "",
+      "commands": [
+        {
+          "name": "run",
+          "help": "run command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "count",
+              "help": "a count",
+              "presence": "default",
+              "type": "int",
+              "default": 0
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--json",
+      "config",
+      "init"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "",
+      "stdout_matches": "\"diagnostics\":\\[\\{\"level\":\"error\",\"message\":\"config init: config file already exists: [^\"]+\\.toml\"\\}\\]\\}\\n\\Z"
     }
   }
 ]

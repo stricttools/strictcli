@@ -414,7 +414,7 @@
               }
             }
           },
-          "description": "Programmatic calls to run via app.call()/App.Call() before the main app.run(). Each prints 'call ok: <command>' to stdout, or 'call error: <message>' to stderr when the call is refused. The argv-and-subprocess harness cannot otherwise reach the programmatic channel."
+          "description": "Programmatic calls to run via app.call()/App.Call() before the main app.run(). Each prints 'call ok: <command>' to stdout, 'call error: <message>' to stderr when the call is refused, or 'call exit error: <code>: <message>: payload=<json>' to stderr when the command ended through an early exit (<json> is the ExitError's payload in compact sorted-key JSON, null when none). The argv-and-subprocess harness cannot otherwise reach the programmatic channel."
         },
         "dump_tools": {
           "type": "boolean",
@@ -1196,6 +1196,10 @@
         "extract_from": {
           "type": "integer",
           "description": "1-based index of an earlier entry whose carrier the handler EXTRACTS from (bool-tests it), triggering the truncation path. Terminal: nothing after this entry runs."
+        },
+        "wait": {
+          "const": true,
+          "description": "On a spawn entry only: the generated handler waits on the returned handle (Wait() / wait(), default check) immediately after the spawn, before the next entry. Not an effect option; never passed to spawn."
         }
       }
     },

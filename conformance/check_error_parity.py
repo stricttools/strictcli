@@ -1603,11 +1603,13 @@ _PY_PARSE_TIME_MSG_FUNCS = frozenset({
     # carry it in their parse-time catalog sections, so it is parse-time here.
     "_msg_mutex_decline_clause",
     # The run outcomes of effects contract §12.17: error diagnostics the exit
-    # step appends (the runtime guard, the process-exit trap, a signal), which
-    # a conformance case reaches like any parse-time error.
+    # step appends (the runtime guard, the process-exit trap, a signal, a
+    # killed child), which a conformance case reaches like any parse-time
+    # error.
     "_msg_stdout_written_outside_framework",
     "_msg_process_exit_outside_framework",
     "_msg_canceled_by_signal",
+    "_msg_child_killed_at_exit",
 })
 _PY_TOP_LEVEL_DEF_PAT = re.compile(r"^(?:def |class |@)", re.MULTILINE)
 _PY_RETURN_PAT = re.compile(r"^    return\s", re.MULTILINE)
@@ -2027,7 +2029,13 @@ def check_contract_required(
 # ---------------------------------------------------------------------------
 
 def extract_test_stderr(cases_dir: Path) -> list[str]:
-    """Extract all stderr assertion strings from conformance test cases."""
+    """Extract all stderr assertion strings from conformance test cases.
+
+    A `stderr_matches` pattern counts too: it is how a case pins a message
+    carrying a value no case can predict (a process id), and its text holds
+    the message's literal parts around a pattern where the value goes, which
+    is what a signature's `*` stands for.
+    """
     assertions: list[str] = []
     for json_file in sorted(cases_dir.glob("*.json")):
         cases = json.loads(json_file.read_text())
@@ -2035,8 +2043,10 @@ def extract_test_stderr(cases_dir: Path) -> list[str]:
             expect = case.get("expect", {})
             if "stderr_equals" in expect:
                 assertions.append(expect["stderr_equals"])
-            if "stderr_contains" in expect:
-                val = expect["stderr_contains"]
+            for key in ("stderr_contains", "stderr_matches"):
+                if key not in expect:
+                    continue
+                val = expect[key]
                 if isinstance(val, str):
                     assertions.append(val)
                 elif isinstance(val, list):

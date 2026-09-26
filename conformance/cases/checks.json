@@ -883,5 +883,82 @@
         "\"scope\""
       ]
     }
+  },
+  {
+    "name": "checks: an unparsable tag expression is reported through the error writer",
+    "app": {
+      "name": "testapp",
+      "version": "1.0.0",
+      "help": "test",
+      "commands": [],
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ntags = [\"release\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.format]\ntags = [\"dev\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n",
+      "checks": [
+        {
+          "name": "lint",
+          "mint": "found",
+          "message": "lint errors found",
+          "problems": [
+            {
+              "severity": "error",
+              "text": "lint errors found"
+            }
+          ]
+        },
+        {
+          "name": "format",
+          "mint": "passed",
+          "message": "formatted"
+        }
+      ]
+    },
+    "argv": [
+      "check",
+      "--tag",
+      "(("
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: tag expression: unexpected end of expression at position 2\n"
+    }
+  },
+  {
+    "name": "checks: an unparsable tag expression under --json is an error diagnostic",
+    "app": {
+      "name": "testapp",
+      "version": "1.0.0",
+      "help": "test",
+      "commands": [],
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ntags = [\"release\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.format]\ntags = [\"dev\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n",
+      "checks": [
+        {
+          "name": "lint",
+          "mint": "found",
+          "message": "lint errors found",
+          "problems": [
+            {
+              "severity": "error",
+              "text": "lint errors found"
+            }
+          ]
+        },
+        {
+          "name": "format",
+          "mint": "passed",
+          "message": "formatted"
+        }
+      ]
+    },
+    "argv": [
+      "--json",
+      "check",
+      "--tag",
+      "(("
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "",
+      "stdout_equals": "{\"interface_version\":3,\"app\":\"testapp\",\"app_version\":\"1.0.0\",\"command\":\"check\",\"exit_code\":1,\"payload\":null,\"output\":null,\"dry_run\":false,\"writes\":null,\"preview\":[],\"preview_error\":null,\"diagnostics\":[{\"level\":\"error\",\"message\":\"tag expression: unexpected end of expression at position 2\"}]}\n"
+    }
   }
 ]

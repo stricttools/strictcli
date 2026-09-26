@@ -1658,5 +1658,88 @@
       "exit_code": 1,
       "stderr_contains": "error: unknown flag '--lint-framework-use'"
     }
+  },
+  {
+    "name": "early exit: call() raises ExitError carrying the payload supplied before the early exit",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "stop",
+          "help": "a command that ends early",
+          "effect": "read_only",
+          "handler_exit_now": {
+            "code": 3,
+            "message": "no manifest at ./m.toml"
+          },
+          "handler_payloads_recorded": true
+        },
+        {
+          "name": "noop",
+          "help": "does nothing",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "exit",
+            "code": 0
+          }
+        }
+      ],
+      "pre_call": [
+        {
+          "command": "stop"
+        }
+      ]
+    },
+    "argv": [
+      "noop"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "",
+      "stderr_equals": "call exit error: 3: no manifest at ./m.toml: payload=[]\n"
+    }
+  },
+  {
+    "name": "early exit: call() raises ExitError whose payload is null when none was supplied",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "stop",
+          "help": "a command that ends early",
+          "effect": "read_only",
+          "handler_exit_now": {
+            "code": 3,
+            "message": "no manifest at ./m.toml"
+          }
+        },
+        {
+          "name": "noop",
+          "help": "does nothing",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "exit",
+            "code": 0
+          }
+        }
+      ],
+      "pre_call": [
+        {
+          "command": "stop"
+        }
+      ]
+    },
+    "argv": [
+      "noop"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "",
+      "stderr_equals": "call exit error: 3: no manifest at ./m.toml: payload=null\n"
+    }
   }
 ]

@@ -31,6 +31,7 @@ import {
 	defineMutatingCommand,
 	defineReadOnlyCommand,
 	deprecated,
+	ExitError,
 	ExitNow,
 	errorCheckSpec,
 	flag,
@@ -799,6 +800,9 @@ function runHandlerEffects(ctx, entries) {
 					method === "run"
 						? ctx.effects.run(argv, opts)
 						: ctx.effects.spawn(argv, opts);
+				if (method === "spawn" && e.wait === true) {
+					carrier.wait();
+				}
 				break;
 			}
 			case "write":
@@ -1601,6 +1605,12 @@ async function main() {
 			});
 			process.stdout.write(`call ok: ${spec.command}\n`);
 		} catch (e) {
+			if (e instanceof ExitError) {
+				process.stderr.write(
+					`call exit error: ${e.code}: ${e.message}: payload=${stableJson(e.payload)}\n`,
+				);
+				continue;
+			}
 			const msg = e instanceof Error ? e.message : String(e);
 			process.stderr.write(`call error: ${msg}\n`);
 		}

@@ -903,6 +903,8 @@ def _emit_handler_effects(cmd_def: dict, indent: str) -> list[str]:
                 pos.append(f"{key}={e[key]!r}")
 
         lines.append(f"{indent}_eff[{i}] = ctx.effects.{method}({', '.join(pos)})")
+        if method == "spawn" and e.get("wait", False):
+            lines.append(f"{indent}_eff[{i}].wait()")
     return lines
 
 
@@ -1726,6 +1728,13 @@ def generate(app_def: dict) -> str:
         lines.append(f"        print('call ok: {cmd}')")
         lines.append("    except strictcli.InvokeError as _ce:")
         lines.append("        print(f'call error: {_ce}', file=sys.stderr)")
+        lines.append("    except strictcli.ExitError as _ee:")
+        lines.append("        import json as _cjson")
+        lines.append(
+            "        print(f'call exit error: {_ee.code}: {_ee}: payload='"
+            " + _cjson.dumps(_ee.payload, sort_keys=True,"
+            " separators=(',', ':'), ensure_ascii=False), file=sys.stderr)"
+        )
     if app_def.get("pre_call"):
         lines.append("")
 

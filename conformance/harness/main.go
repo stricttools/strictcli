@@ -346,7 +346,18 @@ func main() {
 				callOpts = append(callOpts, strictcli.WithApproveConsequential())
 			}
 			if _, err := app.Call(cmdPath, kwargs, callOpts...); err != nil {
-				fmt.Fprintf(os.Stderr, "call error: %s\n", err.Error())
+				var exitErr *strictcli.ExitError
+				if errors.As(err, &exitErr) {
+					var payload strings.Builder
+					enc := json.NewEncoder(&payload)
+					enc.SetEscapeHTML(false)
+					if merr := enc.Encode(exitErr.Payload); merr != nil {
+						panic(merr)
+					}
+					fmt.Fprintf(os.Stderr, "call exit error: %d: %s: payload=%s\n", exitErr.Code, exitErr.Error(), strings.TrimSuffix(payload.String(), "\n"))
+				} else {
+					fmt.Fprintf(os.Stderr, "call error: %s\n", err.Error())
+				}
 			} else {
 				fmt.Printf("call ok: %s\n", cmdPath)
 			}
@@ -1394,6 +1405,9 @@ func runHandlerEffects(ctx *strictcli.Context, entries []interface{}) {
 				carrier, err = ctx.Effects().Run(argv, opts...)
 			} else {
 				carrier, err = ctx.Effects().Spawn(argv, opts...)
+				if w, ok := e["wait"]; ok && w == true && err == nil {
+					_, err = carrier.(strictcli.Spawned).Wait()
+				}
 			}
 		case "write":
 			var path any = e["path"].(string)

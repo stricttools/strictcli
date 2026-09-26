@@ -35,7 +35,8 @@
     ],
     "expect": {
       "exit_code": 1,
-      "stderr_contains": "config set: key 'tags': duplicate value 'a'"
+      "stdout_equals": "",
+      "stderr_equals": "error: config set: key 'tags': duplicate value 'a'\n"
     }
   },
   {
@@ -109,7 +110,8 @@
     ],
     "expect": {
       "exit_code": 1,
-      "stderr_contains": "config set: --clear is only for repeatable flags"
+      "stdout_equals": "",
+      "stderr_equals": "error: config set: --clear is only for repeatable flags\n"
     }
   },
   {
@@ -146,7 +148,8 @@
     ],
     "expect": {
       "exit_code": 1,
-      "stderr_contains": "config set: key 'count' not in config"
+      "stdout_equals": "",
+      "stderr_equals": "error: config set: key 'count' not in config\n"
     }
   },
   {
