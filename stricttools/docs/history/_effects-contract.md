@@ -9807,8 +9807,9 @@ the rulings left them open.
      SIGKILL after 1 second, and an immediate kill where there is no SIGTERM; the template
      `errChildKilledAtExit` and its wording; the diagnostic's position after the process-exit trap
      and before the guard's failure, one per child in spawn order; the settling on every door
-     (`run()`, `test()`, `call()`, MCP), with `call()` reporting the status and not the
-     diagnostic; the settling on an unexpected unwind too, keeping the language's status.
+     (`run()`, `test()`, `call()`, MCP), with `call()` reporting the status where it reports one
+     and never the diagnostic; the settling on an unexpected unwind too, keeping the language's
+     status.
 
 351. **[%%] The exit step drains only children that have exited (§19.11's box).** Settling
      replaces waiting: an exited child is reaped and drained, a running one is killed first.
@@ -9852,8 +9853,8 @@ the rulings left them open.
 
 359. **[%%] TypeScript capture streams in arrival order (§19.11's box).** A review found the
      TypeScript drain delivering a spawned child's bytes only at its exit. Authored: the worker
-     forwards each chunk, and the main thread appends pending chunks on its event loop, before each
-     `ctx.out` append, at `wait`, and at the exit step.
+     forwards each chunk, and the main thread appends the chunks that have arrived before each
+     other append to `output`, at `wait`, and at the exit step.
 
 ---
 
@@ -10506,8 +10507,9 @@ child's stdout into the returned `Completed` as before, and none of it reaches `
 >
 > The same happens on every door that runs a handler: `run()`, `test()`, `call()`, and the MCP
 > server. On `call()` there is no stream to print to and no `--json` document, so the diagnostic is
-> not reported; the child is killed all the same, and the exit status the call reports is the one
-> above. A streamed `run` needs no settling: in all three languages it returns only after its
+> not reported; the child is killed all the same, and where the call reports an exit status (Go
+> and TypeScript when the command supplied no payload, Python when the handler returned an
+> integer) a `0` becomes `1`. A streamed `run` needs no settling: in all three languages it returns only after its
 > child has exited, so it cannot outlive the handler.
 >
 > **Signaling and killing.** `Spawned` gains two methods:
@@ -10535,11 +10537,11 @@ child's stdout into the returned `Completed` as before, and none of it reaches `
 > gets the default action.
 >
 > **Arrival order in TypeScript.** Node reads a spawned child's stdout on a worker thread. The
-> worker forwards each chunk as it arrives, and the main thread appends forwarded chunks to
-> `output` whenever its event loop runs, before every `ctx.out` append, at `wait`, and at the exit
-> step, so a child's bytes and the handler's own `ctx.out` text are in the order the framework
-> received them, as in the other two languages, rather than all of the child's bytes arriving at
-> its exit.
+> worker forwards each chunk as it arrives, and the main thread appends the chunks that have
+> arrived before every other append to `output` (a `ctx.out` call, a streamed `run`'s bytes), at
+> `wait`, and at the exit step, so a child's bytes and the handler's own `ctx.out` text are in the
+> order the framework received them, as in the other two languages, rather than all of the
+> child's bytes arriving at its exit.
 
 ### 19.12 The runtime guard
 
