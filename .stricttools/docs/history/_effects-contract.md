@@ -221,6 +221,21 @@ three code comments restated it verbatim -- and pins one probed reading: an env-
 property value beside a CLI `--unset-<prop>` resolves to the clear, by ordinary CLI-wins precedence,
 in all three.
 
+Amended 2026-09-26 with **framework-owned exits, output writers, and enforcement against bypasses**
+(§18.37). A survey of the consumers found the `--json` promise of one document, written by one exit
+step, bypassed on a large scale: process exits from inside handler code, direct stdout and stderr
+writes, argv edited outside the framework, and environment reads that `--help` never shows. The
+amendment closes the framework gaps that invited those bypasses and makes the bypasses themselves
+refusable. It adds an early exit that goes through the exit step (§19.9), a writer for a command's
+human-readable answer and a declared payload rendering (§19.10), a document writer for commands
+that own stdout (§19.6's box), the capture of a child's stdout in machine mode (§19.11), a runtime
+guard that fails a machine-mode run whose stdout was written outside the framework (§19.12),
+signal handling that ends a command through the exit step (§19.13), human-mode prefixes on the
+error and warning writers (§19.14), and a framework-reserved `--lint-framework-use` flag that
+refuses the bypass constructs statically in every program built on strictcli (§28). The `--json` document
+gains an `output` member and becomes `interface_version` 3 (§19.2's box). §3.5, §7.1, §7.4, §12,
+§14.4, §17, §19.1, §19.2 and §19.6 are amended in place, and §19.9-§19.14 and §28 are added.
+
 Placement note: this file uses the `.stricttools/docs/history/_*.md` convention established by
 `.stricttools/docs/history/_ts-port-spec.md`. The underscore prefix keeps it off the published docs site --
 selfdoc's `resolve_all_docs` walks `.stricttools/docs/` recursively and treats every non-underscore `.md`
@@ -988,6 +1003,42 @@ idiomatic way a Python handler reports failure.
 > choosing. A run that claimed but never rendered is re-rendered at this seam, so the guarantee
 > survives the claim intact: claiming moves the render, it can never remove it.
 
+> **Amendment (2026-09-26, framework-owned exits, §18.37 item 333): the deliberate exit gains a
+> framework spelling in all three languages, and the table gains its row.** Go had no way to end a
+> command from deep in its call stack through this seam: `Outcome` carries only a code, so a helper
+> three calls below the handler could end the run only by returning a sentinel through every frame
+> or by calling `os.Exit`, which skips the seam. The early exit (§19.9) is that way, and it is the
+> same in all three languages:
+>
+> | Impl | Spelling |
+> |------|----------|
+> | Python | `strictcli.exit_now(code, message)` |
+> | Go | `strictcli.ExitNow(code, message)` |
+> | TypeScript | `throw new ExitNow(code, message)` |
+>
+> The table above gains one row, read with the machine-mode box above as every other row is:
+>
+> | Path | stdout | stderr | Exit status |
+> |------|--------|--------|-------------|
+> | Early exit (§19.9) | the log | `error: <message>` | `code` |
+>
+> An early exit renders what an equivalent return renders, plus the one line that says why: the
+> message is the reason the handler gave, so it is printed with §19.14's `error: ` prefix, and in
+> machine mode it is the last `error` entry of the `--json` document's `diagnostics`. The preview is complete
+> by construction for the same reason as the deliberate-exit row: everything the handler recorded,
+> it recorded before it unwound. Deferred functions (Go), `finally` blocks (Python and TypeScript)
+> run as the unwind passes through them, before the seam renders.
+>
+> Python's `sys.exit(n)` row is unchanged at run time: it still raises a catchable `SystemExit` and
+> the seam still honors it. It is refused statically instead, by the framework-use lint (§28), in
+> every source file the lint scans, because `exit_now` is the spelling that carries a reason.
+>
+> **The one exit path outside this guarantee narrows.** Go's `os.Exit` stays outside it -- nothing
+> the framework can place runs after it -- and is refused by the lint. Python's `os._exit` and
+> TypeScript's `process.exit` are trapped during the handler in machine mode by the runtime guard
+> (§19.12), which turns them into a failed run through this seam; in human mode they remain outside
+> the guarantee and are refused by the lint. §17 records what is left.
+
 ---
 
 ## 4. Unsettled carriers
@@ -1283,6 +1334,16 @@ Positional arg names are unaffected (an arg has no `--` spelling).
 > exactly as the quartet does in both regions. Its Context accessor follows the quartet's shape:
 > `ctx.json` / `ctx.JSON()` / `ctx.json`.
 
+> **Amendment (2026-09-26, framework-owned exits, §18.37 item 345): `lint-framework-use` joins the
+> reserved set on the global-only tier, beside `dump-schema`.** The framework owns
+> `--lint-framework-use` (§28) in every app, with no opt-in. It is a whole-program action rather
+> than a per-command flag, so it takes the tier of the other whole-program flags (`dump-schema`,
+> `mcp`, `config`, `hermetic`): an app global of that name is refused at registration with the
+> existing global-name template (`global flag name "lint-framework-use" is reserved`), and the name
+> is refused as a global short name by the same list. It is recognized in the pre-command region
+> only (§7.2's table, with `--dump-schema`), and it must be the only argument (§28.1). It has no
+> short form and no Context accessor: no handler runs when it is given.
+
 #### `approve-consequential` replaced `yes` (amended 2026-08-04, §18.7)
 
 The skip flag was `--yes`. It is now `--approve-consequential`, and **its unwieldiness is the
@@ -1459,6 +1520,31 @@ Never suppressed by `--quiet`, at any level:
 > The table above is otherwise untouched. `--quiet` / `--verbose` govern the **human** stream and
 > nothing else; they never decide the content of an envelope, and a diagnostic hidden from the
 > terminal still appears in `diagnostics` with its level (§19.2).
+
+> **Amendment (2026-09-26, framework-owned exits, §18.37 items 337, 338 and 339): the command's
+> answer is not a diagnostic, and `--quiet` never hides it.** `ctx.info` is hidden by `--quiet`,
+> so no port had a writer for a command's main output, and consumers built their own -- mostly with
+> no machine-mode handling at all. The main-output writer (§19.10) is that writer, and a command
+> with a payload schema may instead declare a rendering of its payload (§19.10). The table gains a
+> column:
+>
+> | | `ctx.out` | `ctx.debug` | `ctx.info` | `ctx.warn` | `ctx.error` |
+> |---|---|---|---|---|---|
+> | default (neither flag) | shown | hidden | shown | shown | shown |
+> | `--verbose` | shown | shown | shown | shown | shown |
+> | `--quiet` | shown | hidden | hidden | shown | shown |
+> | `--quiet --verbose` | shown | hidden | hidden | shown | shown |
+>
+> The never-suppressed list gains these items: `ctx.out` (Go `ctx.Out`), a declared payload
+> rendering (§19.10), and the early exit's message (§19.9). Bytes written through `ctx.document()`
+> (§19.6's box) are untouched by `--quiet` as well, which is §19.6's own rule rather than an item of
+> this list: the document is the artifact, not output about it.
+>
+> Human-mode rendering of the never-suppressed diagnostic writers changes: `ctx.error` prints
+> `error: <message>` and `ctx.warn` prints `warning: <message>` (§19.14). `ctx.debug` and
+> `ctx.info` print their message unprefixed, as before. Nothing in this box changes machine mode:
+> there `ctx.out` text goes into the `--json` document's `output` member (§19.2's box, §19.10) whatever
+> `--quiet` says, and the diagnostics keep their unprefixed messages.
 
 ### 7.5 Check-command subsumption
 
@@ -3771,6 +3857,106 @@ implementation sweep, §18.34 item 327 -- see the box below)*
 > against by hand: its reachable *inputs* differ per language (the third note above), while its bytes
 > do not, so it stays cross-language.
 
+### 12.17 Framework-owned exits, output writers, and the framework-use lint
+
+*(Added 2026-09-26, §18.37.)* Every template below is added identically to the three catalogs. Each
+group states its own category, per the rule in §12's preamble. Where a lint sentence names a
+language's own spelling (a manifest file name, a Context method, the early-exit call), the spelling is an
+**interpolated parameter** of the template rather than literal text, so the extractor sees one
+signature in all three catalogs and no `excluded:` entry is needed; the spelling rows are at the end
+of this section. Go declares a parameterless template as a `const`, per §12's Go declaration form.
+
+**Call-time refusals** (registration-time category, on §12.4's precedent: they fire when a handler
+calls something, not at parse time). Go panics, Python raises `ValueError`, TypeScript throws.
+
+| Go / TypeScript | Python | Text |
+|-----------------|--------|------|
+| `errExitNowCode(code)` | `_msg_exit_now_code(code)` | `early exit requires an exit code between 1 and 255, got <code>: a successful run ends with a return from the handler` |
+| `errExitNowMessageEmpty` | `_msg_exit_now_message_empty()` | `early exit requires a non-empty message` |
+| `errOutWithRenderer(name)` | `_msg_out_with_renderer(name)` | `command "<name>": ctx.out is refused on a command that declares a payload renderer: the rendering is its human output` |
+| `errOutOnOwnsStdout(name)` | `_msg_out_on_owns_stdout(name)` | `command "<name>": ctx.out is refused on a command that owns stdout: write the document through ctx.document` |
+| `errDocumentWithoutOwnsStdout(name)` | `_msg_document_without_owns_stdout(name)` | `command "<name>": ctx.document requires the owns-stdout declaration` |
+
+`<name>` is the command's name quoted as §19.4's payload templates quote it (Go `%q`),
+and `ctx.out` / `ctx.document` are literal in all three catalogs, on the same templates' precedent
+(`ctx.payload` is literal in Go's catalog too): the sentence is byte-identical across languages, so
+a conformance case asserts it once.
+The early-exit refusals fire at the call, before anything unwinds -- in TypeScript, in the
+`ExitNow` constructor -- so a refused early exit is a programming error that unwinds as any other
+error does (§3.5's last row), never an early exit with a substituted code.
+
+**Registration-time refusals**, raised from the command-registration path:
+
+| Go / TypeScript | Python | Text |
+|-----------------|--------|------|
+| `errRendererWithoutPayloadSchema(name)` | inline `ValueError` | `command "<name>": a payload renderer requires a declared payload schema` |
+| `errRendererOnOwnsStdout(name)` | inline `ValueError` | `command "<name>": a payload renderer cannot be declared on a command that owns stdout` |
+
+**Run outcomes** (parse-time category, on §12.5's precedent: they are what a run reports about
+itself, and each is reachable from a conformance case). None of them is raised: each is the message
+of an `error` diagnostic the exit step appends (§19.2), printed with §19.14's `error: ` prefix in
+human mode. Python spells them as `_msg_*` functions and lists them in the extractor's parse-time
+set.
+
+| Go / TypeScript | Python | Text |
+|-----------------|--------|------|
+| `errStdoutWrittenOutsideFramework(n, excerpt)` | `_msg_stdout_written_outside_framework(n, excerpt)` | `stdout written outside the framework: <n> bytes: <excerpt>` |
+| `errProcessExitOutsideFramework(code)` | `_msg_process_exit_outside_framework(code)` | `process exit called outside the framework with code <code>` |
+| `errCancelledBySignal(signal)` | `_msg_cancelled_by_signal(signal)` | `cancelled by signal <signal>` |
+
+`<excerpt>` is a JSON string literal, quotes included (§19.12 pins its bytes); `<signal>` is the
+signal's conventional name, `SIGINT` or `SIGTERM` (§19.13). `errProcessExitOutsideFramework` exists
+in Python and TypeScript only: Go cannot trap `os.Exit` (§17), so the Go catalog carries no template
+for it and `check_error_parity.py` records a Go `excluded:` entry with that rationale.
+
+**The early exit over the programmatic doors** (registration-time category, §12.4's precedent):
+
+| Go / TypeScript | Python | Text |
+|-----------------|--------|------|
+| `errEarlyExitToolResult(code, message)` | `_msg_early_exit_tool_result(code, message)` | `exit code <code>: <message>` |
+
+It is the `isError` tool-result text an MCP `tools/call` answers with when the command ended
+through an early exit (§19.9). `ExitError`'s own string form is the handler's message alone.
+
+**The framework-use lint** (§28). The argument refusal is parse-time and is printed as every parse
+error is (`error: ` prefix, exit 1); the scan refusals are printed the same way and take the
+registration-time category, because a conformance case cannot reach a program's source tree; the
+finding messages are the text after `<rule>: ` on a finding line (§28.1) and take the
+registration-time category for the same reason.
+
+| Go / TypeScript | Python | Text |
+|-----------------|--------|------|
+| `errLintFrameworkUseArgs` | `_ParseError` inline | `--lint-framework-use takes no other arguments` |
+| `errLintFrameworkUseNotWorkTree(path)` | `_msg_lint_framework_use_not_work_tree(path)` | `--lint-framework-use: project root '<path>' is not a git work tree; the scan reads only repository-owned files` |
+| `errLintFrameworkUseNoManifest(manifest, path)` | `_msg_lint_framework_use_no_manifest(manifest, path)` | `--lint-framework-use: no <manifest> in the working directory '<path>'; run the program from its project root` |
+| `errLintFrameworkUseManifestMismatch(manifest, path)` | `_msg_lint_framework_use_manifest_mismatch(manifest, path)` | `--lint-framework-use: the <manifest> in '<path>' does not declare this program` |
+| `errLintFrameworkUseBinUnresolved(name)` | -- | `--lint-framework-use: bin entry '<name>' resolves to no repository-owned source file` |
+| `errLintProcessExit(construct, early)` | `_msg_lint_process_exit(construct, early)` | `<construct> ends the process outside the framework's exit step; return from the handler, or end the command early with <early>` |
+| `errLintStdoutWrite(construct, out, payload, document)` | `_msg_lint_stdout_write(construct, out, payload, document)` | `<construct> writes to stdout outside the framework; write the command's answer with <out>, its machine output with <payload>, or a document with <document> on a command that owns stdout` |
+| `errLintStderrWrite(construct, warn, error)` | `_msg_lint_stderr_write(construct, warn, error)` | `<construct> writes to stderr outside the framework; report through <warn> or <error>` |
+| `errLintArgvAccess(construct)` | `_msg_lint_argv_access(construct)` | `<construct> reads or edits the command line outside the framework; declare a flag or an argument` |
+| `errLintEnvironmentRead(construct)` | `_msg_lint_environment_read(construct)` | `<construct> reads the environment outside the declared mechanisms; declare a flag's environment binding, a handshake, a connection, or a location root` |
+| `errLintExitNowInGoroutine` | -- | `strictcli.ExitNow inside a function literal started by a go statement is not recovered by the exit step; start the function with strictcli.Go` |
+
+`errLintFrameworkUseBinUnresolved` is TypeScript-only (only a TypeScript `bin` entry names a built
+file that must be mapped back to source, §28.2) and `errLintExitNowInGoroutine` is Go-only (only Go
+has goroutines); each takes `excluded:` entries in the other two catalogs. `<construct>` is the
+refused construct in its canonical spelling as §28.3 lists it -- `os.Exit` even when the file
+imports `os` under another name -- so a finding names the construct a reader can look up, not the
+local alias.
+
+The spelling rows:
+
+| Placeholder | Python | Go | TypeScript |
+|-------------|--------|----|------------|
+| `<out>` | `ctx.out` | `ctx.Out` | `ctx.out` |
+| `<document>` | `ctx.document()` | `ctx.Document()` | `ctx.document()` |
+| `<payload>` | `ctx.payload` | `ctx.Payload` | `ctx.payload` |
+| `<warn>` | `ctx.warn` | `ctx.Warn` | `ctx.warn` |
+| `<error>` | `ctx.error` | `ctx.Error` | `ctx.error` |
+| `<early>` | `strictcli.exit_now(code, message)` | `strictcli.ExitNow(code, message)` | `throw new ExitNow(code, message)` |
+| `<manifest>` | `pyproject.toml` | `go.mod` | `package.json` |
+
 ---
 
 ## 13. Schema fields
@@ -4473,6 +4659,30 @@ because no other method accepts it, declaring it on a non-`run` entry is how a c
 `Stream(true)` is an ordinary `EffectOption` value that every method accepts syntactically and
 that only `run` accepts at the call, which is exactly the shape the error covers.
 
+> **Amendment (2026-09-26, framework-owned exits, §18.37 item 348): the handler vocabulary gains
+> the keys that reach §19.6's box and §19.9-§19.13.** Each is described in full in
+> `conformance/schema.json`, which is the authority for its shape; this box pins the order in
+> which a generated handler performs them, because order is what the cases assert.
+>
+> | Key | What the generated handler does |
+> |-----|---------------------------------|
+> | `handler_signals_self` | sends the named signal (`SIGINT` or `SIGTERM`) to its own process, waits until its Context reports cancellation (§19.13), then continues |
+> | `handler_out` | calls `ctx.out` once per string, in order |
+> | `handler_document` | writes the string's UTF-8 bytes through `ctx.document()` |
+> | `handler_raw_stdout` | writes the string's UTF-8 bytes to the process stdout directly, outside the framework (Python `sys.stdout.write` then `flush`, Go `os.Stdout.WriteString`, TypeScript `process.stdout.write`) |
+> | `handler_process_exit` | calls the language's own process exit with the integer code (Python `os._exit`, TypeScript `process.exit`); inexpressible as a trap in Go, so a case using it declares `targets: ["python", "typescript"]` |
+> | `handler_exit_now` | ends the command early with `{code, message}` (§19.9); in Go the call is made from a helper function the handler calls, so the case exercises an early exit below the handler's own frame |
+>
+> A command-level `payload_renderer: {"template": ...}` declares §19.10's rendering: each harness
+> builds a renderer that replaces every `{key}` in the template with the payload's top-level member
+> of that name -- a string verbatim, an integer in decimal -- which is the only payload shape the
+> cases give it.
+>
+> Order: `handler_effects`, the claim keys, `handler_diagnostics`, `handler_signals_self`,
+> `handler_out`, `handler_document`, `handler_raw_stdout`, then the terminal step, which is
+> one of `handler_process_exit`, `handler_exit_now`, `handler_aborts`, `handler_returns`, or the
+> `handler_prints` path.
+
 ### 14.5 Fixture app and parity checks
 
 - `RICH_APP` lives in **`conformance/check_schema_parity.py`** (not `check_api_surface.py`): it is
@@ -4685,6 +4895,48 @@ Recorded so implementors do not re-litigate them:
 - **Go/TS**: guard v2 has no enforcement surface (§10.3).
 - **The go-scope-adapter** stays parked; this contract does not touch it.
 
+> **Amendment (2026-09-26, framework-owned exits, §18.37 items 333, 335, 342, 343, 344 and 346):
+> the process-exit ceiling is refused statically, trapped where the language allows, and joined by
+> the early exit's own limits.** The `Go/TS` process-exit bullet above stays true as a statement
+> about what the runtime can see, and it stops being the end of the story:
+>
+> - **Refused statically, in every language.** Go `os.Exit`, `syscall.Exit` and `log.Fatal*`,
+>   Python `sys.exit`, `raise SystemExit`, `os._exit`, `exit()` and `quit()`, and TypeScript
+>   `process.exit`, `process.abort` and assignment to `process.exitCode` are findings of the
+>   framework-use lint (§28.3) in every source file it scans, and a finding blocks the consumer's
+>   release (§28.4). The idiomatic spellings of "end the run with status n" are a handler return
+>   and the early exit (§19.9).
+> - **Trapped at run time where the language allows.** Python's `os._exit` and TypeScript's
+>   `process.exit` are replaced during the handler in machine mode by the runtime guard (§19.12),
+>   so a call to either ends the run through the exit step with an error diagnostic instead of
+>   tearing the process down. Go cannot trap `os.Exit`: it is a direct system call with no hook, so
+>   in Go the lint is the only line of defence, and a Go `os.Exit` that escapes it still renders
+>   nothing.
+> - **Outside machine mode nothing is trapped.** The trap belongs to the runtime guard, which is a
+>   machine-mode mechanism (§19.12); in human mode `os._exit` and `process.exit` still terminate the
+>   process and render no would-do log. The lint refuses them in both modes' source alike.
+> - **The early exit outside `strictcli.Go` (Go).** `ExitNow` is a panic the exit step recovers.
+>   A goroutine the handler started with a plain `go` statement has no frame the exit step can
+>   recover in, so an `ExitNow` there crashes the process as any unrecovered goroutine panic does.
+>   `strictcli.Go` (§19.9) is the supported way to run code concurrently inside a handler; the lint
+>   refuses `ExitNow` lexically inside a function literal started by a `go` statement (§28.3), and
+>   cannot see an `ExitNow` reached through a named function started by one -- the same call-graph
+>   limit as §11.1's.
+> - **An early exit a handler swallows.** Go `recover()`, Python `except BaseException`, and a
+>   TypeScript `catch` that does not rethrow all catch the early exit's unwind, as they
+>   catch every other one. The framework cannot distinguish a deliberate swallow from a mistake, and
+>   the Python spelling raises a private `BaseException` subclass so that the common
+>   `except Exception` does not reach it. What a handler catches, it owns.
+> - **TypeScript signal delivery.** Node delivers a signal on the event loop, so a synchronous
+>   handler (or a synchronous stretch of an async one) sees `ctx.signal` abort only when it next
+>   yields; the exit status and diagnostic of §19.13 are unaffected, because they are decided when
+>   the handler returns.
+> - **The lint's precision is the effects-bypass check's.** Names are resolved through each file's
+>   imports (§28.3), not through scopes: a local variable that shadows an imported `os` is still
+>   read as `os`, and a construct reached through reflection, `getattr`, or computed member access
+>   is not seen. A false positive is a one-line change in the consumer's code; there is no
+>   allow-list (§28.4).
+
 ---
 
 ## 18. Decision provenance
@@ -4692,7 +4944,9 @@ Recorded so implementors do not re-litigate them:
 This section is **exhaustive**: every decision in §§1-17 -- and, since the machine-interface round,
 every section numbered after this one (~~§§19-25~~ *(corrected 2026-08-16, update-command round,
 §18.33: the constraint round added §26 and this round adds §27, and neither updated the range)*
-**§§19-27**), which sit there because sections here are never
+~~§§19-27~~ *(corrected 2026-09-26, §18.37: §28 was added, and the range is replaced by the property
+it stood for so that the next section cannot falsify it)* **every section numbered after §18**),
+which sit there because sections here are never
 renumbered -- that
 is not verbatim plan text is listed below, in one of three classes. If a statement in this document is not derivable from the ratified
 pin list in the campaign ledger, it appears here.
@@ -9344,6 +9598,151 @@ TypeScript bullets), §12.13 (two template rows and one spelling row).
      requires the three to agree, and the corpus now has the case at both the member-token and the
      ordinary-scoped-flag depth.
 
+
+### 18.37 Framework-owned exits, output writers, and enforcement against bypasses (2026-09-26)
+
+Items numbered on from §18.36. This section adds §19.9-§19.14, §12.17 and §28, and amends
+§3.5, §7.1, §7.4, §14.4, §17, §18's own range sentence, §19.1, §19.2 and §19.6 in place. It is
+written **before** any implementation, in the discipline §18.14 describes: the rulings are upstream,
+and the remainder is authored here so that the three implementations have nothing left to decide.
+
+**The evidence.** A survey of the consumers found the machine-mode promise -- one document on
+stdout, written by one exit step on every way out of a command, with every Context message recorded
+in its `diagnostics` -- bypassed on a large scale: process exits from inside handler code (a Go
+`os.Exit` behind a `die()` helper, TypeScript `process.exit`), direct stdout writes beside the
+document, direct stderr writes that never reach `diagnostics`, argv edited or parsed outside the
+framework, and raw environment reads that `--help` and the schema never show. The framework's own
+gaps invited them: Go had no way to end a command from deep in its call stack through the exit
+step; no port had a writer for a command's main output that `--quiet` leaves alone; an owns-stdout
+command had no framework writer for its document; `spawn` and `run(stream=True)` connected a child's
+stdout to the process stdout in machine mode, a leak inside the framework itself; and the
+`effects-bypass` check was opt-in, local in its reach, and never run by the release tool.
+
+**Origin tags**, per §18.14's preamble. Every ruled item was the owner's pick of the **recommended
+option** of its question, so every ruled item is `[%%]`: freely reversible, and never to be cited
+back as a deliberate directive. Untagged items are authored spellings and readings in the §18.3
+class, picked here because the rulings left them open; they are the most provisional text in this
+section.
+
+333. **[%%] The early exit (§19.9, §3.5).** A package-level `strictcli.ExitNow(code, message)` in Go
+     panics with a private typed value that the exit step recovers, on the path the dry-run
+     truncation signal already takes; the command ends with `code`, the message is recorded as an
+     error diagnostic, and deferred functions run. Python gains `strictcli.exit_now(code, message)`
+     and TypeScript `throw new ExitNow(code, message)`. Code 0 is refused at call time as a
+     programming error. Authored beside the ruling: Python's value is a private `BaseException`
+     subclass, so `except Exception` does not swallow it; the exit step recognizes it for command
+     and passthrough handlers only; a payload supplied before it is kept.
+
+334. **Early-exit argument bounds (§19.9, §12.17).** Authored: the refusal covers every code outside
+     1..255, not only 0, because a process status is one byte; an empty message is refused too,
+     because the message is the only reason an early exit carries. Both are additions to the
+     ruling, which named only code 0.
+
+335. **[%%] The goroutine helper (§19.9, §17, §28.3).** Go gains `strictcli.Go(ctx, func())`, which
+     runs a function on a new goroutine and delivers an `ExitNow` or panic raised there to the
+     handler; `ExitNow` inside a raw `go` func literal is a lint finding. Authored: the delivery
+     mechanism -- capture, cancel the handler's context, wait at the exit step for every such
+     function, then act on the first captured value unless the handler's own ending already stands.
+
+336. **[%%] The in-process door (§19.9).** A command invoked through `call()` / `Call()` that ends
+     through an early exit gives the caller a typed error carrying the code and the message: Go
+     `*ExitError{Code, Message}`, Python raises `strictcli.ExitError`, TypeScript rejects with
+     `ExitError`. Authored: `ExitError` is not an `InvokeError`; its string form is the message
+     alone; over MCP the `isError` text is `exit code <code>: <message>`.
+
+337. **[%%] Human-mode prefixes (§19.14, §7.4, §19.2).** `ctx.error` and the early exit print
+     `error: <message>`; `ctx.warn` prints `warning: <message>`. Under `--json` the levels carry the
+     meaning and the text is stored unprefixed. Authored: the prefix is added unconditionally and
+     once per message, never per line, and the run-outcome diagnostics of §19.12 and §19.13 print
+     with the `error: ` prefix as well.
+
+338. **[%%] The main-output writer (§19.10, §7.4, §19.2).** `ctx.out` writes a command's
+     human-readable answer and is not hidden by `--quiet`. Under `--json` its text goes into a new
+     top-level member `output` of the `--json` document, `null` when nothing was written, and
+     `interface_version` becomes `3`. Authored: `ctx.out` appends one `\n` as `ctx.info` does, and
+     `output` holds the bytes human mode would have written; the member sits after `payload`;
+     it is never absent.
+
+339. **[%%] Declared payload rendering (§19.10).** A command with a payload schema may declare a
+     renderer; human mode prints the rendering, not hidden by `--quiet`, and machine mode emits only
+     the payload. `ctx.out` is refused at call time on such a command. Authored: the spellings
+     `payload_renderer=` / `PayloadRenderer(fn)` / `payloadRenderer:`, following the payload
+     schema's own three spellings; a renderer without a payload schema, and a renderer on an
+     owns-stdout command, are registration errors; the rendering is written by the exit step after
+     the handler's output and before the would-do log, on a return or an early exit, with no
+     validation first; `--dump-schema` does not publish it.
+
+340. **[%%] The document writer (§19.6's box).** `ctx.document()` returns a byte writer to the real
+     stdout, usable only on commands that declared `OwnsStdout` (a hard error otherwise), untouched
+     by `--quiet` and `--json`. `ctx.out` is refused on such commands. Authored: the three return
+     types, synchronous writes, and the rule that a child's stdout on an owns-stdout command is part
+     of the document in both modes, which keeps §19.11's capture from swallowing a document a child
+     produces.
+
+341. **[%%] A child's stdout (§19.11).** Under `--json`, the stdout of a child run through `spawn`
+     or `run` with `stream` true is captured into the `output` member; human mode streams as before.
+     Authored: arrival order, the draining points, the child's stderr left inherited, and the
+     WHATWG replacement rule for decoding child bytes (§19.2's box).
+
+342. **[%%] Signals (§19.13).** strictcli catches SIGINT and SIGTERM during the handler and cancels
+     the handler's context; when the handler returns, the command exits 128 + the signal number with
+     an error diagnostic naming the signal; a second signal gets the default action. Authored: the
+     diagnostic text `cancelled by signal <SIGNAL>`; the cancellation spellings Python
+     `ctx.cancelled`, Go `ctx.Done()`, TypeScript `ctx.signal`; the signal status replacing any
+     status the handler chose, an early exit's included; the CLI path as the only one that installs
+     handlers.
+
+343. **[%%] The runtime guard (§19.12, §19.1).** In machine mode the framework redirects the process
+     stdout while the handler runs -- at the file-descriptor level in Go and Python, by patching
+     `process.stdout.write` in TypeScript. Bytes not written through the framework fail the run:
+     exit 1 unless the status is already nonzero, and an error diagnostic
+     `stdout written outside the framework: <n> bytes: "<first 4 KB>"`. Authored: 4 KB is 4096 bytes;
+     the excerpt is a JSON string literal under §19.5's escaping, decoded by the WHATWG rule; the
+     guard covers `test()` as well as `run()`, and owns-stdout commands, whose routes to stdout
+     are the document writer and a child's streamed stdout; it does not cover `call()` or the MCP loop.
+
+344. **[%%] The process-exit trap (§19.12, §17).** Python and TypeScript also trap `os._exit` and
+     `process.exit` during the handler. Authored: the trap is part of the machine-mode guard and is
+     not installed in human mode; a trapped call ends the command with the requested code, or `1`
+     for `0`, plus the diagnostic `process exit called outside the framework with code <code>`.
+
+345. **[%%] The reserved flag (§28.1, §7.1).** The lint runs through a new framework-reserved flag,
+     `--lint-framework-use`, present in every strictcli app without opt-in; it scans the program's
+     source and exits nonzero listing each finding with `file:line`. Authored: the global-only
+     reservation tier beside `--dump-schema`; the only-argument rule; the finding line
+     `<path>:<line>: <rule>: <message>` on stdout, its sort order, exit `1` on findings and `0` on
+     none with empty output, and scan refusals on stderr with exit `1`.
+
+346. **[%%] The lint's reach (§28.2, §28.3, §28.4).** A new check refuses, in every source file of
+     a program built on strictcli: process exits, direct stdout and stderr writes, argv access or
+     rewriting, environment reads that bypass the declared mechanisms, plus `ExitNow` in a raw `go`
+     func literal. Scope: in Go, every package linked into a binary whose main package imports
+     strictcli; in Python, the package behind the project's console entry points that construct a
+     strictcli app; in TypeScript, the modules reachable from the `bin` entries; other programs and
+     test files are not scanned. No allow-list, no skip flag, no severity downgrade; the Go scanner
+     resolves imports. Authored: the rule identifiers; the closed construct lists beyond those the
+     ruling named (`syscall.Exit`, `log.Panic*`, `exit()` / `quit()`, `process.abort`,
+     `process.exitCode`, the standard argument parsers, and the environment accessors); import
+     resolution in Python and TypeScript too; the scan root as the working directory with an
+     identity check against the manifest; §11.2's repository-owned input rule; the
+     module-local reading of "every package linked into a binary"; the Python package location
+     rule and the TypeScript `bin`-to-source mapping; the test-file patterns.
+
+347. **[%%] Environment input (§28.3).** Every environment variable an app reads is declared through
+     an existing mechanism -- a flag's environment binding, a handshake, a connection, a location
+     root -- and appears in `--help` and the schema. No new environment-only declaration is added.
+     Authored: the lint's `environment-read` rule reports a raw read whatever it reads, declared or
+     not, because the declared value already arrives through the framework.
+
+348. **The conformance vocabulary (§14.4's box).** Authored: the handler keys `handler_out`,
+     `handler_document`, `handler_raw_stdout`, `handler_process_exit`, `handler_exit_now`,
+     `handler_signals_self`, the command key `payload_renderer`, and the order a generated handler
+     performs them in.
+
+**What this section does not touch**: the `effects-bypass` check (§11) and its ceilings; the
+release tool's validation, which is designed to run `--lint-framework-use` and is not part of this
+repository (§28.4); and the consumers' migration, which follows the release that ships this.
+
 ---
 
 ## 19. Machine mode and the envelope
@@ -9382,6 +9781,15 @@ and the flag is the only thing that decides.
 The framework governs what the framework emits. A handler that writes to the process's stdout
 directly bypasses this section exactly as it bypasses §7.4's suppression rules today -- the same
 accepted ceiling, not a new one, and §19.6 is the declared way to do it deliberately.
+
+> **Amendment (2026-09-26, framework-owned exits, §18.37 item 343): the paragraph above is
+> superseded in machine mode.** A direct stdout write is no longer an accepted ceiling there: the
+> runtime guard (§19.12) redirects the process stdout while the handler runs, and bytes that reach
+> it outside the framework fail the run with an error diagnostic naming them. The declared ways to
+> put bytes on stdout in machine mode are the `--json` document's members -- `payload` (§19.4) and `output`
+> (§19.10) -- and, on a command that owns stdout, `ctx.document()` (§19.6's box). Outside machine
+> mode nothing is redirected and a direct write reaches the terminal as before; there the lint
+> (§28) is what refuses it.
 
 ### 19.2 The envelope
 
@@ -9469,6 +9877,51 @@ how a terminal was configured.
 > for that reason: a member that is *never absent* is part of the key set on every run, update
 > command or not. `schema_version` (§25) is a different number for a different document and does not
 > move.
+
+> **Amendment (2026-09-26, framework-owned exits, §18.37 items 338, 341 and 337): the `--json` document
+> gains `output`, and `interface_version` becomes `3`.** A command's human-readable answer is
+> written through `ctx.out` (§19.10), and a child's stdout under `--json` is captured rather than
+> leaked (§19.11); both need a member of the one document. The member sits **after `payload` and
+> before `dry_run`** -- the command's human answer beside its machine answer -- and the table's
+> order is still readability only.
+>
+> | Key | Type | Meaning |
+> |-----|------|---------|
+> | `output` | string \| null | The bytes the run would have written to stdout through `ctx.out` in human mode, plus every captured child's stdout (§19.11), concatenated in the order the framework received them. `null` when nothing was written. **Never absent.** |
+>
+> Rules the member follows:
+>
+> - **The text is the human-mode bytes, verbatim.** `ctx.out("done")` contributes `done\n`, which is
+>   what human mode prints; `output` is not a list of calls and carries no separators of its own. A
+>   run that called `ctx.out("a")` then `ctx.out("b")` has `"output": "a\nb\n"`.
+> - **Captured child bytes are decoded, never dropped.** A child's stdout is bytes; the member is a
+>   JSON string. The bytes are decoded as UTF-8 with each maximal invalid subsequence replaced by
+>   one U+FFFD (the WHATWG decoder's rule, which is Python's `errors="replace"` and JavaScript's
+>   `TextDecoder`; Go implements the same rule, which is not `strings.ToValidUTF8`'s). Text written
+>   through `ctx.out` is already a string and is carried unchanged.
+> - **`--quiet` cannot reach it**, for the reason `payload` is exempt: it is not written through
+>   the writers `--quiet` suppresses (§7.4's boxes).
+> - **A declared payload rendering never enters it.** In machine mode a command that declares a
+>   renderer emits its payload and not the rendering (§19.10), so its `output` is `null` unless a
+>   captured child wrote stdout.
+> - **On a command that owns stdout** it holds only captured child output, and there is none:
+>   `ctx.out` is refused on such a command (§19.6's box) and a child's stdout streams to the real
+>   stdout as part of the document (§19.11). It is therefore `null` on every owns-stdout command,
+>   and it is still present.
+>
+> **`interface_version` becomes `3`**, for item 313's reason: the member is never absent, so the
+> key set grows on every run, and a consumer validating the key set against version `2` must be
+> able to tell which document it holds.
+>
+> **Diagnostics keep unprefixed messages.** §19.14 gives `ctx.error` and `ctx.warn` an `error: ` /
+> `warning: ` prefix in human mode. In `diagnostics` the `level` member already carries that
+> meaning, so `message` is stored as the handler passed it, with no prefix.
+>
+> **Diagnostics the exit step appends.** Each of the following conditions adds one `error`
+> diagnostic at the exit step, after every diagnostic the handler emitted, in this order when more than one applies: the
+> early exit's message (§19.9), the process-exit trap (§19.12), the runtime guard's failure
+> (§19.12), and the signal (§19.13). Each is also what human mode prints for the condition, with
+> the `error: ` prefix, where the condition exists in human mode at all.
 
 ### 19.3 The `preview` member
 
@@ -9645,6 +10098,37 @@ Outside machine mode the declaration changes nothing at all -- the command print
 it always did, and the framework's human output is where §7.4 puts it. The scope is exactly the
 declared commands: no other command's framework output ever moves to stderr.
 
+> **Amendment (2026-09-26, framework-owned exits, §18.37 item 340): an owns-stdout command writes
+> its document through the framework's document writer.** An owns-stdout command had no framework
+> writer for its document, so every such command wrote to the process stdout directly -- the same
+> construct the runtime guard (§19.12) and the lint (§28) now refuse. The document writer is the
+> declared way:
+>
+> | Impl | Call | Returns |
+> |------|------|---------|
+> | Python | `ctx.document()` | a binary writer: `write(data: bytes) -> int` and `flush()` |
+> | Go | `ctx.Document()` | an `io.Writer` |
+> | TypeScript | `ctx.document()` | an object with `write(chunk: Uint8Array \| string): void`; a string is written as its UTF-8 bytes |
+>
+> - **Only on a command that declared stdout ownership.** Calling it on any other command is a
+>   hard error at call time (`errDocumentWithoutOwnsStdout`, §12.17), for §19.4's reason:
+>   registration cannot see that a handler intends to call it.
+> - **Bytes go to the real stdout, unchanged, in both modes.** The writer is untouched by `--quiet`
+>   and by `--json`: in machine mode the `--json` document is on stderr (above) and stdout is the document's
+>   alone; in human mode stdout is the document's too. Writes are synchronous, so the bytes are on
+>   stdout, in call order, before the exit step runs.
+> - **The runtime guard does not count them.** Bytes written through the writer are the framework's
+>   own; only bytes that reach stdout by any other route fail a machine-mode run (§19.12), and that
+>   includes a raw write on an owns-stdout command.
+> - **`ctx.out` is refused on an owns-stdout command** (`errOutOnOwnsStdout`, §12.17): its bytes would
+>   end up inside the document in human mode and inside the `output` member in machine mode, so the
+>   same call would produce two different documents. A payload renderer is refused at registration
+>   on such a command for the same reason (§19.10).
+> - **A child's stdout is part of the document.** On an owns-stdout command, a child run through
+>   `spawn` or `run(stream=True)` writes to the real stdout in both modes; §19.11's machine-mode
+>   capture does not apply, because a command whose document is a child's output (a database dump
+>   streamed from the dump tool) would otherwise lose it into the `--json` document.
+
 ### 19.7 Claimed rendering
 
 The would-do log's position in the human stream was fixed: the framework rendered it at the end of
@@ -9717,6 +10201,236 @@ trigger. Until then: `children` is absent from every record, `previewable` is un
 three implementations, and §12 carries no template for the failure above (that template is authored
 at the implementation round). No implementation may adopt this section partially, and no interim
 mechanism is built for the consumer previews this section will replace.
+
+### 19.9 The early exit
+
+*(Added 2026-09-26, §18.37 items 333, 334, 335 and 336.)* A command ends early, from anywhere in
+its call stack, through the one exit step:
+
+| Impl | Spelling | Mechanism |
+|------|----------|-----------|
+| Python | `strictcli.exit_now(code, message)`, annotated `NoReturn` | raises a private subclass of `BaseException` |
+| Go | `strictcli.ExitNow(code, message)`, a package-level function that never returns | panics with a private typed value |
+| TypeScript | `throw new ExitNow(code, message)`, where `ExitNow` is an exported class | the thrown value itself |
+
+The exit step recognizes the value on the same path the dry-run truncation signal takes (§3.5's
+seam: Python's exception clauses around the handler call, Go's `runSealed`, TypeScript's
+`runHandler`), for command handlers and passthrough handlers alike. Raised anywhere else -- a
+`validate` callback, a check implementation, code outside a dispatch -- it is not recognized and
+unwinds as any other error does.
+
+**Arguments.** `code` is an integer from 1 to 255; `message` is a non-empty string. Code 0 is
+refused at the call as a programming error (`errExitNowCode`, §12.17): a successful run ends with a
+return from the handler, and an early exit that reports success would be a second spelling of it.
+A code outside 1..255 is refused by the same template, because a process status is one byte and a
+larger code would be reported as something else. An empty message is refused
+(`errExitNowMessageEmpty`): the message is the only reason an early exit carries. Both refusals fire
+at the call, before anything unwinds.
+
+**What the command does.** The handler's frames unwind -- Go deferred functions and Python and
+TypeScript `finally` blocks run -- and then the exit step ends the command with `code`:
+
+- the message is appended to the run's diagnostics as an `error` diagnostic (§19.2's box), after
+  every diagnostic the handler emitted;
+- in human mode the exit step prints it to stderr as `error: <message>` (§19.14), never suppressed
+  by `--quiet`;
+- in machine mode it rides the `--json` document's `diagnostics` and `exit_code` is `code`; on an
+  owns-stdout command the `--json` document is on stderr as usual (§19.6);
+- in dry mode the would-do log renders as for a return (§3.5's row);
+- a payload the handler supplied before the early exit is kept: it is the `--json` document's `payload` in
+  machine mode, it is rendered by a declared renderer in human mode (§19.10), and the programmatic
+  doors capture it as they capture any payload.
+
+**`test()` / `Test()`** report an early exit as the CLI path does: the exit code, and the
+stderr line or the `--json` document.
+
+**The in-process door.** A command invoked through `call()` / `Call()` that ends through an early
+exit does not return a value: the caller receives a typed error carrying the code and the message.
+
+| Impl | Error |
+|------|-------|
+| Python | raises `strictcli.ExitError`, with attributes `code` and `message` |
+| Go | returns `*strictcli.ExitError{Code int; Message string}` as the error |
+| TypeScript | rejects with `ExitError`, with properties `code` and `message` |
+
+`ExitError` is not an `InvokeError`: an invocation error means the call was refused before the
+handler ran, and an early exit means the handler ran and ended with a failure. The error's string
+form is the message alone (Go `Error()`, Python `str()`, TypeScript `message`). Python's `acall`
+raises the same error. Over MCP, `tools/call` goes through the same door and answers a command that
+ended early with `isError` tool-result content whose text is `exit code <code>: <message>`
+(`errEarlyExitToolResult`, §12.17), so a client reads the status as well as the reason.
+
+**Concurrency in Go.** A goroutine the handler started with a plain `go` statement has no frame the
+exit step can recover in (§17). Go therefore gains `strictcli.Go(ctx *Context, fn func())`, which
+runs `fn` on a new goroutine under the dispatch's care:
+
+- an `ExitNow` or a panic raised inside `fn` is captured, and the handler's context is cancelled
+  (`ctx.Done()` closes, §19.13) so the handler can stop waiting on work that will not finish;
+- when the handler returns, the exit step waits for every function started through `strictcli.Go`
+  in this dispatch to return, and then ends the command as if the **first** captured value had been
+  raised by the handler itself: an `ExitNow` is an early exit, a panic is an unexpected unwind
+  (§3.5's last row) re-raised on the handler's goroutine;
+- when the handler itself ended through an early exit or a panic, that ending stands, and values
+  captured from `strictcli.Go` functions are discarded after the wait;
+- calling `strictcli.Go` with a Context constructed outside a dispatch is a programming error,
+  reported as `ctx.Effects()` reports it (`errEffectsUnavailable`).
+
+Python and TypeScript get no counterpart: an `exit_now` raised in a Python thread is that thread's
+own exception, and a TypeScript `ExitNow` thrown inside an awaited promise propagates to the handler
+through the `await`, which is the language's own delivery.
+
+### 19.10 The main-output writer and declared payload rendering
+
+*(Added 2026-09-26, §18.37 items 338 and 339.)*
+
+**The writer.** `ctx.out(text)` writes the command's human-readable answer:
+
+| Impl | Call |
+|------|------|
+| Python | `ctx.out(text: str)` |
+| Go | `ctx.Out(text string)` |
+| TypeScript | `ctx.out(text: string)` |
+
+- **Human mode:** writes `text` followed by one `\n` to stdout, in call order with everything else
+  the Context writes to stdout. It is never hidden by `--quiet` (§7.4's box), and `--verbose` does
+  not affect it.
+- **Machine mode:** writes nothing to stdout; the same bytes (`text` plus `\n`) are appended to the
+  `--json` document's `output` member (§19.2's box).
+- **Refused** at call time on a command that declares a payload renderer (`errOutWithRenderer`) and
+  on a command that owns stdout (`errOutOnOwnsStdout`), §12.17.
+- `ctx.info` is unchanged: it is a diagnostic, hidden by `--quiet`, and a diagnostic in machine
+  mode. The difference between the two is the difference between what a command says and what a
+  command reports about itself.
+
+**The declared rendering.** A command with a payload schema (§19.5) may declare how its payload
+reads in human mode:
+
+| Impl | Declaration | Renderer type |
+|------|-------------|---------------|
+| Python | `payload_renderer=` on the command decorator | `Callable[[Any], str]` |
+| Go | `PayloadRenderer(fn)`, an ordinary `CmdOption` | `func(payload interface{}) string` |
+| TypeScript | `payloadRenderer:` in the command definition object | `(payload: unknown) => string` |
+
+- **Registration:** declaring a renderer without a payload schema is refused
+  (`errRendererWithoutPayloadSchema`); declaring one on an owns-stdout command is refused
+  (`errRendererOnOwnsStdout`), §12.17.
+- **Human mode:** when the handler supplied a payload and the command ends by a return or by an
+  early exit (§19.9), the exit step calls the renderer with the payload as supplied and
+  writes the returned text followed by one `\n` to stdout, after everything the handler wrote and
+  before the would-do log. Never hidden by `--quiet`. No payload, no rendering. The payload is not
+  validated against its schema first: §19.4 validates at emission, and human mode emits no
+  `--json` document. A run that unwinds, truncates, or fails the runtime guard renders nothing.
+- **Machine mode:** the renderer is never called. The payload is the `--json` document's `payload`, and the
+  rendering does not enter `output`.
+- **`--dump-schema`** does not publish the declaration: a renderer is code, not data, and the
+  machine interface of the command is its payload schema.
+
+### 19.11 A child's stdout in machine mode
+
+*(Added 2026-09-26, §18.37 item 341.)* `spawn`, and `run` with `stream` true, connect a child's
+stdout to the process stdout (§2.5.2) -- in machine mode, a second writer beside the `--json` document,
+inside the framework itself. In machine mode the framework instead reads the child's stdout and
+appends it to the `--json` document's `output` member (§19.2's box), in the order the bytes arrive; a
+`run`'s child has finished writing before `run` returns, and a `spawn`'s child is read concurrently
+and drained no later than its `wait()`, or than the exit step for a child never waited on. The
+child's stderr is unchanged: it still inherits the process stderr.
+
+Human mode is unchanged: the child streams to the terminal. Dry mode runs no child, so there is
+nothing to capture. On an owns-stdout command the child writes to the real stdout in both modes,
+as part of the document (§19.6's box) -- in Go and Python that means the saved real stdout, not the
+file descriptor the runtime guard redirected (§19.12). A `run` with `stream` false captures the
+child's stdout into the returned `Completed` as before, and none of it reaches `output`.
+
+### 19.12 The runtime guard
+
+*(Added 2026-09-26, §18.37 items 343 and 344.)* In machine mode, while the handler runs, the
+framework redirects the process stdout so that nothing reaches it except through the framework:
+
+| Impl | Mechanism |
+|------|-----------|
+| Python | file-descriptor level: fd 1 is duplicated aside and replaced by a pipe the framework drains, `sys.stdout` is flushed before the handler starts and before fd 1 is restored |
+| Go | file-descriptor level, with `os.Stdout` pointing at the redirected descriptor for the handler's duration |
+| TypeScript | `process.stdout.write` is replaced for the handler's duration |
+
+The redirect covers the handler call, including an async handler until its promise settles, and
+every function started through `strictcli.Go`. The framework's own writes go to the saved real
+stdout and are never counted: the `--json` document itself, bytes written through the document
+writer, and an owns-stdout command's streamed child stdout (§19.11). A child's stdout captured into
+`output` never reaches stdout at all. The guard applies to every dispatch that runs a handler in
+machine mode through the argv door -- `run()` / `Run()` and `test()` / `Test()` -- owns-stdout
+commands included. It does not apply in human mode, to `call()` (which emits no `--json`
+document), or to the MCP server loop, which owns stdout for its own protocol.
+
+**Failure.** When any byte reached the redirected stdout, the run fails:
+
+- the exit status is `1`, unless the command already ended with a nonzero status, which is kept;
+- an `error` diagnostic is appended (§19.2's box):
+  `stdout written outside the framework: <n> bytes: <excerpt>` (`errStdoutWrittenOutsideFramework`,
+  §12.17), where `<n>` is the total number of bytes written, in decimal, and `<excerpt>` is a JSON
+  string literal of the first 4096 of those bytes -- decoded by §19.2's replacement rule, then
+  encoded under §19.5's escaping regime, quotes included;
+- the bytes themselves are discarded: stdout still carries one document.
+
+The failure is decided at the exit step, after the handler returned or unwound, so it composes with
+every row of §3.5: an early exit keeps its code (it is nonzero) and gains the diagnostic after its
+own; a truncation keeps `1`; an unexpected unwind still propagates untouched after the `--json` document is
+written.
+
+**The process-exit trap (Python and TypeScript).** For the same span, Python's `os._exit` and
+TypeScript's `process.exit` are replaced by functions that do not terminate the process: the call
+unwinds the handler (Python raises, TypeScript throws, each a private value the exit step
+recognizes), and the command ends with the requested code, or `1` when the requested code is `0` or
+absent, plus an `error` diagnostic `process exit called outside the framework with code <code>`
+(`errProcessExitOutsideFramework`, §12.17) naming the code the handler asked for. Python's
+`sys.exit` is not trapped: it already unwinds through the exit step (§3.5). Go has no equivalent
+(§17).
+
+### 19.13 Signals
+
+*(Added 2026-09-26, §18.37 item 342.)* On the CLI dispatch path -- `run()` / `Run()` -- strictcli
+handles SIGINT and SIGTERM while the handler runs:
+
+- **The first signal cancels the handler's context** and does nothing else: the handler keeps
+  running and is expected to notice and return.
+
+  | Impl | Cancellation |
+  |------|--------------|
+  | Python | `ctx.cancelled`, a read-only `bool` property that becomes true |
+  | Go | `ctx.Done()`, a `<-chan struct{}` that is closed |
+  | TypeScript | `ctx.signal`, an `AbortSignal` that is aborted |
+
+  The same cancellation is triggered by a captured `strictcli.Go` failure (§19.9) and when the
+  dispatch ends, so a handler can hand it to work it starts and know it is released.
+- **When the handler returns** -- or ends through an early exit -- the command exits with 128 + the
+  signal's number (130 for SIGINT, 143 for SIGTERM), whatever status the handler chose, and the exit
+  step appends an `error` diagnostic `cancelled by signal <SIGNAL>` (`errCancelledBySignal`, §12.17),
+  printed as `error: cancelled by signal SIGTERM` in human mode and carried in `diagnostics` in
+  machine mode, where `exit_code` is the same number. The handler's own diagnostics, an early exit's
+  message included, are kept ahead of it. In dry mode the would-do log renders as for a return.
+- **A second signal** of either kind gets the default action: the framework restores both
+  signals' default disposition as soon as the first one arrives, so a handler that never returns can
+  still be stopped.
+- Outside the handler -- during parsing, the confirm prompt, or the exit step itself -- the signals
+  keep their default action. `test()`, `call()`, and the MCP server install nothing: an in-process
+  caller owns its own process's signals.
+
+### 19.14 Human-mode prefixes
+
+*(Added 2026-09-26, §18.37 item 337.)* In human mode the never-suppressed diagnostic writers
+print a prefix before the message, on stderr:
+
+| Writer | Printed |
+|--------|---------|
+| `ctx.error` / `ctx.Error` | `error: <message>` |
+| `ctx.warn` / `ctx.Warn` | `warning: <message>` |
+
+The prefixes are `error: ` and `warning: `, spelled as shown: lower case, one colon, one space. The early
+exit's message, the guard's failure, the process-exit trap and the signal diagnostic print with the
+`error: ` prefix too, which is the form every framework parse error already takes. The prefix is
+added unconditionally, once, before the whole message -- a message that already begins with
+`error: ` is printed as `error: error: ...`, because the framework does not inspect what a handler
+wrote -- and a multi-line message is not prefixed per line. `ctx.info` and `ctx.debug` stay
+unprefixed. In machine mode no diagnostic carries a prefix (§19.2's box).
 
 ---
 
@@ -13994,3 +14708,126 @@ property rule and the mutating-default ban), `.stricttools/docs/flag-system.md`,
 three surfaces of §27.8 as a fourth reference case), the conformance corpus's update cases and
 `conformance/schema.json`'s `$defs`, the framework's own `config set` (§27.1's flagged consequence),
 and the fleet's own declarations, which F.1 already schedules.
+
+---
+
+## 28. The framework-use lint
+
+*(Added 2026-09-26, §18.37 items 345, 346 and 347.)* The `effects-bypass` check (§11) is opt-in,
+follows calls within one file or package, and runs only when a consumer selects it; the survey that
+produced this section found consumers arranging code to stay out of its sight. This section adds a
+second instrument with a different shape: it is reserved by the framework in every app, it reads the
+whole program rather than what a handler reaches, and it refuses the constructs that bypass the
+framework's ownership of exits, output, argv, and environment input. The `effects-bypass` check is
+unchanged and independent of it.
+
+### 28.1 The flag
+
+`--lint-framework-use` is reserved on the global-only tier (§7.1's box) and recognized in the
+pre-command region only, as `--dump-schema` is. It must be the **only** argument: any other token
+on the command line, before or after it, is a parse error (`--lint-framework-use takes no other
+arguments`, §12.17), printed as every parse error is and exiting 1. With it, no command is resolved,
+no config is loaded, no handler runs, and nothing is written except the report.
+
+**Output.** Each finding is one line on stdout:
+
+```
+<path>:<line>: <rule>: <message>
+```
+
+- `<path>` is the file's path relative to the scan root (§28.2), with `/` separators;
+- `<line>` is the 1-based line of the construct, in decimal;
+- `<rule>` is one of the rule identifiers in §28.3;
+- `<message>` is the rule's message (§12.17), naming the construct in its canonical spelling.
+
+Lines are sorted by path (byte order), then line number, then rule identifier, then message. Two
+constructs on one line are two findings, even when their lines read the same. For example:
+
+```
+cmd/tool/main.go:41: process-exit: os.Exit ends the process outside the framework's exit step; return from the handler, or end the command early with strictcli.ExitNow(code, message)
+internal/report/print.go:12: stdout-write: fmt.Println writes to stdout outside the framework; write the command's answer with ctx.Out, its machine output with ctx.Payload, or a document with ctx.Document() on a command that owns stdout
+```
+
+**Exit status.** `1` when there is at least one finding, `0` when there is none, and then stdout is
+empty. A scan that cannot run (§28.2's refusals) prints one `error: <text>` line on stderr and
+nothing on stdout, and exits `1`.
+
+### 28.2 What is scanned
+
+**The scan root is the working directory**, and it must hold the program's manifest: `go.mod`
+(Go), `pyproject.toml` (Python), or `package.json` (TypeScript). A missing manifest is refused
+(`errLintFrameworkUseNoManifest`); a manifest that does not declare the running program is refused
+(`errLintFrameworkUseManifestMismatch`), by the identity check of each language below. The root is
+never searched for by walking up: the caller states it by where it runs the program.
+
+**Only repository-owned files are read**, by §11.2's rule and for its reason (a release-blocking
+verdict must be reproducible from the repository): the input set is what
+`git ls-files --cached --others --exclude-standard` lists from the scan root. A scan root that is not
+inside a git work tree is refused (`errLintFrameworkUseNotWorkTree`), with no fallback to a
+filesystem walk.
+
+**Test files are never scanned**, and neither is any other program in the repository --
+development scripts, generators, fake binaries used by tests. Only the program the flag was run
+through, and every source file linked into it that the repository owns:
+
+| Impl | Identity check | Scope | Test files excluded |
+|------|----------------|-------|---------------------|
+| Go | `go.mod`'s `module` path equals the running binary's main module path, from its build information | every `package main` directory of the module whose non-test files import a package under strictcli's module path, plus every package of the module they import, transitively (import paths equal to or under the module path, resolved to directories under the scan root). Every non-test `.go` file of a scanned package is read regardless of build constraints, because a file excluded on one platform is linked on another. Packages of other modules -- the standard library, dependencies, strictcli itself, a nested module with its own `go.mod` -- and `vendor` and `testdata` directories are not scanned. | `*_test.go` |
+| Python | the module in which the running `App` was constructed lies inside one of the scanned packages | for every `[project.scripts]` entry (`name = "pkg.module:attr"`), the top-level package `pkg`, found at `<root>/pkg` or `<root>/src/pkg` (one and only one must exist, otherwise the manifest-mismatch refusal), when any of its files imports `strictcli`; every `.py` file under it. An entry naming a top-level module rather than a package scans that one file under the same condition. | `test_*.py`, `*_test.py`, `conftest.py`, and every file under a directory named `tests` or `test` |
+| TypeScript | the real path of the running entry script (`process.argv[1]`) equals the real path of one `bin` target | every module reachable from the `bin` entries through relative module specifiers (`./`, `../`) in static `import` and `export ... from` declarations, `import("...")` with a string literal, and `require("...")` with a string literal. Each `bin` target is mapped to its source: a target that is itself a repository-owned `.ts`, `.mts`, `.cts`, `.js`, `.mjs` or `.cjs` file is its own source; otherwise its path under `tsconfig.json`'s `compilerOptions.outDir` is mapped to the same relative path under `compilerOptions.rootDir` with `.js` / `.mjs` / `.cjs` replaced by `.ts` / `.mts` / `.cts`. A target neither rule resolves is refused (`errLintFrameworkUseBinUnresolved`). Specifiers resolve with TypeScript's extension substitution and a directory to its `index` file; bare specifiers (packages) are not followed. | `*.test.*`, `*.spec.*`, and every file under a directory named `__tests__` |
+
+### 28.3 The rules
+
+Each rule identifier is a plain description of what it refuses. The table is the closed list of
+constructs; a construct not in it is not a finding.
+
+| Rule | Go | Python | TypeScript |
+|------|----|--------|------------|
+| `process-exit` | `os.Exit`, `syscall.Exit`, `log.Fatal`, `log.Fatalf`, `log.Fatalln` | `sys.exit`, `raise SystemExit` (the name or a call of it), `os._exit`, a bare `exit(...)` or `quit(...)` call | `process.exit`, `process.abort`, an assignment to `process.exitCode` |
+| `stdout-write` | `fmt.Print`, `fmt.Printf`, `fmt.Println`, any reference to `os.Stdout` | a `print(...)` call with no `file=` argument, any reference to `sys.stdout` or `sys.__stdout__`, `os.write(1, ...)` | any `console.<member>` not listed under `stderr-write`, any reference to `process.stdout` |
+| `stderr-write` | any reference to `os.Stderr`, the builtins `print` and `println`, `log.Print`, `log.Printf`, `log.Println`, `log.Panic`, `log.Panicf`, `log.Panicln` | any reference to `sys.stderr` or `sys.__stderr__`, `os.write(2, ...)` | `console.error`, `console.warn`, `console.trace`, `console.assert`, any reference to `process.stderr` |
+| `argv-access` | any reference to `os.Args`, an import of the standard `flag` package | any reference to `sys.argv` or `sys.orig_argv`, an import of `argparse`, `optparse` or `getopt` | any reference to `process.argv`, `process.argv0` or `process.execArgv`, an import of `parseArgs` from `util` or `node:util` |
+| `environment-read` | `os.Getenv`, `os.LookupEnv`, `os.Environ`, `os.ExpandEnv`, `syscall.Getenv`, `syscall.Environ` | any reference to `os.environ` or `os.environb`, `os.getenv`, `os.getenvb` | any reference to `process.env` |
+| `exit-now-in-goroutine` | a call of strictcli's `ExitNow` lexically inside a function literal that is the operand of a `go` statement | -- | -- |
+
+A `print(...)` whose `file=` argument is `sys.stderr` is one `stderr-write` finding, at the
+reference; a `print(...)` writing to any other file is not a finding. `log.Fatal*` is one
+`process-exit` finding, not also a `stderr-write`. A construct matched at an import (`flag`, `argparse`,
+`parseArgs`) is reported once, at its import line.
+
+**Names are resolved through each file's imports**, never through spellings alone:
+
+- **Go** resolves the package identifier of a selector against the file's import declarations: the
+  default name, an explicit alias (`import o "os"` makes `o.Exit` an `os.Exit` finding), and a dot
+  import (`import . "os"` makes a bare `Exit(...)` one). A blank import binds nothing.
+- **Python** resolves through `import m`, `import m as a`, `import m.sub` (which binds `m`), and
+  `from m import name [as a]`, so `from os import environ as e` makes every `e` reference an
+  `os.environ` finding and `from sys import exit` makes a bare `exit(...)` a `sys.exit` finding.
+- **TypeScript** resolves `process` and `console` as globals, a default or namespace import of
+  `process` / `node:process` under any local name as `process`, and reports a named import of a
+  listed member from `process` / `node:process` (`import { argv } from "node:process"`) at the
+  import line under that member's rule, as it reports a destructuring whose initializer is the bare identifier
+  `process` (`const { env } = process`) at that line under each listed member's rule.
+
+Resolution is by import, not by scope (§17): a local variable named like an import is read as the
+import.
+
+**The environment rule and declared variables.** Every environment variable an app reads is
+declared through a mechanism that already exists -- a flag's environment binding, a handshake, a
+connection, or a location root -- and appears in `--help` and the schema; no environment-only
+declaration is added. The declared value arrives through the framework (the flag's value in the
+handler's arguments, `ctx.infra_value` / `ctx.InfraValue` / `ctx.infraValue` for the three
+infrastructure kinds), so a raw read is a finding whatever variable it reads, declared or not.
+
+### 28.4 What the lint deliberately does not have
+
+- **No allow-list, no skip flag, no severity downgrade, no config key.** Every finding is an error
+  and the exit status says so. A false positive is a one-line change in the consumer's code (§17).
+- **No opt-in.** The flag exists in every strictcli app from the version that ships it.
+- **No reading of what the repository does not own**, and no program other than the one it was run
+  through.
+
+**Release validation** is designed to run `--lint-framework-use` through each strictcli consumer's
+own entry point, next to `--dump-schema`, and to block the release on a finding. That wiring
+belongs to the release tool and is not part of this repository; this section is the contract it
+reads.
