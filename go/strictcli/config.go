@@ -669,19 +669,20 @@ type configChange struct {
 // RECORDED, never performed. A framework command that printed
 // "DRY RUN — no changes were made." while rewriting the user's config file
 // would be the loudest possible counterexample to its own regime.
-func writeConfigFile(e *Effects, data map[string]interface{}, path string, format string, change configChange) int {
+func writeConfigFile(ctx *Context, data map[string]interface{}, path string, format string, change configChange) int {
+	e := ctx.Effects()
 	switch format {
 	case "toml":
-		return writeConfigFileTOML(e, path, change)
+		return writeConfigFileTOML(ctx, path, change)
 	default:
 		raw, err := json.MarshalIndent(data, "", "  ")
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "error: cannot marshal config: %s\n", err)
+			ctx.Error(fmt.Sprintf("cannot marshal config: %s", err))
 			return 1
 		}
 		raw = append(raw, '\n')
 		if _, err := e.Write(path, raw); err != nil {
-			fmt.Fprintf(os.Stderr, "error: cannot write config file: %s\n", err)
+			ctx.Error(fmt.Sprintf("cannot write config file: %s", err))
 			return 1
 		}
 		return 0
@@ -694,7 +695,8 @@ func writeConfigFile(e *Effects, data map[string]interface{}, path string, forma
 // branching on it is branching on a real value, so the preview walks straight
 // through it in both modes. Probing keeps the preview honest: a mkdir line
 // appears only when a directory would really be created.
-func ensureConfigDir(e *Effects, path string) int {
+func ensureConfigDir(ctx *Context, path string) int {
+	e := ctx.Effects()
 	dirPath := filepath.Dir(path)
 	if dirPath == "" {
 		return 0
@@ -703,7 +705,7 @@ func ensureConfigDir(e *Effects, path string) int {
 		return 0
 	}
 	if _, err := e.Mkdir(dirPath); err != nil {
-		fmt.Fprintf(os.Stderr, "error: cannot create config directory: %s\n", err)
+		ctx.Error(fmt.Sprintf("cannot create config directory: %s", err))
 		return 1
 	}
 	return 0
@@ -715,42 +717,43 @@ func ensureConfigDir(e *Effects, path string) int {
 // bytes back. Bytes() (round-trip fidelity) is used rather than Format() so
 // that unrelated formatting — blank lines, alignment, comment placement —
 // survives byte-for-byte; only the changed key is touched.
-func writeConfigFileTOML(e *Effects, path string, change configChange) int {
+func writeConfigFileTOML(ctx *Context, path string, change configChange) int {
+	e := ctx.Effects()
 	var doc *tomledit.Document
 	existingBytes, err := os.ReadFile(path)
 	if err != nil {
 		if !os.IsNotExist(err) {
-			fmt.Fprintf(os.Stderr, "error: cannot read config file: %s\n", err)
+			ctx.Error(fmt.Sprintf("cannot read config file: %s", err))
 			return 1
 		}
 		// New file: start from an empty document.
 		doc, err = tomledit.Parse(nil)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "error: cannot initialize config document: %s\n", err)
+			ctx.Error(fmt.Sprintf("cannot initialize config document: %s", err))
 			return 1
 		}
 	} else {
 		doc, err = tomledit.Parse(existingBytes)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "error: cannot parse config file: %s\n", err)
+			ctx.Error(fmt.Sprintf("cannot parse config file: %s", err))
 			return 1
 		}
 	}
 
 	if change.remove {
 		if err := doc.Delete(change.key); err != nil {
-			fmt.Fprintf(os.Stderr, "error: cannot update config: %s\n", err)
+			ctx.Error(fmt.Sprintf("cannot update config: %s", err))
 			return 1
 		}
 	} else {
 		if err := doc.SetCreate(change.key, change.value); err != nil {
-			fmt.Fprintf(os.Stderr, "error: cannot update config: %s\n", err)
+			ctx.Error(fmt.Sprintf("cannot update config: %s", err))
 			return 1
 		}
 	}
 
 	if _, err := e.Write(path, doc.Bytes()); err != nil {
-		fmt.Fprintf(os.Stderr, "error: cannot write config file: %s\n", err)
+		ctx.Error(fmt.Sprintf("cannot write config file: %s", err))
 		return 1
 	}
 	return 0
@@ -1041,11 +1044,10 @@ func (a *App) registerConfigGroup() {
 	registerFrameworkSubcommand(grp, "set", "Write a persistent value into the config file so it overrides a flag's declared default on every later run. The value is coerced to the flag's own type and rejected if it does not fit: repeatable flags take a comma-separated list (backslash-escape a literal comma) and are checked for duplicates, dict flags take a JSON object. Use --default to drop a key back to its default, and --clear to empty a repeatable flag.", EffectMutating, func(ctx *Context, args map[string]interface{}) Outcome {
 		key := Get[string](args, "key")
 		path := configPath(a.Name, a.configPathOverride, a.configFormat)
-		// Every mutation this handler performs rides ctx.Effects(): the command
-		// is classified mutating, so a dry run must RECORD them and change
-		// nothing.
-		e := ctx.Effects()
-		if code := ensureConfigDir(e, path); code != 0 {
+		// Every mutation this handler performs rides ctx.Effects() (through
+		// the helpers below): the command is classified mutating, so a dry run
+		// must RECORD them and change nothing.
+		if code := ensureConfigDir(ctx, path); code != 0 {
 			return Exit(code)
 		}
 		// Read existing config (use the already-loaded data from parse time)
@@ -1065,7 +1067,7 @@ func (a *App) registerConfigGroup() {
 			matchedConfigField = a.configFields[key]
 		}
 		if matchedFlag == nil && matchedConfigField == nil {
-			fmt.Fprintf(os.Stderr, "config set: unknown key '%s'\n", key)
+			ctx.Error(fmt.Sprintf("config set: unknown key '%s'", key))
 			return Exit(1)
 		}
 
@@ -1077,21 +1079,21 @@ func (a *App) registerConfigGroup() {
 		// --clear: repeatable flags only, writes []
 		if write.Is(setWriteClear) {
 			if matchedConfigField != nil || !matchedFlag.Repeatable {
-				fmt.Fprintln(os.Stderr, "config set: --clear is only for repeatable flags")
+				ctx.Error("config set: --clear is only for repeatable flags")
 				return Exit(1)
 			}
 			existing[key] = []interface{}{}
-			return Exit(writeConfigFile(e, existing, path, a.configFormat, configChange{key: key, value: []interface{}{}}))
+			return Exit(writeConfigFile(ctx, existing, path, a.configFormat, configChange{key: key, value: []interface{}{}}))
 		}
 
 		// --default: remove the key from config
 		if write.Is(setWriteDefault) {
 			if _, ok := nestedGet(existing, key); !ok {
-				fmt.Fprintf(os.Stderr, "config set: key '%s' not in config\n", key)
+				ctx.Error(fmt.Sprintf("config set: key '%s' not in config", key))
 				return Exit(1)
 			}
 			nestedDelete(existing, key)
-			return Exit(writeConfigFile(e, existing, path, a.configFormat, configChange{key: key, remove: true}))
+			return Exit(writeConfigFile(ctx, existing, path, a.configFormat, configChange{key: key, remove: true}))
 		}
 
 		// The value member carries its payload under the reserved field name.
@@ -1104,21 +1106,21 @@ func (a *App) registerConfigGroup() {
 			case TypeBool:
 				v, err := parseBoolStrict(value)
 				if err != nil {
-					fmt.Fprintf(os.Stderr, "config set: key '%s': %s\n", key, err.Error())
+					ctx.Error(fmt.Sprintf("config set: key '%s': %s", key, err.Error()))
 					return Exit(1)
 				}
 				typedValue = v
 			case TypeInt:
 				v, err := parseIntStrict(value)
 				if err != nil {
-					fmt.Fprintf(os.Stderr, "config set: key '%s': %s\n", key, err.Error())
+					ctx.Error(fmt.Sprintf("config set: key '%s': %s", key, err.Error()))
 					return Exit(1)
 				}
 				typedValue = v
 			case TypeFloat:
 				v, err := parseFloatStrictValue(value)
 				if err != nil {
-					fmt.Fprintf(os.Stderr, "config set: key '%s': %s\n", key, err.Error())
+					ctx.Error(fmt.Sprintf("config set: key '%s': %s", key, err.Error()))
 					return Exit(1)
 				}
 				typedValue = v
@@ -1126,7 +1128,7 @@ func (a *App) registerConfigGroup() {
 				typedValue = value
 			}
 			nestedSet(existing, key, typedValue)
-			return Exit(writeConfigFile(e, existing, path, a.configFormat, configChange{key: key, value: typedValue}))
+			return Exit(writeConfigFile(ctx, existing, path, a.configFormat, configChange{key: key, value: typedValue}))
 		}
 
 		// Flag: coerce the string value to the flag's type
@@ -1140,7 +1142,7 @@ func (a *App) registerConfigGroup() {
 				for i, p := range parts {
 					v, err := parseIntStrict(p)
 					if err != nil {
-						fmt.Fprintf(os.Stderr, "config set: key '%s': %s\n", key, err.Error())
+						ctx.Error(fmt.Sprintf("config set: key '%s': %s", key, err.Error()))
 						return Exit(1)
 					}
 					coerced[i] = v
@@ -1149,7 +1151,7 @@ func (a *App) registerConfigGroup() {
 				for i, p := range parts {
 					v, err := parseFloatStrictValue(p)
 					if err != nil {
-						fmt.Fprintf(os.Stderr, "config set: key '%s': %s\n", key, err.Error())
+						ctx.Error(fmt.Sprintf("config set: key '%s': %s", key, err.Error()))
 						return Exit(1)
 					}
 					coerced[i] = v
@@ -1162,8 +1164,7 @@ func (a *App) registerConfigGroup() {
 			// Unique enforcement
 			if matchedFlag.Unique {
 				if dup := findDuplicate(coerced); dup != nil {
-					fmt.Fprintf(os.Stderr, "config set: key '%s': duplicate value '%s'\n",
-						key, formatValueForError(dup))
+					ctx.Error(fmt.Sprintf("config set: key '%s': duplicate value '%s'", key, formatValueForError(dup)))
 					return Exit(1)
 				}
 			}
@@ -1173,21 +1174,21 @@ func (a *App) registerConfigGroup() {
 			case TypeBool:
 				v, err := parseBoolStrict(value)
 				if err != nil {
-					fmt.Fprintf(os.Stderr, "config set: key '%s': %s\n", key, err.Error())
+					ctx.Error(fmt.Sprintf("config set: key '%s': %s", key, err.Error()))
 					return Exit(1)
 				}
 				typedValue = v
 			case TypeInt:
 				v, err := parseIntStrict(value)
 				if err != nil {
-					fmt.Fprintf(os.Stderr, "config set: key '%s': %s\n", key, err.Error())
+					ctx.Error(fmt.Sprintf("config set: key '%s': %s", key, err.Error()))
 					return Exit(1)
 				}
 				typedValue = v
 			case TypeFloat:
 				v, err := parseFloatStrictValue(value)
 				if err != nil {
-					fmt.Fprintf(os.Stderr, "config set: key '%s': %s\n", key, err.Error())
+					ctx.Error(fmt.Sprintf("config set: key '%s': %s", key, err.Error()))
 					return Exit(1)
 				}
 				typedValue = v
@@ -1197,7 +1198,7 @@ func (a *App) registerConfigGroup() {
 		}
 
 		existing[key] = typedValue
-		return Exit(writeConfigFile(e, existing, path, a.configFormat, configChange{key: key, value: typedValue}))
+		return Exit(writeConfigFile(ctx, existing, path, a.configFormat, configChange{key: key, value: typedValue}))
 	}, WithArgs(
 		NewArg("key", "The config key to set, matching a registered flag name", ArgRequired()),
 	), WithFlags(
@@ -1209,7 +1210,7 @@ func (a *App) registerConfigGroup() {
 	registerFrameworkSubcommand(grp, "edit", "Open this application's config file in the editor named by $EDITOR, falling back to vi. The parent directory and an empty config file are created first if they do not exist, so the editor always opens something. Launching the editor counts as a mutation: under --dry-run the command records the editor invocation and opens nothing.", EffectMutating, func(ctx *Context, args map[string]interface{}) Outcome {
 		path := configPath(a.Name, a.configPathOverride, a.configFormat)
 		e := ctx.Effects()
-		if code := ensureConfigDir(e, path); code != 0 {
+		if code := ensureConfigDir(ctx, path); code != 0 {
 			return Exit(code)
 		}
 		if _, err := os.Stat(path); os.IsNotExist(err) {
@@ -1218,7 +1219,7 @@ func (a *App) registerConfigGroup() {
 				emptyContent = ""
 			}
 			if _, err := e.Write(path, []byte(emptyContent)); err != nil {
-				fmt.Fprintf(os.Stderr, "error: cannot create config file: %s\n", err)
+				ctx.Error(fmt.Sprintf("cannot create config file: %s", err))
 				return Exit(1)
 			}
 		}
@@ -1235,7 +1236,7 @@ func (a *App) registerConfigGroup() {
 		// failed operation is an error, not a value (§2.5.4), so nothing here
 		// ever reads an exit code off a carrier.
 		if _, err := e.Run([]interface{}{editor, path}, Stream(true)); err != nil {
-			fmt.Fprintf(os.Stderr, "error: editor failed: %s\n", err)
+			ctx.Error(fmt.Sprintf("editor failed: %s", err))
 			return Exit(1)
 		}
 		return Exit(0)
@@ -1245,11 +1246,11 @@ func (a *App) registerConfigGroup() {
 	registerFrameworkSubcommand(grp, "init", "Create a starter config file listing every flag and config field the application declares, each commented with its help text, type and default value, so the file documents itself. The format follows whichever of TOML or JSON the application was built for. Refuses with an error if a config file already exists rather than overwriting it; the created path is printed on success.", EffectMutating, func(ctx *Context, args map[string]interface{}) Outcome {
 		path := configPath(a.Name, a.configPathOverride, a.configFormat)
 		if _, err := os.Stat(path); err == nil {
-			fmt.Fprintf(os.Stderr, "error: config file already exists: %s\n", path)
+			ctx.Error(fmt.Sprintf("config init: config file already exists: %s", path))
 			return Exit(1)
 		}
 		e := ctx.Effects()
-		if code := ensureConfigDir(e, path); code != 0 {
+		if code := ensureConfigDir(ctx, path); code != 0 {
 			return Exit(code)
 		}
 
@@ -1260,7 +1261,7 @@ func (a *App) registerConfigGroup() {
 			content = a.generateTomlTemplate(allFlags)
 		}
 		if _, err := e.Write(path, []byte(content)); err != nil {
-			fmt.Fprintf(os.Stderr, "error: cannot write config file: %s\n", err)
+			ctx.Error(fmt.Sprintf("cannot write config file: %s", err))
 			return Exit(1)
 		}
 		ctx.Info(path)
