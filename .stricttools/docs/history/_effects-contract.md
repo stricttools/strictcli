@@ -3931,6 +3931,7 @@ registration-time category for the same reason.
 | `errLintFrameworkUseNoManifest(manifest, path)` | `_msg_lint_framework_use_no_manifest(manifest, path)` | `--lint-framework-use: no <manifest> in the working directory '<path>'; run the program from its project root` |
 | `errLintFrameworkUseManifestMismatch(manifest, path)` | `_msg_lint_framework_use_manifest_mismatch(manifest, path)` | `--lint-framework-use: the <manifest> in '<path>' does not declare this program` |
 | `errLintFrameworkUseBinUnresolved(name)` | -- | `--lint-framework-use: bin entry '<name>' resolves to no repository-owned source file` |
+| `errLintFrameworkUseUnparsable(path, detail)` | `_msg_lint_framework_use_unparsable(path, detail)` | `--lint-framework-use: source file '<path>' does not parse: <detail>` |
 | `errLintProcessExit(construct, early)` | `_msg_lint_process_exit(construct, early)` | `<construct> ends the process outside the framework's exit step; return from the handler, or end the command early with <early>` |
 | `errLintStdoutWrite(construct, out, payload, document)` | `_msg_lint_stdout_write(construct, out, payload, document)` | `<construct> writes to stdout outside the framework; write the command's answer with <out>, its machine output with <payload>, or a document with <document> on a command that owns stdout` |
 | `errLintStderrWrite(construct, warn, error)` | `_msg_lint_stderr_write(construct, warn, error)` | `<construct> writes to stderr outside the framework; report through <warn> or <error>` |
@@ -3940,7 +3941,10 @@ registration-time category for the same reason.
 
 `errLintFrameworkUseBinUnresolved` is TypeScript-only (only a TypeScript `bin` entry names a built
 file that must be mapped back to source, §28.2) and `errLintExitNowInGoroutine` is Go-only (only Go
-has goroutines); each takes `excluded:` entries in the other two catalogs. `<construct>` is the
+has goroutines); each takes `excluded:` entries in the other two catalogs. In
+`errLintFrameworkUseUnparsable` (§18.37 item 349), `<path>` is the file's path relative to the scan
+root, spelled as a finding line spells it (§28.1), and `<detail>` is the language's own parser
+message, which is not pinned: three parsers word a syntax error three ways. `<construct>` is the
 refused construct in its canonical spelling as §28.3 lists it -- `os.Exit` even when the file
 imports `os` under another name -- so a finding names the construct a reader can look up, not the
 local alias.
@@ -9739,6 +9743,13 @@ section.
      `handler_signals_self`, the command key `payload_renderer`, and the order a generated handler
      performs them in.
 
+349. **The unparsable-source refusal (§28.2, §12.17).** Authored after the implementations reached
+     it: §28.2 had no answer for a repository-owned source file that does not parse. The scan refuses
+     with `--lint-framework-use: source file '<path>' does not parse: <detail>`, printed and exiting
+     as the other scan refusals are (§28.1), rather than skipping the file, whose constructs would
+     then be unseen, or reporting the parser's text alone, which would name neither the scan nor
+     the file in a sentence the three catalogs share.
+
 **What this section does not touch**: the `effects-bypass` check (§11) and its ceilings; the
 release tool's validation, which is designed to run `--lint-framework-use` and is not part of this
 repository (§28.4); and the consumers' migration, which follows the release that ships this.
@@ -14765,6 +14776,11 @@ verdict must be reproducible from the repository): the input set is what
 `git ls-files --cached --others --exclude-standard` lists from the scan root. A scan root that is not
 inside a git work tree is refused (`errLintFrameworkUseNotWorkTree`), with no fallback to a
 filesystem walk.
+
+**A source file the scan must read and cannot parse is refused** (`errLintFrameworkUseUnparsable`,
+§18.37 item 349): a verdict over code the scan cannot read would be a guess. That covers every file
+the scope rule below reads to decide what the program is (in Go, a file's package clause and
+imports) as well as every file it scans.
 
 **Test files are never scanned**, and neither is any other program in the repository --
 development scripts, generators, fake binaries used by tests. Only the program the flag was run

@@ -1439,6 +1439,7 @@ CONTRACT_REQUIRED_SIGNATURES: list[str] = [
     '--lint-framework-use: no * in the working directory *; run the program from its project root',
     '--lint-framework-use: the * in * does not declare this program',
     '--lint-framework-use: bin entry * resolves to no repository-owned source file',
+    '--lint-framework-use: source file * does not parse: *',
     "* ends the process outside the framework's exit step; return from the handler, or end the command early with *",
     "* writes to stdout outside the framework; write the command's answer with *, its machine output with *, or a document with * on a command that owns stdout",
     '* writes to stderr outside the framework; report through * or *',

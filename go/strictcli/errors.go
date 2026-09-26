@@ -2086,6 +2086,10 @@ func errLintFrameworkUseManifestMismatch(manifest, path string) string {
 	return fmt.Sprintf("--lint-framework-use: the %s in '%s' does not declare this program", manifest, path)
 }
 
+func errLintFrameworkUseUnparsable(path, detail string) string {
+	return fmt.Sprintf("--lint-framework-use: source file '%s' does not parse: %s", path, detail)
+}
+
 func errLintProcessExit(construct, early string) string {
 	return fmt.Sprintf("%s ends the process outside the framework's exit step; return from the handler, or end the command early with %s", construct, early)
 }

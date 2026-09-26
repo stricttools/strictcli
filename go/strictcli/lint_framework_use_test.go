@@ -183,3 +183,14 @@ func TestLintFlagRunsTheScanOnTheWorkingDirectory(t *testing.T) {
 		t.Fatalf("exit=%d stdout=%q stderr=%q", r.ExitCode, r.Stdout, r.Stderr)
 	}
 }
+
+func TestLintRefusesASourceFileThatDoesNotParse(t *testing.T) {
+	root := lintFixture(t, map[string]string{
+		"main.go":      "package main\n\nimport \"github.com/stricttools/strictcli/go/strictcli\"\n\nfunc main() { strictcli.NewApp(\"t\", \"1\", \"t\").Run() }\n",
+		"cmd/x/bad.go": "package main\n\nimport \"github.com/stricttools/strictcli/go/strictcli\"\n\nvar _ = strictcli.NewApp\n\nfunc main() { if }\n",
+	})
+	_, r := lintGoProgram(root, lintModule)
+	if want := errLintFrameworkUseUnparsable("cmd/x/bad.go", "7:18: expected operand, found '}'"); r != want {
+		t.Fatalf("refusal = %q, want %q", r, want)
+	}
+}

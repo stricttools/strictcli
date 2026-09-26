@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"go/ast"
 	"go/parser"
+	"go/scanner"
 	"go/token"
 	"os"
 	"os/exec"
@@ -156,18 +157,19 @@ func lintGoProgram(root, mainModule string) ([]string, string) {
 	for _, rel := range files {
 		dirs[path.Dir(rel)] = append(dirs[path.Dir(rel)], rel)
 	}
-	// Every file of the module is parsed up front: a source file the scan
-	// cannot read is a scan that cannot run, reported as such.
+	// Every file of the module is read up to its imports, which is what
+	// deciding the program's packages needs; a scanned file is then parsed
+	// whole. A file the scan must read and cannot parse is refused (§28.2).
 	fset := token.NewFileSet()
-	parsed := map[string]*ast.File{}
+	headers := map[string]*ast.File{}
 	for _, rel := range files {
-		f, err := parser.ParseFile(fset, filepath.Join(root, filepath.FromSlash(rel)), nil, 0)
+		f, err := parser.ParseFile(fset, filepath.Join(root, filepath.FromSlash(rel)), nil, parser.ImportsOnly)
 		if err != nil {
-			return nil, "--lint-framework-use: " + err.Error()
+			return nil, errLintFrameworkUseUnparsable(rel, parseErrorDetail(err))
 		}
-		parsed[rel] = f
+		headers[rel] = f
 	}
-	parse := func(rel string) *ast.File { return parsed[rel] }
+	parse := func(rel string) *ast.File { return headers[rel] }
 
 	// Roots: every package main directory whose files import strictcli.
 	type pkgKey struct {
@@ -234,7 +236,11 @@ func lintGoProgram(root, mainModule string) ([]string, string) {
 
 	var findings []lintFinding
 	for _, rel := range scanFiles {
-		findings = append(findings, lintGoFile(fset, rel, parsed[rel])...)
+		f, err := parser.ParseFile(fset, filepath.Join(root, filepath.FromSlash(rel)), nil, 0)
+		if err != nil {
+			return nil, errLintFrameworkUseUnparsable(rel, parseErrorDetail(err))
+		}
+		findings = append(findings, lintGoFile(fset, rel, f)...)
 	}
 	sort.Slice(findings, func(i, j int) bool {
 		a, b := findings[i], findings[j]
@@ -254,6 +260,17 @@ func lintGoProgram(root, mainModule string) ([]string, string) {
 		lines[i] = fmt.Sprintf("%s:%d: %s: %s", f.path, f.line, f.rule, f.message)
 	}
 	return lines, ""
+}
+
+// parseErrorDetail is the parser's own message for a file's first syntax
+// error, with its line and column, without the file name the refusal already
+// carries.
+func parseErrorDetail(err error) string {
+	if list, ok := err.(scanner.ErrorList); ok && len(list) > 0 {
+		e := list[0]
+		return fmt.Sprintf("%d:%d: %s", e.Pos.Line, e.Pos.Column, e.Msg)
+	}
+	return err.Error()
 }
 
 // lintFinding is one finding line's parts.
