@@ -22,6 +22,10 @@ HANDLER_ABORT_MESSAGE = "conformance: handler aborted"
 # containment line -- which names the type -- is byte-identical across targets.
 CHECK_ABORT_MESSAGE = "conformance: check aborted"
 
+# The message a `handler_signals_self` handler aborts with when its Context
+# never reports cancellation, identical in all three harnesses.
+SIGNAL_NOT_CANCELED_MESSAGE = "conformance: context was not canceled"
+
 
 def _check_severities(checks_toml: str) -> dict[str, str]:
     """Parse the embedded checks_toml and return a name->severity map.
@@ -833,6 +837,10 @@ def _emit_classification(cmd_def: dict, indent: str) -> list[str]:
     # envelope moves to stderr in machine mode.
     if cmd_def.get("owns_stdout", False):
         lines.append(f"{indent}owns_stdout=True,")
+    # The declared payload rendering (§19.10), built from the case's template.
+    if "payload_renderer" in cmd_def:
+        template = cmd_def["payload_renderer"]["template"]
+        lines.append(f"{indent}payload_renderer=_mk_renderer({template!r}),")
     if cmd_def.get("grants"):
         exprs = [
             f"strictcli.Grant(name={g['name']!r}, reason={g['reason']!r}, "
@@ -907,6 +915,37 @@ def _emit_handler_diagnostics(cmd_def: dict, indent: str) -> list[str]:
     lines: list[str] = []
     for d in cmd_def.get("handler_diagnostics", []):
         lines.append(f"{indent}ctx.{d['level']}({d['message']!r})")
+    return lines
+
+
+def _emit_handler_exits_and_output(cmd_def: dict, indent: str) -> list[str]:
+    """Emit the signal, output and raw-stdout steps of a generated handler.
+
+    They run after handler_diagnostics and before the terminal step, in the
+    order the case schema pins: handler_signals_self, handler_out,
+    handler_document, handler_raw_stdout (effects contract §14.4).
+    """
+    lines: list[str] = []
+    sig = cmd_def.get("handler_signals_self")
+    if sig is not None:
+        lines.append(f"{indent}import signal as _signal, time as _time")
+        lines.append(f"{indent}os.kill(os.getpid(), _signal.{sig})")
+        lines.append(f"{indent}_deadline = _time.monotonic() + 10")
+        lines.append(f"{indent}while not ctx.canceled:")
+        lines.append(f"{indent}    if _time.monotonic() > _deadline:")
+        lines.append(
+            f"{indent}        raise ValueError({SIGNAL_NOT_CANCELED_MESSAGE!r})"
+        )
+        lines.append(f"{indent}    _time.sleep(0.01)")
+    for text in cmd_def.get("handler_out", []):
+        lines.append(f"{indent}ctx.out({text!r})")
+    if "handler_document" in cmd_def:
+        doc = cmd_def["handler_document"]
+        lines.append(f"{indent}ctx.document().write({doc!r}.encode('utf-8'))")
+    if "handler_raw_stdout" in cmd_def:
+        raw = cmd_def["handler_raw_stdout"]
+        lines.append(f"{indent}sys.stdout.write({raw!r})")
+        lines.append(f"{indent}sys.stdout.flush()")
     return lines
 
 
@@ -1248,9 +1287,21 @@ def _emit_command_registration(
     lines.extend(claim_lines)
     diag_lines = _emit_handler_diagnostics(cmd_def, indent + "    ")
     lines.extend(diag_lines)
+    exit_output_lines = _emit_handler_exits_and_output(cmd_def, indent + "    ")
+    lines.extend(exit_output_lines)
 
     handler_returns = cmd_def.get("handler_returns")
-    if cmd_def.get("handler_aborts", False):
+    if "handler_process_exit" in cmd_def:
+        # The language's own process exit (§19.12's trap).
+        lines.append(f"{indent}    os._exit({int(cmd_def['handler_process_exit'])})")
+    elif "handler_exit_now" in cmd_def:
+        # The early exit (§19.9), passed through unchecked so a case can
+        # assert the call-time refusals.
+        en = cmd_def["handler_exit_now"]
+        lines.append(
+            f"{indent}    strictcli.exit_now({en['code']!r}, {en['message']!r})"
+        )
+    elif cmd_def.get("handler_aborts", False):
         # The handler ABORTS rather than returning (§12.3's unwinding path).
         # ValueError, not a bespoke type: the script's top-level catch prints
         # it as "error: <msg>", which is byte-for-byte what the Go harness's
@@ -1264,7 +1315,10 @@ def _emit_command_registration(
         # are its whole body.
         if "handler_prints" in cmd_def:
             lines.append(_emit_handler_body(cmd_def, global_flags))
-        elif not effect_lines and not diag_lines and not claim_lines:
+        elif (
+            not effect_lines and not diag_lines and not claim_lines
+            and not exit_output_lines
+        ):
             lines.append(f"{indent}    pass")
         # Unified return: build an Outcome carrying the exit code.
         lines.append(f"{indent}    return strictcli.outcome(exit_code={exit_code})")
@@ -1425,6 +1479,17 @@ def generate(app_def: dict) -> str:
     lines.append("        if str(value) in rejects:")
     lines.append("            raise ValueError(message)")
     lines.append("    return _validate")
+    lines.append("")
+    # The payload renderer every harness builds from a case's template
+    # (§14.4's amendment): each {key} becomes the payload's top-level member
+    # of that name, a string verbatim and an integer in decimal.
+    lines.append("def _mk_renderer(template):")
+    lines.append("    def _render(payload):")
+    lines.append("        text = template")
+    lines.append("        for key, value in payload.items():")
+    lines.append("            text = text.replace('{' + key + '}', str(value))")
+    lines.append("        return text")
+    lines.append("    return _render")
     lines.append("")
 
     # The aborting-check exception type. Spelled identically in all three
