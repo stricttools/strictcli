@@ -12949,6 +12949,8 @@ class App:
                 )
             except _EarlyExit as early:
                 raise ExitError(early.code, early.message) from None
+            finally:
+                ctx._canceled = True
             _interpret_handler_return(result)  # validate return type
             # The programmatic surface keeps its capture: it returns the
             # payload the handler supplied (contract §19.4).
@@ -13119,6 +13121,9 @@ class App:
             # The in-process door: the handler ran and ended with a failure,
             # which the caller receives as a typed error (§19.9).
             raise ExitError(early.code, early.message) from None
+        finally:
+            # The dispatch ends here, which cancels the context (§19.13).
+            ctx._canceled = True
         _interpret_handler_return(result)  # validate return type
         # The programmatic surface keeps its capture: it returns the payload
         # the handler supplied (contract §19.4).

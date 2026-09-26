@@ -135,3 +135,18 @@ def test_test_installs_nothing_and_the_context_is_canceled_when_the_dispatch_end
     assert seen["during"] is False
     assert seen["handler"] is before
     assert seen["ctx"].canceled is True
+
+
+def test_call_cancels_the_context_when_its_dispatch_ends():
+    app = strictcli.App(name="app", version="1.0.0", help="app")
+    seen = {}
+
+    @app.command("cmd", effect="read_only", help="cmd")
+    def _cmd(ctx):
+        seen["ctx"] = ctx
+        seen["during"] = ctx.canceled
+        return 0
+
+    app.call("cmd")
+    assert seen["during"] is False
+    assert seen["ctx"].canceled is True
