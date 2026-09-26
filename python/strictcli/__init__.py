@@ -50,6 +50,7 @@ import os
 import re
 import subprocess
 import sys
+import threading
 import time
 import tomllib
 import types as _pytypes
@@ -80,7 +81,7 @@ _MISSING = _MissingSentinel()
 
 # The envelope contract's own version (effects contract §19.2). Changed only by
 # a later amendment to that section.
-_INTERFACE_VERSION = 2
+_INTERFACE_VERSION = 3
 
 
 class RelativeToRoot:
@@ -284,6 +285,44 @@ class _InfraAccess:
         self.hermetic = hermetic
 
 
+class _MachineOutput:
+    """The --json document's ``output`` member, as it accumulates (§19.2).
+
+    Text written through ``ctx.out`` and every captured child's stdout
+    (§19.11) are appended in the order the framework receives them. A child's
+    stdout is read on its own thread, so appends are serialized.
+    """
+
+    def __init__(self) -> None:
+        self._parts: list[str] = []
+        self._lock = threading.Lock()
+        # Reader threads draining a captured child's stdout. The exit step
+        # joins every one of them before the document is written (§19.11).
+        self._readers: list[threading.Thread] = []
+
+    def append(self, text: str) -> None:
+        if not text:
+            return
+        with self._lock:
+            self._parts.append(text)
+
+    def value(self) -> str | None:
+        """The member's value: ``None`` when nothing was written."""
+        with self._lock:
+            return "".join(self._parts) if self._parts else None
+
+    def add_reader(self, reader: threading.Thread) -> None:
+        with self._lock:
+            self._readers.append(reader)
+
+    def drain(self) -> None:
+        """Wait for every captured child's stdout to reach end of file."""
+        with self._lock:
+            readers = list(self._readers)
+        for reader in readers:
+            reader.join()
+
+
 class Context:
     """Structured output context for command handlers.
 
@@ -302,7 +341,10 @@ class Context:
                  effects: "_Effects | None" = None,
                  command_name: str = "",
                  payload_schema: object | None = None,
-                 unsets: set | None = None):
+                 unsets: set | None = None,
+                 output: "_MachineOutput | None" = None,
+                 owns_stdout: bool = False,
+                 payload_renderer_declared: bool = False):
         self._stdout = stdout or sys.stdout
         self._stderr = stderr or sys.stderr
         self._sources = sources or {}  # flag-name -> source label (cli/env/config/default/implied/infra)
@@ -326,6 +368,13 @@ class Context:
         # writing: what they were asked to say rides the envelope. Outside
         # machine mode the list stays empty and nothing changes.
         self._diagnostics: list[dict] = []
+        # What ctx.out wrote in machine mode, plus captured child stdout: the
+        # --json document's `output` member (§19.2, §19.10, §19.11).
+        self._output = output if output is not None else _MachineOutput()
+        # The two declarations that refuse ctx.out at call time (§19.10) and
+        # decide whether ctx.document is available (§19.6).
+        self._owns_stdout = owns_stdout
+        self._payload_renderer_declared = payload_renderer_declared
 
     @property
     def dry_run(self) -> bool:
@@ -406,6 +455,27 @@ class Context:
             return False
         self._diagnostics.append({"level": level, "message": msg})
         return True
+
+    def out(self, text: str) -> None:
+        """Write the command's human-readable answer (contract §19.10).
+
+        Human mode: ``text`` and one newline on stdout, never hidden by
+        ``--quiet``. Machine mode: nothing on stdout; the same bytes are
+        appended to the --json document's ``output`` member.
+
+        Refused at call time on a command that declares a payload renderer
+        (the rendering is its human output) and on a command that owns stdout
+        (the bytes would land inside its document).
+        """
+        if self._payload_renderer_declared:
+            raise ValueError(_msg_out_with_renderer(self._command_name))
+        if self._owns_stdout:
+            raise ValueError(_msg_out_on_owns_stdout(self._command_name))
+        data = text + "\n"
+        if self._json:
+            self._output.append(data)
+            return
+        self._stdout.write(data)
 
     def info(self, msg: str) -> None:
         """Write an informational message to stdout (hidden under --quiet)."""
@@ -1049,6 +1119,139 @@ def _msg_payload_invalid(name: str, path: str, detail: str) -> str:
     return (
         f"command \"{name}\": payload does not satisfy the declared schema "
         f"at {path}: {detail}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Framework-owned exits, output writers, and the framework-use lint: message
+# templates (contract §12.17). Where a sentence names a language spelling, the
+# spelling is a parameter, so the three catalogs hold one signature.
+# ---------------------------------------------------------------------------
+
+def _msg_exit_now_code(code: object) -> str:
+    """Call-time refusal: an early exit with a code outside 1..255 (§19.9)."""
+    return (
+        f"early exit requires an exit code between 1 and 255, got {code}: "
+        f"a successful run ends with a return from the handler"
+    )
+
+
+def _msg_exit_now_message_empty() -> str:
+    """Call-time refusal: an early exit without a reason (§19.9)."""
+    return "early exit requires a non-empty message"
+
+
+def _msg_out_with_renderer(name: str) -> str:
+    """Call-time refusal: ctx.out on a command with a payload renderer."""
+    return (
+        f'command "{name}": ctx.out is refused on a command that declares a '
+        f"payload renderer: the rendering is its human output"
+    )
+
+
+def _msg_out_on_owns_stdout(name: str) -> str:
+    """Call-time refusal: ctx.out on a command that owns stdout (§19.6)."""
+    return (
+        f'command "{name}": ctx.out is refused on a command that owns stdout: '
+        f"write the document through ctx.document"
+    )
+
+
+def _msg_document_without_owns_stdout(name: str) -> str:
+    """Call-time refusal: ctx.document without the owns-stdout declaration."""
+    return (
+        f'command "{name}": ctx.document requires the owns-stdout declaration'
+    )
+
+
+def _msg_stdout_written_outside_framework(n: int, excerpt: str) -> str:
+    """Run outcome: the runtime guard saw stdout bytes (§19.12).
+
+    ``excerpt`` is already a JSON string literal, quotes included.
+    """
+    return f"stdout written outside the framework: {n} bytes: {excerpt}"
+
+
+def _msg_process_exit_outside_framework(code: object) -> str:
+    """Run outcome: a trapped ``os._exit`` during the handler (§19.12)."""
+    return f"process exit called outside the framework with code {code}"
+
+
+def _msg_canceled_by_signal(signal_name: str) -> str:
+    """Run outcome: SIGINT or SIGTERM arrived during the handler (§19.13)."""
+    return f"canceled by signal {signal_name}"
+
+
+def _msg_early_exit_tool_result(code: int, message: str) -> str:
+    """The MCP tool-result text of a command that ended early (§19.9)."""
+    return f"exit code {code}: {message}"
+
+
+def _msg_lint_framework_use_not_work_tree(path: str) -> str:
+    """Scan refusal: the scan root is outside a git work tree (§28.2)."""
+    return (
+        f"--lint-framework-use: project root '{path}' is not a git work "
+        f"tree; the scan reads only repository-owned files"
+    )
+
+
+def _msg_lint_framework_use_no_manifest(manifest: str, path: str) -> str:
+    """Scan refusal: the working directory holds no manifest (§28.2)."""
+    return (
+        f"--lint-framework-use: no {manifest} in the working directory "
+        f"'{path}'; run the program from its project root"
+    )
+
+
+def _msg_lint_framework_use_manifest_mismatch(manifest: str, path: str) -> str:
+    """Scan refusal: the manifest does not declare the running program."""
+    return (
+        f"--lint-framework-use: the {manifest} in '{path}' does not declare "
+        f"this program"
+    )
+
+
+def _msg_lint_process_exit(construct: str, early: str) -> str:
+    """Finding message of the ``process-exit`` rule (§28.3)."""
+    return (
+        f"{construct} ends the process outside the framework's exit step; "
+        f"return from the handler, or end the command early with {early}"
+    )
+
+
+def _msg_lint_stdout_write(
+    construct: str, out: str, payload: str, document: str,
+) -> str:
+    """Finding message of the ``stdout-write`` rule (§28.3)."""
+    return (
+        f"{construct} writes to stdout outside the framework; write the "
+        f"command's answer with {out}, its machine output with {payload}, "
+        f"or a document with {document} on a command that owns stdout"
+    )
+
+
+def _msg_lint_stderr_write(construct: str, warn: str, error: str) -> str:
+    """Finding message of the ``stderr-write`` rule (§28.3)."""
+    return (
+        f"{construct} writes to stderr outside the framework; report "
+        f"through {warn} or {error}"
+    )
+
+
+def _msg_lint_argv_access(construct: str) -> str:
+    """Finding message of the ``argv-access`` rule (§28.3)."""
+    return (
+        f"{construct} reads or edits the command line outside the "
+        f"framework; declare a flag or an argument"
+    )
+
+
+def _msg_lint_environment_read(construct: str) -> str:
+    """Finding message of the ``environment-read`` rule (§28.3)."""
+    return (
+        f"{construct} reads the environment outside the declared "
+        f"mechanisms; declare a flag's environment binding, a handshake, a "
+        f"connection, or a location root"
     )
 
 
@@ -11856,6 +12059,7 @@ class App:
             self._record_coverage(cmd_path)
         # Store sources for function handlers that need provenance info
         self._last_sources = sources
+        machine_output = _MachineOutput()
         ctx = Context(
             stdout=out, stderr=err, sources=sources,
             infra=self._infra_access(self._last_hermetic),
@@ -11869,6 +12073,8 @@ class App:
             command_name=cmd.name,
             payload_schema=cmd.payload_schema,
             unsets=self._last_unsets,
+            output=machine_output,
+            owns_stdout=cmd.owns_stdout,
         )
         # The would-do log's unnumbered write-set line (contract §27.5, §3.2).
         # It renders in DRY MODE ONLY, immediately after the header and before
@@ -11968,6 +12174,7 @@ class App:
                     self._last_writes.envelope_member()
                     if self._last_writes is not None else None
                 ),
+                output=ctx._output.value(),
             )
             return _DispatchResult(exit_code, ctx._payload_value)
         if truncated is not None:
@@ -12034,6 +12241,7 @@ class App:
         self, out, *, command: str | None, exit_code: int, dry_run: bool,
         payload: object, preview: list[dict], preview_error: dict | None,
         diagnostics: list[dict], writes: dict | None = None,
+        output: str | None = None,
     ) -> None:
         """Write the envelope, machine mode's sole stdout document (§19.2).
 
@@ -12053,6 +12261,10 @@ class App:
             "command": command,
             "exit_code": exit_code,
             "payload": None if payload is _MISSING else payload,
+            # The command's human answer beside its machine answer (§19.2's
+            # framework-owned-exits amendment): null when nothing was
+            # written, NEVER absent.
+            "output": output,
             "dry_run": dry_run,
             # The write set of a command declaring `update_of` (§19.2's
             # amendment, §27.5). Null on every command that declares none,
@@ -12171,6 +12383,7 @@ class App:
                 effects=self._arm_effects(cmd, command_path, dry_run=False),
                 command_name=cmd.name,
                 payload_schema=cmd.payload_schema,
+                owns_stdout=cmd.owns_stdout,
             )
             result = cmd.passthrough.handler(
                 ctx, cmd.name, raw_args, global_values,
@@ -12336,6 +12549,7 @@ class App:
             command_name=cmd.name,
             payload_schema=cmd.payload_schema,
             unsets=unsets,
+            owns_stdout=cmd.owns_stdout,
         )
         result = cmd.handler(ctx, **final_kwargs)
         _interpret_handler_return(result)  # validate return type

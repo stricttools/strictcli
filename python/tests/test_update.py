@@ -950,7 +950,7 @@ def test_the_envelope_carries_the_write_set_in_both_modes(dry):
         argv.insert(0, "--dry-run")
     r = _update_app().test(argv)
     env = json.loads(r.stdout)
-    assert env["interface_version"] == 2
+    assert env["interface_version"] == 3
     assert env["writes"] == {
         "resource": "dns-record",
         "write_mode": "sparse",

@@ -200,9 +200,9 @@ class TestPayloadApi:
 
         r = app.test(["run", "--json"])
         assert r.stdout == (
-            '{"interface_version":2,"app":"app","app_version":"1.0.0",'
+            '{"interface_version":3,"app":"app","app_version":"1.0.0",'
             '"command":"run","exit_code":0,'
-            '"payload":{"text":"héllo <b>&</b> 日本語"},"dry_run":false,'
+            '"payload":{"text":"héllo <b>&</b> 日本語"},"output":null,"dry_run":false,'
             '"writes":null,"preview":[],"preview_error":null,'
             '"diagnostics":[]}\n'
         )
@@ -216,7 +216,8 @@ ENVELOPE_KEYS = [
     "interface_version", "app", "app_version", "command", "exit_code",
     # `writes` sits after `dry_run` and before `preview` -- what the run
     # writes, beside the preview of how (§19.2's update-round amendment).
-    "payload", "dry_run", "writes", "preview", "preview_error", "diagnostics",
+    "payload", "output", "dry_run", "writes", "preview", "preview_error",
+    "diagnostics",
 ]
 
 
@@ -231,12 +232,13 @@ class TestEnvelope:
         r = app.test(["--json", "run"])
         assert list(envelope(r)) == ENVELOPE_KEYS
         assert envelope(r) == {
-            "interface_version": 2,
+            "interface_version": 3,
             "app": "app",
             "app_version": "1.0.0",
             "command": "run",
             "exit_code": 0,
             "payload": None,
+            "output": None,
             "dry_run": False,
             "writes": None,
             "preview": [],
@@ -315,7 +317,7 @@ class TestEnvelopeDiagnostics:
         """Contract §19.2: structurally exempt -- quiet governs the human stream."""
         r = self._app_with_diagnostics().test(["--quiet", "--json", "run"])
         assert len(envelope(r)["diagnostics"]) == 4
-        assert envelope(r)["interface_version"] == 2
+        assert envelope(r)["interface_version"] == 3
 
     def test_debug_rides_without_verbose(self):
         r = self._app_with_diagnostics().test(["--json", "run"])
@@ -339,8 +341,8 @@ class TestEnvelopePreDispatch:
         r = app.test(["--json", "nope"])
         assert r.exit_code == 1
         assert envelope(r) == {
-            "interface_version": 2, "app": "app", "app_version": "1.0.0",
-            "command": None, "exit_code": 1, "payload": None,
+            "interface_version": 3, "app": "app", "app_version": "1.0.0",
+            "command": None, "exit_code": 1, "payload": None, "output": None,
             "dry_run": False, "writes": None, "preview": [],
             "preview_error": None, "diagnostics": [],
         }
