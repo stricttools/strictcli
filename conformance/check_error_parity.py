@@ -1601,6 +1601,12 @@ _PY_PARSE_TIME_MSG_FUNCS = frozenset({
     # `_msg_*` function because two raise sites share it; Go and TypeScript
     # carry it in their parse-time catalog sections, so it is parse-time here.
     "_msg_mutex_decline_clause",
+    # The run outcomes of effects contract §12.17: error diagnostics the exit
+    # step appends (the runtime guard, the process-exit trap, a signal), which
+    # a conformance case reaches like any parse-time error.
+    "_msg_stdout_written_outside_framework",
+    "_msg_process_exit_outside_framework",
+    "_msg_canceled_by_signal",
 })
 _PY_TOP_LEVEL_DEF_PAT = re.compile(r"^(?:def |class |@)", re.MULTILINE)
 _PY_RETURN_PAT = re.compile(r"^    return\s", re.MULTILINE)
