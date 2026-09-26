@@ -285,6 +285,12 @@ class _InfraAccess:
         self.hermetic = hermetic
 
 
+# The human-mode prefixes of the never-suppressed diagnostic writers (§19.14).
+# The exit step prints its own error diagnostics with the error prefix too.
+_HUMAN_PREFIX_ERROR = "error: "
+_HUMAN_PREFIX_WARN = "warning: "
+
+
 class _MachineOutput:
     """The --json document's ``output`` member, as it accumulates (§19.2).
 
@@ -486,10 +492,14 @@ class Context:
         print(msg, file=self._stdout)
 
     def warn(self, msg: str) -> None:
-        """Write a warning message to stderr (never suppressed)."""
+        """Write a warning message to stderr (never suppressed).
+
+        Human mode prints ``warning: <msg>`` (§19.14): once, before the whole
+        message, whatever the message already says.
+        """
         if self._diagnostic("warn", msg):
             return
-        print(msg, file=self._stderr)
+        print(_HUMAN_PREFIX_WARN + msg, file=self._stderr)
 
     def debug(self, msg: str) -> None:
         """Write a debug message to stdout (shown only under --verbose).
@@ -503,10 +513,14 @@ class Context:
         print(msg, file=self._stdout)
 
     def error(self, msg: str) -> None:
-        """Write an error message to stderr (never suppressed)."""
+        """Write an error message to stderr (never suppressed).
+
+        Human mode prints ``error: <msg>`` (§19.14): once, before the whole
+        message, whatever the message already says.
+        """
         if self._diagnostic("error", msg):
             return
-        print(msg, file=self._stderr)
+        print(_HUMAN_PREFIX_ERROR + msg, file=self._stderr)
 
     def source(self, name: str) -> str:
         """Return the provenance source label for a flag.
@@ -10389,7 +10403,7 @@ class App:
             # impure remainder is rendered as the would-run plan.
             if app_ref._check_context_factory is None:
                 ctx.error(
-                    "error: no check context configured. "
+                    "no check context configured. "
                     "Call app.set_check_context(factory) before running."
                 )
                 return 1
@@ -10790,7 +10804,7 @@ class App:
         def _config_show_handler(ctx, **_kw) -> int:
             # If there was a config parse error, show it instead of values
             if app_ref._config_parse_err:
-                ctx.error(f"error: {app_ref._config_parse_err}")
+                ctx.error(app_ref._config_parse_err)
                 return 1
             # --json is framework-owned (contract §19.1): the object below is
             # this command's payload, not a locally-flagged print, and it is

@@ -390,22 +390,22 @@ class TestGating:
     def test_default_hides_debug_only(self):
         r = self._run(["run"])
         assert r.stdout == "I\n"
-        assert r.stderr == "W\nE\n"
+        assert r.stderr == "warning: W\nerror: E\n"
 
     def test_verbose_shows_debug(self):
         r = self._run(["--verbose", "run"])
         assert r.stdout == "D\nI\n"
-        assert r.stderr == "W\nE\n"
+        assert r.stderr == "warning: W\nerror: E\n"
 
     def test_quiet_hides_info_and_debug(self):
         r = self._run(["--quiet", "run"])
         assert r.stdout == ""
-        assert r.stderr == "W\nE\n"
+        assert r.stderr == "warning: W\nerror: E\n"
 
     def test_quiet_dominates_verbose(self):
         r = self._run(["--quiet", "--verbose", "run"])
         assert r.stdout == ""
-        assert r.stderr == "W\nE\n"
+        assert r.stderr == "warning: W\nerror: E\n"
 
     def test_quiet_never_suppresses_the_machine_payload(self):
         """--quiet cannot reach the payload: it is not written through the

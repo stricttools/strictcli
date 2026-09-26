@@ -31,7 +31,7 @@ class TestContextOutputRouting:
         ctx = Context(stdout=stdout, stderr=stderr)
         ctx.warn("careful")
         assert stdout.getvalue() == ""
-        assert stderr.getvalue() == "careful\n"
+        assert stderr.getvalue() == "warning: careful\n"
 
     def test_debug_writes_to_stdout(self):
         stdout = io.StringIO()
@@ -48,7 +48,7 @@ class TestContextOutputRouting:
         ctx = Context(stdout=stdout, stderr=stderr)
         ctx.error("fail")
         assert stdout.getvalue() == ""
-        assert stderr.getvalue() == "fail\n"
+        assert stderr.getvalue() == "error: fail\n"
 
 
 class TestContextAlwaysInjected:

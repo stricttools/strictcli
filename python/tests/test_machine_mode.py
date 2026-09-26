@@ -327,7 +327,7 @@ class TestEnvelopeDiagnostics:
     def test_human_mode_is_unchanged(self):
         r = self._app_with_diagnostics().test(["run"])
         assert r.stdout == "starting\n"
-        assert r.stderr == "careful\nbad\n"
+        assert r.stderr == "warning: careful\nerror: bad\n"
 
 
 class TestEnvelopePreDispatch:
