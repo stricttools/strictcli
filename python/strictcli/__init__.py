@@ -37,6 +37,7 @@ import ast
 import base64
 import binascii
 import calendar
+import codecs
 import contextlib
 import dataclasses
 import decimal
@@ -1045,6 +1046,8 @@ class Spawned:
     pid: int
     _proc: object = field(default=None, repr=False, compare=False)
     _cmd_path: str = field(default="", repr=False, compare=False)
+    # The thread draining the child's captured stdout under --json (§19.11).
+    _reader: object = field(default=None, repr=False, compare=False)
 
     def wait(self, *, check: bool = True) -> Completed:
         """Wait for the child and return its Completed result.
@@ -1053,6 +1056,8 @@ class Spawned:
         nonzero exit raises :class:`EffectFailed`.
         """
         code = self._proc.wait()
+        if self._reader is not None:
+            self._reader.join()
         argv = " ".join(str(a) for a in self._proc.args)
         if check and code != 0:
             # One template covers run and spawn (the method name is the
@@ -2406,11 +2411,14 @@ class _Effects:
     """
 
     __slots__ = ("_cmd", "_cmd_path", "_dry_run", "_log", "_allowlist",
-                 "_grants", "_mutation_recorded", "_trace", "_out", "_json")
+                 "_grants", "_mutation_recorded", "_trace", "_out", "_json",
+                 "_output", "_real_stdout")
 
     def __init__(self, *, cmd: "Command", cmd_path: str, dry_run: bool,
                  log: _EffectLog, allowlist: tuple,
-                 trace: "_TraceIdentity", out=None, json: bool = False) -> None:
+                 trace: "_TraceIdentity", out=None, json: bool = False,
+                 output: "_MachineOutput | None" = None,
+                 real_stdout: "_RealStdout | None" = None) -> None:
         self._cmd = cmd
         self._cmd_path = cmd_path
         self._dry_run = dry_run
@@ -2423,6 +2431,13 @@ class _Effects:
         # no-op (contract §19.7).
         self._out = out
         self._json = json
+        # Where a child's stdout goes in machine mode (§19.11): the --json
+        # document's output member, or -- on an owns-stdout command -- the
+        # real stdout, as part of the document.
+        self._output = output if output is not None else _MachineOutput()
+        self._real_stdout = (
+            real_stdout if real_stdout is not None else _RealStdout(sys.stdout)
+        )
 
     # -- claimed rendering (contract §19.7) ------------------------------
 
@@ -2680,10 +2695,17 @@ class _Effects:
             skip_if_current=skip_if_current, grant=declared, recorded=False,
         )
         argv_settled = self._settled_argv(runtime, joined, "spawn")
+        target, sink = self._child_stdout()
         proc = subprocess.Popen(
-            argv_settled, cwd=cwd, env=self._child_env(env),
+            argv_settled, cwd=cwd, env=self._child_env(env), stdout=target,
         )
-        return Spawned(pid=proc.pid, _proc=proc, _cmd_path=self._cmd_path)
+        reader = None
+        if sink is not None:
+            reader = _start_stdout_reader(proc.stdout, *sink)
+            self._output.add_reader(reader)
+        return Spawned(
+            pid=proc.pid, _proc=proc, _cmd_path=self._cmd_path, _reader=reader,
+        )
 
     def write(self, path: str | os.PathLike[str] | Completed | Response,
               content: str | bytes | Completed | Response, *, resource=None,
@@ -2899,12 +2921,40 @@ class _Effects:
             merged[_TRACE_PARENT_ENV] = entry_id
         return merged
 
+    def _child_stdout(self):
+        """Where a streaming child's stdout goes: ``(stdout=, sink)``.
+
+        Human mode: inherited, as before (``None``, no sink). Machine mode
+        (§19.11): a pipe whose bytes are appended to the output member, or on
+        an owns-stdout command the real stdout -- the saved descriptor when
+        the runtime guard holds one, else a pipe whose bytes are written
+        there. ``sink`` is the ``(on_chunk, on_end)`` pair a reader feeds.
+        """
+        if not self._json:
+            return None, None
+        if self._cmd.owns_stdout:
+            if self._real_stdout.fd is not None:
+                return self._real_stdout.fd, None
+            return subprocess.PIPE, (self._real_stdout.write, lambda: None)
+        decoder = codecs.getincrementaldecoder("utf-8")(errors="replace")
+        return subprocess.PIPE, (
+            lambda chunk: self._output.append(decoder.decode(chunk)),
+            lambda: self._output.append(decoder.decode(b"", final=True)),
+        )
+
     def _exec_run(self, runtime, joined, cwd, env, check, stream, method):
         argv = self._settled_argv(runtime, joined, method)
+        target, sink = self._child_stdout() if stream else (None, None)
         proc = subprocess.run(
             argv, cwd=cwd, env=self._child_env(env),
             capture_output=not stream,
+            **({"stdout": target} if stream else {}),
         )
+        if sink is not None:
+            on_chunk, on_end = sink
+            if proc.stdout:
+                on_chunk(proc.stdout)
+            on_end()
         if stream:
             out = err = ""
         else:
@@ -2948,6 +2998,25 @@ def _decode_effect_output(data: bytes, cmd_path: str, method: str) -> str:
     if text.endswith("\n"):
         text = text[:-1]
     return text
+
+
+def _start_stdout_reader(pipe, on_chunk, on_end) -> threading.Thread:
+    """Read a spawned child's stdout on a thread, in the order it arrives."""
+
+    def pump() -> None:
+        with pipe:
+            fd = pipe.fileno()
+            while True:
+                chunk = os.read(fd, 65536)
+                if not chunk:
+                    break
+                on_chunk(chunk)
+        on_end()
+
+    reader = threading.Thread(target=pump, name="strictcli-child-stdout",
+                              daemon=True)
+    reader.start()
+    return reader
 
 
 def _remove_path(path: str) -> None:
@@ -10957,7 +11026,9 @@ class App:
             sys.exit(1)
 
     def _arm_effects(self, cmd: "Command", cmd_path: str, *,
-                     dry_run: bool, out=None) -> "_Effects":
+                     dry_run: bool, out=None,
+                     output: "_MachineOutput | None" = None,
+                     real_stdout: "_RealStdout | None" = None) -> "_Effects":
         """Arm the effects handle for one dispatch (the runtime seal).
 
         Called at EVERY ctx-construction site that dispatches a handler, so
@@ -10985,6 +11056,8 @@ class App:
             ),
             out=out,
             json=self._last_json,
+            output=output,
+            real_stdout=real_stdout,
         )
 
     def _begin_dispatch(self) -> None:
@@ -12415,6 +12488,7 @@ class App:
             json=self._last_json,
             effects=self._arm_effects(
                 cmd, cmd_path, dry_run=self._last_dry_run, out=out,
+                output=machine_output, real_stdout=real_stdout,
             ),
             command_name=cmd.name,
             payload_schema=cmd.payload_schema,
@@ -12520,6 +12594,8 @@ class App:
         after every diagnostic the handler emitted, in the box's order.
         """
         aborted = ending == _ENDING_ABORTED
+        # A spawned child never waited on is drained here, no later (§19.11).
+        ctx._output.drain()
         closing: list[str] = []
         if early_exit is not None:
             closing.append(early_exit.message)
