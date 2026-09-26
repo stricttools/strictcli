@@ -40,7 +40,7 @@ app = strictcli.App("greet", version="1.0.0", help="A greeting app")
 @strictcli.flag("loud", type=bool, default=False, help="Shout it")
 def hello(ctx, name, loud):
     msg = f"Hello, {name}!"
-    ctx.info(msg.upper() if loud else msg)
+    ctx.out(msg.upper() if loud else msg)
 
 app.run()
 ```
@@ -347,8 +347,8 @@ app = strictcli.App("myapp", version="1.0.0", help="My app", flags=[
 ```
 
 Global flag names cannot collide with the framework's reserved names (`help`,
-`h`, `version`, `v`, `dump-schema`, `mcp`, `config`, `hermetic`) or with the
-reserved quartet.
+`h`, `version`, `v`, `dump-schema`, `mcp`, `config`, `hermetic`,
+`lint-framework-use`) or with the reserved quartet.
 
 ### Passthrough commands
 
@@ -468,6 +468,43 @@ def migrate(ctx): ...
 `--dry-run` is then refused at parse time with the reason, which also appears in
 the command's help under a `Dry run:` section and in the schema.
 
+### Output, early exits, and signals
+
+A command writes its output and ends early through the framework:
+
+- `ctx.out(text)` writes the command's answer: the text and a newline on
+  stdout, never hidden by `--quiet`. Under `--json` the same bytes go into the
+  document's `output` member instead.
+- `ctx.info` and `ctx.debug` are diagnostics (hidden by `--quiet`, and by
+  default for debug). `ctx.warn` and `ctx.error` print `warning: ` and
+  `error: ` before the message on stderr; under `--json` all four ride the
+  document's `diagnostics`, unprefixed.
+- A command with a `payload_schema=` may declare `payload_renderer=` (a
+  function from the payload to a string): human mode prints the rendering at
+  the end of the run, and `--json` emits only the payload.
+- A command declaring `owns_stdout=True` writes its document through
+  `ctx.document()`, a binary writer to the real stdout in both modes.
+- `strictcli.exit_now(code, message)` ends the command from anywhere in its
+  call stack: `finally` blocks run, the message is printed as
+  `error: <message>`, a dry run still renders its would-do log, and the
+  command exits with `code` (1 to 255). `app.call()` raises
+  `strictcli.ExitError` carrying the code and the message.
+- `app.run()` catches SIGINT and SIGTERM while the handler runs: `ctx.canceled`
+  becomes true, and when the handler returns the command exits 130 or 143
+  with `error: canceled by signal SIGINT` (or `SIGTERM`).
+- Under `--json`, stdout carries one document. While the handler runs, stdout
+  is redirected, and bytes written any other way (a `print`, `os.write(1, ...)`,
+  a child process) fail the run with a diagnostic naming them; `os._exit` is
+  trapped and ends the run through the framework. A child run through
+  `ctx.effects.run(..., stream=True)` or `ctx.effects.spawn` has its stdout
+  captured into `output`.
+
+`--lint-framework-use`, run from the project root as the only argument, scans
+the program's own package for the constructs that bypass all this --
+`sys.exit`, `print`, `sys.argv`, `os.environ`, and their relatives -- and prints
+one `<path>:<line>: <rule>: <message>` line per finding, exiting 1 when there is
+any.
+
 ### Consequential commands
 
 `consequential=True` is the only thing that makes the framework prompt -- a plain
@@ -586,6 +623,7 @@ paths have no TTY contract, so a consequential command is dispatched directly.
 | `Implies` | Auto-set a bool flag from another |
 | `Member` | One operand of a co-occurrence constraint |
 | `Result` | Return type of `app.test()` |
+| `ExitError` | Raised by `app.call()` when the command ended through `strictcli.exit_now` |
 | `Tool` | LLM tool descriptor |
 | `CheckRunResult` | Check execution result with wall-clock timing |
 | `CheckContext` | Protocol for check context |
