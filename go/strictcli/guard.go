@@ -68,11 +68,10 @@ func startStdoutGuard(kind guardKind, stdout io.Writer) *stdoutGuard {
 		if err != nil {
 			panic("strictcli: the runtime guard could not redirect stdout: " + err.Error())
 		}
+		// redirectStdoutFD owns w from here on: the platform's redirect keeps
+		// the pipe open for as long as the redirect stands.
 		g.real = realOut
 		g.undo = undo
-		// The descriptor now held as fd 1 keeps the pipe open; this copy is
-		// not needed.
-		w.Close()
 	} else {
 		saved := os.Stdout
 		os.Stdout = w
