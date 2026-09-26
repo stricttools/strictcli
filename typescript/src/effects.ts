@@ -179,7 +179,7 @@ export interface Spawned {
 /**
  * Where a captured child's stdout goes (contract §19.11): the `--json`
  * document's `output` member. `append` delivers every registered source's
- * pending bytes first, so text lands in the order the framework received it.
+ * pending bytes first, so text is kept in the order the framework received it.
  */
 export interface ChildOutput {
 	append(text: string): void;
