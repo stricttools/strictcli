@@ -2900,6 +2900,9 @@ type dispatchEnding struct {
 	trunc *dryRunTruncation
 	// aborted is set on any other unwind (§3.5's last row).
 	aborted bool
+	// killed names every child the exit step had to kill, in spawn order
+	// (§19.11's box).
+	killed []string
 	// stray is what the runtime guard caught (§19.12), nil when nothing.
 	stray *strayStdout
 	// signal is the first SIGINT or SIGTERM received while the handler ran
@@ -2922,13 +2925,20 @@ type dispatchEnding struct {
 //     and then the panic continues untouched.
 //
 // Before any of that it waits for every function started through Go, and a
-// value captured from one takes the place of a normal return. A handler that
+// value captured from one takes the place of a normal return; then it settles
+// the children the handler spawned and left unwaited, killing any still
+// running, before it releases the guard and the signal handling. A handler that
 // calls os.Exit is outside this guarantee and outside Go: the process is gone
 // before any deferred function runs.
 func (a *App) runSealed(run sealedRun, fn func() int) (code int) {
 	defer func() {
 		r := handlerUnwind(run.ctx, recover())
 		end := dispatchEnding{code: code}
+		// The children are settled while the guard and the signal handling
+		// are still in place (§19.11's box, §19.13's box).
+		if run.ctx != nil && run.ctx.effects != nil {
+			end.killed = run.ctx.effects.settleChildren()
+		}
 		if run.signals != nil {
 			end.signal = run.signals.stop()
 		}
@@ -3044,8 +3054,9 @@ type previewError struct {
 // return or an early exit with 128 + its number (§19.13).
 //
 // The error diagnostics it appends follow every diagnostic the handler
-// emitted, in this order: the early exit's message, the guard's failure, the
-// signal (§19.2's box).
+// emitted, in this order: the early exit's message, each killed child, the
+// guard's failure, the signal (§19.2's box). A killed child turns a zero into
+// 1 (§19.11's box).
 //
 // In machine mode it emits the envelope INSTEAD of the human stream's would-do
 // log, truncation error and abort marker: those texts become the envelope's
@@ -3065,6 +3076,12 @@ func (a *App) finishDispatch(run sealedRun, end dispatchEnding) int {
 	var appended []string
 	if end.early != nil {
 		appended = append(appended, end.early.message)
+	}
+	if len(end.killed) > 0 {
+		appended = append(appended, end.killed...)
+		if code == 0 {
+			code = 1
+		}
 	}
 	if end.stray != nil {
 		appended = append(appended, end.stray.diagnostic())

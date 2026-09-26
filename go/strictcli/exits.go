@@ -40,6 +40,9 @@ func ExitNow(code int, message string) {
 type ExitError struct {
 	Code    int
 	Message string
+	// Payload is what the handler supplied through ctx.Payload before its
+	// early exit, nil when it supplied none (contract §19.9's box).
+	Payload interface{}
 }
 
 // Error returns the handler's message alone.

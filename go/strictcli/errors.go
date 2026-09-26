@@ -2051,6 +2051,12 @@ func errCanceledBySignal(signal string) string {
 	return fmt.Sprintf("canceled by signal %s", signal)
 }
 
+// errChildKilledAtExit is the run outcome of a child the handler started
+// through Spawn and left running when it ended (§19.11's box).
+func errChildKilledAtExit(pid int, argv string) string {
+	return fmt.Sprintf("child process %d was still running when the handler ended and was killed: %s", pid, argv)
+}
+
 // ---------------------------------------------------------------------------
 // mcp.go — the early exit over the programmatic doors
 // ---------------------------------------------------------------------------

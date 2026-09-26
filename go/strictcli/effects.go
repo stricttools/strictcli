@@ -28,6 +28,9 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
+	"syscall"
+	"time"
 	"unicode/utf8"
 )
 
@@ -180,18 +183,21 @@ func (c Completed) Stderr() string {
 // Spawned is a handle for a started-but-not-awaited child process, and a
 // settleable carrier. It has NO scalar projection: forwarding a Spawned into a
 // string position is a call-time hard error.
+//
+// Every child a handler starts is the handler's to finish: Wait on it, or Kill
+// it. One still running when the handler ends is killed by the exit step and
+// fails the run (contract §19.11's box).
 type Spawned struct {
 	_       [0]func()
 	settled bool
 	pid     int
-	proc    *exec.Cmd
 	argv    string
 	brand   string
 	log     *effectLog
 	cmdPath string
-	// drained is closed when the child's captured stdout has been read to its
-	// end (§19.11); nil when the child's stdout is not captured.
-	drained chan struct{}
+	// child is the dispatch's record of the process, shared by every copy of
+	// this handle and by the exit step that settles it.
+	child *spawnedChild
 }
 
 func (s Spawned) brandForm() string { return s.brand }
@@ -220,23 +226,147 @@ func (s Spawned) Wait(opts ...EffectOption) (Completed, error) {
 	if err != nil {
 		return Completed{}, err
 	}
-	// A captured child's stdout is drained no later than its Wait (§19.11):
-	// the capture reads to the end before the process is reaped.
-	if s.drained != nil {
-		<-s.drained
-	}
-	waitErr := s.proc.Wait()
+	// A captured child's stdout is drained no later than its Wait (§19.11).
+	s.child.markWaited()
+	s.child.reap()
+	waitErr := s.child.waitErr
 	var exitErr *exec.ExitError
 	if waitErr != nil && !errors.As(waitErr, &exitErr) {
 		return Completed{}, waitErr
 	}
-	code := s.proc.ProcessState.ExitCode()
+	code := s.child.cmd.ProcessState.ExitCode()
 	if o.check && code != 0 {
 		return Completed{}, errors.New(errEffectRunFailed(s.cmdPath, "spawn", s.argv, code))
 	}
 	// spawn always streams (the child inherits stdio), so there is nothing
 	// captured to report.
 	return Completed{settled: true, exitCode: code}, nil
+}
+
+// Signal sends sig to the child and returns at once; the child is still the
+// handler's to Wait on or Kill. A child that has already exited is left alone,
+// because its process id may already name another process. Calling Signal on
+// an unsettled Spawned is extraction and truncates.
+func (s Spawned) Signal(sig os.Signal) error {
+	if !s.settled {
+		panic(s.truncate())
+	}
+	return s.child.signal(sig)
+}
+
+// Kill kills the child (SIGKILL, or the platform's forced termination) and
+// waits for it to exit. A killed child counts as waited on: the exit step does
+// not settle it again, and a later Wait reports its status. A child that has
+// already exited is left alone. Calling Kill on an unsettled Spawned is
+// extraction and truncates.
+func (s Spawned) Kill() error {
+	if !s.settled {
+		panic(s.truncate())
+	}
+	s.child.markWaited()
+	err := s.child.signal(os.Kill)
+	s.child.reap()
+	return err
+}
+
+// spawnedChild is one child started through Spawn in a dispatch (contract
+// §19.11's box). Its process is reaped by a goroutine of its own, so whether
+// it has exited is known without waiting for it.
+type spawnedChild struct {
+	cmd  *exec.Cmd
+	argv string
+	// exited is closed once cmd.Wait has returned, with its error in waitErr.
+	exited  chan struct{}
+	waitErr error
+	// drained is closed when the child's captured stdout has been read to its
+	// end (§19.11); nil when the child's stdout is not captured.
+	drained chan struct{}
+
+	mu     sync.Mutex
+	waited bool
+}
+
+// childTermGrace is how long a child the exit step sent SIGTERM gets before
+// SIGKILL.
+const childTermGrace = time.Second
+
+func startChildReaper(cmd *exec.Cmd, argv string, drained chan struct{}) *spawnedChild {
+	c := &spawnedChild{cmd: cmd, argv: argv, exited: make(chan struct{}), drained: drained}
+	go func() {
+		c.waitErr = cmd.Wait()
+		close(c.exited)
+	}()
+	return c
+}
+
+func (c *spawnedChild) markWaited() {
+	c.mu.Lock()
+	c.waited = true
+	c.mu.Unlock()
+}
+
+// claimForSettling reports whether the handler left this child unwaited, and
+// marks it waited either way.
+func (c *spawnedChild) claimForSettling() bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.waited {
+		return false
+	}
+	c.waited = true
+	return true
+}
+
+func (c *spawnedChild) hasExited() bool {
+	select {
+	case <-c.exited:
+		return true
+	default:
+		return false
+	}
+}
+
+// signal delivers sig unless the child has already exited.
+func (c *spawnedChild) signal(sig os.Signal) error {
+	if c.hasExited() {
+		return nil
+	}
+	if err := c.cmd.Process.Signal(sig); err != nil && !errors.Is(err, os.ErrProcessDone) {
+		return err
+	}
+	return nil
+}
+
+// reap waits for the child to exit and its captured stdout to drain.
+func (c *spawnedChild) reap() {
+	<-c.exited
+	if c.drained != nil {
+		<-c.drained
+	}
+}
+
+// settle reaps an unwaited child, killing it first when it still runs: SIGTERM,
+// then SIGKILL after childTermGrace. Where SIGTERM cannot be sent (Windows) the
+// child is killed at once. It returns the diagnostic naming a child that had
+// to be killed, or "".
+func (c *spawnedChild) settle() string {
+	if !c.claimForSettling() {
+		return ""
+	}
+	if c.hasExited() {
+		c.reap()
+		return ""
+	}
+	if err := c.signal(syscall.SIGTERM); err != nil {
+		c.signal(os.Kill)
+	}
+	select {
+	case <-c.exited:
+	case <-time.After(childTermGrace):
+		c.signal(os.Kill)
+	}
+	c.reap()
+	return errChildKilledAtExit(c.cmd.Process.Pid, c.argv)
 }
 
 // Response is the result of an HTTP request, and a settleable carrier. Header
@@ -588,6 +718,12 @@ type Effects struct {
 	// childStdout routes a streamed child's stdout (§19.11); nil on the
 	// programmatic door, where a child inherits the process stdout.
 	childStdout *childStdoutRoute
+
+	// children is every child started through Spawn in this dispatch, in
+	// spawn order, for the exit step to settle (§19.11's box). Spawn may be
+	// called from functions started through Go, so access is locked.
+	childrenMu sync.Mutex
+	children   []*spawnedChild
 }
 
 // childStdoutRoute decides where the stdout of a child run through Spawn or
@@ -925,7 +1061,8 @@ func (e *Effects) Spawn(argv []interface{}, opts ...EffectOption) (Spawned, erro
 		if err := cmd.Start(); err != nil {
 			return Spawned{}, err
 		}
-		return Spawned{settled: true, pid: cmd.Process.Pid, proc: cmd, argv: joined, cmdPath: e.cmdPath}, nil
+		child := e.trackChild(cmd, joined, nil)
+		return Spawned{settled: true, pid: cmd.Process.Pid, argv: joined, cmdPath: e.cmdPath, child: child}, nil
 	}
 	// A captured spawn is read concurrently, through a pipe the framework
 	// owns, and drained no later than Wait or the exit step (§19.11).
@@ -949,7 +1086,33 @@ func (e *Effects) Spawn(argv []interface{}, opts ...EffectOption) (Spawned, erro
 		io.Copy(capture, pr)
 		capture.close()
 	}()
-	return Spawned{settled: true, pid: cmd.Process.Pid, proc: cmd, argv: joined, cmdPath: e.cmdPath, drained: drained}, nil
+	child := e.trackChild(cmd, joined, drained)
+	return Spawned{settled: true, pid: cmd.Process.Pid, argv: joined, cmdPath: e.cmdPath, child: child}, nil
+}
+
+// trackChild records a started child for the exit step to settle.
+func (e *Effects) trackChild(cmd *exec.Cmd, argv string, drained chan struct{}) *spawnedChild {
+	c := startChildReaper(cmd, argv, drained)
+	e.childrenMu.Lock()
+	e.children = append(e.children, c)
+	e.childrenMu.Unlock()
+	return c
+}
+
+// settleChildren settles, in spawn order, every child this dispatch started
+// and the handler neither waited on nor killed (contract §19.11's box). It
+// returns one diagnostic per child that had to be killed.
+func (e *Effects) settleChildren() []string {
+	e.childrenMu.Lock()
+	children := append([]*spawnedChild(nil), e.children...)
+	e.childrenMu.Unlock()
+	var killed []string
+	for _, c := range children {
+		if msg := c.settle(); msg != "" {
+			killed = append(killed, msg)
+		}
+	}
+	return killed
 }
 
 // Write writes bytes to a path (FILE_WRITE).

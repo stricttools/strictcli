@@ -166,7 +166,7 @@ func (a *App) invoke(commandPath string, kwargs map[string]interface{}, opts ...
 			return invokeResult{exitCode: 1, err: truncErr}
 		}
 		if early != nil {
-			return invokeResult{exitCode: early.code, early: early}
+			return invokeResult{exitCode: early.code, data: ctx.payload, early: early}
 		}
 		return invokeResult{exitCode: code}
 	}
@@ -403,10 +403,8 @@ func (a *App) invoke(commandPath string, kwargs map[string]interface{}, opts ...
 	ctx.unsets = unsets
 
 	// Call the handler under the runtime seal.
-	var outcome Outcome
-	_, truncErr, early := a.invokeSealed(ctx, func() int {
-		outcome = cmd.Handler(ctx, validatedKwargs)
-		return outcome.code
+	code, truncErr, early := a.invokeSealed(ctx, func() int {
+		return cmd.Handler(ctx, validatedKwargs).code
 	})
 	if truncErr != "" {
 		return invokeResult{exitCode: 1, err: truncErr}
@@ -416,18 +414,24 @@ func (a *App) invoke(commandPath string, kwargs map[string]interface{}, opts ...
 	}
 	// The programmatic surface keeps its capture: it returns the payload the
 	// handler supplied (contract §19.4).
-	return invokeResult{exitCode: outcome.code, data: ctx.payload}
+	return invokeResult{exitCode: code, data: ctx.payload}
 }
 
 // invokeSealed runs a handler on the programmatic path under the runtime seal.
 // A carrier extraction surfaces as an InvokeError carrying the pinned
 // truncation text; any other panic is re-raised untouched.
 //
-// It waits for every function started through Go (§19.9), recognizes the
-// early exit, and cancels the handler's context when the handler is done.
+// It waits for every function started through Go (§19.9), settles the
+// children the handler spawned and left unwaited -- a child still running is
+// killed and turns a zero status into 1, though this door has no stream to
+// name it on (§19.11's box) -- recognizes the early exit, and cancels the
+// handler's context when the handler is done.
 func (a *App) invokeSealed(ctx *Context, fn func() int) (code int, truncErr string, early *exitNowSignal) {
 	defer func() {
 		r := handlerUnwind(ctx, recover())
+		if killed := ctx.effects.settleChildren(); len(killed) > 0 && r == nil && code == 0 {
+			code = 1
+		}
 		ctx.cancel()
 		switch v := r.(type) {
 		case nil:
@@ -842,7 +846,7 @@ func (a *App) Call(commandPath string, kwargs map[string]interface{}, opts ...Ca
 		return nil, &InvokeError{Message: ir.err}
 	}
 	if ir.early != nil {
-		return nil, &ExitError{Code: ir.early.code, Message: ir.early.message}
+		return nil, &ExitError{Code: ir.early.code, Message: ir.early.message, Payload: ir.data}
 	}
 	if ir.data != nil {
 		return ir.data, nil

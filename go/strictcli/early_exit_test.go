@@ -135,6 +135,37 @@ func TestCallReturnsExitErrorOnAnEarlyExit(t *testing.T) {
 	}
 }
 
+func TestExitErrorCarriesThePayloadSuppliedBeforeTheEarlyExit(t *testing.T) {
+	app := earlyExitApp(func(ctx *Context, kwargs map[string]interface{}) Outcome {
+		ctx.Payload(map[string]interface{}{"done": 2})
+		ExitNow(4, "stopped")
+		return Exit(0)
+	}, PayloadSchema(map[string]interface{}{}))
+	_, err := app.Call("cmd", nil)
+	var ee *ExitError
+	if !errors.As(err, &ee) {
+		t.Fatalf("err = %#v", err)
+	}
+	if got, ok := ee.Payload.(map[string]interface{}); !ok || got["done"] != 2 {
+		t.Fatalf("Payload = %#v", ee.Payload)
+	}
+	if r := app.Test([]string{"cmd"}); r.Data.(map[string]interface{})["done"] != 2 {
+		t.Fatalf("test() payload = %#v", r.Data)
+	}
+}
+
+func TestExitErrorPayloadIsNilWhenNoneWasSupplied(t *testing.T) {
+	app := earlyExitApp(func(ctx *Context, kwargs map[string]interface{}) Outcome {
+		failDeep(3, "no manifest at ./m.toml")
+		return Exit(0)
+	})
+	_, err := app.Call("cmd", nil)
+	var ee *ExitError
+	if !errors.As(err, &ee) || ee.Payload != nil {
+		t.Fatalf("err = %#v", err)
+	}
+}
+
 func TestMCPToolsCallReportsAnEarlyExitWithItsCode(t *testing.T) {
 	app := earlyExitApp(func(ctx *Context, kwargs map[string]interface{}) Outcome {
 		failDeep(3, "no manifest")

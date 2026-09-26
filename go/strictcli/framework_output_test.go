@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 // The output writers, the prefixes, the declared rendering, the runtime guard,
@@ -242,9 +243,10 @@ func TestAStreamedRunsStdoutIsCapturedIntoOutputUnderJSON(t *testing.T) {
 	}
 }
 
-func TestASpawnedChildsStdoutIsCapturedEvenWhenNeverWaitedOn(t *testing.T) {
+func TestAnExitedChildsStdoutIsCapturedEvenWhenNeverWaitedOn(t *testing.T) {
 	app := childApp(func(ctx *Context) error {
-		_, err := ctx.Effects().Spawn([]interface{}{"sh", "-c", "sleep 0.1; echo late"})
+		_, err := ctx.Effects().Spawn([]interface{}{"sh", "-c", "echo late"})
+		time.Sleep(500 * time.Millisecond)
 		return err
 	})
 	r := app.Test([]string{"--json", "cmd"})
