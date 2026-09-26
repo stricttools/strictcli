@@ -8,6 +8,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -735,6 +736,12 @@ func (a *App) handleMCPToolsCall(
 	// Call the command
 	result, err := a.Call(commandPath, callArgs, callOpts...)
 	if err != nil {
+		// A command that ended early answers with its status as well as its
+		// reason (§19.9).
+		var ee *ExitError
+		if errors.As(err, &ee) {
+			return a.mcpToolResult(req.ID, errEarlyExitToolResult(ee.Code, ee.Message), modern, true)
+		}
 		return a.mcpToolResult(req.ID, err.Error(), modern, true)
 	}
 

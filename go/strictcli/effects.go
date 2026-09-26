@@ -189,6 +189,9 @@ type Spawned struct {
 	brand   string
 	log     *effectLog
 	cmdPath string
+	// drained is closed when the child's captured stdout has been read to its
+	// end (§19.11); nil when the child's stdout is not captured.
+	drained chan struct{}
 }
 
 func (s Spawned) brandForm() string { return s.brand }
@@ -216,6 +219,11 @@ func (s Spawned) Wait(opts ...EffectOption) (Completed, error) {
 	o, err := parseEffectOptions(s.cmdPath, "spawn", opts, acceptedWait)
 	if err != nil {
 		return Completed{}, err
+	}
+	// A captured child's stdout is drained no later than its Wait (§19.11):
+	// the capture reads to the end before the process is reaped.
+	if s.drained != nil {
+		<-s.drained
 	}
 	waitErr := s.proc.Wait()
 	var exitErr *exec.ExitError
@@ -577,6 +585,44 @@ type Effects struct {
 	// no-op (contract §19.7).
 	out  io.Writer
 	json bool
+	// childStdout routes a streamed child's stdout (§19.11); nil on the
+	// programmatic door, where a child inherits the process stdout.
+	childStdout *childStdoutRoute
+}
+
+// childStdoutRoute decides where the stdout of a child run through Spawn or
+// Run(Stream(true)) goes (contract §19.11): captured into the envelope's
+// `output` member in machine mode; on an owns-stdout command, the framework's
+// real stdout in both modes, as part of the document; otherwise the process
+// stdout, as before.
+type childStdoutRoute struct {
+	machine    bool
+	ownsStdout bool
+	// stdout is the framework's route to the real stdout: the saved
+	// descriptor while the runtime guard is armed.
+	stdout io.Writer
+	output *outputMember
+}
+
+// bindChildStdout installs the dispatch's child-stdout route.
+func (e *Effects) bindChildStdout(r childStdoutRoute) {
+	e.childStdout = &r
+}
+
+// streamTarget returns the writer a streamed child's stdout goes to, or a
+// capture when it must be read into the `output` member.
+func (e *Effects) streamTarget() (io.Writer, *childCapture) {
+	r := e.childStdout
+	switch {
+	case r == nil:
+		return os.Stdout, nil
+	case r.ownsStdout:
+		return r.stdout, nil
+	case r.machine:
+		return nil, &childCapture{out: r.output}
+	default:
+		return os.Stdout, nil
+	}
 }
 
 // Recorded returns the records recorded so far in this dispatch (contract
@@ -872,12 +918,38 @@ func (e *Effects) Spawn(argv []interface{}, opts ...EffectOption) (Spawned, erro
 	cmd := exec.Command(settled[0], settled[1:]...)
 	cmd.Dir = o.cwd
 	cmd.Env = traceChildEnv(mergedEnv(o.env), e.trace)
-	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	if err := cmd.Start(); err != nil {
+	target, capture := e.streamTarget()
+	if capture == nil {
+		cmd.Stdout = target
+		if err := cmd.Start(); err != nil {
+			return Spawned{}, err
+		}
+		return Spawned{settled: true, pid: cmd.Process.Pid, proc: cmd, argv: joined, cmdPath: e.cmdPath}, nil
+	}
+	// A captured spawn is read concurrently, through a pipe the framework
+	// owns, and drained no later than Wait or the exit step (§19.11).
+	pr, pw, err := os.Pipe()
+	if err != nil {
 		return Spawned{}, err
 	}
-	return Spawned{settled: true, pid: cmd.Process.Pid, proc: cmd, argv: joined, cmdPath: e.cmdPath}, nil
+	cmd.Stdout = pw
+	if err := cmd.Start(); err != nil {
+		pr.Close()
+		pw.Close()
+		return Spawned{}, err
+	}
+	pw.Close()
+	drained := make(chan struct{})
+	capture.out.captures.Add(1)
+	go func() {
+		defer capture.out.captures.Done()
+		defer close(drained)
+		defer pr.Close()
+		io.Copy(capture, pr)
+		capture.close()
+	}()
+	return Spawned{settled: true, pid: cmd.Process.Pid, proc: cmd, argv: joined, cmdPath: e.cmdPath, drained: drained}, nil
 }
 
 // Write writes bytes to a path (FILE_WRITE).
@@ -1131,14 +1203,25 @@ func (e *Effects) execRun(ops []operand, joined string, o effectOpts, method str
 	cmd.Env = traceChildEnv(mergedEnv(o.env), e.trace)
 
 	var outBuf, errBuf bytes.Buffer
+	var capture *childCapture
 	if o.stream {
-		cmd.Stdout = os.Stdout
+		var target io.Writer
+		target, capture = e.streamTarget()
+		if capture != nil {
+			// A run's child has finished writing before Run returns (§19.11).
+			cmd.Stdout = capture
+		} else {
+			cmd.Stdout = target
+		}
 		cmd.Stderr = os.Stderr
 	} else {
 		cmd.Stdout = &outBuf
 		cmd.Stderr = &errBuf
 	}
 	runErr := cmd.Run()
+	if capture != nil {
+		capture.close()
+	}
 	var exitErr *exec.ExitError
 	if runErr != nil && !errors.As(runErr, &exitErr) {
 		return Completed{}, runErr

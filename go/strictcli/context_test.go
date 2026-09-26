@@ -25,8 +25,8 @@ func TestContextWarnWritesToStderr(t *testing.T) {
 
 	ctx.Warn("something is off")
 
-	if stderr.String() != "something is off\n" {
-		t.Fatalf("expected stderr 'something is off\\n', got %q", stderr.String())
+	if stderr.String() != "warning: something is off\n" {
+		t.Fatalf("expected stderr 'warning: something is off\\n', got %q", stderr.String())
 	}
 	if stdout.Len() != 0 {
 		t.Fatalf("expected empty stdout, got %q", stdout.String())
@@ -54,8 +54,8 @@ func TestContextErrorWritesToStderr(t *testing.T) {
 
 	ctx.Error("something broke")
 
-	if stderr.String() != "something broke\n" {
-		t.Fatalf("expected stderr 'something broke\\n', got %q", stderr.String())
+	if stderr.String() != "error: something broke\n" {
+		t.Fatalf("expected stderr 'error: something broke\\n', got %q", stderr.String())
 	}
 	if stdout.Len() != 0 {
 		t.Fatalf("expected empty stdout, got %q", stdout.String())

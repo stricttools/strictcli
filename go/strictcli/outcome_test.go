@@ -224,17 +224,17 @@ func TestTestCaptureLargeOutputNotTruncated(t *testing.T) {
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d, stderr len %d", r.ExitCode, len(r.Stderr))
 	}
-	// Info/Error append a trailing newline.
+	// Info/Error append a trailing newline, and Error prefixes "error: ".
 	if len(r.Stdout) != n+1 {
 		t.Fatalf("stdout truncated: expected %d bytes, got %d", n+1, len(r.Stdout))
 	}
-	if len(r.Stderr) != n+1 {
-		t.Fatalf("stderr truncated: expected %d bytes, got %d", n+1, len(r.Stderr))
+	if len(r.Stderr) != len(errorPrefix)+n+1 {
+		t.Fatalf("stderr truncated: expected %d bytes, got %d", len(errorPrefix)+n+1, len(r.Stderr))
 	}
 	if strings.TrimRight(r.Stdout, "\n") != payload {
 		t.Fatal("stdout content corrupted")
 	}
-	if strings.TrimRight(r.Stderr, "\n") != payload {
+	if strings.TrimRight(r.Stderr, "\n") != errorPrefix+payload {
 		t.Fatal("stderr content corrupted")
 	}
 }

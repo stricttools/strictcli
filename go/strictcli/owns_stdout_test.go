@@ -18,7 +18,7 @@ func ownsStdoutApp(opts ...CmdOption) *App {
 	app := NewApp("app", "1.0.0", "app")
 	all := append([]CmdOption{WithEffect(EffectReadOnly), OwnsStdout()}, opts...)
 	app.Command("dump", "dump", func(ctx *Context, kwargs map[string]interface{}) Outcome {
-		fmt.Println(ownsStdoutDoc)
+		fmt.Fprintln(ctx.Document(), ownsStdoutDoc)
 		return Exit(0)
 	}, all...)
 	return app
@@ -50,7 +50,7 @@ func TestOwnsStdoutMovesTheDiagnosticsWithTheEnvelope(t *testing.T) {
 	app.Command("dump", "dump", func(ctx *Context, kwargs map[string]interface{}) Outcome {
 		ctx.Info("wrote 1 row")
 		ctx.Warn("provisional")
-		fmt.Println(ownsStdoutDoc)
+		fmt.Fprintln(ctx.Document(), ownsStdoutDoc)
 		return Exit(0)
 	}, WithEffect(EffectReadOnly), OwnsStdout())
 	r := app.Test([]string{"--json", "dump"})
@@ -96,7 +96,7 @@ func TestOwnsStdoutMovesAPreviewEnvelopeToo(t *testing.T) {
 	app := NewApp("app", "1.0.0", "app")
 	app.Command("dump", "dump", func(ctx *Context, kwargs map[string]interface{}) Outcome {
 		ctx.Effects().Write("out.sql", "x")
-		fmt.Println("-- sql")
+		fmt.Fprintln(ctx.Document(), "-- sql")
 		return Exit(0)
 	}, WithEffect(EffectMutating), OwnsStdout())
 	r := app.Test([]string{"--json", "--dry-run", "dump"})

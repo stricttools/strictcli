@@ -179,7 +179,7 @@ func TestRunSealedRendersTheLogOnANormalReturn(t *testing.T) {
 	app, e := sealedFixture(t, true)
 	e.Write("report.txt", "ok")
 	var out, errb strings.Builder
-	code := app.runSealed(&out, &errb, true, "go", nil, false, func() int { return 3 })
+	code := app.runSealed(sealedRun{stdout: &out, stderr: &errb, dryRun: true, cmdPath: "go"}, func() int { return 3 })
 	if code != 3 {
 		t.Fatalf("code=%d", code)
 	}
@@ -196,7 +196,7 @@ func TestRunSealedRendersTheLogOnAPanicAndRepanics(t *testing.T) {
 	e.Write("report.txt", "ok")
 	var out, errb strings.Builder
 	got := mustPanic(t, func() {
-		app.runSealed(&out, &errb, true, "go", nil, false, func() int { panic("kaboom") })
+		app.runSealed(sealedRun{stdout: &out, stderr: &errb, dryRun: true, cmdPath: "go"}, func() int { panic("kaboom") })
 	})
 	if got != "kaboom" {
 		t.Fatalf("the panic must be re-raised untouched, got %q", got)
@@ -215,7 +215,7 @@ func TestRunSealedRendersNothingOutsideDryMode(t *testing.T) {
 	e.Write(filepath.Join(t.TempDir(), "report.txt"), "ok")
 	var out, errb strings.Builder
 	mustPanic(t, func() {
-		app.runSealed(&out, &errb, false, "go", nil, false, func() int { panic("kaboom") })
+		app.runSealed(sealedRun{stdout: &out, stderr: &errb, dryRun: false, cmdPath: "go"}, func() int { panic("kaboom") })
 	})
 	if out.String() != "" || errb.String() != "" {
 		t.Fatalf("stdout=%q stderr=%q", out.String(), errb.String())
@@ -226,7 +226,7 @@ func TestRunSealedLeavesTheTruncationPathAlone(t *testing.T) {
 	app, e := sealedFixture(t, true)
 	u, _ := e.Run([]interface{}{"git", "status"})
 	var out, errb strings.Builder
-	code := app.runSealed(&out, &errb, true, "go", nil, false, func() int {
+	code := app.runSealed(sealedRun{stdout: &out, stderr: &errb, dryRun: true, cmdPath: "go"}, func() int {
 		u.Stdout() // extraction: truncates
 		return 0
 	})

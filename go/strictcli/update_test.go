@@ -601,7 +601,7 @@ func TestTheEnvelopeCarriesTheWriteSetInBothModes(t *testing.T) {
 		if err := json.Unmarshal([]byte(r.Stdout), &env); err != nil {
 			t.Fatalf("stdout is not one JSON document: %v (%q)", err, r.Stdout)
 		}
-		if env["interface_version"] != float64(2) {
+		if env["interface_version"] != float64(3) {
 			t.Fatalf("interface_version = %v", env["interface_version"])
 		}
 		writes, ok := env["writes"].(map[string]interface{})

@@ -18,7 +18,13 @@ func simpleApp(cmdName, cmdHelp, handlerPrints string, opts ...CmdOption) *App {
 		for k, v := range args {
 			out = strings.ReplaceAll(out, "{"+k+"}", formatValue(v))
 		}
-		fmt.Print(out)
+		// In machine mode the runtime guard refuses a raw stdout write
+		// (contract §19.12), so the answer goes through ctx.Out there.
+		if ctx.JSON() {
+			ctx.Out(out)
+		} else {
+			fmt.Print(out)
+		}
 		return Exit(0)
 	}, append(opts, WithEffect(EffectReadOnly))...)
 	return app

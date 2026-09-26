@@ -12,6 +12,9 @@ type invokeResult struct {
 	exitCode int
 	data     interface{} // the machine payload the handler supplied (nil otherwise)
 	err      string      // non-empty if invocation failed
+	// early is set when the handler ended through ExitNow (§19.9): the caller
+	// receives an *ExitError rather than a value.
+	early *exitNowSignal
 }
 
 // InvokeError is returned by App.Call() when invocation fails
@@ -155,11 +158,15 @@ func (a *App) invoke(commandPath string, kwargs map[string]interface{}, opts ...
 		ctx := newContext(io.Discard, io.Discard, nil, a.infraAccess(false),
 			reservedFlags{approveConsequential: co.approveConsequential},
 			a.armEffects(cmd, commandPath, false, nil))
-		code, truncErr := a.invokeSealed(func() int {
+		ctx.bindCommand(cmd)
+		code, truncErr, early := a.invokeSealed(ctx, func() int {
 			return cmd.PassthroughHandler(ctx, cmd.Name, args, globalKwargs)
 		})
 		if truncErr != "" {
 			return invokeResult{exitCode: 1, err: truncErr}
+		}
+		if early != nil {
+			return invokeResult{exitCode: early.code, early: early}
 		}
 		return invokeResult{exitCode: code}
 	}
@@ -391,19 +398,21 @@ func (a *App) invoke(commandPath string, kwargs map[string]interface{}, opts ...
 	ctx := newContext(io.Discard, io.Discard, sources, a.infraAccess(false),
 		reservedFlags{approveConsequential: co.approveConsequential},
 		a.armEffects(cmd, commandPath, false, nil))
-	ctx.commandName = cmd.Name
-	ctx.payloadSchema = cmd.PayloadSchema
+	ctx.bindCommand(cmd)
 	ctx.writes = writes
 	ctx.unsets = unsets
 
 	// Call the handler under the runtime seal.
 	var outcome Outcome
-	_, truncErr := a.invokeSealed(func() int {
+	_, truncErr, early := a.invokeSealed(ctx, func() int {
 		outcome = cmd.Handler(ctx, validatedKwargs)
 		return outcome.code
 	})
 	if truncErr != "" {
 		return invokeResult{exitCode: 1, err: truncErr}
+	}
+	if early != nil {
+		return invokeResult{exitCode: early.code, data: ctx.payload, early: early}
 	}
 	// The programmatic surface keeps its capture: it returns the payload the
 	// handler supplied (contract §19.4).
@@ -413,20 +422,25 @@ func (a *App) invoke(commandPath string, kwargs map[string]interface{}, opts ...
 // invokeSealed runs a handler on the programmatic path under the runtime seal.
 // A carrier extraction surfaces as an InvokeError carrying the pinned
 // truncation text; any other panic is re-raised untouched.
-func (a *App) invokeSealed(fn func() int) (code int, truncErr string) {
+//
+// It waits for every function started through Go (§19.9), recognizes the
+// early exit, and cancels the handler's context when the handler is done.
+func (a *App) invokeSealed(ctx *Context, fn func() int) (code int, truncErr string, early *exitNowSignal) {
 	defer func() {
-		r := recover()
-		if r == nil {
-			return
-		}
-		t, ok := r.(dryRunTruncation)
-		if !ok {
+		r := handlerUnwind(ctx, recover())
+		ctx.cancel()
+		switch v := r.(type) {
+		case nil:
+		case exitNowSignal:
+			early = &v
+		case dryRunTruncation:
+			code = 1
+			truncErr = v.message
+		default:
 			panic(r)
 		}
-		code = 1
-		truncErr = t.message
 	}()
-	return fn(), ""
+	return fn(), "", nil
 }
 
 // flatProps is every property a command publishes at the flat boundary, keyed
@@ -820,11 +834,15 @@ func coerceInvokeDict(f *Flag, value interface{}) (interface{}, string) {
 //   - For passthrough handlers: the exit code (int)
 //
 // Returns an InvokeError if invocation fails (unknown command, missing
-// required flags, mutex violations, dependency errors, etc.).
+// required flags, mutex violations, dependency errors, etc.), and an
+// *ExitError when the handler ran and ended through ExitNow.
 func (a *App) Call(commandPath string, kwargs map[string]interface{}, opts ...CallOption) (interface{}, error) {
 	ir := a.invoke(commandPath, kwargs, opts...)
 	if ir.err != "" {
 		return nil, &InvokeError{Message: ir.err}
+	}
+	if ir.early != nil {
+		return nil, &ExitError{Code: ir.early.code, Message: ir.early.message}
 	}
 	if ir.data != nil {
 		return ir.data, nil

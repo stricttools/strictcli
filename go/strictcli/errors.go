@@ -1995,3 +1995,115 @@ func errElectNotAChoice(sel, c string) string {
 func errSelectorValueNotElected(sel string, v interface{}) string {
 	return fmt.Sprintf("--%s: a choice flag's value must be strictcli.Elect(<choice>, ...) or a choice name, got %T", sel, v)
 }
+
+// ---------------------------------------------------------------------------
+// exits.go, context.go — the early exit and the output writers (call-time)
+//
+// Call-time refusals take the registration-time category on §12.4's
+// precedent: they fire when a handler calls something, not at parse time.
+// Each is a panic at the call, before anything unwinds, so a refused early
+// exit is a programming error and never an early exit with a substituted code.
+// ---------------------------------------------------------------------------
+
+func errExitNowCode(code int) string {
+	return fmt.Sprintf("early exit requires an exit code between 1 and 255, got %d: a successful run ends with a return from the handler", code)
+}
+
+const errExitNowMessageEmpty = "early exit requires a non-empty message"
+
+func errOutWithRenderer(name string) string {
+	return fmt.Sprintf("command %q: ctx.out is refused on a command that declares a payload renderer: the rendering is its human output", name)
+}
+
+func errOutOnOwnsStdout(name string) string {
+	return fmt.Sprintf("command %q: ctx.out is refused on a command that owns stdout: write the document through ctx.document", name)
+}
+
+func errDocumentWithoutOwnsStdout(name string) string {
+	return fmt.Sprintf("command %q: ctx.document requires the owns-stdout declaration", name)
+}
+
+// ---------------------------------------------------------------------------
+// strictcli.go — the payload renderer declaration (registration-time)
+// ---------------------------------------------------------------------------
+
+func errRendererWithoutPayloadSchema(name string) string {
+	return fmt.Sprintf("command %q: a payload renderer requires a declared payload schema", name)
+}
+
+func errRendererOnOwnsStdout(name string) string {
+	return fmt.Sprintf("command %q: a payload renderer cannot be declared on a command that owns stdout", name)
+}
+
+// ---------------------------------------------------------------------------
+// strictcli.go — run outcomes the exit step appends (parse-time)
+//
+// None of them is raised: each is the message of an error diagnostic the exit
+// step appends, printed with the "error: " prefix in human mode. Go carries no
+// process-exit trap template: os.Exit cannot be trapped.
+// ---------------------------------------------------------------------------
+
+func errStdoutWrittenOutsideFramework(n int, excerpt string) string {
+	return fmt.Sprintf("stdout written outside the framework: %d bytes: %s", n, excerpt)
+}
+
+func errCanceledBySignal(signal string) string {
+	return fmt.Sprintf("canceled by signal %s", signal)
+}
+
+// ---------------------------------------------------------------------------
+// mcp.go — the early exit over the programmatic doors
+// ---------------------------------------------------------------------------
+
+func errEarlyExitToolResult(code int, message string) string {
+	return fmt.Sprintf("exit code %d: %s", code, message)
+}
+
+// ---------------------------------------------------------------------------
+// strictcli.go — the --lint-framework-use argument refusal (parse-time)
+// ---------------------------------------------------------------------------
+
+const errLintFrameworkUseArgs = "--lint-framework-use takes no other arguments"
+
+// ---------------------------------------------------------------------------
+// lint_framework_use.go — scan refusals and finding messages
+//
+// A conformance case cannot reach a program's source tree, so these take the
+// registration-time category. Each language-specific spelling (a manifest file
+// name, a Context method, the early-exit call) is an interpolated parameter,
+// so the three catalogs carry one signature per template.
+// ---------------------------------------------------------------------------
+
+func errLintFrameworkUseNotWorkTree(path string) string {
+	return fmt.Sprintf("--lint-framework-use: project root '%s' is not a git work tree; the scan reads only repository-owned files", path)
+}
+
+func errLintFrameworkUseNoManifest(manifest, path string) string {
+	return fmt.Sprintf("--lint-framework-use: no %s in the working directory '%s'; run the program from its project root", manifest, path)
+}
+
+func errLintFrameworkUseManifestMismatch(manifest, path string) string {
+	return fmt.Sprintf("--lint-framework-use: the %s in '%s' does not declare this program", manifest, path)
+}
+
+func errLintProcessExit(construct, early string) string {
+	return fmt.Sprintf("%s ends the process outside the framework's exit step; return from the handler, or end the command early with %s", construct, early)
+}
+
+func errLintStdoutWrite(construct, out, payload, document string) string {
+	return fmt.Sprintf("%s writes to stdout outside the framework; write the command's answer with %s, its machine output with %s, or a document with %s on a command that owns stdout", construct, out, payload, document)
+}
+
+func errLintStderrWrite(construct, warn, errorWriter string) string {
+	return fmt.Sprintf("%s writes to stderr outside the framework; report through %s or %s", construct, warn, errorWriter)
+}
+
+func errLintArgvAccess(construct string) string {
+	return fmt.Sprintf("%s reads or edits the command line outside the framework; declare a flag or an argument", construct)
+}
+
+func errLintEnvironmentRead(construct string) string {
+	return fmt.Sprintf("%s reads the environment outside the declared mechanisms; declare a flag's environment binding, a handshake, a connection, or a location root", construct)
+}
+
+const errLintExitNowInGoroutine = "strictcli.ExitNow inside a function literal started by a go statement is not recovered by the exit step; start the function with strictcli.Go"

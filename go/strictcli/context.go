@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"sync"
 )
 
 // Context provides structured output and provenance for command handlers.
@@ -44,6 +45,30 @@ type Context struct {
 	// writing: what they were asked to say rides the envelope. Outside machine
 	// mode the slice stays empty and nothing changes.
 	diagnostics []diagnosticRecord
+
+	// The command's output declarations (contract §19.6's box, §19.10): Out is
+	// refused on a command that owns stdout or declares a payload renderer,
+	// and Document is usable only on a command that owns stdout.
+	ownsStdout bool
+	renderer   func(payload interface{}) string
+
+	// output is the envelope's `output` member (§19.2's box): what Out wrote
+	// in machine mode plus every captured child's stdout (§19.11), in arrival
+	// order. Never nil.
+	output *outputMember
+
+	// done is closed when the handler's context is canceled (§19.13): by the
+	// first SIGINT or SIGTERM, by a failure captured from a function started
+	// through Go, and when the dispatch ends.
+	done       chan struct{}
+	cancelOnce sync.Once
+
+	// The functions started through Go in this dispatch (§19.9), and the first
+	// ExitNow or panic value captured from one of them.
+	goroutines   sync.WaitGroup
+	goMu         sync.Mutex
+	goCaptured   interface{}
+	goHasCapture bool
 }
 
 // diagnosticRecord is one entry of the envelope's diagnostics array (§19.2).
@@ -96,7 +121,19 @@ func newContext(stdout, stderr io.Writer, sources map[string]string, infra *infr
 		infra:    infra,
 		reserved: reserved,
 		effects:  effects,
+		output:   &outputMember{},
+		done:     make(chan struct{}),
 	}
+}
+
+// bindCommand carries a command's per-dispatch declarations onto the Context:
+// its name (for call-time refusals), its payload schema, and its output
+// declarations.
+func (c *Context) bindCommand(cmd *Command) {
+	c.commandName = cmd.Name
+	c.payloadSchema = cmd.PayloadSchema
+	c.ownsStdout = cmd.OwnsStdout
+	c.renderer = cmd.PayloadRenderer
 }
 
 // DryRun reports whether the framework-owned --dry-run flag was passed.
@@ -220,12 +257,60 @@ func (c *Context) Info(msg string) {
 	fmt.Fprintln(c.stdout, msg)
 }
 
-// Warn writes a warning message to stderr (never suppressed).
+// Out writes the command's human-readable answer (contract §19.10): text and
+// one newline to stdout, never hidden by --quiet. In machine mode nothing is
+// written and the same bytes are appended to the envelope's `output` member.
+//
+// It panics at call time on a command that declares a payload renderer (the
+// rendering is its human output) and on a command that owns stdout (write the
+// document through Document).
+func (c *Context) Out(text string) {
+	if c.renderer != nil {
+		panic(errOutWithRenderer(c.commandName))
+	}
+	if c.ownsStdout {
+		panic(errOutOnOwnsStdout(c.commandName))
+	}
+	if c.reserved.json {
+		c.output.appendText(text + "\n")
+		return
+	}
+	fmt.Fprintln(c.stdout, text)
+}
+
+// Document returns the writer for an owns-stdout command's document (contract
+// §19.6's document-writer amendment): bytes go to the real stdout, unchanged,
+// in both modes, untouched by --quiet and --json. Writes are synchronous.
+//
+// It panics at call time on a command that did not declare OwnsStdout.
+func (c *Context) Document() io.Writer {
+	if !c.ownsStdout {
+		panic(errDocumentWithoutOwnsStdout(c.commandName))
+	}
+	return c.stdout
+}
+
+// Done returns a channel that is closed when the handler's context is canceled
+// (contract §19.13): by the first SIGINT or SIGTERM the CLI path receives while
+// the handler runs, by an ExitNow or panic captured from a function started
+// through Go, and when the dispatch ends.
+func (c *Context) Done() <-chan struct{} {
+	return c.done
+}
+
+// cancel closes Done, once.
+func (c *Context) cancel() {
+	c.cancelOnce.Do(func() { close(c.done) })
+}
+
+// Warn writes a warning message to stderr as "warning: <message>" (never
+// suppressed). In machine mode the diagnostic carries the message unprefixed
+// (contract §19.14).
 func (c *Context) Warn(msg string) {
 	if c.diagnostic("warn", msg) {
 		return
 	}
-	fmt.Fprintln(c.stderr, msg)
+	fmt.Fprintln(c.stderr, warnPrefix+msg)
 }
 
 // Debug writes a debug message to stdout (shown only under --verbose).
@@ -240,13 +325,22 @@ func (c *Context) Debug(msg string) {
 	fmt.Fprintln(c.stdout, msg)
 }
 
-// Error writes an error message to stderr (never suppressed).
+// Error writes an error message to stderr as "error: <message>" (never
+// suppressed). In machine mode the diagnostic carries the message unprefixed
+// (contract §19.14).
 func (c *Context) Error(msg string) {
 	if c.diagnostic("error", msg) {
 		return
 	}
-	fmt.Fprintln(c.stderr, msg)
+	fmt.Fprintln(c.stderr, errorPrefix+msg)
 }
+
+// The human-mode prefixes of the never-suppressed diagnostic writers (contract
+// §19.14): added once, before the whole message, whatever the message holds.
+const (
+	errorPrefix = "error: "
+	warnPrefix  = "warning: "
+)
 
 // diagnostic records a diagnostic in machine mode, reporting whether it was
 // recorded. In machine mode the writers above write nothing and what they were

@@ -320,8 +320,14 @@ type Command struct {
 	// In machine mode the envelope moves to stderr so the artifact's bytes are
 	// untouched. Outside machine mode the declaration changes nothing at all.
 	OwnsStdout bool
-	Grants     []Grant
-	Forwarding *Forwarding
+	// PayloadRenderer is the command's declared human rendering of its
+	// payload (contract §19.10): in human mode the exit step prints what it
+	// returns for the supplied payload, never hidden by --quiet; in machine
+	// mode it is never called. It requires a PayloadSchema and is refused on
+	// an OwnsStdout command. --dump-schema does not publish it.
+	PayloadRenderer func(payload interface{}) string
+	Grants          []Grant
+	Forwarding      *Forwarding
 	// updateOf is the command's update declaration (contract §27.2): the
 	// resource it changes, the write mode, and the names of the declarations
 	// that identify the instance and the ones that carry what changes. nil on
@@ -1298,6 +1304,22 @@ func PayloadSchema(schema map[string]interface{}) CmdOption {
 func OwnsStdout() CmdOption {
 	return func(c *Command) {
 		c.OwnsStdout = true
+	}
+}
+
+// PayloadRenderer declares how the command's payload reads in human mode
+// (contract §19.10). When the handler supplied a payload and the command ends
+// by a return or by ExitNow, the exit step calls fn with the payload as
+// supplied and prints the returned text and one newline to stdout, after
+// everything the handler wrote and before the would-do log, never hidden by
+// --quiet. In machine mode fn is never called: the payload is the --json
+// document's payload. ctx.Out is refused on a command that declares one.
+//
+// Registration refuses a renderer on a command with no PayloadSchema, and on a
+// command that owns stdout.
+func PayloadRenderer(fn func(payload interface{}) string) CmdOption {
+	return func(c *Command) {
+		c.PayloadRenderer = fn
 	}
 }
 
@@ -2756,18 +2778,46 @@ func (a *App) Run() {
 	a.beginDispatch()
 	reserved := a.reservedFlagState()
 
-	ctx := a.newDispatchContext(os.Stdout, os.Stderr, pr, reserved)
 	// The confirm protocol fires only on the real CLI path -- and a mutating
-	// PASSTHROUGH is not exempt.
+	// PASSTHROUGH is not exempt. It runs before the handler, so outside the
+	// runtime guard and the signal handling.
 	a.confirmConsequential(pr.cmd, pr.cmdPath)
-	code := a.runSealed(os.Stdout, os.Stderr, reserved.dryRun, pr.cmdPath, ctx, pr.cmd.OwnsStdout, func() int {
+	code, _ := a.dispatchCLI(pr, reserved, os.Stdout, os.Stderr, guardFD, true)
+	a.runExitHook()
+	os.Exit(code)
+}
+
+// dispatchCLI runs the resolved command's handler on the argv door (Run and
+// Test): the runtime guard in machine mode (§19.12), the signal handling on
+// the CLI path (§19.13), and the one exit step.
+func (a *App) dispatchCLI(pr parseResult, reserved reservedFlags, stdout, stderr io.Writer, kind guardKind, handleSignals bool) (int, *Context) {
+	var guard *stdoutGuard
+	realStdout := stdout
+	if reserved.json {
+		guard = startStdoutGuard(kind, stdout)
+		realStdout = guard.real
+	}
+	ctx := a.newDispatchContext(realStdout, stderr, pr, reserved)
+	var sig *signalWatch
+	if handleSignals {
+		sig = watchSignals(ctx)
+	}
+	code := a.runSealed(sealedRun{
+		stdout:     realStdout,
+		stderr:     stderr,
+		dryRun:     reserved.dryRun,
+		cmdPath:    pr.cmdPath,
+		ctx:        ctx,
+		ownsStdout: pr.cmd.OwnsStdout,
+		guard:      guard,
+		signals:    sig,
+	}, func() int {
 		if pr.cmd.Passthrough {
 			return pr.cmd.PassthroughHandler(ctx, pr.cmd.Name, pr.passthroughArgs, pr.globalKwargs)
 		}
 		return pr.cmd.Handler(ctx, pr.kwargs).code
 	})
-	a.runExitHook()
-	os.Exit(code)
+	return code, ctx
 }
 
 // newDispatchContext builds the one Context a dispatch runs on, arming the
@@ -2775,8 +2825,13 @@ func (a *App) Run() {
 func (a *App) newDispatchContext(stdout, stderr io.Writer, pr parseResult, reserved reservedFlags) *Context {
 	ctx := newContext(stdout, stderr, pr.sources, a.infraAccess(pr.hermetic),
 		reserved, a.armEffects(pr.cmd, pr.cmdPath, reserved.dryRun, stdout))
-	ctx.commandName = pr.cmd.Name
-	ctx.payloadSchema = pr.cmd.PayloadSchema
+	ctx.bindCommand(pr.cmd)
+	ctx.effects.bindChildStdout(childStdoutRoute{
+		machine:    reserved.json,
+		ownsStdout: pr.cmd.OwnsStdout,
+		stdout:     stdout,
+		output:     ctx.output,
+	})
 	ctx.writes = pr.writes
 	ctx.unsets = pr.unsets
 	// The write set's human rendering: ONE unnumbered line between the log's
@@ -2810,43 +2865,94 @@ func (a *App) reservedFlagState() reservedFlags {
 	}
 }
 
-// runSealed runs a handler under the runtime seal AND owns the would-do log's
-// rendering, so the log reaches stdout on every exit path out of the handler
-// rather than only on the normal return:
+// sealedRun is what one handler call's exit step needs to know.
+type sealedRun struct {
+	stdout, stderr io.Writer
+	dryRun         bool
+	cmdPath        string
+	ctx            *Context
+	ownsStdout     bool
+	// guard is the armed runtime guard in machine mode on the argv door, nil
+	// otherwise (§19.12).
+	guard *stdoutGuard
+	// signals is the armed signal handling on the CLI path, nil otherwise
+	// (§19.13).
+	signals *signalWatch
+}
+
+// dispatchEnding is how a handler call ended, as the exit step reads it.
+type dispatchEnding struct {
+	// code is the handler's own status on a return.
+	code int
+	// early is set when the command ended through ExitNow (§19.9).
+	early *exitNowSignal
+	// trunc is set when a carrier extraction truncated the preview (§3.3).
+	trunc *dryRunTruncation
+	// aborted is set on any other unwind (§3.5's last row).
+	aborted bool
+	// stray is what the runtime guard caught (§19.12), nil when nothing.
+	stray *strayStdout
+	// signal is the first SIGINT or SIGTERM received while the handler ran
+	// (§19.13), nil when none.
+	signal os.Signal
+}
+
+// runSealed runs a handler under the runtime seal AND owns the one exit step,
+// so the would-do log, the early exit's message, the guard's failure and the
+// signal's diagnostic reach their streams on every exit path out of the
+// handler rather than only on the normal return:
 //
 //   - normal return -- the log, after whatever the handler emitted;
+//   - an early exit (ExitNow) -- as a return, with the early exit's code and
+//     its message as an error diagnostic;
 //   - a carrier extraction -- the truncation path (dryRunTruncation) prints the
 //     already-recorded log to stdout and its own pinned error to stderr, and
 //     exits 1;
 //   - any other panic -- the log, then the aborted-preview marker on stderr,
 //     and then the panic continues untouched.
 //
-// A handler that calls os.Exit is outside this guarantee and outside Go: the
-// process is gone before any deferred function runs.
-func (a *App) runSealed(stdout, stderr io.Writer, dryRun bool, cmdPath string, ctx *Context, ownsStdout bool, fn func() int) (code int) {
+// Before any of that it waits for every function started through Go, and a
+// value captured from one takes the place of a normal return. A handler that
+// calls os.Exit is outside this guarantee and outside Go: the process is gone
+// before any deferred function runs.
+func (a *App) runSealed(run sealedRun, fn func() int) (code int) {
 	defer func() {
-		r := recover()
-		if r == nil {
-			a.finishDispatch(ctx, stdout, stderr, dryRun, cmdPath, code, nil, false, ownsStdout)
-			return
+		r := handlerUnwind(run.ctx, recover())
+		end := dispatchEnding{code: code}
+		if run.signals != nil {
+			end.signal = run.signals.stop()
 		}
-		if t, ok := r.(dryRunTruncation); ok {
-			code = 1
-			a.finishDispatch(ctx, stdout, stderr, dryRun, cmdPath, 1, &t, false, ownsStdout)
-			return
+		if run.guard != nil {
+			end.stray = run.guard.stop()
 		}
-		// An unexpected unwind. The recorded effects are still owed to whoever
-		// asked for the preview; the marker says the list may not be all of it.
-		//
-		// The envelope's exit_code is "the process's exit status" (§19.2), and
-		// §3.5 pins what that status is on this path: the panic is not
-		// swallowed, so it is "whatever the language would have produced
-		// anyway". In Go an unrecovered panic exits 2, not 1 -- reporting 1
-		// here would make the envelope contradict the process it describes.
-		// The two siblings report 1 on the same path for the same reason:
-		// an uncaught Python exception and an uncaught Node throw both exit 1.
-		a.finishDispatch(ctx, stdout, stderr, dryRun, cmdPath, goPanicExitStatus, nil, true, ownsStdout)
-		panic(r)
+		if run.ctx != nil {
+			run.ctx.cancel()
+		}
+		switch v := r.(type) {
+		case nil:
+		case exitNowSignal:
+			end.early = &v
+		case dryRunTruncation:
+			end.trunc = &v
+		default:
+			// An unexpected unwind. The recorded effects are still owed to
+			// whoever asked for the preview; the marker says the list may not
+			// be all of it.
+			//
+			// The envelope's exit_code is "the process's exit status" (§19.2),
+			// and §3.5 pins what that status is on this path: the panic is not
+			// swallowed, so it is "whatever the language would have produced
+			// anyway". In Go an unrecovered panic exits 2, not 1 -- reporting 1
+			// here would make the envelope contradict the process it
+			// describes. The two siblings report 1 on the same path for the
+			// same reason: an uncaught Python exception and an uncaught Node
+			// throw both exit 1.
+			end.aborted = true
+		}
+		code = a.finishDispatch(run, end)
+		if end.aborted {
+			panic(r)
+		}
 	}()
 	return fn()
 }
@@ -2869,7 +2975,10 @@ func (a *App) emitPreDispatchEnvelope(stdout io.Writer) {
 // set grew a `writes` member that is never absent, so a consumer validating the
 // envelope's key set against version 1 must be able to tell which document it
 // holds.
-const interfaceVersion = 2
+//
+// §18.37 item 338 is another: the key set grew an `output` member that is
+// never absent.
+const interfaceVersion = 3
 
 // goPanicExitStatus is the exit status the Go runtime gives a process whose
 // panic was never recovered. It is the status §3.5 promises an aborted
@@ -2887,7 +2996,11 @@ type envelope struct {
 	Command          *string     `json:"command"`
 	ExitCode         int         `json:"exit_code"`
 	Payload          interface{} `json:"payload"`
-	DryRun           bool        `json:"dry_run"`
+	// Output is the command's human answer written through Out plus every
+	// captured child's stdout (§19.2's box, §19.10, §19.11), null when
+	// nothing was written. NEVER absent.
+	Output *string `json:"output"`
+	DryRun bool    `json:"dry_run"`
 	// Writes is the write set of a command declaring update_of (§27.5), and
 	// null on every command that declares none. NEVER absent, and populated in
 	// BOTH modes, for preview's reason: it is a function of the declaration and
@@ -2910,16 +3023,54 @@ type previewError struct {
 }
 
 // finishDispatch is the ONE ordered exit step. Reachable from every way out of
-// a dispatch (a normal return, a truncated preview and an unwinding abort), so
-// there is exactly one place that decides what the framework emits at the end
-// of a run and in what order.
+// a dispatch (a normal return, an early exit, a truncated preview and an
+// unwinding abort), so there is exactly one place that decides what the
+// framework emits at the end of a run, in what order, and with which status.
+// It returns the status the command ends with.
+//
+// The status: the handler's code on a return, the early exit's code, 1 for a
+// truncation, and the language's own panic status for an abort; a guard
+// failure turns a zero into 1 (§19.12); a signal replaces the status of a
+// return or an early exit with 128 + its number (§19.13).
+//
+// The error diagnostics it appends follow every diagnostic the handler
+// emitted, in this order: the early exit's message, the guard's failure, the
+// signal (§19.2's box).
 //
 // In machine mode it emits the envelope INSTEAD of the human stream's would-do
 // log, truncation error and abort marker: those texts become the envelope's
 // preview and preview_error members (§19.1, §19.3), and stdout carries exactly
 // one document.
-func (a *App) finishDispatch(ctx *Context, stdout, stderr io.Writer, dryRun bool, cmdPath string, exitCode int, trunc *dryRunTruncation, aborted bool, ownsStdout bool) {
+func (a *App) finishDispatch(run sealedRun, end dispatchEnding) int {
+	ctx := run.ctx
+	code := end.code
+	switch {
+	case end.early != nil:
+		code = end.early.code
+	case end.trunc != nil:
+		code = 1
+	case end.aborted:
+		code = goPanicExitStatus
+	}
+	var appended []string
+	if end.early != nil {
+		appended = append(appended, end.early.message)
+	}
+	if end.stray != nil {
+		appended = append(appended, end.stray.diagnostic())
+		if code == 0 {
+			code = 1
+		}
+	}
+	if end.signal != nil && !end.aborted {
+		appended = append(appended, errCanceledBySignal(signalName(end.signal)))
+		code = signalExitStatus(end.signal)
+	}
+
 	if ctx != nil && ctx.reserved.json {
+		for _, msg := range appended {
+			ctx.diagnostics = append(ctx.diagnostics, diagnosticRecord{Level: "error", Message: msg})
+		}
 		// The emission seam owns instance validation (§19.4, §19.5): the value
 		// is checked here, where the envelope is about to carry it, and nowhere
 		// else. A human-mode run never reaches this line, so a payload the
@@ -2929,35 +3080,49 @@ func (a *App) finishDispatch(ctx *Context, stdout, stderr io.Writer, dryRun bool
 		// document, and the envelope moves to stderr with the diagnostics it
 		// carries (contract §19.6). Leaving it on stdout would re-create the
 		// two-documents-on-one-stream collision §19.1 exists to remove.
-		dest := stdout
-		if ownsStdout {
-			dest = stderr
+		dest := run.stdout
+		if run.ownsStdout {
+			dest = run.stderr
 		}
-		a.emitEnvelope(ctx, dest, &cmdPath, exitCode, dryRun, a.EffectLog(),
-			a.buildPreviewError(cmdPath, dryRun, trunc, aborted))
-		return
+		a.emitEnvelope(ctx, dest, &run.cmdPath, code, run.dryRun, a.EffectLog(),
+			a.buildPreviewError(run.cmdPath, run.dryRun, end.trunc, end.aborted))
+		return code
 	}
-	if trunc != nil {
+	a.finishHumanStream(run, end)
+	for _, msg := range appended {
+		fmt.Fprintln(run.stderr, errorPrefix+msg)
+	}
+	return code
+}
+
+// finishHumanStream writes what the human stream owes at the end of a run: the
+// declared payload rendering (§19.10), then the would-do log (§3.5), or the
+// truncation's own log and error, or the log and the abort marker.
+func (a *App) finishHumanStream(run sealedRun, end dispatchEnding) {
+	if end.trunc != nil {
 		// The truncation path ends the preview for its own pinned reason: it
 		// renders the log it already has and its own error, and never goes
 		// through the generic would-do rendering.
-		if !trunc.log.seamSuppressed() {
-			fmt.Fprintln(stdout, trunc.log.render())
+		if !end.trunc.log.seamSuppressed() {
+			fmt.Fprintln(run.stdout, end.trunc.log.render())
 		}
-		fmt.Fprintln(stderr, trunc.message)
+		fmt.Fprintln(run.stderr, end.trunc.message)
 		return
 	}
-	if !dryRun {
+	if !end.aborted && run.ctx != nil && run.ctx.renderer != nil && run.ctx.payloadSet {
+		fmt.Fprintln(run.stdout, run.ctx.renderer(run.ctx.payload))
+	}
+	if !run.dryRun {
 		return
 	}
 	// A handler that claimed the render AND produced the bytes already has the
 	// log in the stream; re-emitting it here would duplicate it. A claim that
 	// never rendered falls through and is rendered (§19.7).
 	if !a.effects.seamSuppressed() {
-		fmt.Fprintln(stdout, a.renderWouldDoLog())
+		fmt.Fprintln(run.stdout, a.renderWouldDoLog())
 	}
-	if aborted {
-		fmt.Fprintln(stderr, errDryRunAborted(a.wouldDoSeq(), cmdPath))
+	if end.aborted {
+		fmt.Fprintln(run.stderr, errDryRunAborted(a.wouldDoSeq(), run.cmdPath))
 	}
 }
 
@@ -3038,6 +3203,7 @@ func (a *App) emitEnvelope(ctx *Context, stdout io.Writer, command *string, exit
 		if ctx.writes != nil {
 			env.Writes = ctx.writes.envelopeMember()
 		}
+		env.Output = ctx.output.value()
 		if len(ctx.diagnostics) > 0 {
 			env.Diagnostics = ctx.diagnostics
 		}
@@ -3124,15 +3290,13 @@ func (a *App) Test(argv []string) Result {
 	// Context is constructed unconditionally for every dispatch, writing to the
 	// capture pipes. Test() behaves as if --approve-consequential were passed:
 	// it never prompts.
+	//
+	// The runtime guard applies here as on Run (§19.12), by replacing the
+	// os.Stdout variable the capture above already replaced; Test installs no
+	// signal handling (§19.13): an in-process caller owns its own process's
+	// signals.
 	reserved := a.reservedFlagState()
-	ctx := a.newDispatchContext(stdoutW, stderrW, pr, reserved)
-
-	exitCode := a.runSealed(stdoutW, stderrW, reserved.dryRun, pr.cmdPath, ctx, pr.cmd.OwnsStdout, func() int {
-		if pr.cmd.Passthrough {
-			return pr.cmd.PassthroughHandler(ctx, pr.cmd.Name, pr.passthroughArgs, pr.globalKwargs)
-		}
-		return pr.cmd.Handler(ctx, pr.kwargs).code
-	})
+	exitCode, ctx := a.dispatchCLI(pr, reserved, stdoutW, stderrW, guardSwap, false)
 	resultData := ctx.payload
 
 	stdoutW.Close()
@@ -4054,6 +4218,14 @@ func buildAndValidateCommand(name, help string, handler func(ctx *Context, kwarg
 	if cmd.PayloadSchema != nil {
 		if f := validatePayloadSchemaLiteral(cmd.PayloadSchema); f != nil {
 			panic(errPayloadSchemaInvalid(name, f.Path, f.Detail))
+		}
+	}
+	if cmd.PayloadRenderer != nil {
+		if cmd.PayloadSchema == nil {
+			panic(errRendererWithoutPayloadSchema(name))
+		}
+		if cmd.OwnsStdout {
+			panic(errRendererOnOwnsStdout(name))
 		}
 	}
 	cmd.Grants = validateGrants(name, cmd.Grants)
