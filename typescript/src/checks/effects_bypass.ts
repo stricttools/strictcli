@@ -51,14 +51,11 @@
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import {
-	computeLineStarts,
-	createScanner,
-	SyntaxKind,
-} from "typescript/unstable/ast";
+import { computeLineStarts, SyntaxKind } from "typescript/unstable/ast";
 import type { AppImpl, GroupImpl, RegisteredCommand } from "../app.js";
 import type { Grant } from "../effects.js";
 import { errEffectsBypassNotAWorkTree } from "../errors.js";
+import { isNameToken, lineOf, type Tok, tokenize } from "../tokens.js";
 import { type CheckSpec, errorCheckSpec, warnCheckSpec } from "./provider.js";
 
 /** Process starts. Matched on the called name, bare or through a receiver. */
@@ -233,78 +230,6 @@ function repoSourceFiles(root: string): string[] {
 		rels.add(rel);
 	}
 	return [...rels].sort();
-}
-
-interface Tok {
-	readonly kind: SyntaxKind;
-	readonly text: string;
-	readonly start: number;
-}
-
-/**
- * Tokenizes with the compiler's scanner, dropping trivia.
- *
- * The scanner is a pure lexer: it cannot leave a template-substitution state on
- * its own, because in a real compile the PARSER decides when a `}` closes a
- * `${` and calls back into `reScanTemplateToken`. Without that cooperation the
- * scanner stalls at the closing brace, returning a zero-width token forever.
- * Progress is therefore asserted explicitly: on a stall, re-scan as a template
- * continuation, and if even that does not advance, step one character and carry
- * on. Both recoveries are lossless for this analyser, which reads names,
- * punctuation and brace depth -- never template contents.
- */
-function tokenize(text: string): Tok[] {
-	const scanner = createScanner(/* skipTrivia */ true);
-	scanner.setText(text);
-	const toks: Tok[] = [];
-	let lastEnd = -1;
-	for (;;) {
-		let kind = scanner.scan();
-		if (kind === SyntaxKind.EndOfFile) {
-			break;
-		}
-		if (scanner.getTokenEnd() <= lastEnd) {
-			kind = scanner.reScanTemplateToken(/* isTaggedTemplate */ false);
-			if (scanner.getTokenEnd() <= lastEnd) {
-				if (lastEnd + 1 >= text.length) {
-					break;
-				}
-				scanner.resetTokenState(lastEnd + 1);
-				lastEnd += 1;
-				continue;
-			}
-		}
-		lastEnd = scanner.getTokenEnd();
-		toks.push({
-			kind,
-			text: scanner.getTokenText(),
-			start: scanner.getTokenStart(),
-		});
-	}
-	return toks;
-}
-
-function lineOf(lineStarts: readonly number[], pos: number): number {
-	let lo = 0;
-	let hi = lineStarts.length - 1;
-	while (lo < hi) {
-		const mid = (lo + hi + 1) >> 1;
-		if ((lineStarts[mid] as number) <= pos) {
-			lo = mid;
-		} else {
-			hi = mid - 1;
-		}
-	}
-	return lo + 1;
-}
-
-/** True when the token is an identifier or a keyword usable as a member name. */
-function isNameToken(t: Tok | undefined): boolean {
-	return (
-		t !== undefined &&
-		/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(t.text) &&
-		t.kind !== SyntaxKind.StringLiteral
-	);
 }
 
 /**

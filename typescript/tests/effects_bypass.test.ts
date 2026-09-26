@@ -118,6 +118,24 @@ export function deploy(ctx) {
 	assert.match(findings[0]?.text ?? "", /calls writeFileSync directly/);
 });
 
+test("bypass: a template substitution's closing brace does not end the handler's block", () => {
+	const root = project({
+		"cli.ts": `
+import { writeFileSync } from "node:fs";
+export function deploy(ctx) {
+	ctx.info(\`built \${ctx.dryRun} then writeFileSync("a") is advice\`);
+	ctx.effects.run(["make"]);
+	writeFileSync("out.txt", "x");
+}
+`,
+	});
+	const findings = scanEffectsBypasses(root);
+	assert.deepEqual(
+		findings.map((f) => f.line),
+		[6],
+	);
+});
+
 test("bypass: a function that never opts in is not a finding", () => {
 	const root = project({
 		"util.ts": `
