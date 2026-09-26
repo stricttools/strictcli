@@ -15,7 +15,7 @@ the strictcli rlsbl monorepo as releasable `ts-strictcli`.
 
 ## Release workflow
 
-Releases go through [rlsbl](https://github.com/smm-h/rlsbl) monorepo releases.
+Releases go through [rlsbl](https://github.com/stricttools/rlsbl) monorepo releases.
 
 - CHANGELOG.md is generated from JSONL changelog entries — never edit it by hand.
   Add entries with `rlsbl changelog add` from inside `typescript/` after each commit
