@@ -53,6 +53,16 @@
           "anchor": "stage-5-dispatch"
         },
         {
+          "level": 4,
+          "text": "Output writers",
+          "anchor": "output-writers"
+        },
+        {
+          "level": 4,
+          "text": "Ending a command",
+          "anchor": "ending-a-command"
+        },
+        {
           "level": 3,
           "text": "Machine mode and the envelope",
           "anchor": "machine-mode-and-the-envelope"
@@ -244,6 +254,11 @@
         },
         {
           "level": 2,
+          "text": "The framework-use lint",
+          "anchor": "the-framework-use-lint"
+        },
+        {
+          "level": 2,
           "text": "Error handling philosophy",
           "anchor": "error-handling-philosophy"
         },
@@ -318,6 +333,11 @@
           "level": 4,
           "text": "Aborting handlers",
           "anchor": "aborting-handlers"
+        },
+        {
+          "level": 4,
+          "text": "Exits, output writers, and signals",
+          "anchor": "exits-output-writers-and-signals"
         },
         {
           "level": 4,
@@ -836,6 +856,31 @@
           "anchor": "handler-signature"
         },
         {
+          "level": 3,
+          "text": "Ending a command early",
+          "anchor": "ending-a-command-early"
+        },
+        {
+          "level": 3,
+          "text": "Signals",
+          "anchor": "signals"
+        },
+        {
+          "level": 3,
+          "text": "Declared payload rendering",
+          "anchor": "declared-payload-rendering"
+        },
+        {
+          "level": 3,
+          "text": "Commands that own stdout",
+          "anchor": "commands-that-own-stdout"
+        },
+        {
+          "level": 3,
+          "text": "Machine mode keeps stdout to one document",
+          "anchor": "machine-mode-keeps-stdout-to-one-document"
+        },
+        {
           "level": 2,
           "text": "Flags",
           "anchor": "flags"
@@ -1019,6 +1064,11 @@
           "level": 2,
           "text": "Testing",
           "anchor": "testing"
+        },
+        {
+          "level": 2,
+          "text": "Linting the program for framework bypasses",
+          "anchor": "linting-the-program-for-framework-bypasses"
         },
         {
           "level": 2,
@@ -1304,6 +1354,11 @@
         },
         {
           "level": 3,
+          "text": "`ExitError`",
+          "anchor": "exiterror"
+        },
+        {
+          "level": 3,
           "text": "`InvokeError`",
           "anchor": "invokeerror"
         },
@@ -1551,6 +1606,16 @@
           "level": 3,
           "text": "`Header`",
           "anchor": "header"
+        },
+        {
+          "level": 3,
+          "text": "`ExitNow`",
+          "anchor": "exitnow"
+        },
+        {
+          "level": 3,
+          "text": "`Go`",
+          "anchor": "go"
         },
         {
           "level": 3,
@@ -1924,6 +1989,11 @@
         },
         {
           "level": 3,
+          "text": "`PayloadRenderer`",
+          "anchor": "payloadrenderer"
+        },
+        {
+          "level": 3,
           "text": "`WithGrants`",
           "anchor": "withgrants"
         },
@@ -2129,6 +2199,21 @@
         },
         {
           "level": 3,
+          "text": "`Context.Out`",
+          "anchor": "contextout"
+        },
+        {
+          "level": 3,
+          "text": "`Context.Document`",
+          "anchor": "contextdocument"
+        },
+        {
+          "level": 3,
+          "text": "`Context.Done`",
+          "anchor": "contextdone"
+        },
+        {
+          "level": 3,
           "text": "`Context.Warn`",
           "anchor": "contextwarn"
         },
@@ -2279,6 +2364,11 @@
         },
         {
           "level": 3,
+          "text": "`ExitError.Error`",
+          "anchor": "exiterrorerror"
+        },
+        {
+          "level": 3,
           "text": "`InvokeError.Error`",
           "anchor": "invokeerrorerror"
         },
@@ -2291,6 +2381,11 @@
           "level": 3,
           "text": "`App.ServeMCP`",
           "anchor": "appservemcp"
+        },
+        {
+          "level": 3,
+          "text": "`childCapture.Write`",
+          "anchor": "childcapturewrite"
         },
         {
           "level": 3,
@@ -2533,6 +2628,11 @@
         },
         {
           "level": 2,
+          "text": "A sixth case: ending a command early",
+          "anchor": "a-sixth-case-ending-a-command-early"
+        },
+        {
+          "level": 2,
           "text": "The same shape, elsewhere in the framework",
           "anchor": "the-same-shape-elsewhere-in-the-framework"
         },
@@ -2691,6 +2791,16 @@
           "level": 3,
           "text": "Returning Structured Data",
           "anchor": "returning-structured-data"
+        },
+        {
+          "level": 3,
+          "text": "Ending a command early",
+          "anchor": "ending-a-command-early"
+        },
+        {
+          "level": 3,
+          "text": "Commands that own stdout",
+          "anchor": "commands-that-own-stdout"
         },
         {
           "level": 2,
@@ -2918,6 +3028,21 @@
           "anchor": "error-handling"
         },
         {
+          "level": 3,
+          "text": "Signals",
+          "anchor": "signals"
+        },
+        {
+          "level": 3,
+          "text": "Machine mode keeps stdout to one document",
+          "anchor": "machine-mode-keeps-stdout-to-one-document"
+        },
+        {
+          "level": 3,
+          "text": "Linting the program for framework bypasses",
+          "anchor": "linting-the-program-for-framework-bypasses"
+        },
+        {
           "level": 2,
           "text": "Full Example",
           "anchor": "full-example"
@@ -3036,6 +3161,151 @@
         },
         {
           "level": 3,
+          "text": "`_MachineOutput`",
+          "anchor": "_machineoutput"
+        },
+        {
+          "level": 4,
+          "text": "`append`",
+          "anchor": "append"
+        },
+        {
+          "level": 4,
+          "text": "`value`",
+          "anchor": "value"
+        },
+        {
+          "level": 4,
+          "text": "`add_reader`",
+          "anchor": "add_reader"
+        },
+        {
+          "level": 4,
+          "text": "`drain`",
+          "anchor": "drain"
+        },
+        {
+          "level": 3,
+          "text": "`_RealStdout`",
+          "anchor": "_realstdout"
+        },
+        {
+          "level": 4,
+          "text": "`write`",
+          "anchor": "write"
+        },
+        {
+          "level": 3,
+          "text": "`_ProcessExitTrapped`",
+          "anchor": "_processexittrapped"
+        },
+        {
+          "level": 3,
+          "text": "`_GuardedBinaryStream`",
+          "anchor": "_guardedbinarystream"
+        },
+        {
+          "level": 4,
+          "text": "`writable`",
+          "anchor": "writable"
+        },
+        {
+          "level": 4,
+          "text": "`write`",
+          "anchor": "write-1"
+        },
+        {
+          "level": 3,
+          "text": "`_GuardedTextStream`",
+          "anchor": "_guardedtextstream"
+        },
+        {
+          "level": 4,
+          "text": "`writable`",
+          "anchor": "writable-1"
+        },
+        {
+          "level": 4,
+          "text": "`write`",
+          "anchor": "write-2"
+        },
+        {
+          "level": 3,
+          "text": "`_StdoutGuard`",
+          "anchor": "_stdoutguard"
+        },
+        {
+          "level": 4,
+          "text": "`start`",
+          "anchor": "start"
+        },
+        {
+          "level": 4,
+          "text": "`stop`",
+          "anchor": "stop"
+        },
+        {
+          "level": 4,
+          "text": "`failure`",
+          "anchor": "failure"
+        },
+        {
+          "level": 3,
+          "text": "`_trapped_process_exit`",
+          "anchor": "_trapped_process_exit"
+        },
+        {
+          "level": 3,
+          "text": "`_SignalWatch`",
+          "anchor": "_signalwatch"
+        },
+        {
+          "level": 4,
+          "text": "`start`",
+          "anchor": "start-1"
+        },
+        {
+          "level": 4,
+          "text": "`stop`",
+          "anchor": "stop-1"
+        },
+        {
+          "level": 4,
+          "text": "`failure`",
+          "anchor": "failure-1"
+        },
+        {
+          "level": 3,
+          "text": "`_HandlerSpan`",
+          "anchor": "_handlerspan"
+        },
+        {
+          "level": 4,
+          "text": "`start`",
+          "anchor": "start-2"
+        },
+        {
+          "level": 4,
+          "text": "`stop`",
+          "anchor": "stop-2"
+        },
+        {
+          "level": 3,
+          "text": "`_DocumentWriter`",
+          "anchor": "_documentwriter"
+        },
+        {
+          "level": 4,
+          "text": "`write`",
+          "anchor": "write-3"
+        },
+        {
+          "level": 4,
+          "text": "`flush`",
+          "anchor": "flush"
+        },
+        {
+          "level": 3,
           "text": "`Context`",
           "anchor": "context"
         },
@@ -3066,6 +3336,11 @@
         },
         {
           "level": 4,
+          "text": "`canceled`",
+          "anchor": "canceled"
+        },
+        {
+          "level": 4,
           "text": "`payload`",
           "anchor": "payload"
         },
@@ -3078,6 +3353,16 @@
           "level": 4,
           "text": "`_diagnostic`",
           "anchor": "_diagnostic"
+        },
+        {
+          "level": 4,
+          "text": "`out`",
+          "anchor": "out"
+        },
+        {
+          "level": 4,
+          "text": "`document`",
+          "anchor": "document"
         },
         {
           "level": 4,
@@ -3128,6 +3413,21 @@
           "level": 3,
           "text": "`EffectFailed`",
           "anchor": "effectfailed"
+        },
+        {
+          "level": 3,
+          "text": "`_EarlyExit`",
+          "anchor": "_earlyexit"
+        },
+        {
+          "level": 3,
+          "text": "`exit_now`",
+          "anchor": "exit_now"
+        },
+        {
+          "level": 3,
+          "text": "`ExitError`",
+          "anchor": "exiterror"
         },
         {
           "level": 3,
@@ -3187,7 +3487,7 @@
         {
           "level": 4,
           "text": "`append`",
-          "anchor": "append"
+          "anchor": "append-1"
         },
         {
           "level": 4,
@@ -3293,6 +3593,91 @@
           "level": 3,
           "text": "`_msg_payload_invalid`",
           "anchor": "_msg_payload_invalid"
+        },
+        {
+          "level": 3,
+          "text": "`_msg_exit_now_code`",
+          "anchor": "_msg_exit_now_code"
+        },
+        {
+          "level": 3,
+          "text": "`_msg_exit_now_message_empty`",
+          "anchor": "_msg_exit_now_message_empty"
+        },
+        {
+          "level": 3,
+          "text": "`_msg_out_with_renderer`",
+          "anchor": "_msg_out_with_renderer"
+        },
+        {
+          "level": 3,
+          "text": "`_msg_out_on_owns_stdout`",
+          "anchor": "_msg_out_on_owns_stdout"
+        },
+        {
+          "level": 3,
+          "text": "`_msg_document_without_owns_stdout`",
+          "anchor": "_msg_document_without_owns_stdout"
+        },
+        {
+          "level": 3,
+          "text": "`_msg_stdout_written_outside_framework`",
+          "anchor": "_msg_stdout_written_outside_framework"
+        },
+        {
+          "level": 3,
+          "text": "`_msg_process_exit_outside_framework`",
+          "anchor": "_msg_process_exit_outside_framework"
+        },
+        {
+          "level": 3,
+          "text": "`_msg_canceled_by_signal`",
+          "anchor": "_msg_canceled_by_signal"
+        },
+        {
+          "level": 3,
+          "text": "`_msg_early_exit_tool_result`",
+          "anchor": "_msg_early_exit_tool_result"
+        },
+        {
+          "level": 3,
+          "text": "`_msg_lint_framework_use_not_work_tree`",
+          "anchor": "_msg_lint_framework_use_not_work_tree"
+        },
+        {
+          "level": 3,
+          "text": "`_msg_lint_framework_use_no_manifest`",
+          "anchor": "_msg_lint_framework_use_no_manifest"
+        },
+        {
+          "level": 3,
+          "text": "`_msg_lint_framework_use_manifest_mismatch`",
+          "anchor": "_msg_lint_framework_use_manifest_mismatch"
+        },
+        {
+          "level": 3,
+          "text": "`_msg_lint_process_exit`",
+          "anchor": "_msg_lint_process_exit"
+        },
+        {
+          "level": 3,
+          "text": "`_msg_lint_stdout_write`",
+          "anchor": "_msg_lint_stdout_write"
+        },
+        {
+          "level": 3,
+          "text": "`_msg_lint_stderr_write`",
+          "anchor": "_msg_lint_stderr_write"
+        },
+        {
+          "level": 3,
+          "text": "`_msg_lint_argv_access`",
+          "anchor": "_msg_lint_argv_access"
+        },
+        {
+          "level": 3,
+          "text": "`_msg_lint_environment_read`",
+          "anchor": "_msg_lint_environment_read"
         },
         {
           "level": 3,
@@ -3482,7 +3867,7 @@
         {
           "level": 4,
           "text": "`write`",
-          "anchor": "write"
+          "anchor": "write-4"
         },
         {
           "level": 4,
@@ -3520,9 +3905,19 @@
           "anchor": "_child_env"
         },
         {
+          "level": 4,
+          "text": "`_child_stdout`",
+          "anchor": "_child_stdout"
+        },
+        {
           "level": 3,
           "text": "`_decode_effect_output`",
           "anchor": "_decode_effect_output"
+        },
+        {
+          "level": 3,
+          "text": "`_start_stdout_reader`",
+          "anchor": "_start_stdout_reader"
         },
         {
           "level": 3,
@@ -3843,6 +4238,11 @@
           "level": 3,
           "text": "`_McpRequested`",
           "anchor": "_mcprequested"
+        },
+        {
+          "level": 3,
+          "text": "`_LintFrameworkUseRequested`",
+          "anchor": "_lintframeworkuserequested"
         },
         {
           "level": 3,
@@ -5601,6 +6001,51 @@
         },
         {
           "level": 3,
+          "text": "`_LintRefusal`",
+          "anchor": "_lintrefusal"
+        },
+        {
+          "level": 3,
+          "text": "`_constructing_file`",
+          "anchor": "_constructing_file"
+        },
+        {
+          "level": 3,
+          "text": "`_lint_is_test_file`",
+          "anchor": "_lint_is_test_file"
+        },
+        {
+          "level": 3,
+          "text": "`_lint_repository_files`",
+          "anchor": "_lint_repository_files"
+        },
+        {
+          "level": 3,
+          "text": "`_lint_scope`",
+          "anchor": "_lint_scope"
+        },
+        {
+          "level": 3,
+          "text": "`_lint_declares`",
+          "anchor": "_lint_declares"
+        },
+        {
+          "level": 3,
+          "text": "`_LintFileScan`",
+          "anchor": "_lintfilescan"
+        },
+        {
+          "level": 3,
+          "text": "`_framework_use_findings`",
+          "anchor": "_framework_use_findings"
+        },
+        {
+          "level": 3,
+          "text": "`_run_framework_use_lint`",
+          "anchor": "_run_framework_use_lint"
+        },
+        {
+          "level": 3,
           "text": "`_serialize_choice_records`",
           "anchor": "_serialize_choice_records"
         },
@@ -5822,7 +6267,7 @@
         {
           "level": 4,
           "text": "`write`",
-          "anchor": "write-1"
+          "anchor": "write-5"
         },
         {
           "level": 4,
@@ -5960,6 +6405,26 @@
           "level": 3,
           "text": "Machine payloads",
           "anchor": "machine-payloads"
+        },
+        {
+          "level": 3,
+          "text": "Ending a command early",
+          "anchor": "ending-a-command-early"
+        },
+        {
+          "level": 3,
+          "text": "Signals",
+          "anchor": "signals"
+        },
+        {
+          "level": 3,
+          "text": "Commands that own stdout",
+          "anchor": "commands-that-own-stdout"
+        },
+        {
+          "level": 3,
+          "text": "Machine mode keeps stdout to one document",
+          "anchor": "machine-mode-keeps-stdout-to-one-document"
         },
         {
           "level": 2,
@@ -6125,6 +6590,11 @@
           "level": 2,
           "text": "Programmatic Invocation",
           "anchor": "programmatic-invocation"
+        },
+        {
+          "level": 2,
+          "text": "Linting the program for framework bypasses",
+          "anchor": "linting-the-program-for-framework-bypasses"
         },
         {
           "level": 2,
@@ -6959,6 +7429,26 @@
         },
         {
           "level": 3,
+          "text": "`DocumentWriter`",
+          "anchor": "documentwriter"
+        },
+        {
+          "level": 3,
+          "text": "`OutputMember`",
+          "anchor": "outputmember"
+        },
+        {
+          "level": 3,
+          "text": "`ContextOptions`",
+          "anchor": "contextoptions"
+        },
+        {
+          "level": 3,
+          "text": "`humanPrefixed`",
+          "anchor": "humanprefixed"
+        },
+        {
+          "level": 3,
           "text": "`InfraAccess`",
           "anchor": "infraaccess"
         },
@@ -7031,6 +7521,26 @@
           "level": 3,
           "text": "`contextIsHermetic`",
           "anchor": "contextishermetic"
+        },
+        {
+          "level": 3,
+          "text": "`contextOutput`",
+          "anchor": "contextoutput"
+        },
+        {
+          "level": 3,
+          "text": "`contextController`",
+          "anchor": "contextcontroller"
+        },
+        {
+          "level": 3,
+          "text": "`endDispatch`",
+          "anchor": "enddispatch"
+        },
+        {
+          "level": 3,
+          "text": "`reportExitError`",
+          "anchor": "reportexiterror"
         }
       ]
     },
@@ -9428,6 +9938,143 @@
           "level": 3,
           "text": "`errUpdateValueAndUnset`",
           "anchor": "errupdatevalueandunset"
+        },
+        {
+          "level": 3,
+          "text": "`errExitNowCode`",
+          "anchor": "errexitnowcode"
+        },
+        {
+          "level": 3,
+          "text": "`errExitNowMessageEmpty`",
+          "anchor": "errexitnowmessageempty"
+        },
+        {
+          "level": 3,
+          "text": "`errOutWithRenderer`",
+          "anchor": "erroutwithrenderer"
+        },
+        {
+          "level": 3,
+          "text": "`errOutOnOwnsStdout`",
+          "anchor": "erroutonownsstdout"
+        },
+        {
+          "level": 3,
+          "text": "`errDocumentWithoutOwnsStdout`",
+          "anchor": "errdocumentwithoutownsstdout"
+        },
+        {
+          "level": 3,
+          "text": "`errRendererWithoutPayloadSchema`",
+          "anchor": "errrendererwithoutpayloadschema"
+        },
+        {
+          "level": 3,
+          "text": "`errRendererOnOwnsStdout`",
+          "anchor": "errrendereronownsstdout"
+        },
+        {
+          "level": 3,
+          "text": "`errStdoutWrittenOutsideFramework`",
+          "anchor": "errstdoutwrittenoutsideframework"
+        },
+        {
+          "level": 3,
+          "text": "`errProcessExitOutsideFramework`",
+          "anchor": "errprocessexitoutsideframework"
+        },
+        {
+          "level": 3,
+          "text": "`errCanceledBySignal`",
+          "anchor": "errcanceledbysignal"
+        },
+        {
+          "level": 3,
+          "text": "`errEarlyExitToolResult`",
+          "anchor": "errearlyexittoolresult"
+        },
+        {
+          "level": 3,
+          "text": "`errLintFrameworkUseArgs`",
+          "anchor": "errlintframeworkuseargs"
+        },
+        {
+          "level": 3,
+          "text": "`errLintFrameworkUseNotWorkTree`",
+          "anchor": "errlintframeworkusenotworktree"
+        },
+        {
+          "level": 3,
+          "text": "`errLintFrameworkUseNoManifest`",
+          "anchor": "errlintframeworkusenomanifest"
+        },
+        {
+          "level": 3,
+          "text": "`errLintFrameworkUseManifestMismatch`",
+          "anchor": "errlintframeworkusemanifestmismatch"
+        },
+        {
+          "level": 3,
+          "text": "`errLintFrameworkUseBinUnresolved`",
+          "anchor": "errlintframeworkusebinunresolved"
+        },
+        {
+          "level": 3,
+          "text": "`errLintProcessExit`",
+          "anchor": "errlintprocessexit"
+        },
+        {
+          "level": 3,
+          "text": "`errLintStdoutWrite`",
+          "anchor": "errlintstdoutwrite"
+        },
+        {
+          "level": 3,
+          "text": "`errLintStderrWrite`",
+          "anchor": "errlintstderrwrite"
+        },
+        {
+          "level": 3,
+          "text": "`errLintArgvAccess`",
+          "anchor": "errlintargvaccess"
+        },
+        {
+          "level": 3,
+          "text": "`errLintEnvironmentRead`",
+          "anchor": "errlintenvironmentread"
+        }
+      ]
+    },
+    {
+      "path": "typescript-src-exits.md",
+      "title": "typescript/src/exits",
+      "type": "doc",
+      "headings": [
+        {
+          "level": 1,
+          "text": "typescript/src/exits",
+          "anchor": "typescriptsrcexits"
+        },
+        {
+          "level": 2,
+          "text": "`typescript/src/exits`",
+          "anchor": "typescriptsrcexits"
+        },
+        {
+          "level": 3,
+          "text": "`ExitNow`",
+          "anchor": "exitnow"
+        },
+        {
+          "level": 3,
+          "text": "`ExitError`",
+          "anchor": "exiterror"
+        },
+        {
+          "level": 3,
+          "text": "`ProcessExitCalled`",
+          "anchor": "processexitcalled"
         }
       ]
     },
@@ -9918,6 +10565,16 @@
         },
         {
           "level": 3,
+          "text": "`PayloadRenderer`",
+          "anchor": "payloadrenderer"
+        },
+        {
+          "level": 3,
+          "text": "`validatePayloadRendererDeclaration`",
+          "anchor": "validatepayloadrendererdeclaration"
+        },
+        {
+          "level": 3,
           "text": "`validateForwarding`",
           "anchor": "validateforwarding"
         },
@@ -9992,6 +10649,53 @@
           "level": 3,
           "text": "`formatFloatCanonical`",
           "anchor": "formatfloatcanonical"
+        }
+      ]
+    },
+    {
+      "path": "typescript-src-guard.md",
+      "title": "typescript/src/guard",
+      "type": "doc",
+      "headings": [
+        {
+          "level": 1,
+          "text": "typescript/src/guard",
+          "anchor": "typescriptsrcguard"
+        },
+        {
+          "level": 2,
+          "text": "`typescript/src/guard`",
+          "anchor": "typescriptsrcguard"
+        },
+        {
+          "level": 3,
+          "text": "`GuardAttribution`",
+          "anchor": "guardattribution"
+        },
+        {
+          "level": 3,
+          "text": "`RealStdoutWriter`",
+          "anchor": "realstdoutwriter"
+        },
+        {
+          "level": 3,
+          "text": "`realStdoutWriter`",
+          "anchor": "realstdoutwriter-1"
+        },
+        {
+          "level": 3,
+          "text": "`RuntimeGuard`",
+          "anchor": "runtimeguard"
+        },
+        {
+          "level": 3,
+          "text": "`takeIfGuarded`",
+          "anchor": "takeifguarded"
+        },
+        {
+          "level": 3,
+          "text": "`processExitDiagnostic`",
+          "anchor": "processexitdiagnostic"
         }
       ]
     },
@@ -10126,6 +10830,16 @@
           "level": 3,
           "text": "`InvokeError`",
           "anchor": "invokeerror"
+        },
+        {
+          "level": 3,
+          "text": "`ExitError`",
+          "anchor": "exiterror"
+        },
+        {
+          "level": 3,
+          "text": "`ExitNow`",
+          "anchor": "exitnow"
         },
         {
           "level": 3,
@@ -10412,6 +11126,43 @@
           "level": 3,
           "text": "`invokeApp`",
           "anchor": "invokeapp"
+        }
+      ]
+    },
+    {
+      "path": "typescript-src-lint_framework_use.md",
+      "title": "typescript/src/lint_framework_use",
+      "type": "doc",
+      "headings": [
+        {
+          "level": 1,
+          "text": "typescript/src/lint_framework_use",
+          "anchor": "typescriptsrclint_framework_use"
+        },
+        {
+          "level": 2,
+          "text": "`typescript/src/lint_framework_use`",
+          "anchor": "typescriptsrclint_framework_use"
+        },
+        {
+          "level": 3,
+          "text": "`FrameworkUseFinding`",
+          "anchor": "frameworkusefinding"
+        },
+        {
+          "level": 3,
+          "text": "`FrameworkUseScan`",
+          "anchor": "frameworkusescan"
+        },
+        {
+          "level": 3,
+          "text": "`runFrameworkUseLint`",
+          "anchor": "runframeworkuselint"
+        },
+        {
+          "level": 3,
+          "text": "`scanFrameworkUse`",
+          "anchor": "scanframeworkuse"
         }
       ]
     },
@@ -10895,6 +11646,33 @@
       ]
     },
     {
+      "path": "typescript-src-signals.md",
+      "title": "typescript/src/signals",
+      "type": "doc",
+      "headings": [
+        {
+          "level": 1,
+          "text": "typescript/src/signals",
+          "anchor": "typescriptsrcsignals"
+        },
+        {
+          "level": 2,
+          "text": "`typescript/src/signals`",
+          "anchor": "typescriptsrcsignals"
+        },
+        {
+          "level": 3,
+          "text": "`HandledSignal`",
+          "anchor": "handledsignal"
+        },
+        {
+          "level": 3,
+          "text": "`SignalWatch`",
+          "anchor": "signalwatch"
+        }
+      ]
+    },
+    {
       "path": "typescript-src-sources.md",
       "title": "typescript/src/sources",
       "type": "doc",
@@ -10928,6 +11706,43 @@
           "level": 3,
           "text": "`SourcedStore`",
           "anchor": "sourcedstore"
+        }
+      ]
+    },
+    {
+      "path": "typescript-src-tokens.md",
+      "title": "typescript/src/tokens",
+      "type": "doc",
+      "headings": [
+        {
+          "level": 1,
+          "text": "typescript/src/tokens",
+          "anchor": "typescriptsrctokens"
+        },
+        {
+          "level": 2,
+          "text": "`typescript/src/tokens`",
+          "anchor": "typescriptsrctokens"
+        },
+        {
+          "level": 3,
+          "text": "`Tok`",
+          "anchor": "tok"
+        },
+        {
+          "level": 3,
+          "text": "`tokenize`",
+          "anchor": "tokenize"
+        },
+        {
+          "level": 3,
+          "text": "`lineOf`",
+          "anchor": "lineof"
+        },
+        {
+          "level": 3,
+          "text": "`isNameToken`",
+          "anchor": "isnametoken"
         }
       ]
     },
@@ -11357,6 +12172,6 @@
     }
   ],
   "posts": [],
-  "last_gen": "2026-09-19T22:53:10.686914+00:00",
+  "last_gen": "2026-09-26T19:45:51.294797+00:00",
   "theme": "minimal"
 }

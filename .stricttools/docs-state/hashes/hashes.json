@@ -36,8 +36,8 @@
     "description": "00dc1fe8b762ad0a4bbe41cc77fcd68c44632820aae9893e1ece91d479e6d6ea"
   },
   "en/language-idioms.md": {
-    "content": "6f3871b0bd8ec326e9dd7e373fdf61d7946c1309812ade91addebddb30d2aadf",
-    "description": "a2b7a5eec226d17212aff1d048b481177d603a1943dd189c9dc2a989fdbd84e1"
+    "content": "4f73e2f8868388088c0604916358e4c9ed2d76e7fe0d62c7d9928bda90c240e8",
+    "description": "d7f08e61045b784e1b21bf3762eba70510e9c58dc2e0706cbd9a2facf74bf43c"
   },
   "en/mcp-confirmation.md": {
     "content": "a9a1065413384efade9e20688bc5a5536113971047899b49c7675388c5a6ab1e",
@@ -155,6 +155,11 @@
     "description": "df7c3bcaa905688075eb1b4fcfabb1e80a74ed9a6dc186b9741495b62d890354",
     "source_docstring": "df9575d25715048dcf70fb3b7b66f8c0e528ae6b6d917256262423f585fe86e7"
   },
+  "en/typescript-src-exits.md": {
+    "content": "2224dfddc1fe9830760061a882ee654f0dcc1774ed8da6e3ed4dfd062822419d",
+    "description": "b6a2fa89b48f52abbdedbdd3b6558d5b9a226451052bfdfc26b4eb7c16743317",
+    "seed_hash": "b6a2fa89b48f52abbdedbdd3b6558d5b9a226451052bfdfc26b4eb7c16743317"
+  },
   "en/typescript-src-factories.md": {
     "content": "cc7953623f5d6ef77ee0d53122cdcf0a51c351b68c67e64c09c3f31b08fb3805",
     "description": "361db19b52148dd94c313177f4e1cb3a963a8ed09d132453002ca6dd6ac39a24",
@@ -164,6 +169,11 @@
     "content": "5eaf4c53fe44a230ea34d764f5e616fa5102441ce61095e8dbfb0ac073631bce",
     "description": "63ecb26d21d934d4f5c314580480c42a6f4ef58d987bccf1eb5b39be5fd56933",
     "source_docstring": "9d9090b48ae4d0c84e99f3a4e186c8cab696ed5c05168cd10f5b93645c14db4a"
+  },
+  "en/typescript-src-guard.md": {
+    "content": "a7eb3713c2a6115b076f15fd9e6d4ab5bc87e16ad5e04e4c85101bc5c7819b4d",
+    "description": "65607e13cc433825f9d2b8e64a287ab08633a36134be91462a486d835599ad7c",
+    "seed_hash": "65607e13cc433825f9d2b8e64a287ab08633a36134be91462a486d835599ad7c"
   },
   "en/typescript-src-help.md": {
     "content": "5e6dfd16b5b3a36d4bddfe65dcb2703413758a5b5b3e0c49c6d157205ac0918d",
@@ -189,6 +199,11 @@
     "content": "74853d57664116c6f8b804a9c373b0e0a4e86e47925b95798871d2811502f737",
     "description": "a2c5259d9dc7ea4181a7847146d3b18a2598a871027593f0847823d1fe8687cf",
     "source_docstring": "da6135f0bbf2c59ba9f8c4e42afb9ec0a18bb6a9f61ab1766ede036bf67bfa5b"
+  },
+  "en/typescript-src-lint_framework_use.md": {
+    "content": "533c503b734c2cc684ae31d3a1da987e2ff018a04c6f341d386ae222c75762e3",
+    "description": "db6639358a80ac54d756a3ccac208d92cabbe8aa7a2d2a71a01522d9ab18f86f",
+    "seed_hash": "db6639358a80ac54d756a3ccac208d92cabbe8aa7a2d2a71a01522d9ab18f86f"
   },
   "en/typescript-src-mcp.md": {
     "content": "c63c97d975acb74a5fb7658fd295458bd7e926ac0caecd731dcc806dc9457def",
@@ -225,10 +240,20 @@
     "description": "48820856433ae2a0b646ae1282e77c981458fd87386f1fadaa5c26028994e172",
     "source_docstring": "08014525171d5231995c078ac5c6d1ae316d64fadee925afe8ed5a753486b5f2"
   },
+  "en/typescript-src-signals.md": {
+    "content": "711b92b65dcce6c7efb653b74efc5069de033bfba1fc545976b3a302b1ea44f9",
+    "description": "fc7b3a144f1a644fced2f7f6a6c13612386007b100f3dedc945a7425287f5024",
+    "seed_hash": "fc7b3a144f1a644fced2f7f6a6c13612386007b100f3dedc945a7425287f5024"
+  },
   "en/typescript-src-sources.md": {
     "content": "02fcdd654b46be28226b39558c840355982ed6169ee585eb5d3d714d4e8fba6f",
     "description": "11d699d2ca0640088b30fdc7003cbadc617658b5e64d5178164a26ae39f91c3e",
     "source_docstring": "47805ab9f5d39be3f532fa81a5f4a94a09e582f5ad6b316fbf43ca4cc631e226"
+  },
+  "en/typescript-src-tokens.md": {
+    "content": "66973fdb30721a673e2b76419f0576bbb3b097d1b46bf7adeb318dd75ee7e5a1",
+    "description": "024a9b36250f4a184a57a70780b5f745403b0de3044607ceb409d4559052a7de",
+    "seed_hash": "024a9b36250f4a184a57a70780b5f745403b0de3044607ceb409d4559052a7de"
   },
   "en/typescript-src-toml.md": {
     "content": "2b8c6c47afea69800aaf3b76837d2a49332eb7bc4afeddf22507ef5aed5792ce",
