@@ -4580,6 +4580,10 @@ class _McpRequested(Exception):
     """Raised when --mcp is encountered."""
 
 
+class _LintFrameworkUseRequested(Exception):
+    """Raised when --lint-framework-use is the whole command line (§28.1)."""
+
+
 class _ParseError(Exception):
     """Raised for user-facing parse errors."""
 
@@ -4967,6 +4971,8 @@ _RESERVED_CONSENT_PARAM_NAME = "approve_consequential"
 # long names only).
 _RESERVED_GLOBAL_SHORT_NAMES = frozenset({
     "help", "h", "version", "v", "dump-schema", "mcp", "config", "hermetic",
+    # The framework-use lint's whole-program flag (contract §28.1, §7.1).
+    "lint-framework-use",
 })
 _RESERVED_GLOBAL_FLAG_NAMES = (
     _RESERVED_GLOBAL_SHORT_NAMES
@@ -9766,6 +9772,9 @@ class App:
             raise ValueError(_msg_test_coverage_boolean_retired())
         _require_non_empty_str(self.version, "version", "App")
         _require_non_empty_str(self.help, "help", "App")
+        # The module that constructed this app: the framework-use lint's
+        # identity check reads it (contract §28.2).
+        self._constructed_in = _constructing_file()
         # Check for duplicate and reserved global flag names
         seen: set[str] = set()
         for f in self.flags:
@@ -11724,6 +11733,11 @@ class App:
                 result["serve_mcp"] = True
                 return result
 
+            # --lint-framework-use: a whole-program action (§28.1)
+            if tok == "--lint-framework-use":
+                result["lint_framework_use"] = True
+                return result
+
             # --hermetic (boolean, no value)
             if tok == "--hermetic":
                 result["hermetic"] = True
@@ -11911,6 +11925,11 @@ class App:
             raise _DumpSchemaRequested()
         if pre_scan.get("serve_mcp"):
             raise _McpRequested()
+        if pre_scan.get("lint_framework_use"):
+            # It must be the only argument, before or after it (§28.1).
+            if len(argv) != 1:
+                raise _ParseError("--lint-framework-use takes no other arguments")
+            raise _LintFrameworkUseRequested()
         if pre_scan.get("err"):
             raise _ParseError(pre_scan["err"])
 
@@ -12500,6 +12519,8 @@ class App:
                 return _DispatchResult(1)
             print(path, file=out)
             return _DispatchResult(0)
+        except _LintFrameworkUseRequested:
+            return _run_framework_use_lint(self, out, err)
         except _McpRequested:
             if mode == "test":
                 # In test mode, MCP requires real stdin/stdout; just acknowledge
@@ -17884,6 +17905,317 @@ def _check_result_items(results: list[CheckRunResult]) -> list[dict]:
 def format_check_results_json(results: list[CheckRunResult]) -> str:
     """Format check results as a JSON string."""
     return json.dumps(_check_result_items(results), separators=(",", ":"))
+
+
+# ---------------------------------------------------------------------------
+# The framework-use lint (contract §28)
+#
+# --lint-framework-use scans the program it was run through for the constructs
+# that bypass the framework's ownership of exits, output, argv, and environment
+# input. The scan root is the working directory; only repository-owned files
+# are read; only the packages behind the manifest's console entry points that
+# import strictcli are scanned, test files excluded. Names resolve through each
+# file's imports, never through scopes (§17).
+# ---------------------------------------------------------------------------
+
+_LINT_MANIFEST = "pyproject.toml"
+
+# Python's spellings inside the finding messages (§12.17's spelling rows).
+_LINT_EARLY_EXIT_SPELLING = "strictcli.exit_now(code, message)"
+_LINT_STDOUT_SPELLINGS = ("ctx.out", "ctx.payload", "ctx.document()")
+_LINT_STDERR_SPELLINGS = ("ctx.warn", "ctx.error")
+
+_LINT_PROCESS_EXIT = "process-exit"
+_LINT_STDOUT_WRITE = "stdout-write"
+_LINT_STDERR_WRITE = "stderr-write"
+_LINT_ARGV_ACCESS = "argv-access"
+_LINT_ENVIRONMENT_READ = "environment-read"
+
+# Qualified names refused wherever they are referenced (§28.3's table).
+_LINT_REFERENCE_RULES = {
+    "sys.exit": _LINT_PROCESS_EXIT,
+    "os._exit": _LINT_PROCESS_EXIT,
+    "sys.stdout": _LINT_STDOUT_WRITE,
+    "sys.__stdout__": _LINT_STDOUT_WRITE,
+    "sys.stderr": _LINT_STDERR_WRITE,
+    "sys.__stderr__": _LINT_STDERR_WRITE,
+    "sys.argv": _LINT_ARGV_ACCESS,
+    "sys.orig_argv": _LINT_ARGV_ACCESS,
+    "os.environ": _LINT_ENVIRONMENT_READ,
+    "os.environb": _LINT_ENVIRONMENT_READ,
+    "os.getenv": _LINT_ENVIRONMENT_READ,
+    "os.getenvb": _LINT_ENVIRONMENT_READ,
+}
+
+# Modules refused at their import line (§28.3): the standard argument parsers.
+_LINT_IMPORT_RULES = {
+    "argparse": _LINT_ARGV_ACCESS,
+    "optparse": _LINT_ARGV_ACCESS,
+    "getopt": _LINT_ARGV_ACCESS,
+}
+
+# `os.write(<fd>, ...)` with a literal descriptor.
+_LINT_OS_WRITE_RULES = {1: _LINT_STDOUT_WRITE, 2: _LINT_STDERR_WRITE}
+
+
+class _LintRefusal(Exception):
+    """A scan that cannot run (§28.2): printed as one error line."""
+
+
+def _constructing_file() -> str | None:
+    """The source file of the first caller outside this module."""
+    here = os.path.normcase(os.path.abspath(__file__))
+    frame = sys._getframe(1)
+    while frame is not None:
+        filename = frame.f_code.co_filename
+        if (
+            not filename.startswith("<")
+            and os.path.normcase(os.path.abspath(filename)) != here
+        ):
+            return filename
+        frame = frame.f_back
+    return None
+
+
+def _lint_message(rule: str, construct: str) -> str:
+    if rule == _LINT_PROCESS_EXIT:
+        return _msg_lint_process_exit(construct, _LINT_EARLY_EXIT_SPELLING)
+    if rule == _LINT_STDOUT_WRITE:
+        return _msg_lint_stdout_write(construct, *_LINT_STDOUT_SPELLINGS)
+    if rule == _LINT_STDERR_WRITE:
+        return _msg_lint_stderr_write(construct, *_LINT_STDERR_SPELLINGS)
+    if rule == _LINT_ARGV_ACCESS:
+        return _msg_lint_argv_access(construct)
+    return _msg_lint_environment_read(construct)
+
+
+def _lint_is_test_file(rel: str) -> bool:
+    """§28.2's Python test-file patterns, on a root-relative path."""
+    parts = rel.split("/")
+    base = parts[-1]
+    if base == "conftest.py" or base.startswith("test_") or base.endswith("_test.py"):
+        return True
+    return any(part in ("tests", "test") for part in parts[:-1])
+
+
+def _lint_repository_files(root: str) -> set[str]:
+    """The repository-owned files under the scan root (§11.2's rule)."""
+    probe = subprocess.run(
+        ["git", "rev-parse", "--is-inside-work-tree"],
+        cwd=root, capture_output=True, text=True,
+    )
+    if probe.returncode != 0 or probe.stdout.strip() != "true":
+        raise _LintRefusal(_msg_lint_framework_use_not_work_tree(root))
+    listing = subprocess.run(
+        ["git", "ls-files", "--cached", "--others", "--exclude-standard", "-z"],
+        cwd=root, capture_output=True, check=True,
+    ).stdout
+    return {
+        rel for rel in (
+            p.decode("utf-8", errors="surrogateescape")
+            for p in listing.split(b"\0") if p
+        )
+        if os.path.isfile(os.path.join(root, rel))
+    }
+
+
+def _lint_parse(root: str, rel: str) -> ast.Module:
+    with open(os.path.join(root, rel), "rb") as fh:
+        source = fh.read()
+    try:
+        return ast.parse(source, filename=rel)
+    except (SyntaxError, ValueError) as e:
+        raise _LintRefusal(str(e)) from None
+
+
+def _lint_imports_strictcli(tree: ast.Module) -> bool:
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            if any(a.name.split(".")[0] == "strictcli" for a in node.names):
+                return True
+        elif isinstance(node, ast.ImportFrom):
+            if node.level == 0 and (node.module or "").split(".")[0] == "strictcli":
+                return True
+    return False
+
+
+def _lint_scope(root: str, listed: set[str]) -> list[tuple[str, list[str]]]:
+    """The scanned units: ``(package directory or module file, its files)``.
+
+    One unit per ``[project.scripts]`` entry, found at ``<root>/pkg`` or
+    ``<root>/src/pkg`` -- and, for an entry naming a top-level module, at
+    ``pkg.py`` or ``src/pkg.py`` -- exactly one of which must exist; a unit is
+    scanned when any of its files imports strictcli (§28.2).
+    """
+    with open(os.path.join(root, _LINT_MANIFEST), "rb") as fh:
+        manifest = tomllib.load(fh)
+    project = manifest.get("project")
+    scripts = project.get("scripts") if isinstance(project, dict) else None
+    units: list[tuple[str, list[str]]] = []
+    for entry in (scripts or {}).values():
+        module = str(entry).split(":", 1)[0].strip()
+        top = module.split(".")[0]
+        found: list[tuple[str, list[str]]] = []
+        for directory in (top, f"src/{top}"):
+            files = sorted(f for f in listed if f.startswith(directory + "/"))
+            if files:
+                found.append((directory, files))
+        if "." not in module:
+            for single in (f"{top}.py", f"src/{top}.py"):
+                if single in listed:
+                    found.append((single, [single]))
+        if len(found) != 1:
+            raise _LintRefusal(
+                _msg_lint_framework_use_manifest_mismatch(_LINT_MANIFEST, root)
+            )
+        unit, files = found[0]
+        sources = [
+            f for f in files if f.endswith(".py") and not _lint_is_test_file(f)
+        ]
+        if any(_lint_imports_strictcli(_lint_parse(root, f)) for f in sources):
+            units.append((unit, sources))
+    return units
+
+
+def _lint_declares(root: str, unit: str, constructed: str | None) -> bool:
+    """Whether the running App was constructed inside the scanned unit."""
+    if constructed is None:
+        return False
+    where = os.path.realpath(constructed)
+    base = os.path.realpath(os.path.join(root, unit))
+    if unit.endswith(".py"):
+        return where == base
+    return where.startswith(base + os.sep)
+
+
+class _LintFileScan:
+    """The findings of one source file (§28.3)."""
+
+    def __init__(self, rel: str, tree: ast.Module) -> None:
+        self.rel = rel
+        self.findings: list[tuple[int, str, str]] = []
+        self.bindings: dict[str, str] = {}
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    if alias.asname is not None:
+                        self.bindings[alias.asname] = alias.name
+                    else:
+                        top = alias.name.split(".")[0]
+                        self.bindings[top] = top
+                    self._import_finding(node, alias.name)
+            elif isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:
+                for alias in node.names:
+                    if alias.name != "*":
+                        self.bindings[alias.asname or alias.name] = (
+                            f"{node.module}.{alias.name}"
+                        )
+                self._import_finding(node, node.module)
+        self._visit(tree)
+
+    def _import_finding(self, node: ast.AST, module: str) -> None:
+        top = module.split(".")[0]
+        rule = _LINT_IMPORT_RULES.get(top)
+        if rule is not None:
+            self.findings.append((node.lineno, rule, top))
+
+    def _resolve(self, node: ast.AST) -> str | None:
+        if isinstance(node, ast.Name):
+            return self.bindings.get(node.id)
+        if isinstance(node, ast.Attribute):
+            base = self._resolve(node.value)
+            return f"{base}.{node.attr}" if base is not None else None
+        return None
+
+    def _unbound(self, node: ast.AST, name: str) -> bool:
+        return (
+            isinstance(node, ast.Name) and node.id == name
+            and name not in self.bindings
+        )
+
+    def _visit(self, node: ast.AST) -> None:
+        if isinstance(node, (ast.Import, ast.ImportFrom)):
+            return
+        if isinstance(node, (ast.Name, ast.Attribute)):
+            qualified = self._resolve(node)
+            rule = _LINT_REFERENCE_RULES.get(qualified or "")
+            if rule is not None:
+                self.findings.append((node.lineno, rule, qualified))
+                return
+            if isinstance(node, ast.Attribute):
+                self._visit(node.value)
+            return
+        if isinstance(node, ast.Raise) and node.exc is not None:
+            exc = node.exc.func if isinstance(node.exc, ast.Call) else node.exc
+            if self._unbound(exc, "SystemExit"):
+                self.findings.append(
+                    (node.lineno, _LINT_PROCESS_EXIT, "raise SystemExit")
+                )
+        if isinstance(node, ast.Call):
+            self._call(node)
+        for child in ast.iter_child_nodes(node):
+            self._visit(child)
+
+    def _call(self, node: ast.Call) -> None:
+        func = node.func
+        if self._unbound(func, "print"):
+            if not any(kw.arg == "file" for kw in node.keywords):
+                self.findings.append((node.lineno, _LINT_STDOUT_WRITE, "print"))
+            return
+        for name in ("exit", "quit"):
+            if self._unbound(func, name):
+                self.findings.append((node.lineno, _LINT_PROCESS_EXIT, name))
+                return
+        if self._resolve(func) == "os.write" and node.args:
+            first = node.args[0]
+            if (
+                isinstance(first, ast.Constant)
+                and type(first.value) is int
+                and first.value in _LINT_OS_WRITE_RULES
+            ):
+                self.findings.append(
+                    (node.lineno, _LINT_OS_WRITE_RULES[first.value], "os.write")
+                )
+
+
+def _framework_use_findings(app: "App") -> list[str]:
+    """Scan the program ``app`` belongs to; the sorted finding lines (§28.1)."""
+    root = os.getcwd()
+    if not os.path.isfile(os.path.join(root, _LINT_MANIFEST)):
+        raise _LintRefusal(
+            _msg_lint_framework_use_no_manifest(_LINT_MANIFEST, root)
+        )
+    listed = _lint_repository_files(root)
+    units = _lint_scope(root, listed)
+    if not any(
+        _lint_declares(root, unit, app._constructed_in) for unit, _ in units
+    ):
+        raise _LintRefusal(
+            _msg_lint_framework_use_manifest_mismatch(_LINT_MANIFEST, root)
+        )
+    rows: list[tuple[bytes, int, str, str, str]] = []
+    for rel in sorted({f for _, files in units for f in files}):
+        scan = _LintFileScan(rel, _lint_parse(root, rel))
+        for line, rule, construct in scan.findings:
+            message = _lint_message(rule, construct)
+            rows.append((
+                rel.encode("utf-8", errors="surrogateescape"), line, rule,
+                message, rel,
+            ))
+    rows.sort(key=lambda r: r[:4])
+    return [f"{rel}:{line}: {rule}: {message}" for _, line, rule, message, rel in rows]
+
+
+def _run_framework_use_lint(app: "App", out, err) -> "_DispatchResult":
+    """Run ``--lint-framework-use``: findings on stdout, exit 1 when any."""
+    try:
+        lines = _framework_use_findings(app)
+    except _LintRefusal as refusal:
+        print(f"error: {refusal}", file=err)
+        return _DispatchResult(1)
+    for line in lines:
+        print(line, file=out)
+    return _DispatchResult(1 if lines else 0)
 
 
 # ---------------------------------------------------------------------------
