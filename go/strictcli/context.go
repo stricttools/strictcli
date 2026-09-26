@@ -461,6 +461,9 @@ var reservedGlobalShortNames = map[string]bool{
 	"mcp":         true,
 	"config":      true,
 	"hermetic":    true,
+	// The framework-use lint's flag (§28.1, §7.1's box): a whole-program
+	// action on the global-only tier, beside dump-schema.
+	"lint-framework-use": true,
 }
 
 // reservedGlobalFlagNames are names that cannot be used for user-defined global flags

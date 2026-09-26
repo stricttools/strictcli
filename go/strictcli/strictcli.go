@@ -466,6 +466,9 @@ type App struct {
 	schemaPath       string            // set by WithSchemaPath
 	schemaPathRef    *InfraRootPath    // set by WithSchemaPathRelativeToRoot
 	schemaOutPath    string            // resolved absolute --dump-schema target
+	// lintMainModule reports the running program's main module path for the
+	// --lint-framework-use identity check; nil means the build information.
+	lintMainModule func() (string, bool)
 
 	// Handshake env vars: cross-tool protocol signals. No default, no eager
 	// resolution -- read live via os.LookupEnv at access time.
@@ -2760,6 +2763,13 @@ func (a *App) Run() {
 		fmt.Println(path)
 		os.Exit(0)
 	}
+	if pr.lintFrameworkUse {
+		var stdout, stderr strings.Builder
+		code := a.runLintFrameworkUse(&stdout, &stderr)
+		fmt.Fprint(os.Stdout, stdout.String())
+		fmt.Fprint(os.Stderr, stderr.String())
+		os.Exit(code)
+	}
 	if pr.serveMCP {
 		a.ServeMCP()
 		os.Exit(0)
@@ -3245,6 +3255,11 @@ func (a *App) Test(argv []string) Result {
 		}
 		return Result{Stdout: path + "\n", ExitCode: 0}
 	}
+	if pr.lintFrameworkUse {
+		var stdout, stderr strings.Builder
+		code := a.runLintFrameworkUse(&stdout, &stderr)
+		return Result{Stdout: stdout.String(), Stderr: stderr.String(), ExitCode: code}
+	}
 	if pr.serveMCP {
 		// In Test mode, MCP mode cannot be exercised (it requires stdin/stdout).
 		// Use serveMCPIO directly for testing.
@@ -3321,19 +3336,20 @@ func (a *App) Test(argv []string) Result {
 
 // parseResult holds the output of doParse.
 type parseResult struct {
-	cmd             *Command
-	cmdPath         string // dot-separated command path (e.g. "infra.deploy")
-	kwargs          map[string]interface{}
-	globalKwargs    map[string]interface{}
-	sources         map[string]string // flag param name -> source label
-	passthroughArgs []string
-	helpText        string
-	versionText     string
-	parseErr        string
-	commandPrefix   string
-	dumpSchema      bool
-	serveMCP        bool
-	hermetic        bool // --hermetic active for this invocation
+	cmd              *Command
+	cmdPath          string // dot-separated command path (e.g. "infra.deploy")
+	kwargs           map[string]interface{}
+	globalKwargs     map[string]interface{}
+	sources          map[string]string // flag param name -> source label
+	passthroughArgs  []string
+	helpText         string
+	versionText      string
+	parseErr         string
+	commandPrefix    string
+	lintFrameworkUse bool
+	dumpSchema       bool
+	serveMCP         bool
+	hermetic         bool // --hermetic active for this invocation
 	// writes is this invocation's write set (contract §27.5), nil on every
 	// command that declares no update. unsets names the properties this
 	// invocation CLEARED, which is what ctx.Unset answers off.
@@ -3350,13 +3366,14 @@ type parseResult struct {
 // preScanResult holds the results of the position-aware pre-scan for
 // reserved flags (--dump-schema, --mcp, --config, --hermetic).
 type preScanResult struct {
-	dumpSchema  bool
-	serveMCP    bool
-	hermetic    bool          // --hermetic: skip config loading and env var resolution
-	reserved    reservedFlags // the framework-owned quartet
-	configPath  string        // value from --config <path> or --config=<path>
-	err         string        // non-empty on error (e.g. missing value, config on disabled app)
-	cleanedArgv []string      // argv with the reserved tokens stripped out
+	dumpSchema       bool
+	lintFrameworkUse bool
+	serveMCP         bool
+	hermetic         bool          // --hermetic: skip config loading and env var resolution
+	reserved         reservedFlags // the framework-owned quartet
+	configPath       string        // value from --config <path> or --config=<path>
+	err              string        // non-empty on error (e.g. missing value, config on disabled app)
+	cleanedArgv      []string      // argv with the reserved tokens stripped out
 }
 
 // reservedQuartetTokens maps an argv token to the preScanResult field it sets.
@@ -3426,6 +3443,16 @@ func (a *App) preScanReservedFlags(argv []string) preScanResult {
 		// --dump-schema
 		if tok == "--dump-schema" {
 			result.dumpSchema = true
+			return result
+		}
+
+		// --lint-framework-use: the only argument, or a parse error (§28.1)
+		if tok == "--lint-framework-use" {
+			if len(argv) != 1 {
+				result.err = errLintFrameworkUseArgs
+				return result
+			}
+			result.lintFrameworkUse = true
 			return result
 		}
 
@@ -3636,6 +3663,9 @@ func (a *App) doParse(argv []string) parseResult {
 
 	if preScan.dumpSchema {
 		return parseResult{dumpSchema: true}
+	}
+	if preScan.lintFrameworkUse {
+		return parseResult{lintFrameworkUse: true}
 	}
 	if preScan.serveMCP {
 		return parseResult{serveMCP: true}
