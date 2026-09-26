@@ -52,7 +52,7 @@
     "repo": "smm-h/selfdoc-cache"
   },
   "root_files": [
-    ".stricttools/docs/_README.md",
-    ".stricttools/docs/_CLAUDE.md"
+    "stricttools/docs/_README.md",
+    "stricttools/docs/_CLAUDE.md"
   ]
 }

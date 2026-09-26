@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "name": "strictcli",
   "slug": "strictcli",
   "version": "0.41.1",
@@ -12173,5 +12173,9 @@
   ],
   "posts": [],
   "last_gen": "2026-09-26T19:45:51.294797+00:00",
-  "theme": "minimal"
+  "theme": "minimal",
+  "vocabulary": {
+    "accepted": [],
+    "rejected": []
+  }
 }
