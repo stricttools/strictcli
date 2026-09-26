@@ -52,6 +52,7 @@ import math
 import os
 import re
 import select
+import signal
 import subprocess
 import sys
 import threading
@@ -533,16 +534,54 @@ def _trapped_process_exit(n):
     raise _ProcessExitTrapped(operator.index(n))
 
 
+class _SignalWatch:
+    """SIGINT and SIGTERM while a CLI handler runs (contract §19.13).
+
+    The first signal cancels the handler's context and does nothing else;
+    both signals get their default disposition back at once, so a second one
+    stops a handler that never returns. The exit step reads ``received``.
+    """
+
+    SIGNALS = (signal.SIGINT, signal.SIGTERM)
+
+    def __init__(self, ctx: "Context") -> None:
+        self._ctx = ctx
+        self.received: int | None = None
+
+    def start(self) -> None:
+        self._previous = {s: signal.getsignal(s) for s in self.SIGNALS}
+        for s in self.SIGNALS:
+            signal.signal(s, self._on_signal)
+
+    def _on_signal(self, signum: int, frame) -> None:
+        if self.received is None:
+            self.received = signum
+        self._ctx._canceled = True
+        for s in self.SIGNALS:
+            signal.signal(s, signal.SIG_DFL)
+
+    def stop(self) -> None:
+        for s, previous in self._previous.items():
+            signal.signal(s, signal.SIG_DFL if previous is None else previous)
+
+    def failure(self) -> tuple[int, str] | None:
+        """``(exit status, diagnostic)`` when a signal arrived, else ``None``."""
+        if self.received is None:
+            return None
+        name = signal.Signals(self.received).name
+        return 128 + self.received, _msg_canceled_by_signal(name)
+
+
 class _HandlerSpan:
     """What the framework holds in place while a CLI handler runs.
 
     In machine mode, through the argv door: the runtime guard and the
-    process-exit trap (§19.12). Nothing in human mode, and nothing on the
-    programmatic doors.
+    process-exit trap (§19.12). On the ``run()`` path, in both modes: the
+    signal handlers (§19.13). Nothing on the programmatic doors.
     """
 
     def __init__(self, *, machine: bool, mode: str,
-                 real_stdout: "_RealStdout") -> None:
+                 real_stdout: "_RealStdout", ctx: "Context") -> None:
         self.guard = (
             _StdoutGuard(
                 real_stdout,
@@ -551,19 +590,22 @@ class _HandlerSpan:
             )
             if machine else None
         )
+        self.signals = _SignalWatch(ctx) if mode == "run" else None
 
     def start(self) -> None:
-        if self.guard is None:
-            return
-        self.guard.start()
-        self._os_exit = os._exit
-        os._exit = _trapped_process_exit
+        if self.guard is not None:
+            self.guard.start()
+            self._os_exit = os._exit
+            os._exit = _trapped_process_exit
+        if self.signals is not None:
+            self.signals.start()
 
     def stop(self) -> None:
-        if self.guard is None:
-            return
-        os._exit = self._os_exit
-        self.guard.stop()
+        if self.signals is not None:
+            self.signals.stop()
+        if self.guard is not None:
+            os._exit = self._os_exit
+            self.guard.stop()
 
 
 class _DocumentWriter:
@@ -636,6 +678,7 @@ class Context:
         self._real_stdout = (
             real_stdout if real_stdout is not None else _RealStdout(self._stdout)
         )
+        self._canceled = False
 
     @property
     def dry_run(self) -> bool:
@@ -668,6 +711,17 @@ class Context:
         apps that propagate it to a child process.
         """
         return self._json
+
+    @property
+    def canceled(self) -> bool:
+        """True once the handler's work should stop (contract §19.13).
+
+        It becomes true when SIGINT or SIGTERM arrives while the handler runs
+        on the ``run()`` path -- the framework does nothing else then; the
+        handler is expected to notice and return -- and when the dispatch
+        ends, so work the handler handed it to knows it is released.
+        """
+        return self._canceled
 
     def payload(self, value: object) -> None:
         """Supply this dispatch's machine payload (contract §19.4).
@@ -12519,7 +12573,7 @@ class App:
         # exhaustive by construction -- BaseException is the root of the
         # hierarchy, so no unwind can slip past it.
         span = _HandlerSpan(
-            machine=ctx._json, mode=mode, real_stdout=real_stdout,
+            machine=ctx._json, mode=mode, real_stdout=real_stdout, ctx=ctx,
         )
         span.start()
         try:
@@ -12609,6 +12663,14 @@ class App:
             if exit_code == 0:
                 exit_code = 1
             closing.append(guard_failure)
+        # A signal's status replaces whatever status the handler chose; an
+        # unwind is not handled, so its status stays the language's (§3.5).
+        signaled = span.signals.failure() if span.signals is not None else None
+        if signaled is not None and not aborted:
+            exit_code, message = signaled
+            closing.append(message)
+        # The dispatch ends here, which cancels the context too (§19.13).
+        ctx._canceled = True
         if ctx._json:
             # The emission seam owns instance validation (§19.4, §19.5): the
             # value is checked here, where the envelope is about to carry it,

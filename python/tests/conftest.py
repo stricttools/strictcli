@@ -67,7 +67,7 @@ def payload(result):
     return envelope(result)["payload"]
 
 
-def run_app_script(tmp_path, body, argv, *, timeout=60):
+def run_app_script(tmp_path, body, argv, *, timeout=60, tail="app.run()"):
     """Run an app through ``app.run()`` in a real child process.
 
     ``body`` is Python source that builds ``app`` (``strictcli`` and ``sys`` are
@@ -84,7 +84,7 @@ def run_app_script(tmp_path, body, argv, *, timeout=60):
     script.write_text(
         "import sys\nimport strictcli\n"
         + textwrap.dedent(body)
-        + "\napp.run()\n"
+        + "\n" + textwrap.dedent(tail) + "\n"
     )
     return subprocess.run(
         [sys.executable, str(script), *argv],
