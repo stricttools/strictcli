@@ -51,7 +51,7 @@ Most CLI frameworks infer behavior from type hints, function signatures, or nami
 - **A choice is a declaration scope.** "Exactly one of these" is a choice flag, not a constraint over independent flags: each choice owns the flags that exist only while it is elected, and a flag supplied outside its elected scope is a parse error naming both sides. There is no at-most-one construct anywhere.
 - **Handler signature validation.** Parameter names must match declared flags and args exactly.
 - **Registration-time errors.** Misconfigurations fail loud and early, not at parse time.
-- **Minimal dependencies.** Each implementation uses its language's standard library plus TOML support: Python depends on [tomlkit](https://pypi.org/project/tomlkit/), Go depends on [go-toml-edit](https://github.com/smm-h/go-toml-edit), TypeScript depends on [smol-toml](https://www.npmjs.com/package/smol-toml) and [toml-eslint-parser](https://www.npmjs.com/package/toml-eslint-parser).
+- **Minimal dependencies.** Each implementation uses its language's standard library plus TOML support: Python depends on [tomlkit](https://pypi.org/project/tomlkit/), Go depends on [go-toml-edit](https://github.com/stricttools/go-toml-edit), TypeScript depends on [smol-toml](https://www.npmjs.com/package/smol-toml) and [toml-eslint-parser](https://www.npmjs.com/package/toml-eslint-parser).
 
 ## Quick taste
 
@@ -202,7 +202,7 @@ strictcli/
   conformance/     Cross-language conformance tests
 ```
 
-Each sub-project has its own version, changelog, and release cycle, managed by [rlsbl](https://github.com/smm-h/rlsbl).
+Each sub-project has its own version, changelog, and release cycle, managed by [rlsbl](https://github.com/stricttools/rlsbl).
 
 ## License
 
