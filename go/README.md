@@ -20,7 +20,7 @@ sentence with Go's spellings inside it.
 go get github.com/stricttools/strictcli/go/strictcli
 ```
 
-Requires Go 1.25+. One dependency: [go-toml-edit](https://github.com/smm-h/go-toml-edit) for TOML config/checks support.
+Requires Go 1.25+. One dependency: [go-toml-edit](https://github.com/stricttools/go-toml-edit) for TOML config/checks support.
 
 ## Quickstart
 
@@ -795,7 +795,7 @@ arg  := strictcli.NewArg(name, help, opts ...ArgOption)
 - **Effect classification is mandatory.** Every command declares `EffectReadOnly` or `EffectMutating`. There is no default and no inference.
 - **Presence is mandatory.** Every flag and arg declares required, optional, or a value default. Zero declarations and two declarations are both registration-time errors, and requiredness is never derived from whether a default happens to exist.
 - **Registration-time errors.** Misconfigurations panic loud and early, not at parse time.
-- **Minimal dependencies.** One dependency ([go-toml-edit](https://github.com/smm-h/go-toml-edit)) for TOML support.
+- **Minimal dependencies.** One dependency ([go-toml-edit](https://github.com/stricttools/go-toml-edit)) for TOML support.
 
 ## See also
 
