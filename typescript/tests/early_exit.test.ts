@@ -142,6 +142,28 @@ test("early exit: app.call() rejects with ExitError carrying the code and the me
 	assert.ok(!(e instanceof InvokeError));
 	assert.equal(e.code, 3);
 	assert.equal(e.message, "no manifest at ./m.toml");
+	// The payload supplied before the early exit rides the error, as test()
+	// reports it (§19.9's box).
+	assert.deepEqual(e.payload, { checked: 2 });
+	assert.deepEqual((await a.test(["cmd"])).data, { checked: 2 });
+});
+
+test("early exit: ExitError's payload is null when the command supplied none", async () => {
+	const a = app();
+	a.command(
+		defineReadOnlyCommand("cmd", {
+			help: "a command",
+			handler: () => {
+				throw new ExitNow(3, "gone");
+			},
+		}),
+	);
+	const e = await a.call("cmd", {}).then(
+		() => assert.fail("call resolved"),
+		(err: unknown) => err,
+	);
+	assert.ok(e instanceof ExitError);
+	assert.equal(e.payload, null);
 });
 
 test("early exit: an MCP tools/call answers isError with the code and the message", async () => {

@@ -129,7 +129,9 @@ import { ParseError, RegistrationError } from "../src/errors.js";
 // refusals, the renderer registration refusals, the run outcomes, the early
 // exit's tool-result text, and the framework-use lint's argument refusal, scan
 // refusals, and finding messages, the unparsable-source refusal among them.
-const EXPECTED_TEMPLATE_COUNT = 427;
+// Unwaited children net +1: the run outcome naming a child the exit step
+// killed.
+const EXPECTED_TEMPLATE_COUNT = 428;
 
 function templateFunctions(): [string, (...args: never[]) => unknown][] {
 	// Widen to unknown first: the module also exports the two error classes,

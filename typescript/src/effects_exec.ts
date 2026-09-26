@@ -35,17 +35,32 @@ export interface SpawnedChild {
 	readonly pid: number;
 	/**
 	 * Blocks until the child exits and returns its exit code. When the child
-	 * was started with its stdout captured, `onStdout` receives every captured
-	 * byte exactly once, on the first call, before the code is returned.
+	 * was started with its stdout captured, every captured byte has been handed
+	 * to `onStdout` by the time the code is returned.
 	 */
 	wait(): number;
+	/** Whether the child has exited, without waiting. */
+	hasExited(): boolean;
+	/** Blocks up to `ms` milliseconds for the child to exit; reports whether it did. */
+	waitFor(ms: number): boolean;
+	/** Sends `signal` unless the child has already exited. */
+	signal(signal: NodeJS.Signals | number): void;
+	/**
+	 * Hands every captured chunk that has arrived so far to `onStdout`, in
+	 * arrival order, without waiting (contract §19.11's box).
+	 */
+	pump(): void;
 }
 
-/** Worker body: starts the child, then signals pid and exit code in turn. */
+/**
+ * Worker body: starts the child, forwards each captured stdout chunk the
+ * moment it arrives, then signals pid and exit code in turn. The exit is
+ * signaled on "close", after the last chunk was forwarded.
+ */
 const SPAWN_WORKER_SOURCE = `
 const { workerData } = require("node:worker_threads");
 const { spawn } = require("node:child_process");
-const { argv, cwd, env, captureStdout, pidBuf, doneBuf, pidPort, donePort } = workerData;
+const { argv, cwd, env, captureStdout, pidBuf, doneBuf, pidPort, donePort, chunkPort } = workerData;
 const pidFlag = new Int32Array(pidBuf);
 const doneFlag = new Int32Array(doneBuf);
 function signal(flag, port, msg) {
@@ -59,9 +74,8 @@ try {
 		env: env === null ? process.env : env,
 		stdio: captureStdout ? ["inherit", "pipe", "inherit"] : "inherit",
 	});
-	const captured = [];
 	if (captureStdout) {
-		child.stdout.on("data", (chunk) => captured.push(chunk));
+		child.stdout.on("data", (chunk) => chunkPort.postMessage(new Uint8Array(chunk)));
 	}
 	let started = false;
 	child.on("spawn", () => {
@@ -77,10 +91,7 @@ try {
 		signal(doneFlag, donePort, { error: message });
 	});
 	child.on("close", (code) => {
-		signal(doneFlag, donePort, {
-			code: code === null ? 1 : code,
-			stdout: captureStdout ? new Uint8Array(Buffer.concat(captured)) : null,
-		});
+		signal(doneFlag, donePort, { code: code === null ? 1 : code });
 	});
 } catch (e) {
 	const message = String((e && e.message) || e);
@@ -103,9 +114,9 @@ function blockingReceive(flag: Int32Array, port: MessagePort): unknown {
  * main thread synchronously. Throws if the child cannot be started.
  *
  * With `onStdout`, the child's stdout is read through a pipe instead of
- * inheriting the process stdout, and every byte it wrote is handed to
- * `onStdout` when the child is waited on (contract §19.11). Its stderr is
- * inherited either way.
+ * inheriting the process stdout, and every chunk it writes is handed to
+ * `onStdout` in arrival order: by `pump()`, and at the latest when the child
+ * is waited on (contract §19.11). Its stderr is inherited either way.
  */
 export function spawnConcurrent(
 	argv: readonly string[],
@@ -117,8 +128,14 @@ export function spawnConcurrent(
 	const doneBuf = new SharedArrayBuffer(4);
 	const pidChannel = new MessageChannel();
 	const doneChannel = new MessageChannel();
+	const chunkChannel = new MessageChannel();
 	const worker = new Worker(SPAWN_WORKER_SOURCE, {
 		eval: true,
+		// The body is a CommonJS script. A worker inherits the process's
+		// execArgv by default, and under `node --input-type=module` that would
+		// evaluate it as a module where `require` does not exist: the worker
+		// would die before signaling, and the main thread would wait forever.
+		execArgv: [],
 		workerData: {
 			argv: [...argv],
 			cwd: cwd ?? null,
@@ -128,8 +145,9 @@ export function spawnConcurrent(
 			doneBuf,
 			pidPort: pidChannel.port2,
 			donePort: doneChannel.port2,
+			chunkPort: chunkChannel.port2,
 		},
-		transferList: [pidChannel.port2, doneChannel.port2],
+		transferList: [pidChannel.port2, doneChannel.port2, chunkChannel.port2],
 	});
 	// The worker must not hold the process open once the child is done.
 	worker.unref();
@@ -144,6 +162,20 @@ export function spawnConcurrent(
 		);
 	}
 	const pid = started.pid as number;
+	const doneFlag = new Int32Array(doneBuf);
+
+	const pump = (): void => {
+		if (onStdout === undefined) {
+			return;
+		}
+		for (;;) {
+			const chunk = receiveMessageOnPort(chunkChannel.port1);
+			if (chunk === undefined) {
+				return;
+			}
+			onStdout(chunk.message as Uint8Array);
+		}
+	};
 
 	let exitCode: number | undefined;
 	return {
@@ -152,12 +184,11 @@ export function spawnConcurrent(
 			if (exitCode !== undefined) {
 				return exitCode;
 			}
-			const done = blockingReceive(
-				new Int32Array(doneBuf),
-				doneChannel.port1,
-			) as
-				| { code?: number; error?: string; stdout?: Uint8Array | null }
+			const done = blockingReceive(doneFlag, doneChannel.port1) as
+				| { code?: number; error?: string }
 				| undefined;
+			// Every chunk was forwarded before the exit was signaled.
+			pump();
 			void worker.terminate();
 			if (done === undefined || done.error !== undefined) {
 				throw new Error(
@@ -165,15 +196,31 @@ export function spawnConcurrent(
 				);
 			}
 			exitCode = done.code as number;
-			if (
-				onStdout !== undefined &&
-				done.stdout !== undefined &&
-				done.stdout !== null
-			) {
-				onStdout(done.stdout);
-			}
 			return exitCode;
 		},
+		hasExited(): boolean {
+			return Atomics.load(doneFlag, 0) !== 0;
+		},
+		waitFor(ms: number): boolean {
+			if (Atomics.load(doneFlag, 0) === 0) {
+				Atomics.wait(doneFlag, 0, 0, ms);
+			}
+			return Atomics.load(doneFlag, 0) !== 0;
+		},
+		signal(signal: NodeJS.Signals | number): void {
+			if (Atomics.load(doneFlag, 0) !== 0) {
+				return;
+			}
+			try {
+				process.kill(pid, signal);
+			} catch (e) {
+				// The child exited between the check and the signal.
+				if ((e as NodeJS.ErrnoException).code !== "ESRCH") {
+					throw e;
+				}
+			}
+		},
+		pump,
 	};
 }
 

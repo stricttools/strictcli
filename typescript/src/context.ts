@@ -51,13 +51,51 @@ export interface DocumentWriter {
  */
 export class OutputMember {
 	private readonly parts: string[] = [];
+	/** Live spawned children whose arrived chunks are not yet appended. */
+	private readonly sources = new Set<() => void>();
+	private delivering = false;
 
+	/**
+	 * Appends text the framework received now: every live child's pending
+	 * bytes are appended first, so the member is in arrival order (§19.11's
+	 * box).
+	 */
 	append(text: string): void {
+		this.deliverPending();
 		this.parts.push(text);
+	}
+
+	/** Appends a captured child chunk as it is delivered. */
+	appendCaptured(text: string): void {
+		if (text !== "") {
+			this.parts.push(text);
+		}
+	}
+
+	/** Registers a live child's pending-chunk delivery; returns its removal. */
+	addSource(pump: () => void): () => void {
+		this.sources.add(pump);
+		return () => {
+			this.sources.delete(pump);
+		};
 	}
 
 	value(): string | null {
 		return this.parts.length === 0 ? null : this.parts.join("");
+	}
+
+	private deliverPending(): void {
+		if (this.delivering) {
+			return;
+		}
+		this.delivering = true;
+		try {
+			for (const pump of this.sources) {
+				pump();
+			}
+		} finally {
+			this.delivering = false;
+		}
 	}
 }
 

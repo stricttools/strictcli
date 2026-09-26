@@ -24,7 +24,7 @@ import {
 	type ReservedFlags,
 	type Writer,
 } from "./context.js";
-import type { Effect } from "./effects.js";
+import type { Effect, Effects } from "./effects.js";
 import { attachProvidedFields } from "./elected.js";
 import {
 	errCallConsequentialUnconsented,
@@ -338,7 +338,11 @@ function applyScopedDefaultForInvoke(
  * - bare undefined -> undefined (Python's None; Go handlers cannot express it)
  * - otherwise -> the exit code
  */
-function interpretForCall(result: unknown, ctx: Context): unknown {
+function interpretForCall(
+	result: unknown,
+	ctx: Context,
+	killedChildren: boolean,
+): unknown {
 	const interpreted = interpretHandlerReturn(result);
 	const supplied = contextPayload(ctx);
 	if (supplied.set) {
@@ -346,6 +350,12 @@ function interpretForCall(result: unknown, ctx: Context): unknown {
 	}
 	if (result === undefined) {
 		return undefined;
+	}
+	// A child still running when the handler ended fails the run on this door
+	// too: the exit status it reports is 1 unless already nonzero (§19.11's
+	// box).
+	if (killedChildren && interpreted.exitCode === 0) {
+		return 1;
 	}
 	return interpreted.exitCode;
 }
@@ -359,15 +369,29 @@ function interpretForCall(result: unknown, ctx: Context): unknown {
 async function callHandler(
 	invoke: () => unknown,
 	ctx: Context,
+	effects: Effects,
 ): Promise<unknown> {
+	let result: unknown;
 	try {
-		const result = await invoke();
-		return interpretForCall(result, ctx);
+		result = await invoke();
 	} catch (e) {
+		// The children are settled on every way out, with no stream to name a
+		// killed one on (§19.11's box).
+		effects.settleChildren();
+		endDispatch(ctx);
 		if (e instanceof ExitNow) {
-			throw new ExitError(e.code, e.message);
+			const supplied = contextPayload(ctx);
+			throw new ExitError(
+				e.code,
+				e.message,
+				supplied.set ? supplied.value : null,
+			);
 		}
 		throw e;
+	}
+	try {
+		const killed = effects.settleChildren();
+		return interpretForCall(result, ctx, killed.length > 0);
 	} finally {
 		endDispatch(ctx);
 	}
@@ -649,6 +673,7 @@ export async function invokeApp(
 	// --dry-run is likewise not reachable here (argv parsing is bypassed
 	// entirely), so the effects handle is armed in live mode -- but it IS
 	// armed, because the seal is mandatory at every ctx-construction site.
+	const effects = app.armEffects(cmd, commandPath, false, reserved);
 	const ctx = new Context(
 		discard,
 		discard,
@@ -660,7 +685,7 @@ export async function invokeApp(
 			false,
 		),
 		reserved,
-		app.armEffects(cmd, commandPath, false, reserved),
+		effects,
 		cmd.name,
 		def.payloadSchema ?? null,
 		{
@@ -669,7 +694,11 @@ export async function invokeApp(
 		},
 	);
 	attachUpdateState(ctx, writes, unsets);
-	return await callHandler(() => def.handler(validated as never, ctx), ctx);
+	return await callHandler(
+		() => def.handler(validated as never, ctx),
+		ctx,
+		effects,
+	);
 }
 
 async function invokePassthrough(
@@ -720,6 +749,7 @@ async function invokePassthrough(
 	}
 
 	const def = cmd.def as PassthroughDef<string>;
+	const effects = app.armEffects(cmd, commandPath, false, reserved);
 	const ctx = new Context(
 		discard,
 		discard,
@@ -731,7 +761,7 @@ async function invokePassthrough(
 			false,
 		),
 		reserved,
-		app.armEffects(cmd, commandPath, false, reserved),
+		effects,
 		cmd.name,
 		def.payloadSchema ?? null,
 		{
@@ -742,6 +772,7 @@ async function invokePassthrough(
 	return await callHandler(
 		() => def.handler({ name: cmd.name, args, globals }, ctx),
 		ctx,
+		effects,
 	);
 }
 

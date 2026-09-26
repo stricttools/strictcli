@@ -52,11 +52,17 @@ export class ExitNow extends Error {
 export class ExitError extends Error {
 	/** The exit status the handler's early exit named. */
 	readonly code: number;
+	/**
+	 * What the handler supplied through `ctx.payload` before its early exit,
+	 * `null` when it supplied none (contract §19.9's box).
+	 */
+	readonly payload: unknown;
 
-	constructor(code: number, message: string) {
+	constructor(code: number, message: string, payload: unknown = null) {
 		super(message);
 		this.name = "ExitError";
 		this.code = code;
+		this.payload = payload;
 	}
 }
 

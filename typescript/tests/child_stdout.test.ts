@@ -51,12 +51,24 @@ test("child stdout: a spawned child's stdout is captured by its wait()", async (
 	assert.equal(envelope(r.stdout).output, "spawned\ndone\n");
 });
 
-test("child stdout: a spawned child never waited on is drained by the exit step", async () => {
+test("child stdout: a spawned child that exited unwaited is drained by the exit step", async () => {
 	const r = await app((_args, ctx) => {
 		ctx.effects.spawn(["echo", "unwaited"]);
+		Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 500);
 		return 0;
 	}).test(["--json", "build"]);
 	assert.equal(envelope(r.stdout).output, "unwaited\n");
+});
+
+test("child stdout: a spawned child's bytes stream into output in arrival order", async () => {
+	const r = await app((_args, ctx) => {
+		const child = ctx.effects.spawn(["sh", "-c", "echo a; sleep 0.6; echo b"]);
+		Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 300);
+		ctx.out("mid");
+		child.wait();
+		return 0;
+	}).test(["--json", "build"]);
+	assert.equal(envelope(r.stdout).output, "a\nmid\nb\n");
 });
 
 test("child stdout: a run with stream false still captures into its Completed", async () => {

@@ -33,10 +33,15 @@ import {
 	rmSync,
 	writeFileSync,
 } from "node:fs";
-import { httpSync, spawnConcurrent } from "./effects_exec.js";
+import {
+	httpSync,
+	type SpawnedChild,
+	spawnConcurrent,
+} from "./effects_exec.js";
 import {
 	DryRunTruncated,
 	EffectFailed,
+	errChildKilledAtExit,
 	errDryRunTruncated,
 	errEffectArgvEmpty,
 	errEffectArgvNotSequence,
@@ -141,7 +146,13 @@ export interface Response {
 	readonly headers: Readonly<Record<string, string>>;
 }
 
-/** A handle for a started-but-not-awaited child process. */
+/**
+ * A handle for a started-but-not-awaited child process.
+ *
+ * Every child a handler starts is the handler's to finish: wait on it, or kill
+ * it. One still running when the handler ends is killed by the exit step and
+ * fails the run (contract §19.11's box).
+ */
 export interface Spawned {
 	readonly pid: number;
 	/**
@@ -151,6 +162,78 @@ export interface Spawned {
 	 * `stdout`/`stderr` are empty strings.
 	 */
 	wait(opts?: { readonly check?: boolean }): Completed;
+	/**
+	 * Sends `signal` to the child and returns at once; the child is still the
+	 * handler's to wait on or kill. A child that has already exited is left
+	 * alone, because its process id may already name another process.
+	 */
+	sendSignal(signal: NodeJS.Signals | number): void;
+	/**
+	 * Kills the child (SIGKILL) and waits for it to exit. A killed child counts
+	 * as waited on, and a later `wait` reports its status. A child that has
+	 * already exited is left alone.
+	 */
+	kill(): void;
+}
+
+/**
+ * Where a captured child's stdout goes (contract §19.11): the `--json`
+ * document's `output` member. `append` delivers every registered source's
+ * pending bytes first, so text lands in the order the framework received it.
+ */
+export interface ChildOutput {
+	append(text: string): void;
+	/** Appends a captured chunk without delivering other pending bytes first. */
+	appendCaptured(text: string): void;
+	/** Registers a live child's pending-chunk delivery; returns its removal. */
+	addSource(pump: () => void): () => void;
+}
+
+/** SIGKILL follows SIGTERM this long after the exit step sent it. */
+const CHILD_TERM_GRACE_MS = 1000;
+
+/** One child started through spawn in a dispatch (§19.11's box). */
+class TrackedChild {
+	waited = false;
+	private finished = false;
+
+	constructor(
+		readonly process: SpawnedChild,
+		readonly argv: string,
+		private readonly finish: () => void,
+	) {}
+
+	/** Waits for the child to exit and delivers its remaining bytes. */
+	reap(): number {
+		const code = this.process.wait();
+		if (!this.finished) {
+			this.finished = true;
+			this.finish();
+		}
+		return code;
+	}
+
+	/**
+	 * Reaps an unwaited child, killing it first when it still runs: SIGTERM,
+	 * then SIGKILL a second later. Returns the diagnostic naming a child that
+	 * had to be killed, or null.
+	 */
+	settle(): string | null {
+		if (this.waited) {
+			return null;
+		}
+		this.waited = true;
+		let message: string | null = null;
+		if (!this.process.hasExited()) {
+			this.process.signal("SIGTERM");
+			if (!this.process.waitFor(CHILD_TERM_GRACE_MS)) {
+				this.process.signal("SIGKILL");
+			}
+			message = errChildKilledAtExit(this.process.pid, this.argv);
+		}
+		this.reap();
+		return message;
+	}
 }
 
 /** Concrete Completed (a class so the forwarding boundary can recognize it). */
@@ -175,14 +258,25 @@ class ResponseResult implements Response {
 class SpawnedResult implements Spawned {
 	constructor(
 		readonly pid: number,
-		private readonly child: { wait(): number },
+		private readonly child: TrackedChild,
 		private readonly cmdPath: string,
 		private readonly argvText: string,
 	) {}
 
+	sendSignal(signal: NodeJS.Signals | number): void {
+		this.child.process.signal(signal);
+	}
+
+	kill(): void {
+		this.child.waited = true;
+		this.child.process.signal("SIGKILL");
+		this.child.reap();
+	}
+
 	wait(opts: { readonly check?: boolean } = {}): Completed {
 		rejectUnacceptedOptions(this.cmdPath, "spawn", opts, WAIT_OPTION_KEYS);
-		const code = this.child.wait();
+		this.child.waited = true;
+		const code = this.child.reap();
 		if (opts.check !== false && code !== 0) {
 			throw new EffectFailed(
 				errEffectRunFailed(this.cmdPath, "spawn", this.argvText, code),
@@ -706,9 +800,9 @@ export class Effects implements MutatingEffects {
 	 * when children inherit it (contract §19.11): set in machine mode on a
 	 * command that does not own stdout.
 	 */
-	private readonly childStdout: ((text: string) => void) | undefined;
-	/** Captured spawns not yet waited on, drained by the exit step. */
-	private readonly pendingSpawns: { wait(): number }[] = [];
+	private readonly childOutput: ChildOutput | undefined;
+	/** Every child started through spawn, in spawn order (§19.11's box). */
+	private readonly children: TrackedChild[] = [];
 
 	constructor(
 		cmd: EffectsCommandView,
@@ -718,7 +812,7 @@ export class Effects implements MutatingEffects {
 		trace: TraceIdentity,
 		out?: { write(text: string): void },
 		json = false,
-		childStdout?: (text: string) => void,
+		childOutput?: ChildOutput,
 	) {
 		this.cmdPath = cmd.cmdPath;
 		this.effect = cmd.effect;
@@ -729,27 +823,34 @@ export class Effects implements MutatingEffects {
 		this.trace = trace;
 		this.out = out;
 		this.json = json;
-		this.childStdout = childStdout;
+		this.childOutput = childOutput;
 	}
 
 	/**
-	 * Package-internal: waits for every captured spawn the handler never
-	 * waited on, so its stdout reaches the `output` member no later than the
-	 * exit step (contract §19.11).
+	 * Package-internal: settles, in spawn order, every child this dispatch
+	 * started and the handler neither waited on nor killed (contract §19.11's
+	 * box). An exited child is reaped and its captured stdout delivered; a
+	 * running one is sent SIGTERM, then SIGKILL a second later. Returns one
+	 * diagnostic per child that had to be killed.
 	 */
-	drainCapturedSpawns(): void {
-		for (const child of this.pendingSpawns.splice(0)) {
-			child.wait();
+	settleChildren(): string[] {
+		const killed: string[] = [];
+		for (const child of this.children) {
+			const message = child.settle();
+			if (message !== null) {
+				killed.push(message);
+			}
 		}
+		return killed;
 	}
 
-	/** The capture callback for a child's raw stdout bytes, or undefined. */
+	/** The capture callback for a streamed run's raw stdout bytes, or undefined. */
 	private stdoutCapture(): ((bytes: Uint8Array) => void) | undefined {
-		const sink = this.childStdout;
+		const sink = this.childOutput;
 		if (sink === undefined) {
 			return undefined;
 		}
-		return (bytes) => sink(decodeChildStdout(bytes));
+		return (bytes) => sink.append(decodeChildStdout(bytes));
 	}
 
 	// -- claimed rendering (contract §19.7) ------------------------------
@@ -1116,17 +1217,32 @@ export class Effects implements MutatingEffects {
 			grant: declared,
 			recorded: false,
 		});
-		const capture = this.stdoutCapture();
+		// A captured child's bytes are decoded incrementally and appended as
+		// they arrive, in the order the framework receives them (§19.11's
+		// box): pending chunks are delivered before every other append.
+		const sink = this.childOutput;
+		const decoder = new TextDecoder("utf-8");
 		const child = spawnConcurrent(
 			this.settledArgv(runtime, "spawn"),
 			opts.cwd,
 			traceChildEnv(this.mergedEnv(opts.env), this.trace),
-			capture,
+			sink === undefined
+				? undefined
+				: (bytes) =>
+						sink.appendCaptured(decoder.decode(bytes, { stream: true })),
 		);
-		if (capture !== undefined) {
-			this.pendingSpawns.push(child);
+		let removeSource = (): void => {};
+		if (sink !== undefined) {
+			removeSource = sink.addSource(() => child.pump());
 		}
-		return new SpawnedResult(child.pid, child, this.cmdPath, joined);
+		const tracked = new TrackedChild(child, joined, () => {
+			removeSource();
+			if (sink !== undefined) {
+				sink.appendCaptured(decoder.decode());
+			}
+		});
+		this.children.push(tracked);
+		return new SpawnedResult(child.pid, tracked, this.cmdPath, joined);
 	}
 
 	write(

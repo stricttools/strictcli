@@ -3224,6 +3224,14 @@ export function errCanceledBySignal(signal: string): string {
 	return `canceled by signal ${signal}`;
 }
 
+/**
+ * The run outcome of a child the handler started through spawn and left
+ * running when it ended (§19.11's box).
+ */
+export function errChildKilledAtExit(pid: number, argv: string): string {
+	return `child process ${pid} was still running when the handler ended and was killed: ${argv}`;
+}
+
 // ---------------------------------------------------------------------------
 // mcp.go — the early exit over the programmatic doors
 // ---------------------------------------------------------------------------

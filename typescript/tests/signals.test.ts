@@ -41,6 +41,26 @@ test("signals: SIGTERM during the handler cancels ctx.signal and exits 143", () 
 	assert.equal(r.stderr, "error: canceled by signal SIGTERM\n");
 });
 
+test("signals: a handler that only awaits ctx.signal keeps Node running until the signal arrives", () => {
+	const r = runAppInChild(
+		`
+const app = createApp({ name: "myapp", version: "1.0.0", help: "test app" });
+app.command(defineReadOnlyCommand("cmd", {
+	help: "a command",
+	handler: async (_args, ctx) => {
+		setTimeout(() => process.kill(process.pid, "SIGTERM"), 200).unref();
+		await new Promise((resolve) => ctx.signal.addEventListener("abort", resolve));
+		ctx.out("stopping");
+		return 0;
+	},
+}));`,
+		["cmd"],
+	);
+	assert.equal(r.status, 143, r.stderr);
+	assert.equal(r.stdout, "stopping\n");
+	assert.equal(r.stderr, "error: canceled by signal SIGTERM\n");
+});
+
 test("signals: SIGINT exits 130", () => {
 	const r = runAppInChild(selfSignalApp("SIGINT", "return 0;"), ["cmd"]);
 	assert.equal(r.status, 130);

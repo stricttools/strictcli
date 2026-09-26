@@ -1585,8 +1585,10 @@ export class AppImpl implements App {
 	 *
 	 * Around the handler: in machine mode the runtime guard replaces the
 	 * process stdout and traps `process.exit`; under `app.run()` the signal
-	 * watch catches SIGINT and SIGTERM. Both are released the moment the
-	 * handler settles, before the exit step writes anything.
+	 * watch catches SIGINT and SIGTERM, and a timer holds the event loop open
+	 * while the handler is pending. The guard and the signal watch are
+	 * released once the handler has settled and its unwaited children have
+	 * been settled, before the exit step writes anything.
 	 *
 	 * The runtime seal: an extraction from an Unsettled carrier truncates the
 	 * preview honestly instead of inventing a value. The check on the log's
@@ -1606,30 +1608,44 @@ export class AppImpl implements App {
 			const signals =
 				d.mode === "run" ? SignalWatch.install(contextController(ctx)) : null;
 			let ending: HandlerEnding;
+			let killed: string[];
 			try {
-				const result = await (guard === null ? invoke() : guard.within(invoke));
-				ending = {
-					kind: "return",
-					code: interpretHandlerReturn(result).exitCode,
-				};
-			} catch (e) {
-				ending = classifyUnwind(e);
+				try {
+					const result = await holdingEventLoop(d.mode === "run", () =>
+						guard === null ? invoke() : guard.within(invoke),
+					);
+					ending = {
+						kind: "return",
+						code: interpretHandlerReturn(result).exitCode,
+					};
+				} catch (e) {
+					ending = classifyUnwind(e);
+				}
+				// The children are settled while the guard and the signal
+				// handling are still in place (§19.11's box, §19.13's box): a
+				// child the handler left unwaited is reaped and drained, and one
+				// still running is killed.
+				killed = d.effects.settleChildren();
+				guard?.release();
+				// A signal that arrived while a kill blocked the thread is
+				// delivered on the event loop, so the loop turns once before the
+				// handling is released. Nothing blocked when nothing was killed,
+				// and then the loop does not turn.
+				if (signals !== null && killed.length > 0) {
+					await new Promise((resolve) => setImmediate(resolve));
+				}
 			} finally {
 				guard?.release();
 				signals?.release();
 			}
-			// A spawned child whose stdout the framework captures has written
-			// everything into the output member before the exit step reads it
-			// (§19.11).
-			d.effects.drainCapturedSpawns();
 			const swallowed = this.effectLogState.truncated;
 			if (swallowed !== null && ending.kind !== "throw") {
 				ending = { kind: "truncated", trunc: swallowed };
 			}
 
 			// The errors the exit step appends, in the pinned order: the early
-			// exit's message, the process-exit trap, the guard's failure, the
-			// signal (§19.2's box).
+			// exit's message, the process-exit trap, each killed child, the
+			// guard's failure, the signal (§19.2's box).
 			let code: number;
 			switch (ending.kind) {
 				case "return":
@@ -1647,6 +1663,12 @@ export class AppImpl implements App {
 				case "throw":
 					code = 1;
 					break;
+			}
+			for (const message of killed) {
+				reportExitError(ctx, err, message);
+				if (code === 0) {
+					code = 1;
+				}
 			}
 			const stray = guard?.failure() ?? null;
 			if (stray !== null) {
@@ -1860,7 +1882,7 @@ export class AppImpl implements App {
 			},
 			out,
 			reserved.json,
-			captureChildren ? (text) => output.append(text) : undefined,
+			captureChildren ? output : undefined,
 		);
 	}
 
@@ -2041,4 +2063,27 @@ interface DispatchResult {
 	/** False when the handler supplied no machine payload (contract §19.4). */
 	readonly hasPayload: boolean;
 	readonly payload: unknown;
+}
+
+/**
+ * Awaits `fn` with the event loop held open when `hold` is true (contract
+ * §19.13's box). Node ends a process whose only remaining work is a pending
+ * top-level await with status 13, and a signal listener does not count as
+ * work, so a handler that only awaits `ctx.signal` would end the process
+ * before any signal could arrive. The timer is released the moment the
+ * handler settles.
+ */
+async function holdingEventLoop<T>(
+	hold: boolean,
+	fn: () => T,
+): Promise<Awaited<T>> {
+	if (!hold) {
+		return await fn();
+	}
+	const keepAlive = setInterval(() => {}, 1 << 30);
+	try {
+		return await fn();
+	} finally {
+		clearInterval(keepAlive);
+	}
 }
