@@ -809,6 +809,63 @@
           "description": "The generated handler calls ctx.payload with the verbs of ctx.effects.recorded() (effects contract §19.7): the records it reads shape its own payload, identically in both modes. The verbs rather than the records themselves, because a payload is emitted exactly as the handler supplied it (§19.2) and three serializers order an object's keys three ways -- an array of strings is the same bytes everywhere. Implies the permissive payload_schema literal {} when the command declares none.",
           "default": false
         },
+        "payload_renderer": {
+          "type": "object",
+          "required": [
+            "template"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "template": {
+              "type": "string",
+              "description": "The rendering, with every '{key}' replaced by the payload's top-level member of that name: a string verbatim, an integer in decimal."
+            }
+          },
+          "description": "Declares a payload renderer on the command (effects contract §19.10): Python payload_renderer=, Go PayloadRenderer(fn), TypeScript payloadRenderer:. Each harness builds the same renderer from the template. In human mode the exit step prints the rendering of the supplied payload plus a newline, never hidden by --quiet; under --json only the payload is emitted. Registration requires a payload schema and refuses an owns-stdout command, so a case that is not about those refusals declares payload_schema explicitly."
+        },
+        "handler_signals_self": {
+          "enum": [
+            "SIGINT",
+            "SIGTERM"
+          ],
+          "description": "The generated handler sends the named signal to its own process, then waits (bounded) until its Context reports cancellation -- Python ctx.canceled, Go ctx.Done(), TypeScript ctx.signal (effects contract §19.13) -- and continues. A handler whose context is never canceled aborts with 'conformance: context was not canceled'. Runs after handler_diagnostics and before handler_out."
+        },
+        "handler_out": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "ctx.out / ctx.Out calls the generated handler issues, one per string, in order (effects contract §19.10). Runs after handler_signals_self and before handler_document."
+        },
+        "handler_document": {
+          "type": "string",
+          "description": "UTF-8 bytes the generated handler writes through ctx.document() / ctx.Document() (effects contract §19.6's document-writer amendment). Runs after handler_out and before handler_raw_stdout."
+        },
+        "handler_raw_stdout": {
+          "type": "string",
+          "description": "UTF-8 bytes the generated handler writes to the process stdout directly, outside the framework: Python sys.stdout.write then flush, Go os.Stdout.WriteString, TypeScript process.stdout.write (effects contract §19.12). The language-neutral way to reach the runtime guard. Runs after handler_document and before the terminal step."
+        },
+        "handler_process_exit": {
+          "type": "integer",
+          "description": "The terminal step: the generated handler calls the language's own process exit with this code -- Python os._exit, TypeScript process.exit (effects contract §19.12's trap). Go's os.Exit cannot be trapped, so a case using this key declares targets [\"python\", \"typescript\"]. Excludes handler_exit_now, handler_aborts, handler_returns and handler_prints."
+        },
+        "handler_exit_now": {
+          "type": "object",
+          "required": [
+            "code",
+            "message"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "code": {
+              "type": "integer"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "description": "The terminal step: the generated handler ends the command early (effects contract §19.9) -- Python strictcli.exit_now(code, message), Go strictcli.ExitNow(code, message) called from a helper function the handler calls, TypeScript throw new ExitNow(code, message). Code and message are passed through unchecked, so a case can assert the call-time refusals. Excludes handler_process_exit, handler_aborts, handler_returns and handler_prints."
+        },
         "hidden": {
           "type": "boolean",
           "default": false
@@ -968,19 +1025,86 @@
           "tags": false,
           "hidden": false,
           "interactive": false,
-          "config_fields": false
+          "config_fields": false,
+          "payload_renderer": false,
+          "handler_signals_self": false,
+          "handler_out": false,
+          "handler_document": false,
+          "handler_raw_stdout": false,
+          "handler_process_exit": false,
+          "handler_exit_now": false
         }
       },
       "else": {
         "required": [
           "effect"
         ],
-        "not": {
-          "required": [
-            "handler_aborts",
-            "handler_returns"
-          ]
-        }
+        "allOf": [
+          {
+            "not": {
+              "required": [
+                "handler_aborts",
+                "handler_returns"
+              ]
+            }
+          },
+          {
+            "not": {
+              "required": [
+                "handler_exit_now",
+                "handler_aborts"
+              ]
+            }
+          },
+          {
+            "not": {
+              "required": [
+                "handler_exit_now",
+                "handler_returns"
+              ]
+            }
+          },
+          {
+            "not": {
+              "required": [
+                "handler_exit_now",
+                "handler_prints"
+              ]
+            }
+          },
+          {
+            "not": {
+              "required": [
+                "handler_process_exit",
+                "handler_aborts"
+              ]
+            }
+          },
+          {
+            "not": {
+              "required": [
+                "handler_process_exit",
+                "handler_returns"
+              ]
+            }
+          },
+          {
+            "not": {
+              "required": [
+                "handler_process_exit",
+                "handler_prints"
+              ]
+            }
+          },
+          {
+            "not": {
+              "required": [
+                "handler_exit_now",
+                "handler_process_exit"
+              ]
+            }
+          }
+        ]
       }
     },
     "grant": {
