@@ -3902,7 +3902,7 @@ set.
 |-----------------|--------|------|
 | `errStdoutWrittenOutsideFramework(n, excerpt)` | `_msg_stdout_written_outside_framework(n, excerpt)` | `stdout written outside the framework: <n> bytes: <excerpt>` |
 | `errProcessExitOutsideFramework(code)` | `_msg_process_exit_outside_framework(code)` | `process exit called outside the framework with code <code>` |
-| `errCancelledBySignal(signal)` | `_msg_cancelled_by_signal(signal)` | `cancelled by signal <signal>` |
+| `errCanceledBySignal(signal)` | `_msg_canceled_by_signal(signal)` | `canceled by signal <signal>` |
 
 `<excerpt>` is a JSON string literal, quotes included (§19.12 pins its bytes); `<signal>` is the
 signal's conventional name, `SIGINT` or `SIGTERM` (§19.13). `errProcessExitOutsideFramework` exists
@@ -9687,8 +9687,8 @@ section.
 342. **[%%] Signals (§19.13).** strictcli catches SIGINT and SIGTERM during the handler and cancels
      the handler's context; when the handler returns, the command exits 128 + the signal number with
      an error diagnostic naming the signal; a second signal gets the default action. Authored: the
-     diagnostic text `cancelled by signal <SIGNAL>`; the cancellation spellings Python
-     `ctx.cancelled`, Go `ctx.Done()`, TypeScript `ctx.signal`; the signal status replacing any
+     diagnostic text `canceled by signal <SIGNAL>`; the cancellation spellings Python
+     `ctx.canceled`, Go `ctx.Done()`, TypeScript `ctx.signal`; the signal status replacing any
      status the handler chose, an early exit's included; the CLI path as the only one that installs
      handlers.
 
@@ -10264,7 +10264,7 @@ ended early with `isError` tool-result content whose text is `exit code <code>: 
 exit step can recover in (§17). Go therefore gains `strictcli.Go(ctx *Context, fn func())`, which
 runs `fn` on a new goroutine under the dispatch's care:
 
-- an `ExitNow` or a panic raised inside `fn` is captured, and the handler's context is cancelled
+- an `ExitNow` or a panic raised inside `fn` is captured, and the handler's context is canceled
   (`ctx.Done()` closes, §19.13) so the handler can stop waiting on work that will not finish;
 - when the handler returns, the exit step waits for every function started through `strictcli.Go`
   in this dispatch to return, and then ends the command as if the **first** captured value had been
@@ -10395,7 +10395,7 @@ handles SIGINT and SIGTERM while the handler runs:
 
   | Impl | Cancellation |
   |------|--------------|
-  | Python | `ctx.cancelled`, a read-only `bool` property that becomes true |
+  | Python | `ctx.canceled`, a read-only `bool` property that becomes true |
   | Go | `ctx.Done()`, a `<-chan struct{}` that is closed |
   | TypeScript | `ctx.signal`, an `AbortSignal` that is aborted |
 
@@ -10403,8 +10403,8 @@ handles SIGINT and SIGTERM while the handler runs:
   dispatch ends, so a handler can hand it to work it starts and know it is released.
 - **When the handler returns** -- or ends through an early exit -- the command exits with 128 + the
   signal's number (130 for SIGINT, 143 for SIGTERM), whatever status the handler chose, and the exit
-  step appends an `error` diagnostic `cancelled by signal <SIGNAL>` (`errCancelledBySignal`, §12.17),
-  printed as `error: cancelled by signal SIGTERM` in human mode and carried in `diagnostics` in
+  step appends an `error` diagnostic `canceled by signal <SIGNAL>` (`errCanceledBySignal`, §12.17),
+  printed as `error: canceled by signal SIGTERM` in human mode and carried in `diagnostics` in
   machine mode, where `exit_code` is the same number. The handler's own diagnostics, an early exit's
   message included, are kept ahead of it. In dry mode the would-do log renders as for a return.
 - **A second signal** of either kind gets the default action: the framework restores both
