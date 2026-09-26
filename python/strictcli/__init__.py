@@ -591,6 +591,8 @@ class _HandlerSpan:
             if machine else None
         )
         self.signals = _SignalWatch(ctx) if mode == "run" else None
+        # One diagnostic per child the exit step had to kill (§19.11's box).
+        self.killed: list[str] = []
 
     def start(self) -> None:
         if self.guard is not None:
@@ -1023,13 +1025,18 @@ class ExitError(Exception):
 
     Not an :class:`InvokeError`: an invocation error means the call was refused
     before the handler ran, and this means the handler ran and ended with a
-    failure. ``str()`` is the handler's message alone.
+    failure. ``str()`` is the handler's message alone; ``payload`` is what the
+    handler supplied through ``ctx.payload`` before it ended, ``None`` when
+    it supplied nothing.
     """
 
-    def __init__(self, code: int, message: str) -> None:
+    def __init__(self, code: int, message: str, *,
+                 payload: object = None) -> None:
         super().__init__(message)
         self.code = code
         self.message = message
+        # The payload the command supplied before its early exit, or None.
+        self.payload = payload
 
     def __str__(self) -> str:
         return self.message
@@ -1093,15 +1100,85 @@ class Response:
     headers: dict
 
 
+class _SpawnedChild:
+    """One child started through ``spawn`` in a dispatch (§19.11's box).
+
+    The exit step settles every child whose ``waited`` is still false: an
+    exited one is reaped and drained, a running one is killed and named.
+    """
+
+    # How long a child the exit step sent SIGTERM gets before SIGKILL.
+    TERM_GRACE_S = 1.0
+
+    def __init__(self, proc, reader, argv: str) -> None:
+        self.proc = proc
+        self.reader = reader
+        self.argv = argv
+        self.waited = False
+
+    def reap(self) -> int:
+        """Wait for the child to exit and its captured stdout to drain."""
+        code = self.proc.wait()
+        if self.reader is not None:
+            self.reader.join()
+        return code
+
+    def settle(self) -> str | None:
+        """Reap an unwaited child, killing it first when it still runs.
+
+        Returns the diagnostic naming a child that had to be killed, else
+        ``None``.
+        """
+        if self.waited:
+            return None
+        self.waited = True
+        message = None
+        if self.proc.poll() is None:
+            self.proc.terminate()
+            try:
+                self.proc.wait(timeout=self.TERM_GRACE_S)
+            except subprocess.TimeoutExpired:
+                self.proc.kill()
+            message = _msg_child_killed_at_exit(self.proc.pid, self.argv)
+        self.reap()
+        return message
+
+
 @dataclass(frozen=True)
 class Spawned:
-    """A handle for a started-but-not-awaited child process."""
+    """A handle for a started-but-not-awaited child process.
+
+    Every child a handler starts is the handler's to finish: wait on it, or
+    kill it. One still running when the handler ends is killed by the exit
+    step and fails the run (§19.11's box).
+    """
 
     pid: int
     _proc: object = field(default=None, repr=False, compare=False)
     _cmd_path: str = field(default="", repr=False, compare=False)
     # The thread draining the child's captured stdout under --json (§19.11).
     _reader: object = field(default=None, repr=False, compare=False)
+    # The dispatch's record of this child, which the exit step settles.
+    _child: object = field(default=None, repr=False, compare=False)
+
+    def send_signal(self, signum: int) -> None:
+        """Send ``signum`` to the child and return at once.
+
+        A child that has already exited is left alone: its process id may
+        already name another process.
+        """
+        self._proc.send_signal(signum)
+
+    def kill(self) -> None:
+        """Kill the child (SIGKILL) and wait for it to exit.
+
+        A killed child counts as waited on. One that has already exited is
+        left alone and reaped.
+        """
+        if self._proc.poll() is None:
+            self._proc.kill()
+        self._child.waited = True
+        self._child.reap()
 
     def wait(self, *, check: bool = True) -> Completed:
         """Wait for the child and return its Completed result.
@@ -1109,9 +1186,8 @@ class Spawned:
         ``check`` mirrors ``run``'s opt-out: with the default ``True`` a
         nonzero exit raises :class:`EffectFailed`.
         """
-        code = self._proc.wait()
-        if self._reader is not None:
-            self._reader.join()
+        self._child.waited = True
+        code = self._child.reap()
         argv = " ".join(str(a) for a in self._proc.args)
         if check and code != 0:
             # One template covers run and spawn (the method name is the
@@ -1571,6 +1647,14 @@ def _msg_process_exit_outside_framework(code: object) -> str:
 def _msg_canceled_by_signal(signal_name: str) -> str:
     """Run outcome: SIGINT or SIGTERM arrived during the handler (§19.13)."""
     return f"canceled by signal {signal_name}"
+
+
+def _msg_child_killed_at_exit(pid: int, argv: str) -> str:
+    """Run outcome: a spawned child still ran when the handler ended (§19.11)."""
+    return (
+        f"child process {pid} was still running when the handler ended "
+        f"and was killed: {argv}"
+    )
 
 
 def _msg_early_exit_tool_result(code: int, message: str) -> str:
@@ -2466,7 +2550,7 @@ class _Effects:
 
     __slots__ = ("_cmd", "_cmd_path", "_dry_run", "_log", "_allowlist",
                  "_grants", "_mutation_recorded", "_trace", "_out", "_json",
-                 "_output", "_real_stdout")
+                 "_output", "_real_stdout", "_children")
 
     def __init__(self, *, cmd: "Command", cmd_path: str, dry_run: bool,
                  log: _EffectLog, allowlist: tuple,
@@ -2492,6 +2576,8 @@ class _Effects:
         self._real_stdout = (
             real_stdout if real_stdout is not None else _RealStdout(sys.stdout)
         )
+        # Every child started through spawn, in spawn order (§19.11's box).
+        self._children: list[_SpawnedChild] = []
 
     # -- claimed rendering (contract §19.7) ------------------------------
 
@@ -2757,9 +2843,26 @@ class _Effects:
         if sink is not None:
             reader = _start_stdout_reader(proc.stdout, *sink)
             self._output.add_reader(reader)
+        child = _SpawnedChild(proc, reader, joined)
+        self._children.append(child)
         return Spawned(
             pid=proc.pid, _proc=proc, _cmd_path=self._cmd_path, _reader=reader,
+            _child=child,
         )
+
+    def _settle_children(self) -> list[str]:
+        """Settle every child this dispatch spawned and did not wait on.
+
+        In spawn order: an exited child is reaped and drained, a running one
+        is sent SIGTERM, then SIGKILL a second later, reaped and drained.
+        Returns one diagnostic per child that had to be killed (§19.11's box).
+        """
+        killed = []
+        for child in self._children:
+            message = child.settle()
+            if message is not None:
+                killed.append(message)
+        return killed
 
     def write(self, path: str | os.PathLike[str] | Completed | Response,
               content: str | bytes | Completed | Response, *, resource=None,
@@ -3998,6 +4101,7 @@ def _check_config_field_type(cf: "ConfigField", value: object) -> str | None:
 
 
 def _config_set_field(
+    ctx: "Context",
     effects: "_Effects",
     key: str,
     write: object,
@@ -4017,12 +4121,12 @@ def _config_set_field(
     Returns an exit code (0 = success, 1 = error).
     """
     if isinstance(write, _ConfigSetClear):
-        print("config set: --clear is only for repeatable flags", file=sys.stderr)
+        ctx.error("config set: --clear is only for repeatable flags")
         return 1
 
     if isinstance(write, _ConfigSetDefault):
         if not _write_config_unset(effects, existing, path, config_format, key):
-            print(f"config set: key '{key}' not in config", file=sys.stderr)
+            ctx.error(f"config set: key '{key}' not in config")
             return 1
         return 0
 
@@ -4044,7 +4148,7 @@ def _config_set_field(
         else:
             typed_value = value
     except ValueError as e:
-        print(f"config set: key '{key}': {e}", file=sys.stderr)
+        ctx.error(f"config set: key '{key}': {e}")
         return 1
 
     _write_config_set(effects, existing, path, config_format, key, typed_value)
@@ -10850,8 +10954,16 @@ class App:
                 ctx.info(_format_command_help(app_ref, check_cmd, prefix))
                 return 0
 
-            # Resolve filters and order
-            selected = _filter_checks(app_ref._check_defs, tag_expr, name_glob, all)
+            # Resolve filters and order. A tag expression that does not parse
+            # is this command's own error, reported through the error writer
+            # (§19.14's box) rather than unwinding the handler.
+            try:
+                selected = _filter_checks(
+                    app_ref._check_defs, tag_expr, name_glob, all,
+                )
+            except ValueError as e:
+                ctx.error(str(e))
+                return 1
             if not selected:
                 ctx.info("No checks matched the given filters.")
                 return 0
@@ -11459,13 +11571,13 @@ class App:
                 if key in app_ref._config_fields:
                     matched_config_field = app_ref._config_fields[key]
             if matched_flag is None and matched_config_field is None:
-                print(f"config set: unknown key '{key}'", file=sys.stderr)
+                ctx.error(f"config set: unknown key '{key}'")
                 return 1
 
             # Config field path: simpler handling (no repeatable, no mutex)
             if matched_config_field is not None:
                 return _config_set_field(
-                    effects, key, write, matched_config_field, existing, path,
+                    ctx, effects, key, write, matched_config_field, existing, path,
                     app_ref.config_format,
                 )
 
@@ -11478,8 +11590,7 @@ class App:
                 elif matched_flag.repeatable:
                     cleared = []
                 else:
-                    print("config set: --clear is only for repeatable flags",
-                          file=sys.stderr)
+                    ctx.error("config set: --clear is only for repeatable flags")
                     return 1
                 _write_config_set(effects, existing, path, app_ref.config_format, key, cleared)
                 return 0
@@ -11487,8 +11598,7 @@ class App:
             # --default: remove the key from config
             if isinstance(write, _ConfigSetDefault):
                 if not _write_config_unset(effects, existing, path, app_ref.config_format, key):
-                    print(f"config set: key '{key}' not in config",
-                          file=sys.stderr)
+                    ctx.error(f"config set: key '{key}' not in config")
                     return 1
                 return 0
 
@@ -11502,12 +11612,10 @@ class App:
                 try:
                     parsed = json.loads(value)
                 except json.JSONDecodeError as e:
-                    print(f"config set: key '{key}': invalid JSON: {e}",
-                          file=sys.stderr)
+                    ctx.error(f"config set: key '{key}': invalid JSON: {e}")
                     return 1
                 if not isinstance(parsed, dict):
-                    print(f"config set: key '{key}': expected JSON object",
-                          file=sys.stderr)
+                    ctx.error(f"config set: key '{key}': expected JSON object")
                     return 1
                 typed_value = {}
                 for dk, dv in parsed.items():
@@ -11516,9 +11624,8 @@ class App:
                             dv, matched_flag.value_type,
                         )
                     except ValueError as e:
-                        print(
-                            f"config set: key '{key}': value for '{dk}': {e}",
-                            file=sys.stderr,
+                        ctx.error(
+                            f"config set: key '{key}': value for '{dk}': {e}"
                         )
                         return 1
             elif matched_flag.repeatable:
@@ -11544,16 +11651,15 @@ class App:
                     else:  # str
                         typed_value = parts
                 except ValueError as e:
-                    print(f"config set: key '{key}': {e}", file=sys.stderr)
+                    ctx.error(f"config set: key '{key}': {e}")
                     return 1
                 # Unique enforcement
                 if matched_flag.unique:
                     dup = _find_duplicate(typed_value)
                     if dup is not None:
-                        print(
+                        ctx.error(
                             f"config set: key '{key}': duplicate value "
-                            f"'{_format_value_for_error(dup)}'",
-                            file=sys.stderr,
+                            f"'{_format_value_for_error(dup)}'"
                         )
                         return 1
             else:
@@ -11576,7 +11682,7 @@ class App:
                     else:  # str
                         typed_value = value
                 except ValueError as e:
-                    print(f"config set: key '{key}': {e}", file=sys.stderr)
+                    ctx.error(f"config set: key '{key}': {e}")
                     return 1
 
             _write_config_set(effects, existing, path, app_ref.config_format, key, typed_value)
@@ -11627,7 +11733,7 @@ class App:
             try:
                 effects.run([editor, path], stream=True)
             except (OSError, EffectFailed) as e:
-                print(f"error: editor failed: {e}", file=sys.stderr)
+                ctx.error(f"editor failed: {e}")
                 return 1
             return 0
 
@@ -11647,10 +11753,7 @@ class App:
                 config_format=app_ref.config_format,
             )
             if os.path.isfile(cfg_path):
-                print(
-                    f"config init: config file already exists: {cfg_path}",
-                    file=sys.stderr,
-                )
+                ctx.error(f"config init: config file already exists: {cfg_path}")
                 return 1
             effects = ctx.effects
             _ensure_config_dir(effects, cfg_path)
@@ -12607,6 +12710,9 @@ class App:
                     handler_return = cmd.handler(ctx, **data)
                 exit_code = _interpret_handler_return(handler_return)
             finally:
+                # The children are settled while the guard and the signal
+                # handling are still in place (§19.11's box, §19.13's box).
+                span.killed = ctx._effects._settle_children()
                 span.stop()
         except _DryRunTruncated as trunc:
             return self._finish_dispatch(
@@ -12678,6 +12784,12 @@ class App:
             closing.append(
                 _msg_process_exit_outside_framework(trapped_exit.code)
             )
+        if span.killed:
+            # A child still running when the handler ended fails the run; a
+            # status the command already ended with is kept when nonzero.
+            if exit_code == 0:
+                exit_code = 1
+            closing.extend(span.killed)
         guard_failure = span.guard.failure() if span.guard is not None else None
         if guard_failure is not None:
             # A status the command already ended with is kept when nonzero.
@@ -12943,13 +13055,21 @@ class App:
                 owns_stdout=cmd.owns_stdout,
                 payload_renderer_declared=cmd.payload_renderer is not None,
             )
+            killed: list[str] = []
             try:
                 result = cmd.passthrough.handler(
                     ctx, cmd.name, raw_args, global_values,
                 )
             except _EarlyExit as early:
-                raise ExitError(early.code, early.message) from None
+                raise ExitError(
+                    early.code, early.message,
+                    payload=(
+                        None if ctx._payload_value is _MISSING
+                        else ctx._payload_value
+                    ),
+                ) from None
             finally:
+                killed = ctx._effects._settle_children()
                 ctx._canceled = True
             _interpret_handler_return(result)  # validate return type
             # The programmatic surface keeps its capture: it returns the
@@ -12958,6 +13078,8 @@ class App:
                 return ctx._payload_value
             if isinstance(result, Outcome):
                 return None
+            if killed and result == 0 and type(result) is int:
+                return 1
             return result
 
         # Build reverse mapping: param_name (underscore) -> the declared Flag
@@ -13115,13 +13237,24 @@ class App:
             owns_stdout=cmd.owns_stdout,
             payload_renderer_declared=cmd.payload_renderer is not None,
         )
+        killed: list[str] = []
         try:
             result = cmd.handler(ctx, **final_kwargs)
         except _EarlyExit as early:
             # The in-process door: the handler ran and ended with a failure,
-            # which the caller receives as a typed error (§19.9).
-            raise ExitError(early.code, early.message) from None
+            # which the caller receives as a typed error carrying the payload
+            # it supplied before it ended (§19.9).
+            raise ExitError(
+                early.code, early.message,
+                payload=(
+                    None if ctx._payload_value is _MISSING
+                    else ctx._payload_value
+                ),
+            ) from None
         finally:
+            # A child still running is killed here too; this door has no
+            # stream to name it on (§19.11's box).
+            killed = ctx._effects._settle_children()
             # The dispatch ends here, which cancels the context (§19.13).
             ctx._canceled = True
         _interpret_handler_return(result)  # validate return type
@@ -13131,6 +13264,9 @@ class App:
             return ctx._payload_value
         if isinstance(result, Outcome):
             return None
+        if killed and result == 0 and type(result) is int:
+            # The exit status this door reports fails as the CLI's does.
+            return 1
         return result
 
     def call(

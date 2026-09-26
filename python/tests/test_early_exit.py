@@ -211,6 +211,24 @@ class TestProgrammaticDoors:
         assert e.value.message == "no manifest at ./m.toml"
         assert str(e.value) == "no manifest at ./m.toml"
 
+    def test_exit_error_carries_the_payload_supplied_before_the_early_exit(self):
+        app = _app()
+
+        @app.command("cmd", effect="read_only", help="cmd", payload_schema={})
+        def _cmd(ctx):
+            ctx.payload({"done": 2})
+            strictcli.exit_now(3, "gone")
+
+        with pytest.raises(strictcli.ExitError) as e:
+            app.call("cmd")
+        assert e.value.payload == {"done": 2}
+        assert e.value.payload == app.test(["cmd"]).data
+
+    def test_exit_error_payload_is_none_when_none_was_supplied(self):
+        with pytest.raises(strictcli.ExitError) as e:
+            _exiting_app().call("cmd")
+        assert e.value.payload is None
+
     def test_exit_error_is_not_an_invoke_error(self):
         assert not issubclass(strictcli.ExitError, strictcli.InvokeError)
 

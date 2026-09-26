@@ -191,11 +191,11 @@ def test_config_set_unknown_key_error(tmp_path):
 
     r = app.test(["config", "set", "xyz", "--value", "value"])
     assert r.exit_code == 1
-    assert r.stderr.strip() == "config set: unknown key 'xyz'"
+    assert r.stderr == "error: config set: unknown key 'xyz'\n"
 
     r = app.test(["config", "set", "nonexistent_flag", "--value", "42"])
     assert r.exit_code == 1
-    assert r.stderr.strip() == "config set: unknown key 'nonexistent_flag'"
+    assert r.stderr == "error: config set: unknown key 'nonexistent_flag'\n"
 
 
 def test_config_set_negative_int(tmp_path):

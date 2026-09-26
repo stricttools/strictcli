@@ -1,6 +1,7 @@
 """A child's stdout under --json is captured into the output member (§19.11)."""
 
 import json
+import time
 
 from conftest import run_app_script
 
@@ -71,13 +72,15 @@ class TestMachineMode:
         assert seen == ["spawned\n"]
         assert doc["output"] == "spawned\n"
 
-    def test_a_spawned_child_never_waited_on_is_drained_by_the_exit_step(self):
+    def test_a_spawned_child_that_exited_unwaited_is_drained_by_the_exit_step(self):
         def body(ctx):
-            ctx.effects.spawn(["sh", "-c", "sleep 0.2; echo late"])
+            ctx.effects.spawn(["sh", "-c", "echo late"])
+            time.sleep(0.5)
             return 0
 
         doc = json.loads(_app(body).test(["--json", "build"]).stdout)
         assert doc["output"] == "late\n"
+        assert doc["diagnostics"] == []
 
     def test_an_owns_stdout_commands_child_writes_the_document(self):
         r = _app(_streamed_echo, owns_stdout=True).test(["--json", "build"])
