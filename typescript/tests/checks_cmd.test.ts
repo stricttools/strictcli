@@ -380,10 +380,22 @@ test("check run without a context factory is a stderr error, exit 1", async () =
 	);
 });
 
-test("malformed tag expression propagates out of test() (Python ValueError parity)", async () => {
-	await assert.rejects(mirrorApp().test(["check", "--tag", "x &"]), {
-		message: "tag expression: unexpected end of expression at position 3",
-	});
+test("malformed tag expression is reported through the error writer", async () => {
+	const r = await mirrorApp().test(["check", "--tag", "x &"]);
+	assert.equal(r.exitCode, 1);
+	assert.equal(r.stdout, "");
+	assert.equal(
+		r.stderr,
+		"error: tag expression: unexpected end of expression at position 3\n",
+	);
+	const j = await mirrorApp().test(["--json", "check", "--tag", "x &"]);
+	assert.equal(j.stderr, "");
+	assert.deepEqual(JSON.parse(j.stdout).diagnostics, [
+		{
+			level: "error",
+			message: "tag expression: unexpected end of expression at position 3",
+		},
+	]);
 });
 
 test("check command is absent when checks are never enabled", async () => {

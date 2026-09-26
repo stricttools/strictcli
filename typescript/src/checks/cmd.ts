@@ -208,7 +208,16 @@ async function checkHandler(
 		return 0;
 	}
 
-	const selected = filterChecks(app.checks.defs, tagExpr, nameGlob, runAll);
+	// A tag expression that does not parse is this command's own error,
+	// reported through the error writer (§19.14's box) rather than unwinding
+	// the handler. Parsing the expression is the only thing here that throws.
+	let selected: Set<string>;
+	try {
+		selected = filterChecks(app.checks.defs, tagExpr, nameGlob, runAll);
+	} catch (e) {
+		ctx.error((e as Error).message);
+		return 1;
+	}
 	if (selected.size === 0) {
 		ctx.info("No checks matched the given filters.");
 		return 0;
