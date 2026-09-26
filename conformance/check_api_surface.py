@@ -355,6 +355,16 @@ _GLOBAL_SCHEMA_TEST_ONLY: set[str] = {
     # piped stdin as interactive. It describes what the harness does to an app,
     # not a field any implementation's App carries.
     "confirm_stdin_interactive",
+    # The exit and output handler vocabulary (effects contract §14.4's
+    # amendment for §19.6, §19.9-§19.13): the writes, exits and signals a
+    # *generated* handler performs, not fields any implementation's Command
+    # carries. `payload_renderer` is NOT here: it is a real declaration.
+    "handler_signals_self",
+    "handler_out",
+    "handler_document",
+    "handler_raw_stdout",
+    "handler_process_exit",
+    "handler_exit_now",
 }
 
 # Shared name mappings (applied to any entity that uses them).
@@ -1081,6 +1091,9 @@ KNOWN_OPTION_FUNCS: set[str] = {
     # of their own, which describe_go catalogues separately. `Nullable()`
     # (contract §27.6) is an ordinary FlagOption beside Required/Optional.
     "WithUpdateOf",
+    # The declared payload rendering (contract §19.10), spelled without a
+    # With- prefix beside PayloadSchema, whose sibling it is.
+    "PayloadRenderer",
 }
 
 
@@ -1178,6 +1191,10 @@ KNOWN_TS_PUBLIC_NAMES: set[str] = {
     # exported type for the minted `--unset-<prop>`: it is derived from the
     # flag's own `nullable: true` and reaches the handler on the Context.
     "UpdateOf", "WriteMode",
+    # The early exit (contract §19.9): the class a handler throws to end the
+    # command through the exit step, and the error `app.call()` rejects with
+    # when a command ended that way.
+    "ExitNow", "ExitError",
 }
 
 # The payload-schema builders (contract §19.5, decision 14), one row per
@@ -1304,6 +1321,27 @@ PYTHON_ONLY_CHECK_SYMBOLS: list[str] = [
     "SkipCheck",
 ]
 
+# The framework-owned exit surface (contract §19.9): (Python, Go, TypeScript).
+# Python's early exit is a module function, Go's a package function, and
+# TypeScript's a class the handler throws; the in-process error is a class in
+# Python and TypeScript and a struct in Go. `strictcli.Go` is Go-only by design:
+# only Go has goroutines whose panics the exit step cannot recover.
+EXIT_SURFACE_NAMES: list[tuple[str | None, str | None, str | None]] = [
+    ("exit_now", "ExitNow", "ExitNow"),
+    ("ExitError", "ExitError", "ExitError"),
+    (None, "Go", None),
+]
+
+# Context members of the output and signal surface (contract §19.6's
+# document-writer amendment, §19.10, §19.13): (Python, Go, TypeScript). The
+# cancellation row is one semantic under three idiomatic spellings: a bool
+# property, a Done channel, an AbortSignal.
+CONTEXT_OUTPUT_MEMBERS: list[tuple[str, str, str]] = [
+    ("out", "Out", "out"),
+    ("document", "Document", "document"),
+    ("canceled", "Done", "signal"),
+]
+
 # Go-only typed kwargs accessors (Python and TS handlers receive
 # natively-typed kwargs/args, so this bug class cannot occur there).
 OUTCOME_GO_ONLY_ACCESSORS: list[str] = ["Get", "GetOpt"]
@@ -1380,6 +1418,42 @@ def check_outcome_api(go_api: dict, ts_api: dict) -> list[str]:
         if gofn not in go_generic_names:
             errors.append(f"Go generic accessor '{gofn}' not found")
 
+    return errors
+
+
+def check_exit_and_output_surface(go_api: dict, ts_api: dict) -> list[str]:
+    """The early exit, its error, and the Context's output members exist everywhere."""
+    errors: list[str] = []
+    sys.path.insert(0, str(PROJECT_ROOT / "python"))
+    import strictcli
+
+    go_names = (
+        {f["name"] for f in go_api["functions"]}
+        | {s["name"] for s in go_api["structs"]}
+    )
+    ts_names = get_ts_function_names(ts_api) | get_ts_type_names(ts_api)
+    for py_name, go_name, ts_name in EXIT_SURFACE_NAMES:
+        if py_name is not None and not hasattr(strictcli, py_name):
+            errors.append(f"Python name 'strictcli.{py_name}' not found")
+        if go_name is not None and go_name not in go_names:
+            errors.append(f"Go name 'strictcli.{go_name}' not found")
+        if ts_name is not None and ts_name not in ts_names:
+            errors.append(f"TS name '{ts_name}' not found")
+
+    go_ctx = {
+        m["name"] for m in go_api["methods"]
+        if m["receiver"] in ("*Context", "Context")
+    }
+    ts_ctx = {
+        m["name"] for m in ts_api["methods"] if m["receiver"] == "Context"
+    }
+    for py_name, go_name, ts_name in CONTEXT_OUTPUT_MEMBERS:
+        if not hasattr(strictcli.Context, py_name):
+            errors.append(f"Python Context.{py_name} not found")
+        if go_name not in go_ctx:
+            errors.append(f"Go Context.{go_name}() not found")
+        if ts_name not in ts_ctx:
+            errors.append(f"TS Context.{ts_name} not found")
     return errors
 
 
@@ -1577,6 +1651,7 @@ def main() -> int:
     all_errors.extend(check_payload_schema_builders(go_api, ts_api))
     all_errors.extend(check_check_runner_shared_types(go_api, ts_api))
     all_errors.extend(check_outcome_api(go_api, ts_api))
+    all_errors.extend(check_exit_and_output_surface(go_api, ts_api))
 
     if all_errors:
         print(f"API surface check FAILED ({len(all_errors)} issue(s)):\n")

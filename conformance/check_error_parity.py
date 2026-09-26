@@ -1402,7 +1402,50 @@ SIGNATURE_STATUS: dict[str, dict[str, str]] = {
         'typescript': "excluded:Go's spelling (§12.16, §18.34 item 327); cases/update_registration.json asserts all three, per target",
     },
 
+    # -- Framework-owned exits and the framework-use lint (§12.17) --
+    'process exit called outside the framework with code *': {
+        'go': "excluded:Go cannot trap os.Exit -- it is a direct system call with no hook (§17, §19.12) -- so the Go catalog carries no process-exit trap",
+    },
+    '--lint-framework-use: bin entry * resolves to no repository-owned source file': {
+        'python': "excluded:only a TypeScript bin entry names a built file that must be mapped back to source (§28.2)",
+        'go': "excluded:only a TypeScript bin entry names a built file that must be mapped back to source (§28.2)",
+    },
+    'strictcli.ExitNow inside a function literal started by a go statement is not recovered by the exit step; start the function with strictcli.Go': {
+        'python': "excluded:only Go has goroutines whose panics the exit step cannot recover (§28.3)",
+        'typescript': "excluded:only Go has goroutines whose panics the exit step cannot recover (§28.3)",
+    },
+
 }
+
+# Templates the effects contract pins that every implementation must carry
+# (unless SIGNATURE_STATUS excludes it there). The parity check above only
+# compares what the catalogs already hold, so a template the contract added and
+# no implementation has written yet would pass it silently; this list is what
+# makes its absence an error. §12.17 is the authority for the texts.
+CONTRACT_REQUIRED_SIGNATURES: list[str] = [
+    'early exit requires an exit code between 1 and 255, got *: a successful run ends with a return from the handler',
+    'early exit requires a non-empty message',
+    'command *: ctx.out is refused on a command that declares a payload renderer: the rendering is its human output',
+    'command *: ctx.out is refused on a command that owns stdout: write the document through ctx.document',
+    'command *: ctx.document requires the owns-stdout declaration',
+    'command *: a payload renderer requires a declared payload schema',
+    'command *: a payload renderer cannot be declared on a command that owns stdout',
+    'stdout written outside the framework: * bytes: *',
+    'process exit called outside the framework with code *',
+    'canceled by signal *',
+    'exit code *: *',
+    '--lint-framework-use takes no other arguments',
+    '--lint-framework-use: project root * is not a git work tree; the scan reads only repository-owned files',
+    '--lint-framework-use: no * in the working directory *; run the program from its project root',
+    '--lint-framework-use: the * in * does not declare this program',
+    '--lint-framework-use: bin entry * resolves to no repository-owned source file',
+    "* ends the process outside the framework's exit step; return from the handler, or end the command early with *",
+    "* writes to stdout outside the framework; write the command's answer with *, its machine output with *, or a document with * on a command that owns stdout",
+    '* writes to stderr outside the framework; report through * or *',
+    '* reads or edits the command line outside the framework; declare a flag or an argument',
+    "* reads the environment outside the declared mechanisms; declare a flag's environment binding, a handshake, a connection, or a location root",
+    'strictcli.ExitNow inside a function literal started by a go statement is not recovered by the exit step; start the function with strictcli.Go',
+]
 
 
 # ---------------------------------------------------------------------------
@@ -1950,6 +1993,28 @@ def check_parity(
     return errors
 
 
+def check_contract_required(
+    impl_sigs: dict[str, dict[str, list[tuple[str, str]]]],
+) -> list[str]:
+    """Every contract-pinned template is present in every implementation.
+
+    A template counts as present in an implementation when that
+    implementation extracted the signature, or when SIGNATURE_STATUS excludes
+    it there with a rationale.
+    """
+    errors: list[str] = []
+    for sig in CONTRACT_REQUIRED_SIGNATURES:
+        for impl in IMPLEMENTATIONS:
+            if sig in impl_sigs[impl]:
+                continue
+            if _is_excluded(_get_status(sig, impl)):
+                continue
+            errors.append(
+                f"{impl} missing contract-pinned template: {sig!r}"
+            )
+    return errors
+
+
 # ---------------------------------------------------------------------------
 # 5. Check test coverage
 # ---------------------------------------------------------------------------
@@ -2048,6 +2113,9 @@ def main() -> int:
 
     # --- Check 1: N-way parity ---
     all_errors.extend(check_parity(impl_sigs))
+
+    # --- Check 1b: the contract's pinned templates exist at all ---
+    all_errors.extend(check_contract_required(impl_sigs))
 
     # --- Check 2: Test coverage ---
     # Only parse-time errors (category='parse') can be tested through the
