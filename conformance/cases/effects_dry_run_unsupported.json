@@ -391,11 +391,12 @@
       ]
     },
     "argv": [
-      "--dump-schema"
+      "help",
+      "--json"
     ],
     "expect": {
       "exit_code": 0,
-      "stdout_contains": ".strictcli/schema.json",
+      "stdout_contains": "\"schema_version\": 2,",
       "schema_command_keys": {
         "release": {
           "effect": "mutating",

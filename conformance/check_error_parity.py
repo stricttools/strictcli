@@ -1627,6 +1627,16 @@ _PY_PARSE_TIME_MSG_FUNCS = frozenset({
     "_msg_check_hook_combined",
     "_msg_check_hook_unknown",
     "_msg_check_hook_none_declared",
+    # The help and version commands' refusals (their Go and TypeScript
+    # catalog section is parse-time). Several call sites share each, which is
+    # why Python spells them as `_msg_*` functions.
+    "_msg_help_text_only",
+    "_msg_version_text_only",
+    "_msg_dump_schema_removed",
+    "_msg_help_option_after_address",
+    "_msg_help_unknown_flag",
+    "_msg_help_unknown_flag_no_flags",
+    "_msg_version_in_group",
 })
 _PY_TOP_LEVEL_DEF_PAT = re.compile(r"^(?:def |class |@)", re.MULTILINE)
 _PY_RETURN_PAT = re.compile(r"^    return\s", re.MULTILINE)

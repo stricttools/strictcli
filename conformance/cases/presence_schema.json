@@ -1,6 +1,6 @@
 [
   {
-    "name": "dump-schema presence: every flag entry carries presence, and default exactly when presence is default",
+    "name": "help document presence: every flag entry carries presence, and default exactly when presence is default",
     "app": {
       "name": "myapp",
       "version": "1.0.0",
@@ -71,7 +71,8 @@
       ]
     },
     "argv": [
-      "--dump-schema"
+      "help",
+      "--json"
     ],
     "expect": {
       "exit_code": 0,
@@ -137,7 +138,7 @@
     }
   },
   {
-    "name": "dump-schema presence: every arg entry carries presence and no required key",
+    "name": "help document presence: every arg entry carries presence and no required key",
     "app": {
       "name": "myapp",
       "version": "1.0.0",
@@ -208,7 +209,8 @@
       ]
     },
     "argv": [
-      "--dump-schema"
+      "help",
+      "--json"
     ],
     "expect": {
       "exit_code": 0,

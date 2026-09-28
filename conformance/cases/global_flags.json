@@ -208,7 +208,7 @@
         "--settings",
         "enable chatter output"
       ],
-      "stdout_equals": "myapp v1.0.0 -- test app\n\nCommands:\n  run    run something\n\nGlobal flags:\n  --chatter     enable chatter output\n  --settings    settings directory\n\nUse 'myapp <command> --help' for more information."
+      "stdout_equals": "myapp v1.0.0 -- test app\n\nCommands:\n  run    run something\n\nGlobal flags:\n  --chatter     enable chatter output\n  --settings    settings directory\n\nUse 'myapp help <command>' for more information."
     }
   },
   {

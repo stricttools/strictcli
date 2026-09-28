@@ -311,7 +311,7 @@
     }
   },
   {
-    "name": "envelope: help beats machine mode and emits no envelope",
+    "name": "envelope: the --help flag under machine mode is refused, naming the help command, and the run owes its --json document",
     "app": {
       "name": "myapp",
       "version": "1.0.0",
@@ -330,9 +330,9 @@
       "--help"
     ],
     "expect": {
-      "exit_code": 0,
-      "stdout_contains": "a command",
-      "stdout_not_contains": "interface_version"
+      "exit_code": 1,
+      "stdout_equals": "{\"interface_version\":3,\"app\":\"myapp\",\"app_version\":\"1.0.0\",\"command\":null,\"exit_code\":1,\"payload\":null,\"output\":null,\"dry_run\":false,\"writes\":null,\"preview\":[],\"preview_error\":null,\"diagnostics\":[]}\n",
+      "stderr_equals": "error: help pages are text; for the machine form use 'myapp help cmd --json'\ntry 'myapp --help'\n"
     }
   },
   {

@@ -1442,9 +1442,6 @@ async function main() {
 		const cprtr = appDef.config_path_relative_to_root;
 		spec.configPath = relativeToRoot(cprtr.env_var, ...(cprtr.parts ?? []));
 	}
-	if ("schema_path" in appDef && appDef.schema_path !== null) {
-		spec.schemaPath = appDef.schema_path;
-	}
 	if ("config_format" in appDef && appDef.config_format !== "json") {
 		spec.configFormat = appDef.config_format;
 	}

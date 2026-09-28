@@ -256,18 +256,6 @@
           },
           "description": "The config path declared as a RelativeToRoot marker (WithConfigPathRelativeToRoot / config_path=RelativeToRoot(...)): the same declaration a flag spells with default_relative_to_root, resolved eagerly at construction through the named infra root. Referencing an undeclared root is a registration-time hard error, which is the state a case spells this key to reach."
         },
-        "schema_path": {
-          "oneOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "description": "Where --dump-schema writes. Absolute, or relative to the app's construction-time working directory. If null, the framework's own location applies: .strictcli/schema.json anchored at that same directory."
-        },
         "config_format": {
           "type": "string",
           "enum": [

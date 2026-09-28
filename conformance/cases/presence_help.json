@@ -179,7 +179,7 @@
     ],
     "expect": {
       "exit_code": 0,
-      "stdout_equals": "myapp v1.0.0 -- test app\n\nCommands:\n  cmd    a command\n\nGlobal flags:\n  --gopt    a global\n  --greq    another global\n\nUse 'myapp <command> --help' for more information."
+      "stdout_equals": "myapp v1.0.0 -- test app\n\nCommands:\n  cmd    a command\n\nGlobal flags:\n  --gopt    a global\n  --greq    another global\n\nUse 'myapp help <command>' for more information."
     }
   },
   {

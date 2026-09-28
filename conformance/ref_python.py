@@ -1531,8 +1531,6 @@ def generate(app_def: dict) -> str:
         app_parts.append(f"config_path=strictcli.RelativeToRoot({_cp_args})")
     if "config_path" in app_def and app_def["config_path"] is not None:
         app_parts.append(f"config_path={app_def['config_path']!r}")
-    if "schema_path" in app_def and app_def["schema_path"] is not None:
-        app_parts.append(f"schema_path={app_def['schema_path']!r}")
     if "config_format" in app_def and app_def["config_format"] != "json":
         app_parts.append(f"config_format={app_def['config_format']!r}")
     if app_def.get("no_default_config_path", False):

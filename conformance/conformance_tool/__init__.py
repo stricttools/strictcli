@@ -12,10 +12,10 @@ TOOL_DIR = Path(__file__).resolve().parent
 CONFORMANCE_DIR = TOOL_DIR.parent
 PROJECT_ROOT = CONFORMANCE_DIR.parent
 
-# Canonical committed schema location. `conformance --dump-schema` derives
-# project_id from pyproject.toml in the cwd and writes to cwd/.strictcli; the
-# only cwd where the id resolves is CONFORMANCE_DIR (which holds pyproject.toml
-# with name "strictcli-conformance"), so the reproducible schema lives here.
+# Canonical committed schema location. `conformance help --json` prints the
+# help document, whose project_id is the project holding this tool's code
+# ("strictcli-conformance"); the committed copy is that document redirected
+# into this file.
 SCHEMA_PATH = CONFORMANCE_DIR / ".strictcli" / "schema.json"
 
 
@@ -171,14 +171,15 @@ def check_schema_freshness(ctx, reporter):
     command has materialized the registered check providers, which inserts
     their specs (strictcli's own built-in ``effects-bypass``, among any others)
     into the registry the schema's ``checks`` section serializes. A
-    ``--dump-schema`` run never materializes providers -- deliberately, because
+    ``help --json`` run never materializes providers -- deliberately, because
     a provider's result depends on the cwd and the schema must not -- so a live
     call here would compare a post-materialization registry against a
     pre-materialization file and report every committed schema as stale.
     """
     current = _REGISTRATION_TIME_SCHEMA
     remediation = (
-        f"Regenerate with `conformance --dump-schema` run from {CONFORMANCE_DIR}."
+        f"Regenerate with `conformance help --json > .strictcli/schema.json` "
+        f"run from {CONFORMANCE_DIR}."
     )
     if not SCHEMA_PATH.exists():
         reporter.error(f"Committed schema {SCHEMA_PATH} is missing. {remediation}")
@@ -201,7 +202,7 @@ def check_schema_freshness(ctx, reporter):
 
 
 # Captured after every check is registered and before anything can run, so it is
-# exactly what `conformance --dump-schema` writes: no project_id (the accessor
+# exactly what `conformance help --json` prints: no project_id (the accessor
 # is id-free) and no provider-sourced checks (nothing has materialized them
 # yet). See check_schema_freshness for why a live call would not do.
 _REGISTRATION_TIME_SCHEMA = app.dump_schema_dict()

@@ -366,23 +366,44 @@ SCHEMA_ASSERT_KEYS = (
 )
 
 
-def _check_schema_bytes(proj_dir: str | None, expected: str) -> list[str]:
-    """Assert the emitted schema file's WHOLE BYTES (effects contract §25.8).
+def _is_help_document_run(case_argv: list[str]) -> bool:
+    """Whether a case's argv prints the help document: `help ... --json`."""
+    return bool(case_argv) and case_argv[0] == "help" and "--json" in case_argv
 
-    The committed `.strictcli/schema.json` must be dumper-independent: a
-    repository whose file is written sometimes by a Go binary and sometimes by
-    a Python one must see a diff exactly when something changed. Key order,
-    escaping, number form, indentation and the single trailing newline are all
-    part of the contract after v2, so this assertion reads the file as text and
-    compares it whole rather than parsing it first.
+
+def _without_project_id(text: str) -> tuple[str, bool]:
+    """The document with its `project_id` LINE removed, and whether it had one.
+
+    project_id names each target's own program -- Go's main module path, the
+    Python project holding the program's code, the TypeScript entry script's
+    package -- so it is the one line that differs by target; §25.9 places it
+    immediately after `defaults` so that removing it leaves the rest intact.
     """
-    if proj_dir is None:
-        return ["  schema_bytes_equal requires --dump-schema in the case argv"]
-    path = os.path.join(proj_dir, ".strictcli", "schema.json")
-    if not os.path.exists(path):
-        return [f"  schema_bytes_equal: no schema was emitted at {path}"]
-    with open(path, encoding="utf-8") as fh:
-        actual = fh.read()
+    lines = text.split("\n")
+    kept = [ln for ln in lines if not ln.startswith('  "project_id": ')]
+    return "\n".join(kept), len(kept) != len(lines)
+
+
+def _check_schema_bytes(
+    case_argv: list[str], stdout: str, expected: str,
+) -> list[str]:
+    """Assert the help document's WHOLE BYTES (effects contract §25.8).
+
+    A committed `.strictcli/schema.json` produced from `help --json` must be
+    dumper-independent: a repository whose file is written sometimes by a Go
+    binary and sometimes by a Python one must see a diff exactly when something
+    changed. Key order, escaping, number form, indentation and the single
+    trailing newline are all part of the contract after v2, so this assertion
+    reads the document as text and compares it whole rather than parsing it
+    first -- apart from the project_id line, which must be present and whose
+    value is each target's own.
+    """
+    if not _is_help_document_run(case_argv):
+        return ["  schema_bytes_equal requires `help --json` in the case argv"]
+    actual, had_id = _without_project_id(stdout)
+    expected, _ = _without_project_id(expected)
+    if not had_id:
+        return ["  schema_bytes_equal: the help document carries no project_id"]
     if actual == expected:
         return []
     exp_lines = expected.split("\n")
@@ -415,8 +436,10 @@ def _resolve_schema_command(schema: dict, dotted: str) -> dict | None:
     return entry if isinstance(entry, dict) else None
 
 
-def _check_schema_commands(proj_dir: str | None, expect: dict) -> list[str]:
-    """Assert per-command key presence/absence in the emitted schema file.
+def _check_schema_commands(
+    case_argv: list[str], stdout: str, expect: dict,
+) -> list[str]:
+    """Assert per-command key presence/absence in the help document.
 
     Structural, not textual: key order and indentation are not part of the
     contract, but WHICH keys a command entry carries is. The emit-when-declared
@@ -425,18 +448,14 @@ def _check_schema_commands(proj_dir: str | None, expect: dict) -> list[str]:
     emitted a default-valued key where its siblings omit it would otherwise be
     a silent schema divergence.
     """
-    if proj_dir is None:
+    if not _is_help_document_run(case_argv):
         return [
-            "  schema_command_* assertion requires --dump-schema in the case argv"
+            "  schema_command_* assertion requires `help --json` in the case argv"
         ]
-    path = os.path.join(proj_dir, ".strictcli", "schema.json")
-    if not os.path.exists(path):
-        return [f"  schema_command_*: no schema was emitted at {path}"]
-    with open(path, encoding="utf-8") as fh:
-        try:
-            schema = json.load(fh)
-        except json.JSONDecodeError as e:
-            return [f"  schema_command_*: emitted schema is not valid JSON: {e}"]
+    try:
+        schema = json.loads(stdout)
+    except json.JSONDecodeError as e:
+        return [f"  schema_command_*: the help document is not valid JSON: {e}"]
 
     errors: list[str] = []
     for dotted, fields in expect.get("schema_command_keys", {}).items():
@@ -708,9 +727,8 @@ def _run_protocol_script(
 # --- N-way target registry ---------------------------------------------------
 #
 # Each registered target is a self-contained descriptor that knows how to
-# prepare a case (turn an app definition + argv into an executable command) and
-# how to write the project marker file needed for --dump-schema. All target-
-# specific code lives in these descriptors; the comparison and orchestration
+# prepare a case (turn an app definition + argv into an executable command).
+# All target-specific code lives in these descriptors; the comparison and orchestration
 # logic below is fully target-agnostic. Adding a future target (e.g. TypeScript)
 # is one _register_target(...) call and zero changes anywhere else.
 
@@ -732,15 +750,10 @@ class Target:
         Builds the argv/env for running the case and lists temp files to unlink.
         May raise RuntimeError if the target's toolchain fails to build; callers
         translate that into a per-case failure.
-
-    write_project_file(dir, app_name) -> None
-        Writes the project marker file (e.g. go.mod / pyproject.toml) that
-        --dump-schema needs in the working directory to determine project_id.
     """
 
     name: str
     prepare: Callable[[dict, list[str]], Preparation]
-    write_project_file: Callable[[str, str], None]
 
 
 TARGETS: dict[str, Target] = {}
@@ -761,8 +774,13 @@ def _prepare_python(app_def: dict, case_argv: list[str]) -> Preparation:
         "sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'python'))",
         f"sys.path.insert(0, {python_dir!r})",
     )
+    # The script lives in this directory (ignored by `tmp*.py`), so the
+    # project holding the program's code -- which names the help document's
+    # project_id -- is this directory's pyproject.toml, as a program's own
+    # project is for an installed one.
     with tempfile.NamedTemporaryFile(
-        mode="w", suffix=".py", prefix="strictcli_py_", delete=False
+        mode="w", suffix=".py", prefix="tmp_strictcli_py_", delete=False,
+        dir=CONFORMANCE_DIR,
     ) as f:
         f.write(script)
         script_path = f.name
@@ -771,11 +789,6 @@ def _prepare_python(app_def: dict, case_argv: list[str]) -> Preparation:
         extra_env={},
         cleanup_paths=[script_path],
     )
-
-
-def _write_python_project_file(d: str, app_name: str) -> None:
-    with open(os.path.join(d, "pyproject.toml"), "w") as f:
-        f.write(f'[project]\nname = "{app_name}"\n')
 
 
 def _prepare_go(app_def: dict, case_argv: list[str]) -> Preparation:
@@ -793,11 +806,6 @@ def _prepare_go(app_def: dict, case_argv: list[str]) -> Preparation:
     )
 
 
-def _write_go_project_file(d: str, app_name: str) -> None:
-    with open(os.path.join(d, "go.mod"), "w") as f:
-        f.write(f"module {app_name}\n\ngo 1.21\n")
-
-
 def _prepare_typescript(app_def: dict, case_argv: list[str]) -> Preparation:
     entry = _ensure_ts_harness()  # may raise RuntimeError; caller translates it
     # Write the app definition to a temp file for the harness to read.
@@ -813,17 +821,9 @@ def _prepare_typescript(app_def: dict, case_argv: list[str]) -> Preparation:
     )
 
 
-def _write_typescript_project_file(d: str, app_name: str) -> None:
-    with open(os.path.join(d, "package.json"), "w") as f:
-        json.dump({"name": app_name}, f)
-        f.write("\n")
-
-
-_register_target(Target("python", _prepare_python, _write_python_project_file))
-_register_target(Target("go", _prepare_go, _write_go_project_file))
-_register_target(
-    Target("typescript", _prepare_typescript, _write_typescript_project_file)
-)
+_register_target(Target("python", _prepare_python))
+_register_target(Target("go", _prepare_go))
+_register_target(Target("typescript", _prepare_typescript))
 
 
 def _run_case(case: dict, target: str) -> tuple[bool, list[str], subprocess.CompletedProcess | None]:
@@ -896,8 +896,6 @@ def _run_case(case: dict, target: str) -> tuple[bool, list[str], subprocess.Comp
         extra_env["CONFORMANCE_EFFECT_LOG"] = effect_log_path
         cleanup_paths = list(cleanup_paths) + [effect_log_path]
 
-    # --dump-schema needs the target's project marker file (go.mod / pyproject.toml)
-    # in the CWD to determine project_id. Create a temp dir with the right file.
     # A test_coverage_dir case needs a writable temp dir: the declared directory
     # is a path relative to it, and the shard files are written underneath.
     proj_dir = None
@@ -907,11 +905,6 @@ def _run_case(case: dict, target: str) -> tuple[bool, list[str], subprocess.Comp
         # refuses a root git cannot answer for, and that refusal is reachable
         # from nowhere else.
         proj_dir = tempfile.mkdtemp(prefix="strictcli_loose_")
-        run_cwd = proj_dir
-    elif "--dump-schema" in case_argv:
-        proj_dir = tempfile.mkdtemp(prefix="strictcli_proj_")
-        descriptor.write_project_file(proj_dir, app_def["name"])
-        _init_fixture_repo(proj_dir)
         run_cwd = proj_dir
     elif "test_coverage_dir" in app_def:
         proj_dir = tempfile.mkdtemp(prefix="strictcli_cov_")
@@ -1072,12 +1065,16 @@ def _run_case(case: dict, target: str) -> tuple[bool, list[str], subprocess.Comp
                 _check_effects_equals(effect_log_path, expect["effects_equals"])
             )
 
-        # Check the schema file a --dump-schema run emitted into proj_dir.
+        # Check the help document a `help --json` run printed.
         if any(k in expect for k in SCHEMA_ASSERT_KEYS):
-            errors.extend(_check_schema_commands(proj_dir, expect))
+            errors.extend(
+                _check_schema_commands(case_argv, result.stdout, expect)
+            )
         if "schema_bytes_equal" in expect:
             errors.extend(
-                _check_schema_bytes(proj_dir, expect["schema_bytes_equal"])
+                _check_schema_bytes(
+                    case_argv, result.stdout, expect["schema_bytes_equal"],
+                )
             )
 
     except subprocess.TimeoutExpired:

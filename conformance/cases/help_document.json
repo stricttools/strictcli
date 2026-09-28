@@ -1,6 +1,31 @@
 [
   {
-    "name": "dump-schema: --dump-schema exits 0",
+    "name": "help document: help --json prints the document on stdout and the --json document on stderr",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "greet",
+          "help": "say hello",
+          "effect": "read_only",
+          "handler_prints": "hello"
+        }
+      ]
+    },
+    "argv": [
+      "help",
+      "--json"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_contains": "\"schema_version\": 2,",
+      "stderr_equals": "{\"interface_version\":3,\"app\":\"myapp\",\"app_version\":\"1.0.0\",\"command\":\"help\",\"exit_code\":0,\"payload\":null,\"output\":null,\"dry_run\":false,\"writes\":null,\"preview\":[],\"preview_error\":null,\"diagnostics\":[]}\n"
+    }
+  },
+  {
+    "name": "help document: --dump-schema is refused, naming help --json",
     "app": {
       "name": "myapp",
       "version": "1.0.0",
@@ -18,35 +43,13 @@
       "--dump-schema"
     ],
     "expect": {
-      "exit_code": 0,
-      "stdout_contains": ".strictcli/schema.json"
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: --dump-schema is not supported; the app's help document is printed by 'myapp help --json'\ntry 'myapp --help'\n"
     }
   },
   {
-    "name": "dump-schema: --dump-schema outputs absolute path",
-    "app": {
-      "name": "myapp",
-      "version": "1.0.0",
-      "help": "test app",
-      "commands": [
-        {
-          "name": "greet",
-          "help": "say hello",
-          "effect": "read_only",
-          "handler_prints": "hello"
-        }
-      ]
-    },
-    "argv": [
-      "--dump-schema"
-    ],
-    "expect": {
-      "exit_code": 0,
-      "stdout_contains": "/"
-    }
-  },
-  {
-    "name": "dump-schema: a declared payload schema is published verbatim",
+    "name": "help document: a declared payload schema is published verbatim",
     "app": {
       "name": "myapp",
       "version": "1.0.0",
@@ -100,7 +103,8 @@
       ]
     },
     "argv": [
-      "--dump-schema"
+      "help",
+      "--json"
     ],
     "expect": {
       "exit_code": 0,
@@ -146,30 +150,6 @@
           "payload_schema"
         ]
       }
-    }
-  },
-  {
-    "name": "dump-schema: the declared schema location wins over the framework's default",
-    "app": {
-      "name": "myapp",
-      "version": "1.0.0",
-      "help": "test app",
-      "schema_path": "build/cli-schema.json",
-      "commands": [
-        {
-          "name": "greet",
-          "help": "say hello",
-          "effect": "read_only",
-          "handler_prints": "hello"
-        }
-      ]
-    },
-    "argv": [
-      "--dump-schema"
-    ],
-    "expect": {
-      "exit_code": 0,
-      "stdout_contains": "/build/cli-schema.json"
     }
   }
 ]

@@ -38,10 +38,7 @@ def _fake_target(name: str):
     def _prepare(app_def, case_argv):  # pragma: no cover - never called (stubbed)
         raise AssertionError("fake target prepare should be stubbed via _run_case")
 
-    def _write(d, app_name):  # pragma: no cover
-        pass
-
-    run._register_target(run.Target(name, _prepare, _write))
+    run._register_target(run.Target(name, _prepare))
     try:
         yield
     finally:

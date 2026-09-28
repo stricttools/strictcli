@@ -343,7 +343,8 @@
       ]
     },
     "argv": [
-      "--dump-schema"
+      "help",
+      "--json"
     ],
     "expect": {
       "exit_code": 0,
@@ -432,7 +433,8 @@
       ]
     },
     "argv": [
-      "--dump-schema"
+      "help",
+      "--json"
     ],
     "expect": {
       "exit_code": 0,

@@ -504,7 +504,8 @@
       ]
     },
     "argv": [
-      "--dump-schema"
+      "help",
+      "--json"
     ],
     "expect": {
       "exit_code": 0,

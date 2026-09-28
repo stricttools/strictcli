@@ -247,7 +247,7 @@ def main() -> int:
                     app_def, target, harness_binary=harness, ts_entry=ts_entry
                 )
             except RuntimeError as e:
-                all_problems.append((label, target, [f"--dump-schema failed: {e}"]))
+                all_problems.append((label, target, [f"help --json failed: {e}"]))
                 continue
             problems = check_document(json.loads(text))
             checked += 1

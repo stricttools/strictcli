@@ -183,7 +183,7 @@
         "checkout a branch",
         "status"
       ],
-      "stdout_equals": "myapp v1.0.0 -- test app\n\nCommands:\n  checkout    checkout a branch\n  status      show status\n\nUse 'myapp <command> --help' for more information."
+      "stdout_equals": "myapp v1.0.0 -- test app\n\nCommands:\n  checkout    checkout a branch\n  status      show status\n\nUse 'myapp help <command>' for more information."
     }
   },
   {

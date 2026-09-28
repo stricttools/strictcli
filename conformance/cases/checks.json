@@ -495,7 +495,7 @@
     }
   },
   {
-    "name": "checks: dump-schema includes checks when checks enabled",
+    "name": "checks: the help document includes checks when checks are enabled",
     "app": {
       "name": "testapp",
       "version": "1.0.0",
@@ -511,11 +511,12 @@
       ]
     },
     "argv": [
-      "--dump-schema"
+      "help",
+      "--json"
     ],
     "expect": {
       "exit_code": 0,
-      "stdout_contains": ".strictcli/schema.json"
+      "stdout_contains": "\"checks\": {"
     }
   },
   {

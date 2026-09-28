@@ -1,0 +1,4646 @@
+[
+  {
+    "name": "help command: help with no address is the app's page",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "trace",
+          "help": "trace every step",
+          "type": "bool",
+          "presence": "default",
+          "default": false
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run something",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "device",
+              "help": "which GPU to target",
+              "type": "str",
+              "presence": "required",
+              "short": "d"
+            },
+            {
+              "name": "fast",
+              "help": "skip the slow checks",
+              "type": "bool",
+              "presence": "default",
+              "default": false
+            },
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "as an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "the subject line",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "as a text"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "name": "db",
+          "help": "database commands",
+          "commands": [
+            {
+              "name": "migrate",
+              "help": "run migrations",
+              "effect": "read_only",
+              "handler_prints": "ok"
+            }
+          ],
+          "groups": [
+            {
+              "name": "backup",
+              "help": "backup commands",
+              "commands": [
+                {
+                  "name": "take",
+                  "help": "take a backup",
+                  "effect": "read_only",
+                  "handler_prints": "ok"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "help"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "myapp v1.0.0 -- test app\n\nCommands:\n  run    run something\n\nGroups:\n  db    database commands\n\nGlobal flags:\n  --trace    trace every step\n\nUse 'myapp help <command>' for more information.\n"
+    }
+  },
+  {
+    "name": "help command: the --help flag shows the same page",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "trace",
+          "help": "trace every step",
+          "type": "bool",
+          "presence": "default",
+          "default": false
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run something",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "device",
+              "help": "which GPU to target",
+              "type": "str",
+              "presence": "required",
+              "short": "d"
+            },
+            {
+              "name": "fast",
+              "help": "skip the slow checks",
+              "type": "bool",
+              "presence": "default",
+              "default": false
+            },
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "as an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "the subject line",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "as a text"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "name": "db",
+          "help": "database commands",
+          "commands": [
+            {
+              "name": "migrate",
+              "help": "run migrations",
+              "effect": "read_only",
+              "handler_prints": "ok"
+            }
+          ],
+          "groups": [
+            {
+              "name": "backup",
+              "help": "backup commands",
+              "commands": [
+                {
+                  "name": "take",
+                  "help": "take a backup",
+                  "effect": "read_only",
+                  "handler_prints": "ok"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--help"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "myapp v1.0.0 -- test app\n\nCommands:\n  run    run something\n\nGroups:\n  db    database commands\n\nGlobal flags:\n  --trace    trace every step\n\nUse 'myapp help <command>' for more information.\n"
+    }
+  },
+  {
+    "name": "help command: a group address is the group's page",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "trace",
+          "help": "trace every step",
+          "type": "bool",
+          "presence": "default",
+          "default": false
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run something",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "device",
+              "help": "which GPU to target",
+              "type": "str",
+              "presence": "required",
+              "short": "d"
+            },
+            {
+              "name": "fast",
+              "help": "skip the slow checks",
+              "type": "bool",
+              "presence": "default",
+              "default": false
+            },
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "as an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "the subject line",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "as a text"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "name": "db",
+          "help": "database commands",
+          "commands": [
+            {
+              "name": "migrate",
+              "help": "run migrations",
+              "effect": "read_only",
+              "handler_prints": "ok"
+            }
+          ],
+          "groups": [
+            {
+              "name": "backup",
+              "help": "backup commands",
+              "commands": [
+                {
+                  "name": "take",
+                  "help": "take a backup",
+                  "effect": "read_only",
+                  "handler_prints": "ok"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "help",
+      "db"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "myapp db -- database commands\n\nCommands:\n  migrate    run migrations\n\nGroups:\n  backup    backup commands\n\nUse 'myapp help db <command>' for more information.\n"
+    }
+  },
+  {
+    "name": "help command: the group's --help shows the same page",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "trace",
+          "help": "trace every step",
+          "type": "bool",
+          "presence": "default",
+          "default": false
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run something",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "device",
+              "help": "which GPU to target",
+              "type": "str",
+              "presence": "required",
+              "short": "d"
+            },
+            {
+              "name": "fast",
+              "help": "skip the slow checks",
+              "type": "bool",
+              "presence": "default",
+              "default": false
+            },
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "as an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "the subject line",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "as a text"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "name": "db",
+          "help": "database commands",
+          "commands": [
+            {
+              "name": "migrate",
+              "help": "run migrations",
+              "effect": "read_only",
+              "handler_prints": "ok"
+            }
+          ],
+          "groups": [
+            {
+              "name": "backup",
+              "help": "backup commands",
+              "commands": [
+                {
+                  "name": "take",
+                  "help": "take a backup",
+                  "effect": "read_only",
+                  "handler_prints": "ok"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "db",
+      "--help"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "myapp db -- database commands\n\nCommands:\n  migrate    run migrations\n\nGroups:\n  backup    backup commands\n\nUse 'myapp help db <command>' for more information.\n"
+    }
+  },
+  {
+    "name": "help command: a command address is the command's page",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "trace",
+          "help": "trace every step",
+          "type": "bool",
+          "presence": "default",
+          "default": false
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run something",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "device",
+              "help": "which GPU to target",
+              "type": "str",
+              "presence": "required",
+              "short": "d"
+            },
+            {
+              "name": "fast",
+              "help": "skip the slow checks",
+              "type": "bool",
+              "presence": "default",
+              "default": false
+            },
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "as an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "the subject line",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "as a text"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "name": "db",
+          "help": "database commands",
+          "commands": [
+            {
+              "name": "migrate",
+              "help": "run migrations",
+              "effect": "read_only",
+              "handler_prints": "ok"
+            }
+          ],
+          "groups": [
+            {
+              "name": "backup",
+              "help": "backup commands",
+              "commands": [
+                {
+                  "name": "take",
+                  "help": "take a backup",
+                  "effect": "read_only",
+                  "handler_prints": "ok"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "help",
+      "run"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "myapp run -- run something\n\nFlags:\n  --device, -d <str>     which GPU to target [required]\n  --fast, --no-fast      skip the slow checks [default: false]\n  --via <choice>         delivery channel [required]\n    email                as an email\n      --subject <str>    the subject line [required]\n    sms                  as a text\n\nGlobal flags:\n  --trace, --no-trace    trace every step [default: false]\n"
+    }
+  },
+  {
+    "name": "help command: the command's --help shows the same page",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "trace",
+          "help": "trace every step",
+          "type": "bool",
+          "presence": "default",
+          "default": false
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run something",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "device",
+              "help": "which GPU to target",
+              "type": "str",
+              "presence": "required",
+              "short": "d"
+            },
+            {
+              "name": "fast",
+              "help": "skip the slow checks",
+              "type": "bool",
+              "presence": "default",
+              "default": false
+            },
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "as an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "the subject line",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "as a text"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "name": "db",
+          "help": "database commands",
+          "commands": [
+            {
+              "name": "migrate",
+              "help": "run migrations",
+              "effect": "read_only",
+              "handler_prints": "ok"
+            }
+          ],
+          "groups": [
+            {
+              "name": "backup",
+              "help": "backup commands",
+              "commands": [
+                {
+                  "name": "take",
+                  "help": "take a backup",
+                  "effect": "read_only",
+                  "handler_prints": "ok"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "run",
+      "--help"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "myapp run -- run something\n\nFlags:\n  --device, -d <str>     which GPU to target [required]\n  --fast, --no-fast      skip the slow checks [default: false]\n  --via <choice>         delivery channel [required]\n    email                as an email\n      --subject <str>    the subject line [required]\n    sms                  as a text\n\nGlobal flags:\n  --trace, --no-trace    trace every step [default: false]\n"
+    }
+  },
+  {
+    "name": "help command: one flag: its own lines of the command's page",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "trace",
+          "help": "trace every step",
+          "type": "bool",
+          "presence": "default",
+          "default": false
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run something",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "device",
+              "help": "which GPU to target",
+              "type": "str",
+              "presence": "required",
+              "short": "d"
+            },
+            {
+              "name": "fast",
+              "help": "skip the slow checks",
+              "type": "bool",
+              "presence": "default",
+              "default": false
+            },
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "as an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "the subject line",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "as a text"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "name": "db",
+          "help": "database commands",
+          "commands": [
+            {
+              "name": "migrate",
+              "help": "run migrations",
+              "effect": "read_only",
+              "handler_prints": "ok"
+            }
+          ],
+          "groups": [
+            {
+              "name": "backup",
+              "help": "backup commands",
+              "commands": [
+                {
+                  "name": "take",
+                  "help": "take a backup",
+                  "effect": "read_only",
+                  "handler_prints": "ok"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "help",
+      "run",
+      "--device"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "myapp run -- run something\n\nFlags:\n  --device, -d <str>    which GPU to target [required]\n"
+    }
+  },
+  {
+    "name": "help command: one scoped flag: with the selector and the choice that own it",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "trace",
+          "help": "trace every step",
+          "type": "bool",
+          "presence": "default",
+          "default": false
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run something",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "device",
+              "help": "which GPU to target",
+              "type": "str",
+              "presence": "required",
+              "short": "d"
+            },
+            {
+              "name": "fast",
+              "help": "skip the slow checks",
+              "type": "bool",
+              "presence": "default",
+              "default": false
+            },
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "as an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "the subject line",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "as a text"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "name": "db",
+          "help": "database commands",
+          "commands": [
+            {
+              "name": "migrate",
+              "help": "run migrations",
+              "effect": "read_only",
+              "handler_prints": "ok"
+            }
+          ],
+          "groups": [
+            {
+              "name": "backup",
+              "help": "backup commands",
+              "commands": [
+                {
+                  "name": "take",
+                  "help": "take a backup",
+                  "effect": "read_only",
+                  "handler_prints": "ok"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "help",
+      "run",
+      "--subject"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "myapp run -- run something\n\nFlags:\n  --via <choice>         delivery channel [required]\n    email                as an email\n      --subject <str>    the subject line [required]\n"
+    }
+  },
+  {
+    "name": "help command: one global flag: in its own section",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "trace",
+          "help": "trace every step",
+          "type": "bool",
+          "presence": "default",
+          "default": false
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run something",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "device",
+              "help": "which GPU to target",
+              "type": "str",
+              "presence": "required",
+              "short": "d"
+            },
+            {
+              "name": "fast",
+              "help": "skip the slow checks",
+              "type": "bool",
+              "presence": "default",
+              "default": false
+            },
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "as an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "the subject line",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "as a text"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "name": "db",
+          "help": "database commands",
+          "commands": [
+            {
+              "name": "migrate",
+              "help": "run migrations",
+              "effect": "read_only",
+              "handler_prints": "ok"
+            }
+          ],
+          "groups": [
+            {
+              "name": "backup",
+              "help": "backup commands",
+              "commands": [
+                {
+                  "name": "take",
+                  "help": "take a backup",
+                  "effect": "read_only",
+                  "handler_prints": "ok"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "help",
+      "run",
+      "--trace"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "myapp run -- run something\n\nGlobal flags:\n  --trace, --no-trace    trace every step [default: false]\n"
+    }
+  },
+  {
+    "name": "help command: --depth lists groups and commands by path",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "trace",
+          "help": "trace every step",
+          "type": "bool",
+          "presence": "default",
+          "default": false
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run something",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "device",
+              "help": "which GPU to target",
+              "type": "str",
+              "presence": "required",
+              "short": "d"
+            },
+            {
+              "name": "fast",
+              "help": "skip the slow checks",
+              "type": "bool",
+              "presence": "default",
+              "default": false
+            },
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "as an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "the subject line",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "as a text"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "name": "db",
+          "help": "database commands",
+          "commands": [
+            {
+              "name": "migrate",
+              "help": "run migrations",
+              "effect": "read_only",
+              "handler_prints": "ok"
+            }
+          ],
+          "groups": [
+            {
+              "name": "backup",
+              "help": "backup commands",
+              "commands": [
+                {
+                  "name": "take",
+                  "help": "take a backup",
+                  "effect": "read_only",
+                  "handler_prints": "ok"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "help",
+      "--depth",
+      "2"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "myapp v1.0.0 -- test app\n\nCommands:\n  run           run something\n  db migrate    run migrations\n\nGroups:\n  db           database commands\n  db backup    backup commands\n\nGlobal flags:\n  --trace    trace every step\n\nUse 'myapp help <command>' for more information.\n"
+    }
+  },
+  {
+    "name": "help command: --depth=N below a group",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "trace",
+          "help": "trace every step",
+          "type": "bool",
+          "presence": "default",
+          "default": false
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run something",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "device",
+              "help": "which GPU to target",
+              "type": "str",
+              "presence": "required",
+              "short": "d"
+            },
+            {
+              "name": "fast",
+              "help": "skip the slow checks",
+              "type": "bool",
+              "presence": "default",
+              "default": false
+            },
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "as an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "the subject line",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "as a text"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "name": "db",
+          "help": "database commands",
+          "commands": [
+            {
+              "name": "migrate",
+              "help": "run migrations",
+              "effect": "read_only",
+              "handler_prints": "ok"
+            }
+          ],
+          "groups": [
+            {
+              "name": "backup",
+              "help": "backup commands",
+              "commands": [
+                {
+                  "name": "take",
+                  "help": "take a backup",
+                  "effect": "read_only",
+                  "handler_prints": "ok"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "help",
+      "--depth=3",
+      "db"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "myapp db -- database commands\n\nCommands:\n  migrate        run migrations\n  backup take    take a backup\n\nGroups:\n  backup    backup commands\n\nUse 'myapp help db <command>' for more information.\n"
+    }
+  },
+  {
+    "name": "help command: an unknown word",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "trace",
+          "help": "trace every step",
+          "type": "bool",
+          "presence": "default",
+          "default": false
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run something",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "device",
+              "help": "which GPU to target",
+              "type": "str",
+              "presence": "required",
+              "short": "d"
+            },
+            {
+              "name": "fast",
+              "help": "skip the slow checks",
+              "type": "bool",
+              "presence": "default",
+              "default": false
+            },
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "as an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "the subject line",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "as a text"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "name": "db",
+          "help": "database commands",
+          "commands": [
+            {
+              "name": "migrate",
+              "help": "run migrations",
+              "effect": "read_only",
+              "handler_prints": "ok"
+            }
+          ],
+          "groups": [
+            {
+              "name": "backup",
+              "help": "backup commands",
+              "commands": [
+                {
+                  "name": "take",
+                  "help": "take a backup",
+                  "effect": "read_only",
+                  "handler_prints": "ok"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "help",
+      "nope"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: unknown command 'nope'\ntry 'myapp help --help'\n"
+    }
+  },
+  {
+    "name": "help command: an unknown word inside a group",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "trace",
+          "help": "trace every step",
+          "type": "bool",
+          "presence": "default",
+          "default": false
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run something",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "device",
+              "help": "which GPU to target",
+              "type": "str",
+              "presence": "required",
+              "short": "d"
+            },
+            {
+              "name": "fast",
+              "help": "skip the slow checks",
+              "type": "bool",
+              "presence": "default",
+              "default": false
+            },
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "as an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "the subject line",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "as a text"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "name": "db",
+          "help": "database commands",
+          "commands": [
+            {
+              "name": "migrate",
+              "help": "run migrations",
+              "effect": "read_only",
+              "handler_prints": "ok"
+            }
+          ],
+          "groups": [
+            {
+              "name": "backup",
+              "help": "backup commands",
+              "commands": [
+                {
+                  "name": "take",
+                  "help": "take a backup",
+                  "effect": "read_only",
+                  "handler_prints": "ok"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "help",
+      "db",
+      "nope"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: unknown command 'nope' in 'db'\ntry 'myapp help --help'\n"
+    }
+  },
+  {
+    "name": "help command: a depth that is not a positive integer",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "trace",
+          "help": "trace every step",
+          "type": "bool",
+          "presence": "default",
+          "default": false
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run something",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "device",
+              "help": "which GPU to target",
+              "type": "str",
+              "presence": "required",
+              "short": "d"
+            },
+            {
+              "name": "fast",
+              "help": "skip the slow checks",
+              "type": "bool",
+              "presence": "default",
+              "default": false
+            },
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "as an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "the subject line",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "as a text"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "name": "db",
+          "help": "database commands",
+          "commands": [
+            {
+              "name": "migrate",
+              "help": "run migrations",
+              "effect": "read_only",
+              "handler_prints": "ok"
+            }
+          ],
+          "groups": [
+            {
+              "name": "backup",
+              "help": "backup commands",
+              "commands": [
+                {
+                  "name": "take",
+                  "help": "take a backup",
+                  "effect": "read_only",
+                  "handler_prints": "ok"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "help",
+      "--depth",
+      "0",
+      "db"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: help: --depth: invalid value '0': must be an integer of at least 1\ntry 'myapp help --help'\n"
+    }
+  },
+  {
+    "name": "help command: a depth with a leading zero",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "trace",
+          "help": "trace every step",
+          "type": "bool",
+          "presence": "default",
+          "default": false
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run something",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "device",
+              "help": "which GPU to target",
+              "type": "str",
+              "presence": "required",
+              "short": "d"
+            },
+            {
+              "name": "fast",
+              "help": "skip the slow checks",
+              "type": "bool",
+              "presence": "default",
+              "default": false
+            },
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "as an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "the subject line",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "as a text"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "name": "db",
+          "help": "database commands",
+          "commands": [
+            {
+              "name": "migrate",
+              "help": "run migrations",
+              "effect": "read_only",
+              "handler_prints": "ok"
+            }
+          ],
+          "groups": [
+            {
+              "name": "backup",
+              "help": "backup commands",
+              "commands": [
+                {
+                  "name": "take",
+                  "help": "take a backup",
+                  "effect": "read_only",
+                  "handler_prints": "ok"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "help",
+      "--depth",
+      "01"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: help: --depth: invalid value '01': must be an integer of at least 1\ntry 'myapp help --help'\n"
+    }
+  },
+  {
+    "name": "help command: a depth without a value",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "trace",
+          "help": "trace every step",
+          "type": "bool",
+          "presence": "default",
+          "default": false
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run something",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "device",
+              "help": "which GPU to target",
+              "type": "str",
+              "presence": "required",
+              "short": "d"
+            },
+            {
+              "name": "fast",
+              "help": "skip the slow checks",
+              "type": "bool",
+              "presence": "default",
+              "default": false
+            },
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "as an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "the subject line",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "as a text"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "name": "db",
+          "help": "database commands",
+          "commands": [
+            {
+              "name": "migrate",
+              "help": "run migrations",
+              "effect": "read_only",
+              "handler_prints": "ok"
+            }
+          ],
+          "groups": [
+            {
+              "name": "backup",
+              "help": "backup commands",
+              "commands": [
+                {
+                  "name": "take",
+                  "help": "take a backup",
+                  "effect": "read_only",
+                  "handler_prints": "ok"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "help",
+      "--depth"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: help: --depth requires a value\ntry 'myapp help --help'\n"
+    }
+  },
+  {
+    "name": "help command: a depth on a command",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "trace",
+          "help": "trace every step",
+          "type": "bool",
+          "presence": "default",
+          "default": false
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run something",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "device",
+              "help": "which GPU to target",
+              "type": "str",
+              "presence": "required",
+              "short": "d"
+            },
+            {
+              "name": "fast",
+              "help": "skip the slow checks",
+              "type": "bool",
+              "presence": "default",
+              "default": false
+            },
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "as an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "the subject line",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "as a text"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "name": "db",
+          "help": "database commands",
+          "commands": [
+            {
+              "name": "migrate",
+              "help": "run migrations",
+              "effect": "read_only",
+              "handler_prints": "ok"
+            }
+          ],
+          "groups": [
+            {
+              "name": "backup",
+              "help": "backup commands",
+              "commands": [
+                {
+                  "name": "take",
+                  "help": "take a backup",
+                  "effect": "read_only",
+                  "handler_prints": "ok"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "help",
+      "--depth",
+      "2",
+      "run"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: help: --depth lists the command tree below the app or a group; 'run' is a command\ntry 'myapp help --help'\n"
+    }
+  },
+  {
+    "name": "help command: an unknown option",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "trace",
+          "help": "trace every step",
+          "type": "bool",
+          "presence": "default",
+          "default": false
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run something",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "device",
+              "help": "which GPU to target",
+              "type": "str",
+              "presence": "required",
+              "short": "d"
+            },
+            {
+              "name": "fast",
+              "help": "skip the slow checks",
+              "type": "bool",
+              "presence": "default",
+              "default": false
+            },
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "as an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "the subject line",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "as a text"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "name": "db",
+          "help": "database commands",
+          "commands": [
+            {
+              "name": "migrate",
+              "help": "run migrations",
+              "effect": "read_only",
+              "handler_prints": "ok"
+            }
+          ],
+          "groups": [
+            {
+              "name": "backup",
+              "help": "backup commands",
+              "commands": [
+                {
+                  "name": "take",
+                  "help": "take a backup",
+                  "effect": "read_only",
+                  "handler_prints": "ok"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "help",
+      "--all"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: help: unknown option '--all': help's only option is --depth <int>, and a flag is addressed after its command: 'myapp help <command> --all'\ntry 'myapp help --help'\n"
+    }
+  },
+  {
+    "name": "help command: an unknown flag lists the command's flags",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "trace",
+          "help": "trace every step",
+          "type": "bool",
+          "presence": "default",
+          "default": false
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run something",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "device",
+              "help": "which GPU to target",
+              "type": "str",
+              "presence": "required",
+              "short": "d"
+            },
+            {
+              "name": "fast",
+              "help": "skip the slow checks",
+              "type": "bool",
+              "presence": "default",
+              "default": false
+            },
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "as an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "the subject line",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "as a text"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "name": "db",
+          "help": "database commands",
+          "commands": [
+            {
+              "name": "migrate",
+              "help": "run migrations",
+              "effect": "read_only",
+              "handler_prints": "ok"
+            }
+          ],
+          "groups": [
+            {
+              "name": "backup",
+              "help": "backup commands",
+              "commands": [
+                {
+                  "name": "take",
+                  "help": "take a backup",
+                  "effect": "read_only",
+                  "handler_prints": "ok"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "help",
+      "run",
+      "--devise"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command 'run' has no flag '--devise'; its flags: --device, --fast, --via, --subject, --trace\ntry 'myapp help --help'\n"
+    }
+  },
+  {
+    "name": "help command: a word after a command",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "trace",
+          "help": "trace every step",
+          "type": "bool",
+          "presence": "default",
+          "default": false
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run something",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "device",
+              "help": "which GPU to target",
+              "type": "str",
+              "presence": "required",
+              "short": "d"
+            },
+            {
+              "name": "fast",
+              "help": "skip the slow checks",
+              "type": "bool",
+              "presence": "default",
+              "default": false
+            },
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "as an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "the subject line",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "as a text"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "name": "db",
+          "help": "database commands",
+          "commands": [
+            {
+              "name": "migrate",
+              "help": "run migrations",
+              "effect": "read_only",
+              "handler_prints": "ok"
+            }
+          ],
+          "groups": [
+            {
+              "name": "backup",
+              "help": "backup commands",
+              "commands": [
+                {
+                  "name": "take",
+                  "help": "take a backup",
+                  "effect": "read_only",
+                  "handler_prints": "ok"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "help",
+      "run",
+      "extra"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: help: 'extra' follows the command 'run'; only one of its flags may follow a command (--<flag>)\ntry 'myapp help --help'\n"
+    }
+  },
+  {
+    "name": "help command: a second flag",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "trace",
+          "help": "trace every step",
+          "type": "bool",
+          "presence": "default",
+          "default": false
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run something",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "device",
+              "help": "which GPU to target",
+              "type": "str",
+              "presence": "required",
+              "short": "d"
+            },
+            {
+              "name": "fast",
+              "help": "skip the slow checks",
+              "type": "bool",
+              "presence": "default",
+              "default": false
+            },
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "as an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "the subject line",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "as a text"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "name": "db",
+          "help": "database commands",
+          "commands": [
+            {
+              "name": "migrate",
+              "help": "run migrations",
+              "effect": "read_only",
+              "handler_prints": "ok"
+            }
+          ],
+          "groups": [
+            {
+              "name": "backup",
+              "help": "backup commands",
+              "commands": [
+                {
+                  "name": "take",
+                  "help": "take a backup",
+                  "effect": "read_only",
+                  "handler_prints": "ok"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "help",
+      "run",
+      "--device",
+      "--fast"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: help: '--fast' follows the flag address; an address ends at one flag\ntry 'myapp help --help'\n"
+    }
+  },
+  {
+    "name": "help command: a short form names the long one",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "trace",
+          "help": "trace every step",
+          "type": "bool",
+          "presence": "default",
+          "default": false
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run something",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "device",
+              "help": "which GPU to target",
+              "type": "str",
+              "presence": "required",
+              "short": "d"
+            },
+            {
+              "name": "fast",
+              "help": "skip the slow checks",
+              "type": "bool",
+              "presence": "default",
+              "default": false
+            },
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "as an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "the subject line",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "as a text"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "name": "db",
+          "help": "database commands",
+          "commands": [
+            {
+              "name": "migrate",
+              "help": "run migrations",
+              "effect": "read_only",
+              "handler_prints": "ok"
+            }
+          ],
+          "groups": [
+            {
+              "name": "backup",
+              "help": "backup commands",
+              "commands": [
+                {
+                  "name": "take",
+                  "help": "take a backup",
+                  "effect": "read_only",
+                  "handler_prints": "ok"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "help",
+      "run",
+      "-d"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: help: '-d' is a short form; address the flag by its long name: 'myapp help run --device'\ntry 'myapp help --help'\n"
+    }
+  },
+  {
+    "name": "help command: a flag with a value names the flag alone",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "trace",
+          "help": "trace every step",
+          "type": "bool",
+          "presence": "default",
+          "default": false
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run something",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "device",
+              "help": "which GPU to target",
+              "type": "str",
+              "presence": "required",
+              "short": "d"
+            },
+            {
+              "name": "fast",
+              "help": "skip the slow checks",
+              "type": "bool",
+              "presence": "default",
+              "default": false
+            },
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "as an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "the subject line",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "as a text"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "name": "db",
+          "help": "database commands",
+          "commands": [
+            {
+              "name": "migrate",
+              "help": "run migrations",
+              "effect": "read_only",
+              "handler_prints": "ok"
+            }
+          ],
+          "groups": [
+            {
+              "name": "backup",
+              "help": "backup commands",
+              "commands": [
+                {
+                  "name": "take",
+                  "help": "take a backup",
+                  "effect": "read_only",
+                  "handler_prints": "ok"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "help",
+      "run",
+      "--device=x"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: help: '--device=x' carries a value; a flag address is the flag alone: 'myapp help run --device'\ntry 'myapp help --help'\n"
+    }
+  },
+  {
+    "name": "help command: a negation names the declaration",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "trace",
+          "help": "trace every step",
+          "type": "bool",
+          "presence": "default",
+          "default": false
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run something",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "device",
+              "help": "which GPU to target",
+              "type": "str",
+              "presence": "required",
+              "short": "d"
+            },
+            {
+              "name": "fast",
+              "help": "skip the slow checks",
+              "type": "bool",
+              "presence": "default",
+              "default": false
+            },
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "as an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "the subject line",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "as a text"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "name": "db",
+          "help": "database commands",
+          "commands": [
+            {
+              "name": "migrate",
+              "help": "run migrations",
+              "effect": "read_only",
+              "handler_prints": "ok"
+            }
+          ],
+          "groups": [
+            {
+              "name": "backup",
+              "help": "backup commands",
+              "commands": [
+                {
+                  "name": "take",
+                  "help": "take a backup",
+                  "effect": "read_only",
+                  "handler_prints": "ok"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "help",
+      "run",
+      "--no-fast"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: help: '--no-fast' is another spelling of a declared flag; address the declaration: 'myapp help run --fast'\ntry 'myapp help --help'\n"
+    }
+  },
+  {
+    "name": "help command: an option after the address names the spelling before it",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "trace",
+          "help": "trace every step",
+          "type": "bool",
+          "presence": "default",
+          "default": false
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run something",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "device",
+              "help": "which GPU to target",
+              "type": "str",
+              "presence": "required",
+              "short": "d"
+            },
+            {
+              "name": "fast",
+              "help": "skip the slow checks",
+              "type": "bool",
+              "presence": "default",
+              "default": false
+            },
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "as an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "the subject line",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "as a text"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "name": "db",
+          "help": "database commands",
+          "commands": [
+            {
+              "name": "migrate",
+              "help": "run migrations",
+              "effect": "read_only",
+              "handler_prints": "ok"
+            }
+          ],
+          "groups": [
+            {
+              "name": "backup",
+              "help": "backup commands",
+              "commands": [
+                {
+                  "name": "take",
+                  "help": "take a backup",
+                  "effect": "read_only",
+                  "handler_prints": "ok"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "help",
+      "db",
+      "--depth",
+      "2"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: help: --depth is help's own option and goes before the address: 'myapp help --depth <int> db'\ntry 'myapp help --help'\n"
+    }
+  },
+  {
+    "name": "help command: a flag after a group names the command form",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "trace",
+          "help": "trace every step",
+          "type": "bool",
+          "presence": "default",
+          "default": false
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run something",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "device",
+              "help": "which GPU to target",
+              "type": "str",
+              "presence": "required",
+              "short": "d"
+            },
+            {
+              "name": "fast",
+              "help": "skip the slow checks",
+              "type": "bool",
+              "presence": "default",
+              "default": false
+            },
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "as an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "the subject line",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "as a text"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "name": "db",
+          "help": "database commands",
+          "commands": [
+            {
+              "name": "migrate",
+              "help": "run migrations",
+              "effect": "read_only",
+              "handler_prints": "ok"
+            }
+          ],
+          "groups": [
+            {
+              "name": "backup",
+              "help": "backup commands",
+              "commands": [
+                {
+                  "name": "take",
+                  "help": "take a backup",
+                  "effect": "read_only",
+                  "handler_prints": "ok"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "help",
+      "db",
+      "--fast"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: help: '--fast' names a flag, and a flag is addressed after its command: 'myapp help db <command> --fast'\ntry 'myapp help --help'\n"
+    }
+  },
+  {
+    "name": "help command: a global flag before any address names the command form",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "trace",
+          "help": "trace every step",
+          "type": "bool",
+          "presence": "default",
+          "default": false
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run something",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "device",
+              "help": "which GPU to target",
+              "type": "str",
+              "presence": "required",
+              "short": "d"
+            },
+            {
+              "name": "fast",
+              "help": "skip the slow checks",
+              "type": "bool",
+              "presence": "default",
+              "default": false
+            },
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "as an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "the subject line",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "as a text"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "name": "db",
+          "help": "database commands",
+          "commands": [
+            {
+              "name": "migrate",
+              "help": "run migrations",
+              "effect": "read_only",
+              "handler_prints": "ok"
+            }
+          ],
+          "groups": [
+            {
+              "name": "backup",
+              "help": "backup commands",
+              "commands": [
+                {
+                  "name": "take",
+                  "help": "take a backup",
+                  "effect": "read_only",
+                  "handler_prints": "ok"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "help",
+      "--trace"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: help: '--trace' names a flag, and a flag is addressed after its command: 'myapp help <command> --trace'\ntry 'myapp help --help'\n"
+    }
+  },
+  {
+    "name": "help command: help inside a group points at the root",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "trace",
+          "help": "trace every step",
+          "type": "bool",
+          "presence": "default",
+          "default": false
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run something",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "device",
+              "help": "which GPU to target",
+              "type": "str",
+              "presence": "required",
+              "short": "d"
+            },
+            {
+              "name": "fast",
+              "help": "skip the slow checks",
+              "type": "bool",
+              "presence": "default",
+              "default": false
+            },
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "as an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "the subject line",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "as a text"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "name": "db",
+          "help": "database commands",
+          "commands": [
+            {
+              "name": "migrate",
+              "help": "run migrations",
+              "effect": "read_only",
+              "handler_prints": "ok"
+            }
+          ],
+          "groups": [
+            {
+              "name": "backup",
+              "help": "backup commands",
+              "commands": [
+                {
+                  "name": "take",
+                  "help": "take a backup",
+                  "effect": "read_only",
+                  "handler_prints": "ok"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "db",
+      "help"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: 'help' is a framework command at the root: use 'myapp help db'\ntry 'myapp --help'\n"
+    }
+  },
+  {
+    "name": "help command: version inside a group points at the root",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "trace",
+          "help": "trace every step",
+          "type": "bool",
+          "presence": "default",
+          "default": false
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run something",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "device",
+              "help": "which GPU to target",
+              "type": "str",
+              "presence": "required",
+              "short": "d"
+            },
+            {
+              "name": "fast",
+              "help": "skip the slow checks",
+              "type": "bool",
+              "presence": "default",
+              "default": false
+            },
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "as an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "the subject line",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "as a text"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "name": "db",
+          "help": "database commands",
+          "commands": [
+            {
+              "name": "migrate",
+              "help": "run migrations",
+              "effect": "read_only",
+              "handler_prints": "ok"
+            }
+          ],
+          "groups": [
+            {
+              "name": "backup",
+              "help": "backup commands",
+              "commands": [
+                {
+                  "name": "take",
+                  "help": "take a backup",
+                  "effect": "read_only",
+                  "handler_prints": "ok"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "db",
+      "version"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: 'version' is a framework command at the root: use 'myapp version'\ntry 'myapp --help'\n"
+    }
+  },
+  {
+    "name": "help command: help --help is the help command's own page",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "trace",
+          "help": "trace every step",
+          "type": "bool",
+          "presence": "default",
+          "default": false
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run something",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "device",
+              "help": "which GPU to target",
+              "type": "str",
+              "presence": "required",
+              "short": "d"
+            },
+            {
+              "name": "fast",
+              "help": "skip the slow checks",
+              "type": "bool",
+              "presence": "default",
+              "default": false
+            },
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "as an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "the subject line",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "as a text"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "name": "db",
+          "help": "database commands",
+          "commands": [
+            {
+              "name": "migrate",
+              "help": "run migrations",
+              "effect": "read_only",
+              "handler_prints": "ok"
+            }
+          ],
+          "groups": [
+            {
+              "name": "backup",
+              "help": "backup commands",
+              "commands": [
+                {
+                  "name": "take",
+                  "help": "take a backup",
+                  "effect": "read_only",
+                  "handler_prints": "ok"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "help",
+      "--help"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "myapp help -- show the help of the app, a group, a command, or one of its flags\n\nArguments:\n  address...    groups, then a command, then one of its flags, as typed after 'myapp' [optional]\n\nFlags:\n  --depth <int>    levels of groups and commands to list below the address, written before it [optional]\n\nWith --json, the help document is printed as JSON.\n"
+    }
+  },
+  {
+    "name": "help command: -h anywhere after help is the same page",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "trace",
+          "help": "trace every step",
+          "type": "bool",
+          "presence": "default",
+          "default": false
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run something",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "device",
+              "help": "which GPU to target",
+              "type": "str",
+              "presence": "required",
+              "short": "d"
+            },
+            {
+              "name": "fast",
+              "help": "skip the slow checks",
+              "type": "bool",
+              "presence": "default",
+              "default": false
+            },
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "as an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "the subject line",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "as a text"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "name": "db",
+          "help": "database commands",
+          "commands": [
+            {
+              "name": "migrate",
+              "help": "run migrations",
+              "effect": "read_only",
+              "handler_prints": "ok"
+            }
+          ],
+          "groups": [
+            {
+              "name": "backup",
+              "help": "backup commands",
+              "commands": [
+                {
+                  "name": "take",
+                  "help": "take a backup",
+                  "effect": "read_only",
+                  "handler_prints": "ok"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "help",
+      "run",
+      "-h"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "myapp help -- show the help of the app, a group, a command, or one of its flags\n\nArguments:\n  address...    groups, then a command, then one of its flags, as typed after 'myapp' [optional]\n\nFlags:\n  --depth <int>    levels of groups and commands to list below the address, written before it [optional]\n\nWith --json, the help document is printed as JSON.\n"
+    }
+  },
+  {
+    "name": "help command: version prints the name and version",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "trace",
+          "help": "trace every step",
+          "type": "bool",
+          "presence": "default",
+          "default": false
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run something",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "device",
+              "help": "which GPU to target",
+              "type": "str",
+              "presence": "required",
+              "short": "d"
+            },
+            {
+              "name": "fast",
+              "help": "skip the slow checks",
+              "type": "bool",
+              "presence": "default",
+              "default": false
+            },
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "as an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "the subject line",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "as a text"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "name": "db",
+          "help": "database commands",
+          "commands": [
+            {
+              "name": "migrate",
+              "help": "run migrations",
+              "effect": "read_only",
+              "handler_prints": "ok"
+            }
+          ],
+          "groups": [
+            {
+              "name": "backup",
+              "help": "backup commands",
+              "commands": [
+                {
+                  "name": "take",
+                  "help": "take a backup",
+                  "effect": "read_only",
+                  "handler_prints": "ok"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "version"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "myapp 1.0.0\n"
+    }
+  },
+  {
+    "name": "help command: --version prints the same line",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "trace",
+          "help": "trace every step",
+          "type": "bool",
+          "presence": "default",
+          "default": false
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run something",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "device",
+              "help": "which GPU to target",
+              "type": "str",
+              "presence": "required",
+              "short": "d"
+            },
+            {
+              "name": "fast",
+              "help": "skip the slow checks",
+              "type": "bool",
+              "presence": "default",
+              "default": false
+            },
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "as an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "the subject line",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "as a text"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "name": "db",
+          "help": "database commands",
+          "commands": [
+            {
+              "name": "migrate",
+              "help": "run migrations",
+              "effect": "read_only",
+              "handler_prints": "ok"
+            }
+          ],
+          "groups": [
+            {
+              "name": "backup",
+              "help": "backup commands",
+              "commands": [
+                {
+                  "name": "take",
+                  "help": "take a backup",
+                  "effect": "read_only",
+                  "handler_prints": "ok"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--version"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "myapp 1.0.0\n"
+    }
+  },
+  {
+    "name": "help command: version --help is the version command's own page",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "trace",
+          "help": "trace every step",
+          "type": "bool",
+          "presence": "default",
+          "default": false
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run something",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "device",
+              "help": "which GPU to target",
+              "type": "str",
+              "presence": "required",
+              "short": "d"
+            },
+            {
+              "name": "fast",
+              "help": "skip the slow checks",
+              "type": "bool",
+              "presence": "default",
+              "default": false
+            },
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "as an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "the subject line",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "as a text"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "name": "db",
+          "help": "database commands",
+          "commands": [
+            {
+              "name": "migrate",
+              "help": "run migrations",
+              "effect": "read_only",
+              "handler_prints": "ok"
+            }
+          ],
+          "groups": [
+            {
+              "name": "backup",
+              "help": "backup commands",
+              "commands": [
+                {
+                  "name": "take",
+                  "help": "take a backup",
+                  "effect": "read_only",
+                  "handler_prints": "ok"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "version",
+      "--help"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "myapp version -- show the app's name and version\n\nWith --json, they are printed as JSON.\n"
+    }
+  },
+  {
+    "name": "help command: version --json prints the document, the --json document on stderr",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "trace",
+          "help": "trace every step",
+          "type": "bool",
+          "presence": "default",
+          "default": false
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run something",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "device",
+              "help": "which GPU to target",
+              "type": "str",
+              "presence": "required",
+              "short": "d"
+            },
+            {
+              "name": "fast",
+              "help": "skip the slow checks",
+              "type": "bool",
+              "presence": "default",
+              "default": false
+            },
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "as an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "the subject line",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "as a text"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "name": "db",
+          "help": "database commands",
+          "commands": [
+            {
+              "name": "migrate",
+              "help": "run migrations",
+              "effect": "read_only",
+              "handler_prints": "ok"
+            }
+          ],
+          "groups": [
+            {
+              "name": "backup",
+              "help": "backup commands",
+              "commands": [
+                {
+                  "name": "take",
+                  "help": "take a backup",
+                  "effect": "read_only",
+                  "handler_prints": "ok"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "version",
+      "--json"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "{\n  \"name\": \"myapp\",\n  \"version\": \"1.0.0\"\n}\n",
+      "stderr_equals": "{\"interface_version\":3,\"app\":\"myapp\",\"app_version\":\"1.0.0\",\"command\":\"version\",\"exit_code\":0,\"payload\":null,\"output\":null,\"dry_run\":false,\"writes\":null,\"preview\":[],\"preview_error\":null,\"diagnostics\":[]}\n"
+    }
+  },
+  {
+    "name": "help command: version takes no arguments",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "trace",
+          "help": "trace every step",
+          "type": "bool",
+          "presence": "default",
+          "default": false
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run something",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "device",
+              "help": "which GPU to target",
+              "type": "str",
+              "presence": "required",
+              "short": "d"
+            },
+            {
+              "name": "fast",
+              "help": "skip the slow checks",
+              "type": "bool",
+              "presence": "default",
+              "default": false
+            },
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "as an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "the subject line",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "as a text"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "name": "db",
+          "help": "database commands",
+          "commands": [
+            {
+              "name": "migrate",
+              "help": "run migrations",
+              "effect": "read_only",
+              "handler_prints": "ok"
+            }
+          ],
+          "groups": [
+            {
+              "name": "backup",
+              "help": "backup commands",
+              "commands": [
+                {
+                  "name": "take",
+                  "help": "take a backup",
+                  "effect": "read_only",
+                  "handler_prints": "ok"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "version",
+      "extra"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: version takes no arguments, got 'extra'\ntry 'myapp version --help'\n"
+    }
+  },
+  {
+    "name": "help command: the --help flag is text only: --help --json",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "trace",
+          "help": "trace every step",
+          "type": "bool",
+          "presence": "default",
+          "default": false
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run something",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "device",
+              "help": "which GPU to target",
+              "type": "str",
+              "presence": "required",
+              "short": "d"
+            },
+            {
+              "name": "fast",
+              "help": "skip the slow checks",
+              "type": "bool",
+              "presence": "default",
+              "default": false
+            },
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "as an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "the subject line",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "as a text"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "name": "db",
+          "help": "database commands",
+          "commands": [
+            {
+              "name": "migrate",
+              "help": "run migrations",
+              "effect": "read_only",
+              "handler_prints": "ok"
+            }
+          ],
+          "groups": [
+            {
+              "name": "backup",
+              "help": "backup commands",
+              "commands": [
+                {
+                  "name": "take",
+                  "help": "take a backup",
+                  "effect": "read_only",
+                  "handler_prints": "ok"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--help",
+      "--json"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "{\"interface_version\":3,\"app\":\"myapp\",\"app_version\":\"1.0.0\",\"command\":null,\"exit_code\":1,\"payload\":null,\"output\":null,\"dry_run\":false,\"writes\":null,\"preview\":[],\"preview_error\":null,\"diagnostics\":[]}\n",
+      "stderr_equals": "error: help pages are text; for the machine form use 'myapp help --json'\ntry 'myapp --help'\n"
+    }
+  },
+  {
+    "name": "help command: the --help flag is text only: --json",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "trace",
+          "help": "trace every step",
+          "type": "bool",
+          "presence": "default",
+          "default": false
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run something",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "device",
+              "help": "which GPU to target",
+              "type": "str",
+              "presence": "required",
+              "short": "d"
+            },
+            {
+              "name": "fast",
+              "help": "skip the slow checks",
+              "type": "bool",
+              "presence": "default",
+              "default": false
+            },
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "as an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "the subject line",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "as a text"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "name": "db",
+          "help": "database commands",
+          "commands": [
+            {
+              "name": "migrate",
+              "help": "run migrations",
+              "effect": "read_only",
+              "handler_prints": "ok"
+            }
+          ],
+          "groups": [
+            {
+              "name": "backup",
+              "help": "backup commands",
+              "commands": [
+                {
+                  "name": "take",
+                  "help": "take a backup",
+                  "effect": "read_only",
+                  "handler_prints": "ok"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--json"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "{\"interface_version\":3,\"app\":\"myapp\",\"app_version\":\"1.0.0\",\"command\":null,\"exit_code\":1,\"payload\":null,\"output\":null,\"dry_run\":false,\"writes\":null,\"preview\":[],\"preview_error\":null,\"diagnostics\":[]}\n",
+      "stderr_equals": "error: help pages are text; for the machine form use 'myapp help --json'\ntry 'myapp --help'\n"
+    }
+  },
+  {
+    "name": "help command: the --help flag is text only: db --help --json",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "trace",
+          "help": "trace every step",
+          "type": "bool",
+          "presence": "default",
+          "default": false
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run something",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "device",
+              "help": "which GPU to target",
+              "type": "str",
+              "presence": "required",
+              "short": "d"
+            },
+            {
+              "name": "fast",
+              "help": "skip the slow checks",
+              "type": "bool",
+              "presence": "default",
+              "default": false
+            },
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "as an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "the subject line",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "as a text"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "name": "db",
+          "help": "database commands",
+          "commands": [
+            {
+              "name": "migrate",
+              "help": "run migrations",
+              "effect": "read_only",
+              "handler_prints": "ok"
+            }
+          ],
+          "groups": [
+            {
+              "name": "backup",
+              "help": "backup commands",
+              "commands": [
+                {
+                  "name": "take",
+                  "help": "take a backup",
+                  "effect": "read_only",
+                  "handler_prints": "ok"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "db",
+      "--help",
+      "--json"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "{\"interface_version\":3,\"app\":\"myapp\",\"app_version\":\"1.0.0\",\"command\":null,\"exit_code\":1,\"payload\":null,\"output\":null,\"dry_run\":false,\"writes\":null,\"preview\":[],\"preview_error\":null,\"diagnostics\":[]}\n",
+      "stderr_equals": "error: help pages are text; for the machine form use 'myapp help db --json'\ntry 'myapp --help'\n"
+    }
+  },
+  {
+    "name": "help command: the --help flag is text only: run --help --json",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "trace",
+          "help": "trace every step",
+          "type": "bool",
+          "presence": "default",
+          "default": false
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run something",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "device",
+              "help": "which GPU to target",
+              "type": "str",
+              "presence": "required",
+              "short": "d"
+            },
+            {
+              "name": "fast",
+              "help": "skip the slow checks",
+              "type": "bool",
+              "presence": "default",
+              "default": false
+            },
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "as an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "the subject line",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "as a text"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "name": "db",
+          "help": "database commands",
+          "commands": [
+            {
+              "name": "migrate",
+              "help": "run migrations",
+              "effect": "read_only",
+              "handler_prints": "ok"
+            }
+          ],
+          "groups": [
+            {
+              "name": "backup",
+              "help": "backup commands",
+              "commands": [
+                {
+                  "name": "take",
+                  "help": "take a backup",
+                  "effect": "read_only",
+                  "handler_prints": "ok"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "run",
+      "--help",
+      "--json"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "{\"interface_version\":3,\"app\":\"myapp\",\"app_version\":\"1.0.0\",\"command\":null,\"exit_code\":1,\"payload\":null,\"output\":null,\"dry_run\":false,\"writes\":null,\"preview\":[],\"preview_error\":null,\"diagnostics\":[]}\n",
+      "stderr_equals": "error: help pages are text; for the machine form use 'myapp help run --json'\ntry 'myapp --help'\n"
+    }
+  },
+  {
+    "name": "help command: the --help flag is text only: db migrate --json -h",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "trace",
+          "help": "trace every step",
+          "type": "bool",
+          "presence": "default",
+          "default": false
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run something",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "device",
+              "help": "which GPU to target",
+              "type": "str",
+              "presence": "required",
+              "short": "d"
+            },
+            {
+              "name": "fast",
+              "help": "skip the slow checks",
+              "type": "bool",
+              "presence": "default",
+              "default": false
+            },
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "as an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "the subject line",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "as a text"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "name": "db",
+          "help": "database commands",
+          "commands": [
+            {
+              "name": "migrate",
+              "help": "run migrations",
+              "effect": "read_only",
+              "handler_prints": "ok"
+            }
+          ],
+          "groups": [
+            {
+              "name": "backup",
+              "help": "backup commands",
+              "commands": [
+                {
+                  "name": "take",
+                  "help": "take a backup",
+                  "effect": "read_only",
+                  "handler_prints": "ok"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "db",
+      "migrate",
+      "--json",
+      "-h"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "{\"interface_version\":3,\"app\":\"myapp\",\"app_version\":\"1.0.0\",\"command\":null,\"exit_code\":1,\"payload\":null,\"output\":null,\"dry_run\":false,\"writes\":null,\"preview\":[],\"preview_error\":null,\"diagnostics\":[]}\n",
+      "stderr_equals": "error: help pages are text; for the machine form use 'myapp help db migrate --json'\ntry 'myapp --help'\n"
+    }
+  },
+  {
+    "name": "help command: the --version flag is text only",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "trace",
+          "help": "trace every step",
+          "type": "bool",
+          "presence": "default",
+          "default": false
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run something",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "device",
+              "help": "which GPU to target",
+              "type": "str",
+              "presence": "required",
+              "short": "d"
+            },
+            {
+              "name": "fast",
+              "help": "skip the slow checks",
+              "type": "bool",
+              "presence": "default",
+              "default": false
+            },
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "as an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "the subject line",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "as a text"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "name": "db",
+          "help": "database commands",
+          "commands": [
+            {
+              "name": "migrate",
+              "help": "run migrations",
+              "effect": "read_only",
+              "handler_prints": "ok"
+            }
+          ],
+          "groups": [
+            {
+              "name": "backup",
+              "help": "backup commands",
+              "commands": [
+                {
+                  "name": "take",
+                  "help": "take a backup",
+                  "effect": "read_only",
+                  "handler_prints": "ok"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--version",
+      "--json"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "{\"interface_version\":3,\"app\":\"myapp\",\"app_version\":\"1.0.0\",\"command\":null,\"exit_code\":1,\"payload\":null,\"output\":null,\"dry_run\":false,\"writes\":null,\"preview\":[],\"preview_error\":null,\"diagnostics\":[]}\n",
+      "stderr_equals": "error: the version line is text; for the machine form use 'myapp version --json'\ntry 'myapp --help'\n"
+    }
+  },
+  {
+    "name": "help command: a command slice records its address",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "trace",
+          "help": "trace every step",
+          "type": "bool",
+          "presence": "default",
+          "default": false
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run something",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "device",
+              "help": "which GPU to target",
+              "type": "str",
+              "presence": "required",
+              "short": "d"
+            },
+            {
+              "name": "fast",
+              "help": "skip the slow checks",
+              "type": "bool",
+              "presence": "default",
+              "default": false
+            },
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "as an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "the subject line",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "as a text"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "name": "db",
+          "help": "database commands",
+          "commands": [
+            {
+              "name": "migrate",
+              "help": "run migrations",
+              "effect": "read_only",
+              "handler_prints": "ok"
+            }
+          ],
+          "groups": [
+            {
+              "name": "backup",
+              "help": "backup commands",
+              "commands": [
+                {
+                  "name": "take",
+                  "help": "take a backup",
+                  "effect": "read_only",
+                  "handler_prints": "ok"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "help",
+      "db",
+      "migrate",
+      "--json"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_contains": [
+        "\"address\": [\n    \"db\",\n    \"migrate\"\n  ],",
+        "\"migrate\": {"
+      ],
+      "stdout_not_contains": "\"backup\"",
+      "stderr_equals": "{\"interface_version\":3,\"app\":\"myapp\",\"app_version\":\"1.0.0\",\"command\":\"help\",\"exit_code\":0,\"payload\":null,\"output\":null,\"dry_run\":false,\"writes\":null,\"preview\":[],\"preview_error\":null,\"diagnostics\":[]}\n"
+    }
+  },
+  {
+    "name": "help command: a flag slice keeps only the selector and choice that own the flag",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "trace",
+          "help": "trace every step",
+          "type": "bool",
+          "presence": "default",
+          "default": false
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run something",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "device",
+              "help": "which GPU to target",
+              "type": "str",
+              "presence": "required",
+              "short": "d"
+            },
+            {
+              "name": "fast",
+              "help": "skip the slow checks",
+              "type": "bool",
+              "presence": "default",
+              "default": false
+            },
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "as an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "the subject line",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "as a text"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "name": "db",
+          "help": "database commands",
+          "commands": [
+            {
+              "name": "migrate",
+              "help": "run migrations",
+              "effect": "read_only",
+              "handler_prints": "ok"
+            }
+          ],
+          "groups": [
+            {
+              "name": "backup",
+              "help": "backup commands",
+              "commands": [
+                {
+                  "name": "take",
+                  "help": "take a backup",
+                  "effect": "read_only",
+                  "handler_prints": "ok"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "help",
+      "run",
+      "--subject",
+      "--json"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_contains": [
+        "\"name\": \"subject\"",
+        "\"name\": \"email\""
+      ],
+      "stdout_not_contains": [
+        "\"name\": \"sms\"",
+        "\"name\": \"device\"",
+        "\n  \"global_flags\": ["
+      ]
+    }
+  },
+  {
+    "name": "help command: a depth slice records its depth and prunes deeper groups",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "trace",
+          "help": "trace every step",
+          "type": "bool",
+          "presence": "default",
+          "default": false
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run something",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "device",
+              "help": "which GPU to target",
+              "type": "str",
+              "presence": "required",
+              "short": "d"
+            },
+            {
+              "name": "fast",
+              "help": "skip the slow checks",
+              "type": "bool",
+              "presence": "default",
+              "default": false
+            },
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "as an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "the subject line",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "as a text"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "name": "db",
+          "help": "database commands",
+          "commands": [
+            {
+              "name": "migrate",
+              "help": "run migrations",
+              "effect": "read_only",
+              "handler_prints": "ok"
+            }
+          ],
+          "groups": [
+            {
+              "name": "backup",
+              "help": "backup commands",
+              "commands": [
+                {
+                  "name": "take",
+                  "help": "take a backup",
+                  "effect": "read_only",
+                  "handler_prints": "ok"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "help",
+      "--depth",
+      "1",
+      "--json"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_contains": [
+        "\"depth\": 1,",
+        "\"db\": {"
+      ],
+      "stdout_not_contains": [
+        "\"migrate\"",
+        "\"backup\""
+      ]
+    }
+  },
+  {
+    "name": "help command: an unknown flag on a command that declares none",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "plain",
+          "help": "a plain command",
+          "effect": "read_only",
+          "handler_prints": "ok"
+        }
+      ]
+    },
+    "argv": [
+      "help",
+      "plain",
+      "--verbose-output"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command 'plain' has no flag '--verbose-output' and declares no flags\ntry 'myapp help --help'\n"
+    }
+  }
+]

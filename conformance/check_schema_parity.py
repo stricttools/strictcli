@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Schema parity check for strictcli conformance.
 
-Defines a rich app (covering all feature combinations), runs --dump-schema on
+Defines a rich app (covering all feature combinations), runs `help --json` on
 every registered target (Python, Go, TypeScript), and compares the resulting
 JSON schemas N-way. After schema v2 the comparison is BYTE equality (effects
 contract §25.8): key order, escaping, number form, two-space indentation and
@@ -10,10 +10,11 @@ change can no longer hide inside a structural comparison. All targets must
 produce identical bytes; any difference is a parity gap, reported with the odd
 one(s) out and the first differing line.
 
-The one thing removed before comparing is the `project_id` LINE, which depends
-on the project marker file each target writes. §25.9 places `project_id`
-immediately after `defaults` precisely so that removing it leaves the CWD-free
-core document byte-identical.
+The one thing removed before comparing is the `project_id` LINE, which names
+each target's own program (Go's main module, the Python project holding the
+program's code, the TypeScript entry script's package). §25.9 places
+`project_id` immediately after `defaults` precisely so that removing it leaves
+the rest of the document byte-identical.
 
 Exit 0 if all schemas are identical, exit 1 with a diff report otherwise.
 """
@@ -22,7 +23,6 @@ from __future__ import annotations
 
 import json
 import os
-import shutil
 import subprocess
 import sys
 import tempfile
@@ -737,22 +737,6 @@ CONFIG_APP = {
 # ---------------------------------------------------------------------------
 
 
-def _make_project_dir(target: str, app_name: str) -> str:
-    """Create a temp directory with the project file needed for --dump-schema."""
-    d = tempfile.mkdtemp(prefix="strictcli_schema_")
-    if target == "go":
-        with open(os.path.join(d, "go.mod"), "w") as f:
-            f.write(f"module {app_name}\n\ngo 1.21\n")
-    elif target == "python":
-        with open(os.path.join(d, "pyproject.toml"), "w") as f:
-            f.write(f'[project]\nname = "{app_name}"\n')
-    elif target == "typescript":
-        with open(os.path.join(d, "package.json"), "w") as f:
-            json.dump({"name": app_name}, f)
-            f.write("\n")
-    return d
-
-
 def _generate_python_script(app_def: dict) -> str:
     """Generate a Python script from an app definition."""
     sys.path.insert(0, str(CONFORMANCE_DIR))
@@ -805,109 +789,60 @@ def _run_dump_schema(
     harness_binary: str | None = None,
     ts_entry: str | None = None,
 ) -> str:
-    """Run --dump-schema for a given target and return the emitted file's TEXT.
+    """Run `help --json` for a given target and return the document's TEXT.
 
     The text, not the parsed document: after v2 the comparison is byte equality
     (§25.8), so parsing first would discard exactly what is being asserted.
 
     Raises RuntimeError on failure.
     """
-    proj_dir = _make_project_dir(target, app_def["name"])
-
+    cleanup: list[str] = []
+    env = os.environ.copy()
     try:
         if target == "python":
-            script = _generate_python_script(app_def)
+            # The script lives in this directory (ignored by `tmp*.py`): the
+            # project holding the program's code names its project_id.
             with tempfile.NamedTemporaryFile(
-                mode="w", suffix=".py", prefix="strictcli_schema_py_",
-                delete=False,
+                mode="w", suffix=".py", prefix="tmp_strictcli_schema_py_",
+                delete=False, dir=CONFORMANCE_DIR,
             ) as f:
-                f.write(script)
-                script_path = f.name
-            try:
-                result = subprocess.run(
-                    [sys.executable, script_path, "--dump-schema"],
-                    capture_output=True,
-                    text=True,
-                    cwd=proj_dir,
-                    timeout=10,
-                )
-            finally:
-                os.unlink(script_path)
-
-        elif target == "go":
-            assert harness_binary is not None
-            # Write app definition to a temp file for the harness
+                f.write(_generate_python_script(app_def))
+                cleanup.append(f.name)
+            cmd = [sys.executable, f.name]
+        elif target in ("go", "typescript"):
             with tempfile.NamedTemporaryFile(
                 mode="w", suffix=".json", prefix="strictcli_schema_def_",
                 delete=False,
             ) as f:
                 json.dump(app_def, f, sort_keys=True)
-                def_path = f.name
-            try:
-                env = os.environ.copy()
-                env["CONFORMANCE_APP_DEF"] = def_path
-                result = subprocess.run(
-                    [harness_binary, "--dump-schema"],
-                    capture_output=True,
-                    text=True,
-                    env=env,
-                    cwd=proj_dir,
-                    timeout=10,
-                )
-            finally:
-                os.unlink(def_path)
-
-        elif target == "typescript":
-            assert ts_entry is not None
-            # Write app definition to a temp file for the harness
-            with tempfile.NamedTemporaryFile(
-                mode="w", suffix=".json", prefix="strictcli_schema_def_",
-                delete=False,
-            ) as f:
-                json.dump(app_def, f, sort_keys=True)
-                def_path = f.name
-            try:
-                env = os.environ.copy()
-                env["CONFORMANCE_APP_DEF"] = def_path
-                result = subprocess.run(
-                    ["node", ts_entry, "--dump-schema"],
-                    capture_output=True,
-                    text=True,
-                    env=env,
-                    cwd=proj_dir,
-                    timeout=10,
-                )
-            finally:
-                os.unlink(def_path)
+                cleanup.append(f.name)
+            env["CONFORMANCE_APP_DEF"] = f.name
+            if target == "go":
+                assert harness_binary is not None
+                cmd = [harness_binary]
+            else:
+                assert ts_entry is not None
+                cmd = ["node", ts_entry]
         else:
             raise ValueError(f"unsupported target: {target}")
-
+        result = subprocess.run(
+            cmd + ["help", "--json"],
+            capture_output=True,
+            text=True,
+            env=env,
+            timeout=10,
+        )
         if result.returncode != 0:
             raise RuntimeError(
-                f"{target} --dump-schema exited {result.returncode}\n"
+                f"{target} help --json exited {result.returncode}\n"
                 f"stdout: {result.stdout}\n"
                 f"stderr: {result.stderr}"
             )
-
-        # The schema is written to .strictcli/schema.json in proj_dir
-        schema_path = os.path.join(proj_dir, ".strictcli", "schema.json")
-        if not os.path.exists(schema_path):
-            # Try reading the path from stdout
-            stdout_path = result.stdout.strip()
-            if os.path.exists(stdout_path):
-                schema_path = stdout_path
-            else:
-                raise RuntimeError(
-                    f"{target}: schema file not found at {schema_path}\n"
-                    f"stdout: {result.stdout}\n"
-                    f"stderr: {result.stderr}"
-                )
-
-        with open(schema_path, encoding="utf-8") as f:
-            return f.read()
-
+        return result.stdout
     finally:
-        shutil.rmtree(proj_dir, ignore_errors=True)
+        for path in cleanup:
+            if os.path.exists(path):
+                os.unlink(path)
 
 
 # ---------------------------------------------------------------------------
@@ -983,7 +918,7 @@ def _diff_schemas(
 
 
 def _strip_project_id(text: str) -> str:
-    """Drop the `project_id` LINE, which is the one CWD-dependent fact.
+    """Drop the `project_id` LINE, which names each target's own program.
 
     §25.9 places `project_id` immediately after `defaults` precisely so that
     removing it leaves the CWD-free core document byte-identical -- so the

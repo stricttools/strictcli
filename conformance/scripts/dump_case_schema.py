@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 """Dump one case's app definition through every target and compare the bytes.
 
-`schema_bytes_equal` cases pin the WHOLE emitted `.strictcli/schema.json`
-(effects contract §25.8), and the only honest way to author one is to run the
-three dumpers and see that they agree. This does exactly that:
+`schema_bytes_equal` cases pin the WHOLE help document `help --json` prints
+(effects contract §25.8), apart from the project_id line, which names each
+target's own program. The only honest way to author one is to run the three
+targets and see that they agree. This does exactly that:
 
     python scripts/dump_case_schema.py cases/schema_v2.json "<case name>"
 
-It prints the shared bytes when all three agree, and the per-target diff when
-they do not. With `--write` it splices the shared bytes back into the case's
-`expect.schema_bytes_equal`.
+It prints the shared bytes (without project_id) when all three agree, and the
+per-target diff when they do not. With `--write` it splices the shared bytes
+back into the case's `expect.schema_bytes_equal`.
 """
 from __future__ import annotations
 
@@ -29,37 +30,39 @@ import run as conformance_run  # noqa: E402
 
 
 def dump(target: str, app_def: dict, workdir: pathlib.Path) -> str:
-    """Run one target with --dump-schema and return the emitted file's text."""
+    """Run one target with `help --json` and return the document it printed."""
     env = dict(os.environ)
-    # --dump-schema resolves project_id from the target's own project marker,
-    # exactly as run.py does before a schema-asserting case.
-    conformance_run.TARGETS[target].write_project_file(str(workdir), app_def["name"])
     if target == "python":
-        script = workdir / "app.py"
+        # The script lives in the conformance directory (ignored by
+        # `tmp*.py`), so the help document's project_id is the conformance
+        # project's, as run.py arranges for every Python case.
+        script = CONFORMANCE / f"tmp_dump_case_schema_{os.getpid()}.py"
         script.write_text(ref_python.generate(app_def).replace(
             "sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'python'))",
             f"sys.path.insert(0, {str(CONFORMANCE.parent / 'python')!r})",
         ))
-        cmd = [sys.executable, str(script), "--dump-schema"]
+        cmd = [sys.executable, str(script), "help", "--json"]
     else:
+        script = None
         defpath = workdir / "appdef.json"
         defpath.write_text(json.dumps(app_def))
         env["CONFORMANCE_APP_DEF"] = str(defpath)
         if target == "go":
-            cmd = [str(CONFORMANCE / "harness" / "conformance_harness"), "--dump-schema"]
+            cmd = [str(CONFORMANCE / "harness" / "harness"), "help", "--json"]
         else:
-            cmd = ["node", str(CONFORMANCE / "harness_ts" / "main.js"), "--dump-schema"]
-    proc = subprocess.run(
-        cmd, cwd=workdir, env=env, capture_output=True, text=True, timeout=60,
-    )
-    emitted = workdir / ".strictcli" / "schema.json"
-    if not emitted.exists():
-        raise SystemExit(
-            f"{target}: no schema emitted\nstdout: {proc.stdout}\nstderr: {proc.stderr}"
+            cmd = ["node", str(CONFORMANCE / "harness_ts" / "main.js"), "help", "--json"]
+    try:
+        proc = subprocess.run(
+            cmd, cwd=workdir, env=env, capture_output=True, text=True, timeout=60,
         )
-    text = emitted.read_text()
-    emitted.unlink()
-    return text
+    finally:
+        if script is not None:
+            script.unlink()
+    if proc.returncode != 0:
+        raise SystemExit(
+            f"{target}: help --json failed\nstdout: {proc.stdout}\nstderr: {proc.stderr}"
+        )
+    return conformance_run._without_project_id(proc.stdout)[0]
 
 
 def main() -> int:

@@ -151,7 +151,7 @@
         "display config",
         "set a config value"
       ],
-      "stdout_equals": "myapp config -- manage configuration\n\nCommands:\n  show    display config\n  set     set a config value\n\nUse 'myapp config <command> --help' for more information."
+      "stdout_equals": "myapp config -- manage configuration\n\nCommands:\n  show    display config\n  set     set a config value\n\nUse 'myapp help config <command>' for more information."
     }
   },
   {
@@ -183,7 +183,7 @@
     "expect": {
       "exit_code": 0,
       "stdout_contains": "manage configuration",
-      "stdout_equals": "myapp config -- manage configuration\n\nCommands:\n  show    display config\n\nUse 'myapp config <command> --help' for more information."
+      "stdout_equals": "myapp config -- manage configuration\n\nCommands:\n  show    display config\n\nUse 'myapp help config <command>' for more information."
     }
   },
   {
@@ -217,7 +217,7 @@
         "manage configuration",
         "show"
       ],
-      "stdout_equals": "myapp config -- manage configuration\n\nCommands:\n  show    display config\n\nUse 'myapp config <command> --help' for more information."
+      "stdout_equals": "myapp config -- manage configuration\n\nCommands:\n  show    display config\n\nUse 'myapp help config <command>' for more information."
     }
   },
   {
@@ -295,8 +295,8 @@
     ],
     "expect": {
       "exit_code": 0,
-      "stdout_contains": "Use 'myapp config <command> --help' for more information.",
-      "stdout_equals": "myapp config -- manage configuration\n\nCommands:\n  show    display config\n\nUse 'myapp config <command> --help' for more information."
+      "stdout_contains": "Use 'myapp help config <command>' for more information.",
+      "stdout_equals": "myapp config -- manage configuration\n\nCommands:\n  show    display config\n\nUse 'myapp help config <command>' for more information."
     }
   },
   {
@@ -383,7 +383,7 @@
         "create",
         "manage zones"
       ],
-      "stdout_equals": "myapp dns zone -- manage zones\n\nCommands:\n  list      list all zones\n  create    create a zone\n\nUse 'myapp dns zone <command> --help' for more information."
+      "stdout_equals": "myapp dns zone -- manage zones\n\nCommands:\n  list      list all zones\n  create    create a zone\n\nUse 'myapp help dns zone <command>' for more information."
     }
   },
   {
@@ -435,7 +435,7 @@
         "zone",
         "manage zones"
       ],
-      "stdout_equals": "myapp dns -- manage DNS\n\nCommands:\n  status    show DNS status\n\nGroups:\n  zone    manage zones\n\nUse 'myapp dns <command> --help' for more information."
+      "stdout_equals": "myapp dns -- manage DNS\n\nCommands:\n  status    show DNS status\n\nGroups:\n  zone    manage zones\n\nUse 'myapp help dns <command>' for more information."
     }
   },
   {
@@ -656,7 +656,7 @@
         "manage zones",
         "list"
       ],
-      "stdout_equals": "myapp dns zone -- manage zones\n\nCommands:\n  list    list all zones\n\nUse 'myapp dns zone <command> --help' for more information."
+      "stdout_equals": "myapp dns zone -- manage zones\n\nCommands:\n  list    list all zones\n\nUse 'myapp help dns zone <command>' for more information."
     }
   },
   {
@@ -741,7 +741,7 @@
     ],
     "expect": {
       "exit_code": 0,
-      "stdout_equals": "myapp db -- database commands\n\nCommands:\n  migrate    run migrations\n\nUse 'myapp db <command> --help' for more information."
+      "stdout_equals": "myapp db -- database commands\n\nCommands:\n  migrate    run migrations\n\nUse 'myapp help db <command>' for more information."
     }
   },
   {
@@ -773,7 +773,7 @@
     ],
     "expect": {
       "exit_code": 0,
-      "stdout_equals": "myapp db -- database commands\n\nCommands:\n  migrate    run migrations\n\nUse 'myapp db <command> --help' for more information."
+      "stdout_equals": "myapp db -- database commands\n\nCommands:\n  migrate    run migrations\n\nUse 'myapp help db <command>' for more information."
     }
   },
   {
@@ -805,7 +805,7 @@
     ],
     "expect": {
       "exit_code": 0,
-      "stdout_equals": "myapp db -- database commands\n\nCommands:\n  migrate    run migrations\n\nUse 'myapp db <command> --help' for more information."
+      "stdout_equals": "myapp db -- database commands\n\nCommands:\n  migrate    run migrations\n\nUse 'myapp help db <command>' for more information."
     }
   },
   {
@@ -837,7 +837,7 @@
     ],
     "expect": {
       "exit_code": 0,
-      "stdout_equals": "myapp db -- database commands\n\nCommands:\n  migrate    run migrations\n\nUse 'myapp db <command> --help' for more information."
+      "stdout_equals": "myapp db -- database commands\n\nCommands:\n  migrate    run migrations\n\nUse 'myapp help db <command>' for more information."
     }
   },
   {
@@ -869,7 +869,7 @@
     ],
     "expect": {
       "exit_code": 0,
-      "stdout_equals": "myapp db -- database commands\n\nCommands:\n  migrate    run migrations\n\nUse 'myapp db <command> --help' for more information."
+      "stdout_equals": "myapp db -- database commands\n\nCommands:\n  migrate    run migrations\n\nUse 'myapp help db <command>' for more information."
     }
   },
   {
