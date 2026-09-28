@@ -57,16 +57,16 @@ def _update_app(handler=None, **cmd_kwargs):
 
 
 def test_the_ban_refuses_a_flags_value_default():
-    app = strictcli.App(name="t", version="1.0.0", help="t")
+    app = strictcli.App(name="tt", version="1.0.0", help="tt")
     with pytest.raises(ValueError) as exc:
 
-        @app.command("u", help="update", effect="mutating")
+        @app.command("uu", help="update", effect="mutating")
         @strictcli.flag("ttl", type=int, help="time to live", default=300)
         def _u(ctx, ttl):
             return 0
 
     assert str(exc.value) == (
-        'command "u": flag \'--ttl\' declares default=300 on a mutating '
+        'command "uu": flag \'--ttl\' declares default=300 on a mutating '
         "command: absence would write a value the invocation never stated "
         '(declare presence="required" or presence="optional", or apply the '
         "fallback in the handler and say so in its help)"
@@ -77,16 +77,16 @@ def test_the_ban_refuses_a_positional_args_value_default():
     """The presence spellings inside the sentence take the FLAG spelling even
     when the subject is an arg (§12.16): the prefix names the command rather
     than a surface."""
-    app = strictcli.App(name="t", version="1.0.0", help="t")
+    app = strictcli.App(name="tt", version="1.0.0", help="tt")
     with pytest.raises(ValueError) as exc:
 
-        @app.command("u", help="update", effect="mutating")
+        @app.command("uu", help="update", effect="mutating")
         @strictcli.arg("target", help="where", default="prod")
         def _u(ctx, target):
             return 0
 
     assert str(exc.value).startswith(
-        'command "u": argument \'target\' declares default=prod on a '
+        'command "uu": argument \'target\' declares default=prod on a '
         "mutating command"
     )
 
@@ -94,46 +94,46 @@ def test_the_ban_refuses_a_positional_args_value_default():
 @pytest.mark.parametrize(
     ("kwargs", "want"),
     [
-        ({"type": str, "default": ""}, "flag '--x' declares default= on a"),
-        ({"type": int, "default": 0}, "flag '--x' declares default=0 on a"),
+        ({"type": str, "default": ""}, "flag '--xx' declares default= on a"),
+        ({"type": int, "default": 0}, "flag '--xx' declares default=0 on a"),
         ({"type": bool, "default": False},
-         "flag '--x' declares default=false on a"),
+         "flag '--xx' declares default=false on a"),
         ({"type": bool, "default": True},
-         "flag '--x' declares default=true on a"),
+         "flag '--xx' declares default=true on a"),
         ({"type": float, "default": 1.5},
-         "flag '--x' declares default=1.5 on a"),
+         "flag '--xx' declares default=1.5 on a"),
     ],
 )
 def test_the_ban_reaches_every_scalar_including_the_empty_ones(kwargs, want):
-    app = strictcli.App(name="t", version="1.0.0", help="t")
+    app = strictcli.App(name="tt", version="1.0.0", help="tt")
     with pytest.raises(ValueError) as exc:
 
-        @app.command("u", help="update", effect="mutating")
-        @strictcli.flag("x", help="a value", **kwargs)
-        def _u(ctx, x):
+        @app.command("uu", help="update", effect="mutating")
+        @strictcli.flag("xx", help="a value", **kwargs)
+        def _u(ctx, xx):
             return 0
 
     assert want in str(exc.value)
 
 
 def test_the_ban_reaches_a_non_empty_compound():
-    app = strictcli.App(name="t", version="1.0.0", help="t")
+    app = strictcli.App(name="tt", version="1.0.0", help="tt")
     with pytest.raises(ValueError) as exc:
 
-        @app.command("u", help="update", effect="mutating")
-        @strictcli.flag("tag", type=list[str], help="tags", default=["a"])
+        @app.command("uu", help="update", effect="mutating")
+        @strictcli.flag("tag", type=list[str], help="tags", default=["aa"])
         def _u(ctx, tag):
             return 0
 
-    assert "flag '--tag' declares default=['a'] on a mutating command" in str(
+    assert "flag '--tag' declares default=['aa'] on a mutating command" in str(
         exc.value,
     )
 
 
 def test_an_empty_collection_declares_no_elements():
-    app = strictcli.App(name="t", version="1.0.0", help="t")
+    app = strictcli.App(name="tt", version="1.0.0", help="tt")
 
-    @app.command("u", help="update", effect="mutating")
+    @app.command("uu", help="update", effect="mutating")
     @strictcli.flag("tag", type=list[str], help="tags", default=[])
     @strictcli.flag("header", type=dict[str, str], help="headers", default={})
     def _u(ctx, tag, header):
@@ -142,10 +142,10 @@ def test_an_empty_collection_declares_no_elements():
 
 def test_a_relative_to_root_default_decides_where_never_what():
     app = strictcli.App(
-        name="t", version="1.0.0", help="t", infra_root={"T_HOME": "~/.t"},
+        name="tt", version="1.0.0", help="tt", infra_root={"T_HOME": "~/.t"},
     )
 
-    @app.command("u", help="update", effect="mutating")
+    @app.command("uu", help="update", effect="mutating")
     @strictcli.flag("path", type=str, help="a path",
                     default=strictcli.RelativeToRoot("T_HOME", "store"))
     def _u(ctx, path):
@@ -153,9 +153,9 @@ def test_a_relative_to_root_default_decides_where_never_what():
 
 
 def test_a_read_only_command_writes_no_value_invented_or_otherwise():
-    app = strictcli.App(name="t", version="1.0.0", help="t")
+    app = strictcli.App(name="tt", version="1.0.0", help="tt")
 
-    @app.command("r", help="read", effect="read_only")
+    @app.command("rr", help="read", effect="read_only")
     @strictcli.flag("ttl", type=int, help="ttl", default=300)
     def _r(ctx, ttl):
         return 0
@@ -163,11 +163,11 @@ def test_a_read_only_command_writes_no_value_invented_or_otherwise():
 
 def test_an_app_level_global_is_not_reached():
     app = strictcli.App(
-        name="t", version="1.0.0", help="t",
+        name="tt", version="1.0.0", help="tt",
         flags=[strictcli.Flag(name="depth", type=int, help="depth", default=3)],
     )
 
-    @app.command("u", help="update", effect="mutating")
+    @app.command("uu", help="update", effect="mutating")
     def _u(ctx, depth):
         return 0
 
@@ -181,16 +181,16 @@ def test_the_ban_reaches_a_flag_sets_flag():
         flags=[strictcli.Flag(name="ttl", type=int, help="time to live",
                               default=300)],
     )
-    read_only = strictcli.App(name="t", version="1.0.0", help="t")
+    read_only = strictcli.App(name="tt", version="1.0.0", help="tt")
 
-    @read_only.command("r", help="read", effect="read_only", flag_sets=[shared])
+    @read_only.command("rr", help="read", effect="read_only", flag_sets=[shared])
     def _r(ctx, ttl):
         return 0
 
-    app = strictcli.App(name="t", version="1.0.0", help="t")
+    app = strictcli.App(name="tt", version="1.0.0", help="tt")
     with pytest.raises(ValueError) as exc:
 
-        @app.command("u", help="update", effect="mutating", flag_sets=[shared])
+        @app.command("uu", help="update", effect="mutating", flag_sets=[shared])
         def _u(ctx, ttl):
             return 0
 
@@ -218,10 +218,10 @@ def test_the_ban_spares_the_selector_and_reaches_its_scope():
     """A choice name is not a value written to anything: it names which scope
     is live. The flags INSIDE the scope are ordinary flags of a mutating
     command, reached at every depth."""
-    app = strictcli.App(name="t", version="1.0.0", help="t")
+    app = strictcli.App(name="tt", version="1.0.0", help="tt")
     with pytest.raises(ValueError) as exc:
 
-        @app.command("u", help="update", effect="mutating")
+        @app.command("uu", help="update", effect="mutating")
         @choice_flag("via", help="channel", elect_by="selector-token",
                      choices=[_Webhook, _Email], default=_Webhook())
         def _u(ctx, via: _Webhook | _Email):
@@ -231,9 +231,9 @@ def test_the_ban_spares_the_selector_and_reaches_its_scope():
         exc.value,
     )
 
-    ok = strictcli.App(name="t", version="1.0.0", help="t")
+    ok = strictcli.App(name="tt", version="1.0.0", help="tt")
 
-    @ok.command("u", help="update", effect="mutating")
+    @ok.command("uu", help="update", effect="mutating")
     @choice_flag("via", help="channel", elect_by="selector-token",
                  choices=[_WebhookOk, _Email],
                  default=_WebhookOk(retries=None))
@@ -245,10 +245,10 @@ def test_a_defaulted_selections_instance_passes_no_field_values():
     """Python's instance-shaped default is the one surface that can write a
     field value into a default election, and that is a value default under
     another spelling (§18.33 item 303)."""
-    app = strictcli.App(name="t", version="1.0.0", help="t")
+    app = strictcli.App(name="tt", version="1.0.0", help="tt")
     with pytest.raises(ValueError) as exc:
 
-        @app.command("u", help="update", effect="mutating")
+        @app.command("uu", help="update", effect="mutating")
         @choice_flag("via", help="channel", elect_by="selector-token",
                      choices=[_WebhookOk, _Email],
                      default=_WebhookOk(retries=5))
@@ -266,10 +266,10 @@ def test_a_defaulted_selections_instance_passes_no_field_values():
 
 
 def test_update_of_on_a_read_only_command_is_refused():
-    app = strictcli.App(name="t", version="1.0.0", help="t")
+    app = strictcli.App(name="tt", version="1.0.0", help="tt")
     with pytest.raises(ValueError) as exc:
 
-        @app.command("u", help="update", effect="read_only",
+        @app.command("uu", help="update", effect="read_only",
                      update_of=UpdateOf("thing", write_mode="sparse",
                                         properties=["content"]))
         @strictcli.flag("content", type=str, help="content", presence="optional")
@@ -277,17 +277,17 @@ def test_update_of_on_a_read_only_command_is_refused():
             return 0
 
     assert str(exc.value) == (
-        'command "u": a read_only command cannot declare update_of '
+        'command "uu": a read_only command cannot declare update_of '
         "(a command that changes nothing writes no properties)"
     )
 
 
 def test_the_write_mode_vocabulary():
     """Python's reachable input is a string outside the vocabulary (§12.16)."""
-    app = strictcli.App(name="t", version="1.0.0", help="t")
+    app = strictcli.App(name="tt", version="1.0.0", help="tt")
     with pytest.raises(ValueError) as exc:
 
-        @app.command("u", help="update", effect="mutating",
+        @app.command("uu", help="update", effect="mutating",
                      update_of=UpdateOf("thing", write_mode="patch",
                                         properties=["content"]))
         @strictcli.flag("content", type=str, help="content", presence="optional")
@@ -295,7 +295,7 @@ def test_the_write_mode_vocabulary():
             return 0
 
     assert str(exc.value) == (
-        'command "u": invalid write_mode "patch": must be "sparse" or '
+        'command "uu": invalid write_mode "patch": must be "sparse" or '
         '"full_replace"'
     )
 
@@ -307,10 +307,10 @@ def test_the_write_mode_has_no_default_at_the_declaration_site():
 
 
 def test_the_resource_name_charset():
-    app = strictcli.App(name="t", version="1.0.0", help="t")
+    app = strictcli.App(name="tt", version="1.0.0", help="tt")
     with pytest.raises(ValueError) as exc:
 
-        @app.command("u", help="update", effect="mutating",
+        @app.command("uu", help="update", effect="mutating",
                      update_of=UpdateOf("DNS_Record", write_mode="sparse",
                                         properties=["content"]))
         @strictcli.flag("content", type=str, help="content", presence="optional")
@@ -318,15 +318,15 @@ def test_the_resource_name_charset():
             return 0
 
     assert str(exc.value) == (
-        'command "u": update resource "DNS_Record" must match [a-z][a-z0-9-]*'
+        'command "uu": update resource "DNS_Record" must be lowercase kebab-case of at least two characters: [a-z][a-z0-9]*(-[a-z0-9]+)*'
     )
 
 
 def test_an_update_with_no_properties_is_refused():
-    app = strictcli.App(name="t", version="1.0.0", help="t")
+    app = strictcli.App(name="tt", version="1.0.0", help="tt")
     with pytest.raises(ValueError) as exc:
 
-        @app.command("u", help="update", effect="mutating",
+        @app.command("uu", help="update", effect="mutating",
                      update_of=UpdateOf("thing", write_mode="sparse",
                                         identity=["id"]))
         @strictcli.flag("id", type=str, help="id", presence="required")
@@ -334,16 +334,16 @@ def test_an_update_with_no_properties_is_refused():
             return 0
 
     assert str(exc.value) == (
-        'command "u": update of "thing" declares no properties: an update '
+        'command "uu": update of "thing" declares no properties: an update '
         "with nothing to write is not an update"
     )
 
 
 def test_an_unknown_name_is_refused():
-    app = strictcli.App(name="t", version="1.0.0", help="t")
+    app = strictcli.App(name="tt", version="1.0.0", help="tt")
     with pytest.raises(ValueError) as exc:
 
-        @app.command("u", help="update", effect="mutating",
+        @app.command("uu", help="update", effect="mutating",
                      update_of=UpdateOf("thing", write_mode="sparse",
                                         properties=["nope"]))
         @strictcli.flag("content", type=str, help="content", presence="optional")
@@ -351,15 +351,15 @@ def test_an_unknown_name_is_refused():
             return 0
 
     assert str(exc.value) == (
-        'command "u": update of "thing" references unknown name "nope"'
+        'command "uu": update of "thing" references unknown name "nope"'
     )
 
 
 def test_an_ambiguous_name_is_refused():
-    app = strictcli.App(name="t", version="1.0.0", help="t")
+    app = strictcli.App(name="tt", version="1.0.0", help="tt")
     with pytest.raises(ValueError) as exc:
 
-        @app.command("u", help="update", effect="mutating",
+        @app.command("uu", help="update", effect="mutating",
                      update_of=UpdateOf("thing", write_mode="sparse",
                                         identity=["target"],
                                         properties=["content"]))
@@ -370,16 +370,16 @@ def test_an_ambiguous_name_is_refused():
             return 0
 
     assert str(exc.value) == (
-        'command "u": update of "thing" references "target", which names both '
+        'command "uu": update of "thing" references "target", which names both '
         "a flag and a positional arg"
     )
 
 
 def test_a_duplicated_name_is_refused():
-    app = strictcli.App(name="t", version="1.0.0", help="t")
+    app = strictcli.App(name="tt", version="1.0.0", help="tt")
     with pytest.raises(ValueError) as exc:
 
-        @app.command("u", help="update", effect="mutating",
+        @app.command("uu", help="update", effect="mutating",
                      update_of=UpdateOf("thing", write_mode="sparse",
                                         properties=["content", "content"]))
         @strictcli.flag("content", type=str, help="content", presence="optional")
@@ -387,15 +387,15 @@ def test_a_duplicated_name_is_refused():
             return 0
 
     assert str(exc.value) == (
-        'command "u": update of "thing" declares "content" twice'
+        'command "uu": update of "thing" declares "content" twice'
     )
 
 
 def test_a_name_in_both_roles_is_refused():
-    app = strictcli.App(name="t", version="1.0.0", help="t")
+    app = strictcli.App(name="tt", version="1.0.0", help="tt")
     with pytest.raises(ValueError) as exc:
 
-        @app.command("u", help="update", effect="mutating",
+        @app.command("uu", help="update", effect="mutating",
                      update_of=UpdateOf("thing", write_mode="sparse",
                                         identity=["content"],
                                         properties=["content"]))
@@ -404,7 +404,7 @@ def test_a_name_in_both_roles_is_refused():
             return 0
 
     assert str(exc.value) == (
-        'command "u": update of "thing" declares "content" as both identity '
+        'command "uu": update of "thing" declares "content" as both identity '
         "and property"
     )
 
@@ -420,10 +420,10 @@ class _BySms:
 
 
 def test_a_scoped_name_names_its_actual_fault():
-    app = strictcli.App(name="t", version="1.0.0", help="t")
+    app = strictcli.App(name="tt", version="1.0.0", help="tt")
     with pytest.raises(ValueError) as exc:
 
-        @app.command("u", help="update", effect="mutating",
+        @app.command("uu", help="update", effect="mutating",
                      update_of=UpdateOf("thing", write_mode="sparse",
                                         properties=["subject"]))
         @choice_flag("via", help="channel", presence="required",
@@ -432,17 +432,17 @@ def test_a_scoped_name_names_its_actual_fault():
             return 0
 
     assert str(exc.value) == (
-        'command "u": update of "thing" references \'subject\', which is '
+        'command "uu": update of "thing" references \'subject\', which is '
         "declared under '--via email': an update's identity and properties "
         "are declared at root scope only"
     )
 
 
 def test_a_property_may_not_be_a_positional_arg():
-    app = strictcli.App(name="t", version="1.0.0", help="t")
+    app = strictcli.App(name="tt", version="1.0.0", help="tt")
     with pytest.raises(ValueError) as exc:
 
-        @app.command("u", help="update", effect="mutating",
+        @app.command("uu", help="update", effect="mutating",
                      update_of=UpdateOf("thing", write_mode="sparse",
                                         properties=["content"]))
         @strictcli.arg("content", help="content", presence="optional")
@@ -450,17 +450,17 @@ def test_a_property_may_not_be_a_positional_arg():
             return 0
 
     assert str(exc.value) == (
-        'command "u": update of "thing" property "content" is a positional '
+        'command "uu": update of "thing" property "content" is a positional '
         "arg: a property must be individually omissible and clearable, and "
         "only a flag is"
     )
 
 
 def test_a_property_may_not_be_a_choice_flag():
-    app = strictcli.App(name="t", version="1.0.0", help="t")
+    app = strictcli.App(name="tt", version="1.0.0", help="tt")
     with pytest.raises(ValueError) as exc:
 
-        @app.command("u", help="update", effect="mutating",
+        @app.command("uu", help="update", effect="mutating",
                      update_of=UpdateOf("thing", write_mode="sparse",
                                         properties=["via"]))
         @choice_flag("via", help="channel", presence="required",
@@ -469,16 +469,16 @@ def test_a_property_may_not_be_a_choice_flag():
             return 0
 
     assert str(exc.value) == (
-        'command "u": update of "thing" property \'--via\' is a choice flag: '
+        'command "uu": update of "thing" property \'--via\' is a choice flag: '
         "an elected record is a selection, not a property value"
     )
 
 
 def test_a_property_declares_optional_and_nothing_else():
-    app = strictcli.App(name="t", version="1.0.0", help="t")
+    app = strictcli.App(name="tt", version="1.0.0", help="tt")
     with pytest.raises(ValueError) as exc:
 
-        @app.command("u", help="update", effect="mutating",
+        @app.command("uu", help="update", effect="mutating",
                      update_of=UpdateOf("thing", write_mode="sparse",
                                         properties=["content"]))
         @strictcli.flag("content", type=str, help="content", presence="required")
@@ -486,7 +486,7 @@ def test_a_property_declares_optional_and_nothing_else():
             return 0
 
     assert str(exc.value) == (
-        'command "u": update of "thing" property flag \'--content\' declares '
+        'command "uu": update of "thing" property flag \'--content\' declares '
         'presence="required": a property is absent exactly when it is not '
         "being written, and the presence declaration for that is "
         'presence="optional"'
@@ -504,9 +504,9 @@ class _ByName:
 
 
 def test_identity_may_be_an_arg_or_a_choice_flag_and_may_be_optional():
-    app = strictcli.App(name="t", version="1.0.0", help="t")
+    app = strictcli.App(name="tt", version="1.0.0", help="tt")
 
-    @app.command("u", help="update", effect="mutating",
+    @app.command("uu", help="update", effect="mutating",
                  update_of=UpdateOf(
                      "thing", write_mode="sparse",
                      identity=["id", "addressing", "name"],
@@ -523,24 +523,24 @@ def test_identity_may_be_an_arg_or_a_choice_flag_and_may_be_optional():
 
 
 def test_nullable_is_refused_off_a_property():
-    app = strictcli.App(name="t", version="1.0.0", help="t")
+    app = strictcli.App(name="tt", version="1.0.0", help="tt")
     with pytest.raises(ValueError) as exc:
 
-        @app.command("u", help="update", effect="mutating")
+        @app.command("uu", help="update", effect="mutating")
         @strictcli.flag("content", type=str, help="content",
                         presence="optional", nullable=True)
         def _u(ctx, content):
             return 0
 
     assert str(exc.value) == (
-        'command "u": flag \'--content\' declares nullable=True but is not a '
+        'command "uu": flag \'--content\' declares nullable=True but is not a '
         "property of an update: only a property can be cleared"
     )
 
-    app2 = strictcli.App(name="t", version="1.0.0", help="t")
+    app2 = strictcli.App(name="tt", version="1.0.0", help="tt")
     with pytest.raises(ValueError) as exc2:
 
-        @app2.command("u", help="update", effect="mutating",
+        @app2.command("uu", help="update", effect="mutating",
                       update_of=UpdateOf("thing", write_mode="sparse",
                                          identity=["zone"],
                                          properties=["content"]))
@@ -556,10 +556,10 @@ def test_nullable_is_refused_off_a_property():
 
 
 def test_the_unset_name_is_reserved():
-    app = strictcli.App(name="t", version="1.0.0", help="t")
+    app = strictcli.App(name="tt", version="1.0.0", help="tt")
     with pytest.raises(ValueError) as exc:
 
-        @app.command("u", help="update", effect="mutating",
+        @app.command("uu", help="update", effect="mutating",
                      update_of=UpdateOf("thing", write_mode="sparse",
                                         properties=["content"]))
         @strictcli.flag("content", type=str, help="content",
@@ -570,7 +570,7 @@ def test_the_unset_name_is_reserved():
             return 0
 
     assert str(exc.value) == (
-        'command "u": flag name "unset-content" is reserved: property '
+        'command "uu": flag name "unset-content" is reserved: property '
         "'--content' declares nullable=True, which mints '--unset-content'"
     )
 
@@ -579,14 +579,14 @@ def test_the_unset_name_reservation_reaches_the_apps_globals():
     """A global is recognized after the command name too, so a global of the
     minted name would be unreachable behind the clear spelling."""
     app = strictcli.App(
-        name="t", version="1.0.0", help="t",
+        name="tt", version="1.0.0", help="tt",
         flags=[strictcli.Flag(name="unset-content", type=str,
                               help="a global of that name",
                               presence="optional")],
     )
     with pytest.raises(ValueError) as exc:
 
-        @app.command("u", help="update", effect="mutating",
+        @app.command("uu", help="update", effect="mutating",
                      update_of=UpdateOf("thing", write_mode="sparse",
                                         properties=["content"]))
         @strictcli.flag("content", type=str, help="content",
@@ -595,7 +595,7 @@ def test_the_unset_name_reservation_reaches_the_apps_globals():
             return 0
 
     assert str(exc.value) == (
-        'command "u": flag name "unset-content" is reserved: property '
+        'command "uu": flag name "unset-content" is reserved: property '
         "'--content' declares nullable=True, which mints '--unset-content'"
     )
 
@@ -605,10 +605,10 @@ class TestTheRegistrationOrder:
     faults (§27.11)."""
 
     def test_the_ban_runs_ahead_of_every_update_step(self):
-        app = strictcli.App(name="t", version="1.0.0", help="t")
+        app = strictcli.App(name="tt", version="1.0.0", help="tt")
         with pytest.raises(ValueError) as exc:
 
-            @app.command("u", help="update", effect="mutating",
+            @app.command("uu", help="update", effect="mutating",
                          update_of=UpdateOf("BAD-NAME", write_mode="sparse",
                                             properties=["nope"]))
             @strictcli.flag("ttl", type=int, help="ttl", default=300)
@@ -620,10 +620,10 @@ class TestTheRegistrationOrder:
         )
 
     def test_classification_runs_ahead_of_record_legality(self):
-        app = strictcli.App(name="t", version="1.0.0", help="t")
+        app = strictcli.App(name="tt", version="1.0.0", help="tt")
         with pytest.raises(ValueError) as exc:
 
-            @app.command("u", help="update", effect="read_only",
+            @app.command("uu", help="update", effect="read_only",
                          update_of=UpdateOf("BAD-NAME", write_mode="sparse",
                                             properties=["nope"]))
             def _u(ctx):
@@ -632,22 +632,22 @@ class TestTheRegistrationOrder:
         assert "a read_only command cannot declare update_of" in str(exc.value)
 
     def test_the_records_legality_runs_ahead_of_the_names_it_carries(self):
-        app = strictcli.App(name="t", version="1.0.0", help="t")
+        app = strictcli.App(name="tt", version="1.0.0", help="tt")
         with pytest.raises(ValueError) as exc:
 
-            @app.command("u", help="update", effect="mutating",
+            @app.command("uu", help="update", effect="mutating",
                          update_of=UpdateOf("BAD-NAME", write_mode="sparse",
                                             properties=["nope"]))
             def _u(ctx):
                 return 0
 
-        assert 'update resource "BAD-NAME" must match' in str(exc.value)
+        assert 'update resource "BAD-NAME" must be lowercase kebab-case' in str(exc.value)
 
     def test_role_legality_runs_ahead_of_presence_legality(self):
-        app = strictcli.App(name="t", version="1.0.0", help="t")
+        app = strictcli.App(name="tt", version="1.0.0", help="tt")
         with pytest.raises(ValueError) as exc:
 
-            @app.command("u", help="update", effect="mutating",
+            @app.command("uu", help="update", effect="mutating",
                          update_of=UpdateOf("thing", write_mode="sparse",
                                             properties=["content"]))
             @strictcli.arg("content", help="content", presence="required")
@@ -660,10 +660,10 @@ class TestTheRegistrationOrder:
         """The nullable-off-a-property refusal is step 8's first half and the
         reservation its second, so a declaration carrying both reports the
         first."""
-        app = strictcli.App(name="t", version="1.0.0", help="t")
+        app = strictcli.App(name="tt", version="1.0.0", help="tt")
         with pytest.raises(ValueError) as exc:
 
-            @app.command("u", help="update", effect="mutating",
+            @app.command("uu", help="update", effect="mutating",
                          update_of=UpdateOf("thing", write_mode="sparse",
                                             properties=["content"]))
             @strictcli.flag("zone", type=str, help="zone", presence="optional",
@@ -718,9 +718,9 @@ def test_an_env_provided_property_satisfies_the_rule(monkeypatch):
     """There is no source filter: the framework has exactly one definition of
     "was this supplied" (§23.6)."""
     monkeypatch.setenv("T_CONTENT", "from-env")
-    app = strictcli.App(name="t", version="1.0.0", help="t")
+    app = strictcli.App(name="tt", version="1.0.0", help="tt")
 
-    @app.command("u", help="update", effect="mutating",
+    @app.command("uu", help="update", effect="mutating",
                  update_of=UpdateOf("thing", write_mode="sparse",
                                     properties=["content", "ttl"]))
     @strictcli.flag("content", type=str, help="content", presence="optional",
@@ -729,15 +729,15 @@ def test_an_env_provided_property_satisfies_the_rule(monkeypatch):
     def _u(ctx, content, ttl):
         return 0
 
-    r = app.test(["--json", "u"])
+    r = app.test(["--json", "uu"])
     assert r.exit_code == 0
     assert json.loads(r.stdout)["writes"]["written"] == ["content"]
 
 
 def test_an_implied_property_is_a_provision():
-    app = strictcli.App(name="t", version="1.0.0", help="t")
+    app = strictcli.App(name="tt", version="1.0.0", help="tt")
 
-    @app.command("u", help="update", effect="mutating",
+    @app.command("uu", help="update", effect="mutating",
                  update_of=UpdateOf("thing", write_mode="sparse",
                                     properties=["proxied"]),
                  constraints=[strictcli.Implies(
@@ -749,7 +749,7 @@ def test_an_implied_property_is_a_provision():
     def _u(ctx, secure, proxied):
         return 0
 
-    r = app.test(["--json", "u", "--secure"])
+    r = app.test(["--json", "uu", "--secure"])
     assert json.loads(r.stdout)["writes"]["written"] == ["proxied"]
 
 
@@ -779,9 +779,9 @@ def test_an_unset_delivers_absence_and_reports_provided():
 
 def test_unset_accepts_dashed_and_underscored_names():
     seen = {}
-    app = strictcli.App(name="t", version="1.0.0", help="t")
+    app = strictcli.App(name="tt", version="1.0.0", help="tt")
 
-    @app.command("u", help="update", effect="mutating",
+    @app.command("uu", help="update", effect="mutating",
                  update_of=UpdateOf("thing", write_mode="sparse",
                                     properties=["phone-number"]))
     @strictcli.flag("phone-number", type=str, help="the number",
@@ -791,7 +791,7 @@ def test_unset_accepts_dashed_and_underscored_names():
         seen["underscored"] = ctx.unset("phone_number")
         return 0
 
-    r = app.test(["u", "--unset-phone-number"])
+    r = app.test(["uu", "--unset-phone-number"])
     assert r.exit_code == 0
     assert seen == {"dashed": True, "underscored": True}
 
@@ -804,7 +804,7 @@ def test_unset_on_an_unknown_name_raises_like_provided():
     with pytest.raises(KeyError) as exc:
         _update_app(_handler).test(
             ["update-record", "--zone", "z1", "--record-id", "r7",
-             "--content", "x"],
+             "--content", "xx"],
         )
     assert "nope" in str(exc.value)
 
@@ -857,9 +857,9 @@ def test_clearing_a_bool_property():
     """Every type may be nullable: clearing is a fact about the resource's
     field, not about the value's shape (§27.6)."""
     seen = {}
-    app = strictcli.App(name="t", version="1.0.0", help="t")
+    app = strictcli.App(name="tt", version="1.0.0", help="tt")
 
-    @app.command("u", help="update", effect="mutating",
+    @app.command("uu", help="update", effect="mutating",
                  update_of=UpdateOf("thing", write_mode="sparse",
                                     properties=["proxied"]))
     @strictcli.flag("proxied", type=bool, help="whether the record is proxied",
@@ -869,7 +869,7 @@ def test_clearing_a_bool_property():
         seen["unset"] = ctx.unset("proxied")
         return 0
 
-    r = app.test(["u", "--unset-proxied"])
+    r = app.test(["uu", "--unset-proxied"])
     assert r.exit_code == 0
     assert seen == {"proxied": None, "unset": True}
 
@@ -903,15 +903,15 @@ def test_the_write_set_line_takes_no_sequence_number():
 @pytest.mark.parametrize(
     ("argv", "mode", "want"),
     [
-        (["--content", "x"], "sparse",
+        (["--content", "xx"], "sparse",
          "  writes: content (other properties unchanged)"),
-        (["--ttl", "5", "--content", "x"], "sparse",
+        (["--ttl", "5", "--content", "xx"], "sparse",
          "  writes: content, ttl (other properties unchanged)"),
-        (["--content", "x", "--unset-ttl"], "sparse",
+        (["--content", "xx", "--unset-ttl"], "sparse",
          "  writes: content; clears: ttl (other properties unchanged)"),
         (["--unset-ttl"], "sparse",
          "  clears: ttl (other properties unchanged)"),
-        (["--content", "x"], "full_replace",
+        (["--content", "xx"], "full_replace",
          "  writes: content (other properties are re-sent as read)"),
     ],
 )
@@ -937,7 +937,7 @@ def test_the_write_set_lines_pinned_forms(argv, mode, want):
 
 def test_the_write_set_line_renders_in_dry_mode_only():
     r = _update_app().test(
-        ["update-record", "--zone", "z1", "--record-id", "r7", "--content", "x"],
+        ["update-record", "--zone", "z1", "--record-id", "r7", "--content", "xx"],
     )
     assert "writes:" not in r.stdout
 
@@ -964,7 +964,7 @@ def test_the_envelope_carries_the_write_set_in_both_modes(dry):
 def test_the_envelopes_write_set_key_order_is_pinned():
     r = _update_app().test(
         ["--json", "update-record", "--zone", "z1", "--record-id", "r7",
-         "--content", "x"],
+         "--content", "xx"],
     )
     assert (
         '"writes":{"resource":"dns-record","write_mode":"sparse",'
@@ -974,9 +974,9 @@ def test_the_envelopes_write_set_key_order_is_pinned():
 
 
 def test_full_replace_swaps_resent_and_untouched():
-    app = strictcli.App(name="t", version="1.0.0", help="t")
+    app = strictcli.App(name="tt", version="1.0.0", help="tt")
 
-    @app.command("u", help="update", effect="mutating",
+    @app.command("uu", help="update", effect="mutating",
                  update_of=UpdateOf("thing", write_mode="full_replace",
                                     properties=["content", "ttl"]))
     @strictcli.flag("content", type=str, help="content", presence="optional")
@@ -984,7 +984,7 @@ def test_full_replace_swaps_resent_and_untouched():
     def _u(ctx, content, ttl):
         return 0
 
-    r = app.test(["--json", "u", "--content", "x"])
+    r = app.test(["--json", "uu", "--content", "xx"])
     assert (
         '"writes":{"resource":"thing","write_mode":"full_replace",'
         '"written":["content"],"cleared":[],"resent":["ttl"],"untouched":[]}'
@@ -992,20 +992,20 @@ def test_full_replace_swaps_resent_and_untouched():
 
 
 def test_a_command_with_no_update_carries_a_null_writes_member():
-    app = strictcli.App(name="t", version="1.0.0", help="t")
+    app = strictcli.App(name="tt", version="1.0.0", help="tt")
 
-    @app.command("r", help="read", effect="read_only")
+    @app.command("rr", help="read", effect="read_only")
     def _r(ctx):
         return 0
 
-    r = app.test(["--json", "r"])
+    r = app.test(["--json", "rr"])
     assert '"writes":null' in r.stdout
 
 
 def test_the_envelope_uses_underscored_parameter_names():
-    app = strictcli.App(name="t", version="1.0.0", help="t")
+    app = strictcli.App(name="tt", version="1.0.0", help="tt")
 
-    @app.command("u", help="update", effect="mutating",
+    @app.command("uu", help="update", effect="mutating",
                  update_of=UpdateOf(
                      "thing", write_mode="sparse",
                      properties=["phone-number", "display-name"],
@@ -1017,7 +1017,7 @@ def test_the_envelope_uses_underscored_parameter_names():
     def _u(ctx, phone_number, display_name):
         return 0
 
-    r = app.test(["--json", "u", "--phone-number", "555"])
+    r = app.test(["--json", "uu", "--phone-number", "555"])
     assert (
         '"written":["phone_number"],"cleared":[],"resent":[],'
         '"untouched":["display_name"]'
@@ -1025,9 +1025,9 @@ def test_the_envelope_uses_underscored_parameter_names():
 
 
 def test_the_human_line_uses_declared_names_without_the_prefix():
-    app = strictcli.App(name="t", version="1.0.0", help="t")
+    app = strictcli.App(name="tt", version="1.0.0", help="tt")
 
-    @app.command("u", help="update", effect="mutating",
+    @app.command("uu", help="update", effect="mutating",
                  update_of=UpdateOf("thing", write_mode="sparse",
                                     properties=["phone-number"]))
     @strictcli.flag("phone-number", type=str, help="the number",
@@ -1035,7 +1035,7 @@ def test_the_human_line_uses_declared_names_without_the_prefix():
     def _u(ctx, phone_number):
         return 0
 
-    r = app.test(["--dry-run", "u", "--phone-number", "555"])
+    r = app.test(["--dry-run", "uu", "--phone-number", "555"])
     assert "  writes: phone-number (other properties unchanged)\n" in r.stdout
 
 
@@ -1055,9 +1055,9 @@ def test_nullable_renders_its_minted_spelling_on_one_line():
 
 
 def test_a_nullable_bool_renders_all_three_spellings():
-    app = strictcli.App(name="t", version="1.0.0", help="t")
+    app = strictcli.App(name="tt", version="1.0.0", help="tt")
 
-    @app.command("u", help="update", effect="mutating",
+    @app.command("uu", help="update", effect="mutating",
                  update_of=UpdateOf("thing", write_mode="sparse",
                                     properties=["proxied"]))
     @strictcli.flag("proxied", type=bool, help="whether the record is proxied",
@@ -1065,7 +1065,7 @@ def test_a_nullable_bool_renders_all_three_spellings():
     def _u(ctx, proxied):
         return 0
 
-    r = app.test(["u", "--help"])
+    r = app.test(["uu", "--help"])
     assert "--proxied, --no-proxied, --unset-proxied" in r.stdout
 
 
@@ -1124,9 +1124,9 @@ def test_the_dump_publishes_the_update_pair_and_nullable(tmp_path, monkeypatch):
 
 def test_a_command_with_no_update_omits_the_pair(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
-    app = strictcli.App(name="t", version="1.0.0", help="t")
+    app = strictcli.App(name="tt", version="1.0.0", help="tt")
 
-    @app.command("r", help="read", effect="read_only")
+    @app.command("rr", help="read", effect="read_only")
     def _r(ctx):
         return 0
 
@@ -1140,9 +1140,9 @@ def test_an_update_with_no_identity_publishes_an_empty_array(
     tmp_path, monkeypatch,
 ):
     monkeypatch.chdir(tmp_path)
-    app = strictcli.App(name="t", version="1.0.0", help="t")
+    app = strictcli.App(name="tt", version="1.0.0", help="tt")
 
-    @app.command("u", help="update", effect="mutating",
+    @app.command("uu", help="update", effect="mutating",
                  update_of=UpdateOf("thing", write_mode="full_replace",
                                     properties=["content"]))
     @strictcli.flag("content", type=str, help="content", presence="optional")
@@ -1228,16 +1228,16 @@ def test_the_update_description_block():
 
 
 def test_the_block_omits_identifies_and_the_null_clause():
-    app = strictcli.App(name="t", version="1.0.0", help="t")
+    app = strictcli.App(name="tt", version="1.0.0", help="tt")
 
-    @app.command("u", help="update it", effect="mutating",
+    @app.command("uu", help="update it", effect="mutating",
                  update_of=UpdateOf("thing", write_mode="full_replace",
                                     properties=["content"]))
     @strictcli.flag("content", type=str, help="content", presence="optional")
     def _u(ctx, content):
         return 0
 
-    assert _tool_description(app, "u") == (
+    assert _tool_description(app, "uu") == (
         "update it\n"
         "\n"
         'Update of "thing" (write mode: full_replace):\n'
@@ -1295,21 +1295,21 @@ def test_dry_run_unsupported_composes_with_an_update():
         dry_run_unsupported_reason="the API has no preview endpoint",
     )
     r = app.test(["--dry-run", "update-record", "--zone", "z1",
-                  "--record-id", "r7", "--content", "x"])
+                  "--record-id", "r7", "--content", "xx"])
     assert r.exit_code == 1
     assert "the API has no preview endpoint" in r.stderr
 
     live = app.test(["--json", "update-record", "--zone", "z1",
-                     "--record-id", "r7", "--content", "x"])
+                     "--record-id", "r7", "--content", "xx"])
     assert '"written":["content"]' in live.stdout
 
 
 def test_an_update_command_declares_constraints_like_any_command():
     """Alternative addressing over two optional identity members IS an
     AtLeastOne, which is the intended composition (§27.12)."""
-    app = strictcli.App(name="t", version="1.0.0", help="t")
+    app = strictcli.App(name="tt", version="1.0.0", help="tt")
 
-    @app.command("u", help="update", effect="mutating",
+    @app.command("uu", help="update", effect="mutating",
                  update_of=UpdateOf("thing", write_mode="sparse",
                                     identity=["id", "name"],
                                     properties=["content"]),
@@ -1323,6 +1323,6 @@ def test_an_update_command_declares_constraints_like_any_command():
     def _u(ctx, id, name, content):
         return 0
 
-    r = app.test(["u", "--content", "x"])
+    r = app.test(["uu", "--content", "xx"])
     assert r.exit_code == 1
     assert 'constraint "addressing"' in r.stderr

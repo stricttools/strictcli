@@ -238,7 +238,7 @@ class TestRegistrationWiring:
 
     def test_a_group_command_is_validated_too(self):
         app = strictcli.App(name="t", help="t", version="1")
-        grp = app.group("g", help="g")
+        grp = app.group("grp", help="g")
         with pytest.raises(ValueError, match="unknown keyword"):
             @grp.command(
                 "run", effect="read_only", help="run",

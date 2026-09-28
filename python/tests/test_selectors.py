@@ -198,15 +198,15 @@ def test_out_of_scope_under_a_member_spelled_selector_that_elected_nothing():
 
 def test_a_name_reused_by_sibling_scopes_names_both_owners():
     """`<owners>` is one or more scope paths in declaration order (§12.13)."""
-    @choice("a", help="mode a")
+    @choice("aa", help="mode a")
     class A:
         target: str = sub_flag(help="the target", presence="required")
 
-    @choice("b", help="mode b")
+    @choice("bb", help="mode b")
     class B:
         target: str = sub_flag(help="the target", presence="required")
 
-    @choice("c", help="mode c")
+    @choice("cc", help="mode c")
     class C:
         pass
 
@@ -220,11 +220,11 @@ def test_a_name_reused_by_sibling_scopes_names_both_owners():
     def run(ctx, mode: A | B | C):
         pass
 
-    r = app.test(["run", "--mode", "c", "--target", "x"])
+    r = app.test(["run", "--mode", "cc", "--target", "xx"])
     assert r.exit_code == 1
     assert (
-        "error: flag '--target' is only valid under '--mode a' or '--mode b', "
-        "but '--mode c' was elected\n"
+        "error: flag '--target' is only valid under '--mode aa' or '--mode bb', "
+        "but '--mode cc' was elected\n"
     ) in r.stderr
 
 
@@ -243,7 +243,7 @@ def test_the_precedence_rule_reports_scope_before_presence():
 
 def test_the_precedence_rule_reports_scope_before_a_coercion_failure():
     r = _notify().test(
-        ["send", "--via", "email", "--url", "u", "--retries", "not-a-number",
+        ["send", "--via", "email", "--url", "uu", "--retries", "not-a-number",
          "--subject", "hi", "--recipient", "a@b"],
     )
     assert r.exit_code == 1
@@ -355,7 +355,7 @@ def test_the_scope_path_renders_every_segment_outermost_first():
 def test_blame_the_outermost_unsatisfied_election():
     """A flag two levels down whose OUTER election failed blames the outer one:
     that is the token the reader would have to change (§24.3)."""
-    r = _changelog_app().test(["add", "--visibility", "internal", "--headline", "x"])
+    r = _changelog_app().test(["add", "--visibility", "internal", "--headline", "xx"])
     assert r.exit_code == 1
     assert (
         "error: flag '--headline' is only valid under "
@@ -767,13 +767,13 @@ def test_a_scoped_flag_may_not_reuse_the_selectors_own_name():
 
 
 def test_sibling_scopes_may_reuse_a_name_with_an_identical_value_shape():
-    @choice("a", help="mode a")
+    @choice("aa", help="mode a")
     class A:
         target: str = sub_flag(help="the target", presence="required")
 
-    @choice("b", help="mode b")
+    @choice("bb", help="mode b")
     class B:
-        target: str = sub_flag(help="the target", default="x")
+        target: str = sub_flag(help="the target", default="xx")
 
     app = strictcli.App(name="myapp", version="1.0.0", help="test app")
 
@@ -785,17 +785,17 @@ def test_sibling_scopes_may_reuse_a_name_with_an_identical_value_shape():
     def run(ctx, mode: A | B):
         print(repr(mode))
 
-    assert app.test(["run", "--mode", "a", "--target", "t"]).exit_code == 0
-    assert app.test(["run", "--mode", "b"]).exit_code == 0
+    assert app.test(["run", "--mode", "aa", "--target", "tt"]).exit_code == 0
+    assert app.test(["run", "--mode", "bb"]).exit_code == 0
 
 
 def test_sibling_scopes_reusing_a_name_with_a_different_value_shape():
-    """Tokenizing '--x' cannot wait for an election (§24.3, §24.7)."""
-    @choice("a", help="mode a")
+    """Tokenizing '--xx' cannot wait for an election (§24.3, §24.7)."""
+    @choice("aa", help="mode a")
     class A:
         target: str = sub_flag(help="the target", presence="required")
 
-    @choice("b", help="mode b")
+    @choice("bb", help="mode b")
     class B:
         target: bool = sub_flag(help="the target", default=False)
 
@@ -805,7 +805,7 @@ def test_sibling_scopes_reusing_a_name_with_a_different_value_shape():
             elect_by="selector-token", choices=[A, B],
         )
     assert str(exc.value) == (
-        'Flag "mode": flag \'--target\' is declared by choices "a" and "b" '
+        'Flag "mode": flag \'--target\' is declared by choices "aa" and "bb" '
         "with different value shapes: sibling scopes may reuse a name only "
         "with an identical type and arity, because tokenizing '--target' "
         "cannot wait for an election"
@@ -814,11 +814,11 @@ def test_sibling_scopes_reusing_a_name_with_a_different_value_shape():
 
 def test_sibling_scopes_reusing_a_name_with_a_different_arity():
     """The template is widened, not twinned (§18.18 item 208)."""
-    @choice("a", help="mode a")
+    @choice("aa", help="mode a")
     class A:
         target: str = sub_flag(help="the target", presence="required")
 
-    @choice("b", help="mode b")
+    @choice("bb", help="mode b")
     class B:
         target: list[str] = sub_flag(help="the targets", default=[], unique=False)
 
@@ -831,19 +831,19 @@ def test_sibling_scopes_reusing_a_name_with_a_different_arity():
 
 
 def test_simultaneously_electable_scopes_may_not_reuse_a_name_at_all():
-    @choice("a", help="mode a")
+    @choice("aa", help="mode a")
     class A:
         target: str = sub_flag(help="the target", presence="required")
 
-    @choice("b", help="mode b")
+    @choice("bb", help="mode b")
     class B:
         pass
 
-    @choice("x", help="shape x")
+    @choice("xx", help="shape x")
     class X:
         target: str = sub_flag(help="the target", presence="required")
 
-    @choice("y", help="shape y")
+    @choice("yy", help="shape y")
     class Y:
         pass
 
@@ -864,8 +864,8 @@ def test_simultaneously_electable_scopes_may_not_reuse_a_name_at_all():
             pass
 
     assert str(exc.value) == (
-        'command "run": flag \'--target\' is declared under \'--mode a\' and '
-        "under '--shape x', which can be elected at the same time: "
+        'command "run": flag \'--target\' is declared under \'--mode aa\' and '
+        "under '--shape xx', which can be elected at the same time: "
         "simultaneously electable scopes may not reuse a flag name"
     )
 
@@ -907,19 +907,19 @@ def test_a_scope_may_not_reuse_a_name_declared_by_one_of_its_ancestors():
 
 
 def test_shorts_are_claimed_across_every_simultaneously_live_scope():
-    @choice("a", help="mode a")
+    @choice("aa", help="mode a")
     class A:
         target: str = sub_flag(help="the target", presence="required", short="t")
 
-    @choice("b", help="mode b")
+    @choice("bb", help="mode b")
     class B:
         pass
 
-    @choice("x", help="shape x")
+    @choice("xx", help="shape x")
     class X:
         tail: str = sub_flag(help="the tail", presence="required", short="t")
 
-    @choice("y", help="shape y")
+    @choice("yy", help="shape y")
     class Y:
         pass
 
@@ -946,11 +946,11 @@ def test_shorts_are_claimed_across_every_simultaneously_live_scope():
 
 
 def test_sibling_scopes_may_reuse_a_short():
-    @choice("a", help="mode a")
+    @choice("aa", help="mode a")
     class A:
         target: str = sub_flag(help="the target", presence="required", short="t")
 
-    @choice("b", help="mode b")
+    @choice("bb", help="mode b")
     class B:
         tail: str = sub_flag(help="the tail", presence="required", short="t")
 
@@ -964,8 +964,8 @@ def test_sibling_scopes_may_reuse_a_short():
     def run(ctx, mode: A | B):
         print(repr(mode))
 
-    assert app.test(["run", "--mode", "a", "-t", "x"]).exit_code == 0
-    assert app.test(["run", "--mode", "b", "-t", "y"]).exit_code == 0
+    assert app.test(["run", "--mode", "aa", "-t", "xx"]).exit_code == 0
+    assert app.test(["run", "--mode", "bb", "-t", "yy"]).exit_code == 0
 
 
 # ---------------------------------------------------------------------------
@@ -1038,7 +1038,7 @@ def test_a_choice_name_obeys_the_flag_name_charset():
             elect_by="selector-token", choices=[Shouty, Sms],
         )
     assert str(exc.value) == (
-        'Flag "via": choice name "Email" must match [a-z][a-z0-9-]*'
+        'Flag "via": choice name "Email" must be lowercase kebab-case of at least two characters: [a-z][a-z0-9]*(-[a-z0-9]+)*'
     )
 
 
@@ -1687,11 +1687,11 @@ def test_the_reserved_quartet_pre_scan_still_runs_anywhere_in_argv():
 def test_a_bare_double_dash_is_still_a_boundary():
     app = strictcli.App(name="myapp", version="1.0.0", help="test app")
 
-    @choice("a", help="mode a")
+    @choice("aa", help="mode a")
     class A:
         target: str = sub_flag(help="the target", presence="required")
 
-    @choice("b", help="mode b")
+    @choice("bb", help="mode b")
     class B:
         pass
 
@@ -1704,17 +1704,17 @@ def test_a_bare_double_dash_is_still_a_boundary():
     def run(ctx, mode: A | B, rest=None):
         print(f"{mode!r} rest={rest!r}")
 
-    r = app.test(["run", "--mode", "b", "--", "--target"])
+    r = app.test(["run", "--mode", "bb", "--", "--target"])
     assert r.exit_code == 0
     assert "rest='--target'" in r.stdout
 
 
 def test_a_scoped_bool_negates():
-    @choice("a", help="mode a")
+    @choice("aa", help="mode a")
     class A:
         loud: bool = sub_flag(help="be loud", default=True)
 
-    @choice("b", help="mode b")
+    @choice("bb", help="mode b")
     class B:
         pass
 
@@ -1728,16 +1728,16 @@ def test_a_scoped_bool_negates():
     def run(ctx, mode: A | B):
         print(repr(mode))
 
-    assert "A(loud=False)" in app.test(["run", "--mode", "a", "--no-loud"]).stdout
-    assert "A(loud=True)" in app.test(["run", "--mode", "a"]).stdout
+    assert "A(loud=False)" in app.test(["run", "--mode", "aa", "--no-loud"]).stdout
+    assert "A(loud=True)" in app.test(["run", "--mode", "aa"]).stdout
 
 
 def test_a_repeatable_scoped_flag():
-    @choice("a", help="mode a")
+    @choice("aa", help="mode a")
     class A:
         tag: list[str] = sub_flag(help="tags", default=[], unique=False)
 
-    @choice("b", help="mode b")
+    @choice("bb", help="mode b")
     class B:
         pass
 
@@ -1751,16 +1751,16 @@ def test_a_repeatable_scoped_flag():
     def run(ctx, mode: A | B):
         print(repr(mode))
 
-    r = app.test(["run", "--mode", "a", "--tag", "x", "--tag", "y"])
+    r = app.test(["run", "--mode", "aa", "--tag", "xx", "--tag", "yy"])
     assert r.exit_code == 0
-    assert "A(tag=['x', 'y'])" in r.stdout
+    assert "A(tag=['xx', 'yy'])" in r.stdout
 
 
 def _separator_app():
     """A scope declaring both compositions §24.3 calls unaffected: a repeatable
     flag with an env binding, and a list flag with one."""
 
-    @choice("a", help="mode a")
+    @choice("aa", help="mode a")
     class A:
         tag: str = sub_flag(
             help="tags", presence="required", env="MYAPP_TAG",
@@ -1771,7 +1771,7 @@ def _separator_app():
             env_separator=",",
         )
 
-    @choice("b", help="mode b")
+    @choice("bb", help="mode b")
     class B:
         pass
 
@@ -1791,16 +1791,16 @@ def _separator_app():
 def test_a_repeatable_scoped_flag_declares_an_env_separator(monkeypatch):
     """A repeatable flag with an env binding REQUIRES an env_separator, so
     without the keyword the composition is undeclarable inside a scope."""
-    monkeypatch.setenv("MYAPP_TAG", "x,y")
-    r = _separator_app().test(["run", "--mode", "a"])
+    monkeypatch.setenv("MYAPP_TAG", "xx,yy")
+    r = _separator_app().test(["run", "--mode", "aa"])
     assert r.exit_code == 0
-    assert "tag=['x', 'y']" in r.stdout
+    assert "tag=['xx', 'yy']" in r.stdout
 
 
 def test_a_scoped_list_flag_splits_its_env_binding_on_the_separator(monkeypatch):
-    monkeypatch.setenv("MYAPP_TAG", "x")
+    monkeypatch.setenv("MYAPP_TAG", "xx")
     monkeypatch.setenv("MYAPP_LABEL", "alpha,beta")
-    r = _separator_app().test(["run", "--mode", "a"])
+    r = _separator_app().test(["run", "--mode", "aa"])
     assert r.exit_code == 0
     assert "label=['alpha', 'beta']" in r.stdout
 
@@ -1808,14 +1808,14 @@ def test_a_scoped_list_flag_splits_its_env_binding_on_the_separator(monkeypatch)
 def test_a_scoped_env_binding_reports_the_separators_duplicate(monkeypatch):
     """The env-value rules are the root surface's own, error text included."""
 
-    @choice("a", help="mode a")
+    @choice("aa", help="mode a")
     class A:
         tag: list[str] = sub_flag(
             help="tags", default=[], unique=True, env="MYAPP_TAG",
             env_separator=",",
         )
 
-    @choice("b", help="mode b")
+    @choice("bb", help="mode b")
     class B:
         pass
 
@@ -1829,16 +1829,16 @@ def test_a_scoped_env_binding_reports_the_separators_duplicate(monkeypatch):
     def run(ctx, mode: A | B):
         print(repr(mode))
 
-    monkeypatch.setenv("MYAPP_TAG", "x,x")
-    r = app.test(["run", "--mode", "a"])
+    monkeypatch.setenv("MYAPP_TAG", "xx,xx")
+    r = app.test(["run", "--mode", "aa"])
     assert r.exit_code == 1
     assert (
-        "error: --tag: duplicate value 'x' (from env var 'MYAPP_TAG')\n"
+        "error: --tag: duplicate value 'xx' (from env var 'MYAPP_TAG')\n"
     ) in r.stderr
 
 
 def _checked_scope_app():
-    @choice("a", help="mode a")
+    @choice("aa", help="mode a")
     class A:
         level: str = sub_flag(
             help="the level", presence="required", env="MYAPP_LEVEL",
@@ -1846,7 +1846,7 @@ def _checked_scope_app():
             validate=_refuse_high,
         )
 
-    @choice("b", help="mode b")
+    @choice("bb", help="mode b")
     class B:
         pass
 
@@ -1872,7 +1872,7 @@ def test_a_scoped_env_value_is_checked_against_the_declared_choices(monkeypatch)
     """A supplied value is a supplied value whatever supplied it: the closed
     set applies to an env binding inside an elected scope too."""
     monkeypatch.setenv("MYAPP_LEVEL", "sideways")
-    r = _checked_scope_app().test(["run", "--mode", "a"])
+    r = _checked_scope_app().test(["run", "--mode", "aa"])
     assert r.exit_code == 1
     assert (
         "error: --level: invalid value 'sideways', must be one of: low, high\n"
@@ -1881,7 +1881,7 @@ def test_a_scoped_env_value_is_checked_against_the_declared_choices(monkeypatch)
 
 def test_a_scoped_env_value_runs_the_declared_validate(monkeypatch):
     monkeypatch.setenv("MYAPP_LEVEL", "high")
-    r = _checked_scope_app().test(["run", "--mode", "a"])
+    r = _checked_scope_app().test(["run", "--mode", "aa"])
     assert r.exit_code == 1
     assert "error: --level: that value is refused\n" in r.stderr
 
@@ -1894,13 +1894,13 @@ def test_a_scoped_flag_declares_its_own_conflict_mode(tmp_path, monkeypatch):
     (config_dir / "config.json").write_text('{"tag": "from-config"}')
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
 
-    @choice("a", help="mode a")
+    @choice("aa", help="mode a")
     class A:
         tag: str = sub_flag(
             help="a tag", presence="required", conflict_mode="error",
         )
 
-    @choice("b", help="mode b")
+    @choice("bb", help="mode b")
     class B:
         pass
 
@@ -1916,7 +1916,7 @@ def test_a_scoped_flag_declares_its_own_conflict_mode(tmp_path, monkeypatch):
     def run(ctx, mode: A | B):
         print(repr(mode))
 
-    r = app.test(["run", "--mode", "a", "--tag", "from-cli"])
+    r = app.test(["run", "--mode", "aa", "--tag", "from-cli"])
     assert r.exit_code == 1
     assert "flag 'tag' set in both cli and config; remove one\n" in r.stderr
 
@@ -1925,11 +1925,11 @@ def test_an_at_prefix_resolves_on_a_scoped_string_flag(tmp_path):
     payload = tmp_path / "body.txt"
     payload.write_text("hello from a file")
 
-    @choice("a", help="mode a")
+    @choice("aa", help="mode a")
     class A:
         body: str = sub_flag(help="the body", presence="required")
 
-    @choice("b", help="mode b")
+    @choice("bb", help="mode b")
     class B:
         pass
 
@@ -1943,7 +1943,7 @@ def test_an_at_prefix_resolves_on_a_scoped_string_flag(tmp_path):
     def run(ctx, mode: A | B):
         print(repr(mode))
 
-    r = app.test(["run", "--mode", "a", "--body", f"@{payload}"])
+    r = app.test(["run", "--mode", "aa", "--body", f"@{payload}"])
     assert r.exit_code == 0
     assert "A(body='hello from a file')" in r.stdout
 
@@ -2169,11 +2169,11 @@ def test_the_machine_boundary_reads_the_same_sentence():
 def test_a_scoped_flags_short_with_no_value_is_named_as_it_was_typed():
     """§24.3: the scoped path quotes the token, as the root path always has."""
 
-    @choice("a", help="mode a")
+    @choice("aa", help="mode a")
     class A:
         target: str = sub_flag(help="the target", presence="required", short="t")
 
-    @choice("b", help="mode b")
+    @choice("bb", help="mode b")
     class B:
         pass
 
@@ -2187,6 +2187,6 @@ def test_a_scoped_flags_short_with_no_value_is_named_as_it_was_typed():
     def run(ctx, mode: A | B):
         print(repr(mode))
 
-    r = app.test(["run", "--mode", "a", "-t"])
+    r = app.test(["run", "--mode", "aa", "-t"])
     assert r.exit_code == 1
     assert "error: flag '-t' requires a value\n" in r.stderr

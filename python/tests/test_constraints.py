@@ -67,17 +67,17 @@ def test_all_or_none_lists_every_member_engaged_or_not():
     @app.command(
         "cmd", effect="read_only", help="a command",
         constraints=[AllOrNone(
-            "trio", [Member("a"), Member("b"), Member("c")],
+            "trio", [Member("aa"), Member("bb"), Member("cc")],
         )],
     )
-    @strictcli.flag("a", type=str, help="a", presence="optional")
-    @strictcli.flag("b", type=str, help="b", presence="optional")
-    @strictcli.flag("c", type=str, help="c", presence="optional")
-    def cmd(ctx, a, b, c):
+    @strictcli.flag("aa", type=str, help="aa", presence="optional")
+    @strictcli.flag("bb", type=str, help="bb", presence="optional")
+    @strictcli.flag("cc", type=str, help="cc", presence="optional")
+    def cmd(ctx, aa, bb, cc):
         pass
 
-    r = app.test(["cmd", "--b", "x"])
-    assert 'constraint "trio": --a, --b, --c must be used together' in r.stderr
+    r = app.test(["cmd", "--bb", "xx"])
+    assert 'constraint "trio": --aa, --bb, --cc must be used together' in r.stderr
 
 
 def test_all_or_none_env_sets_one_cli_sets_another_ok(monkeypatch):
@@ -126,15 +126,15 @@ def test_a_defaulted_member_never_engages_on_its_own():
 
     @app.command(
         "cmd", effect="read_only", help="a command",
-        constraints=[AllOrNone("pair", [Member("a"), Member("b")])],
+        constraints=[AllOrNone("pair", [Member("aa"), Member("bb")])],
     )
-    @strictcli.flag("a", type=str, help="a", default="x")
-    @strictcli.flag("b", type=str, help="b", default="y")
-    def cmd(ctx, a, b):
+    @strictcli.flag("aa", type=str, help="aa", default="xx")
+    @strictcli.flag("bb", type=str, help="bb", default="yy")
+    def cmd(ctx, aa, bb):
         print("ran")
 
     assert app.test(["cmd"]).exit_code == 0
-    assert app.test(["cmd", "--a", "z"]).exit_code == 1
+    assert app.test(["cmd", "--aa", "zz"]).exit_code == 1
 
 
 # ---------------------------------------------------------------------------
@@ -147,33 +147,33 @@ def _at_least_one_app():
 
     @app.command(
         "cmd", effect="read_only", help="a command",
-        constraints=[AtLeastOne("selection", [Member("a"), Member("b")])],
+        constraints=[AtLeastOne("selection", [Member("aa"), Member("bb")])],
     )
-    @strictcli.flag("a", type=str, help="a", presence="optional")
-    @strictcli.flag("b", type=str, help="b", presence="optional")
-    def cmd(ctx, a, b):
-        print(f"a={a} b={b}")
+    @strictcli.flag("aa", type=str, help="aa", presence="optional")
+    @strictcli.flag("bb", type=str, help="bb", presence="optional")
+    def cmd(ctx, aa, bb):
+        print(f"a={aa} b={bb}")
 
     return app
 
 
 def test_at_least_one_satisfied_by_one():
-    assert _at_least_one_app().test(["cmd", "--a", "x"]).exit_code == 0
+    assert _at_least_one_app().test(["cmd", "--aa", "xx"]).exit_code == 0
 
 
 def test_at_least_one_members_may_co_occur():
     """Engaging two satisfies it exactly as engaging one does -- it has no
     upper bound and is never exclusivity."""
-    r = _at_least_one_app().test(["cmd", "--a", "x", "--b", "y"])
+    r = _at_least_one_app().test(["cmd", "--aa", "xx", "--bb", "yy"])
     assert r.exit_code == 0
-    assert "a=x b=y" in r.stdout
+    assert "a=xx b=yy" in r.stdout
 
 
 def test_at_least_one_vacuous_is_violated():
     r = _at_least_one_app().test(["cmd"])
     assert r.exit_code == 1
     assert r.stderr.splitlines()[0] == (
-        'error: constraint "selection": at least one of --a, --b is required'
+        'error: constraint "selection": at least one of --aa, --bb is required'
     )
 
 
@@ -185,18 +185,18 @@ def test_at_least_one_decline_clause_names_the_first_declined_bool():
     @app.command(
         "cmd", effect="read_only", help="a command",
         constraints=[AtLeastOne("selection", [
-            Member("a", when="true"), Member("b", when="true"),
+            Member("aa", when="true"), Member("bb", when="true"),
         ])],
     )
-    @strictcli.flag("a", type=bool, help="a", default=False)
-    @strictcli.flag("b", type=bool, help="b", default=False)
-    def cmd(ctx, a, b):
+    @strictcli.flag("aa", type=bool, help="aa", default=False)
+    @strictcli.flag("bb", type=bool, help="bb", default=False)
+    def cmd(ctx, aa, bb):
         pass
 
-    r = app.test(["cmd", "--no-b", "--no-a"])
+    r = app.test(["cmd", "--no-bb", "--no-aa"])
     assert r.stderr.splitlines()[0] == (
-        'error: constraint "selection": at least one of --a, --b is required '
-        "(--no-a declines an option; it does not choose one)"
+        'error: constraint "selection": at least one of --aa, --bb is required '
+        "(--no-aa declines an option; it does not choose one)"
     )
 
 
@@ -208,17 +208,17 @@ def test_no_decline_clause_for_an_empty_non_empty_member():
     @app.command(
         "cmd", effect="read_only", help="a command",
         constraints=[AtLeastOne("selection", [
-            Member("a", when="non_empty"), Member("b"),
+            Member("aa", when="non_empty"), Member("bb"),
         ])],
     )
-    @strictcli.flag("a", type=str, help="a", presence="optional")
-    @strictcli.flag("b", type=str, help="b", presence="optional")
-    def cmd(ctx, a, b):
+    @strictcli.flag("aa", type=str, help="aa", presence="optional")
+    @strictcli.flag("bb", type=str, help="bb", presence="optional")
+    def cmd(ctx, aa, bb):
         pass
 
-    r = app.test(["cmd", "--a", ""])
+    r = app.test(["cmd", "--aa", ""])
     assert r.stderr.splitlines()[0] == (
-        'error: constraint "selection": at least one of --a, --b is required'
+        'error: constraint "selection": at least one of --aa, --bb is required'
     )
 
 
@@ -268,16 +268,16 @@ def test_when_non_empty_on_a_string():
     @app.command(
         "cmd", effect="read_only", help="a command",
         constraints=[AtLeastOne("selection", [
-            Member("a", when="non_empty"), Member("b"),
+            Member("aa", when="non_empty"), Member("bb"),
         ])],
     )
-    @strictcli.flag("a", type=str, help="a", presence="optional")
-    @strictcli.flag("b", type=str, help="b", presence="optional")
-    def cmd(ctx, a, b):
+    @strictcli.flag("aa", type=str, help="aa", presence="optional")
+    @strictcli.flag("bb", type=str, help="bb", presence="optional")
+    def cmd(ctx, aa, bb):
         print("ran")
 
-    assert app.test(["cmd", "--a", "x"]).exit_code == 0
-    assert app.test(["cmd", "--a", ""]).exit_code == 1
+    assert app.test(["cmd", "--aa", "xx"]).exit_code == 0
+    assert app.test(["cmd", "--aa", ""]).exit_code == 1
 
 
 def test_when_non_empty_on_a_repeatable_flag():
@@ -286,28 +286,28 @@ def test_when_non_empty_on_a_repeatable_flag():
     @app.command(
         "cmd", effect="read_only", help="a command",
         constraints=[AtLeastOne("selection", [
-            Member("tag", when="non_empty"), Member("b"),
+            Member("tag", when="non_empty"), Member("bb"),
         ])],
     )
     @strictcli.flag("tag", type=list[str], help="tags", default=[])
-    @strictcli.flag("b", type=str, help="b", presence="optional")
-    def cmd(ctx, tag, b):
+    @strictcli.flag("bb", type=str, help="bb", presence="optional")
+    def cmd(ctx, tag, bb):
         print("ran")
 
-    assert app.test(["cmd", "--tag", "x"]).exit_code == 0
+    assert app.test(["cmd", "--tag", "xx"]).exit_code == 0
     assert app.test(["cmd"]).exit_code == 1
 
 
 def test_member_when_default_is_present():
-    assert Member("x").resolved_when == "present"
-    assert Member("x").when is None
+    assert Member("xx").resolved_when == "present"
+    assert Member("xx").when is None
 
 
 def test_member_rejects_an_unknown_when():
     with pytest.raises(ValueError) as exc:
-        Member("x", when="ture")
+        Member("xx", when="ture")
     assert str(exc.value) == (
-        'Member "x": when must be "present", "true" or "non_empty", got '
+        'Member "xx": when must be "present", "true" or "non_empty", got '
         "'ture'"
     )
 
@@ -362,13 +362,13 @@ def test_a_fixed_arg_engages_only_when_a_token_was_supplied():
     @app.command(
         "cmd", effect="read_only", help="a command",
         args=[strictcli.Arg("target", help="target", presence="optional")],
-        constraints=[AtLeastOne("selection", [Member("target"), Member("b")])],
+        constraints=[AtLeastOne("selection", [Member("target"), Member("bb")])],
     )
-    @strictcli.flag("b", type=str, help="b", presence="optional")
-    def cmd(ctx, target, b):
+    @strictcli.flag("bb", type=str, help="bb", presence="optional")
+    def cmd(ctx, target, bb):
         print("ran")
 
-    assert app.test(["cmd", "x"]).exit_code == 0
+    assert app.test(["cmd", "xx"]).exit_code == 0
     assert app.test(["cmd"]).exit_code == 1
 
 
@@ -378,15 +378,15 @@ def test_an_arg_default_does_not_engage():
 
     @app.command(
         "cmd", effect="read_only", help="a command",
-        args=[strictcli.Arg("target", help="target", default="x")],
-        constraints=[AtLeastOne("selection", [Member("target"), Member("b")])],
+        args=[strictcli.Arg("target", help="target", default="xx")],
+        constraints=[AtLeastOne("selection", [Member("target"), Member("bb")])],
     )
-    @strictcli.flag("b", type=str, help="b", presence="optional")
-    def cmd(ctx, target, b):
+    @strictcli.flag("bb", type=str, help="bb", presence="optional")
+    def cmd(ctx, target, bb):
         print("ran")
 
     assert app.test(["cmd"]).exit_code == 1
-    assert app.test(["cmd", "y"]).exit_code == 0
+    assert app.test(["cmd", "yy"]).exit_code == 0
 
 
 def test_the_arg_predicate_answers_the_same_at_the_programmatic_door():
@@ -395,7 +395,7 @@ def test_the_arg_predicate_answers_the_same_at_the_programmatic_door():
     with pytest.raises(strictcli.InvokeError) as exc:
         app.call("purge")
     assert 'constraint "purge-selection"' in str(exc.value)
-    app.call("purge", targets=["a"])
+    app.call("purge", targets=["aa"])
 
 
 def test_an_explicitly_empty_array_is_not_a_provision():
@@ -446,14 +446,14 @@ def test_two_vacuous_pairs_leave_the_parent_unsatisfied():
 def test_children_are_evaluated_before_parents():
     """An operator who typed one half of a pair is told the pair is
     incomplete, not that the whole selection is missing."""
-    r = _safegit_app().test(["rewrite", "--old-name", "a"])
+    r = _safegit_app().test(["rewrite", "--old-name", "aa"])
     assert r.stderr.splitlines()[0] == (
         'error: constraint "author-name": --old-name, --new-name must be used together'
     )
 
 
 def test_a_complete_nested_pair_engages_the_parent():
-    r = _safegit_app().test(["rewrite", "--old-email", "a", "--new-email", "b"])
+    r = _safegit_app().test(["rewrite", "--old-email", "aa", "--new-email", "bb"])
     assert r.exit_code == 0
 
 
@@ -465,18 +465,18 @@ def test_engagement_propagates_upward_satisfaction_does_not():
     @app.command(
         "cmd", effect="read_only", help="a command",
         constraints=[
-            AtLeastOne("inner", [Member("a"), Member("b")]),
-            AtLeastOne("outer", [Member("inner"), Member("c")]),
+            AtLeastOne("inner", [Member("aa"), Member("bb")]),
+            AtLeastOne("outer", [Member("inner"), Member("cc")]),
         ],
     )
-    @strictcli.flag("a", type=str, help="a", presence="optional")
-    @strictcli.flag("b", type=str, help="b", presence="optional")
-    @strictcli.flag("c", type=str, help="c", presence="optional")
-    def cmd(ctx, a, b, c):
+    @strictcli.flag("aa", type=str, help="aa", presence="optional")
+    @strictcli.flag("bb", type=str, help="bb", presence="optional")
+    @strictcli.flag("cc", type=str, help="cc", presence="optional")
+    def cmd(ctx, aa, bb, cc):
         print("ran")
 
-    assert app.test(["cmd", "--a", "x"]).exit_code == 0
-    assert app.test(["cmd", "--c", "x"]).exit_code == 1  # inner is violated
+    assert app.test(["cmd", "--aa", "xx"]).exit_code == 0
+    assert app.test(["cmd", "--cc", "xx"]).exit_code == 1  # inner is violated
 
 
 # ---------------------------------------------------------------------------
@@ -491,13 +491,13 @@ def test_an_implied_value_can_engage_a_member():
         "cmd", effect="read_only", help="a command",
         constraints=[
             Implies("fast-implies", flag="fast", implies="silent", value=True),
-            AtLeastOne("selection", [Member("silent", when="true"), Member("b")]),
+            AtLeastOne("selection", [Member("silent", when="true"), Member("bb")]),
         ],
     )
     @strictcli.flag("fast", type=bool, help="fast", default=False)
     @strictcli.flag("silent", type=bool, help="silent", default=False)
-    @strictcli.flag("b", type=str, help="b", presence="optional")
-    def cmd(ctx, fast, silent, b):
+    @strictcli.flag("bb", type=str, help="bb", presence="optional")
+    def cmd(ctx, fast, silent, bb):
         print("ran")
 
     assert app.test(["cmd", "--fast"]).exit_code == 0
@@ -509,7 +509,7 @@ def test_an_implied_value_can_engage_a_member():
 # ---------------------------------------------------------------------------
 
 
-def _register(constraints, flags=(("a", str), ("b", str)), args=None):
+def _register(constraints, flags=(("aa", str), ("bb", str)), args=None):
     """Build a command with the given constraint set, deferred to a call."""
     app = strictcli.App(name="test", version="1.0.0", help="test app")
 
@@ -532,26 +532,26 @@ def _register(constraints, flags=(("a", str), ("b", str)), args=None):
 
 def test_constraint_name_charset():
     with pytest.raises(ValueError) as exc:
-        _register([AllOrNone("Author_Name", [Member("a"), Member("b")])])()
+        _register([AllOrNone("Author_Name", [Member("aa"), Member("bb")])])()
     assert str(exc.value) == (
-        'command "cmd": constraint name "Author_Name" must match [a-z][a-z0-9-]*'
+        'command "cmd": constraint name "Author_Name" must be lowercase kebab-case of at least two characters: [a-z][a-z0-9]*(-[a-z0-9]+)*'
     )
 
 
 def test_duplicate_constraint_name():
     with pytest.raises(ValueError) as exc:
         _register([
-            AllOrNone("pair", [Member("a"), Member("b")]),
-            AtLeastOne("pair", [Member("a"), Member("b")]),
+            AllOrNone("pair", [Member("aa"), Member("bb")]),
+            AtLeastOne("pair", [Member("aa"), Member("bb")]),
         ])()
     assert str(exc.value) == 'command "cmd": duplicate constraint name "pair"'
 
 
 def test_constraint_name_collides_with_a_flag_name():
     with pytest.raises(ValueError) as exc:
-        _register([AllOrNone("a", [Member("a"), Member("b")])])()
+        _register([AllOrNone("aa", [Member("aa"), Member("bb")])])()
     assert str(exc.value) == (
-        'command "cmd": constraint name "a" is already a flag or arg name: a '
+        'command "cmd": constraint name "aa" is already a flag or arg name: a '
         "member reference resolves by name and would be ambiguous"
     )
 
@@ -559,8 +559,8 @@ def test_constraint_name_collides_with_a_flag_name():
 def test_constraint_name_collides_with_an_arg_name():
     with pytest.raises(ValueError) as exc:
         _register(
-            [AllOrNone("target", [Member("a"), Member("b")])],
-            args=[strictcli.Arg("target", help="t", presence="optional")],
+            [AllOrNone("target", [Member("aa"), Member("bb")])],
+            args=[strictcli.Arg("target", help="tt", presence="optional")],
         )()
     assert "is already a flag or arg name" in str(exc.value)
 
@@ -572,7 +572,7 @@ def test_constraint_name_collides_with_an_arg_name():
 
 def test_min_members():
     with pytest.raises(ValueError) as exc:
-        _register([AllOrNone("pair", [Member("a")])])()
+        _register([AllOrNone("pair", [Member("aa")])])()
     assert str(exc.value) == (
         'command "cmd": constraint "pair" must declare at least two members, got 1'
     )
@@ -581,7 +581,7 @@ def test_min_members():
 def test_a_bare_string_member_is_refused():
     """§24.2's rule for `choices=` entries, applied for its reason."""
     with pytest.raises(ValueError) as exc:
-        _register([AllOrNone("pair", [Member("a"), "b"])])()
+        _register([AllOrNone("pair", [Member("aa"), "bb"])])()
     assert str(exc.value) == (
         'command "cmd": constraint "pair" member 1 is a bare name: declare it '
         'as Member("<x>")'
@@ -595,8 +595,8 @@ def test_the_bare_string_refusal_is_a_set_wide_step():
     in what it names."""
     with pytest.raises(ValueError) as exc:
         _register([
-            AllOrNone("one", [Member("a"), Member("nope")]),
-            AllOrNone("two", [Member("a"), "b"]),
+            AllOrNone("one", [Member("aa"), Member("nope")]),
+            AllOrNone("two", [Member("aa"), "bb"]),
         ])()
     assert str(exc.value) == (
         'command "cmd": constraint "two" member 1 is a bare name: declare it '
@@ -608,8 +608,8 @@ def test_the_bare_string_refusal_precedes_the_arity_step():
     """Between steps 1 and 2 means before arity too, wherever it is declared."""
     with pytest.raises(ValueError) as exc:
         _register([
-            AllOrNone("one", [Member("a")]),
-            AllOrNone("two", [Member("a"), "b"]),
+            AllOrNone("one", [Member("aa")]),
+            AllOrNone("two", [Member("aa"), "bb"]),
         ])()
     assert str(exc.value) == (
         'command "cmd": constraint "two" member 1 is a bare name: declare it '
@@ -619,7 +619,7 @@ def test_the_bare_string_refusal_precedes_the_arity_step():
 
 def test_unknown_member():
     with pytest.raises(ValueError) as exc:
-        _register([AllOrNone("pair", [Member("a"), Member("nope")])])()
+        _register([AllOrNone("pair", [Member("aa"), Member("nope")])])()
     assert str(exc.value) == (
         'command "cmd": constraint "pair" references unknown member "nope"'
     )
@@ -627,9 +627,9 @@ def test_unknown_member():
 
 def test_duplicate_member():
     with pytest.raises(ValueError) as exc:
-        _register([AllOrNone("pair", [Member("a"), Member("a")])])()
+        _register([AllOrNone("pair", [Member("aa"), Member("aa")])])()
     assert str(exc.value) == (
-        'command "cmd": constraint "pair" declares member "a" twice'
+        'command "cmd": constraint "pair" declares member "aa" twice'
     )
 
 
@@ -638,18 +638,18 @@ def test_a_member_naming_both_a_flag_and_an_arg_is_ambiguous():
     command may declare both; this round refuses to GUESS inside that state."""
     with pytest.raises(ValueError) as exc:
         _register(
-            [AllOrNone("pair", [Member("a"), Member("b")])],
-            args=[strictcli.Arg("a", help="a", presence="optional")],
+            [AllOrNone("pair", [Member("aa"), Member("bb")])],
+            args=[strictcli.Arg("aa", help="aa", presence="optional")],
         )()
     assert str(exc.value) == (
-        'command "cmd": constraint "pair" references "a", which names both a '
+        'command "cmd": constraint "pair" references "aa", which names both a '
         "flag and a positional arg"
     )
 
 
 def test_requires_unknown_flag_keeps_the_flag_noun():
     with pytest.raises(ValueError) as exc:
-        _register([Requires("dep", flag="a", depends_on="nope")])()
+        _register([Requires("dep", flag="aa", depends_on="nope")])()
     assert str(exc.value) == (
         'command "cmd": constraint "dep" references unknown flag "nope"'
     )
@@ -658,8 +658,8 @@ def test_requires_unknown_flag_keeps_the_flag_noun():
 def test_implies_unknown_flag_keeps_the_flag_noun():
     with pytest.raises(ValueError) as exc:
         _register(
-            [Implies("imp", flag="nope", implies="a", value=True)],
-            flags=(("a", bool), ("b", bool)),
+            [Implies("imp", flag="nope", implies="aa", value=True)],
+            flags=(("aa", bool), ("bb", bool)),
         )()
     assert str(exc.value) == (
         'command "cmd": constraint "imp" references unknown flag "nope"'
@@ -782,8 +782,8 @@ def test_a_member_naming_a_member_flag_is_the_scope_refusal():
 def test_a_nested_member_cannot_declare_an_election():
     with pytest.raises(ValueError) as exc:
         _register([
-            AllOrNone("pair", [Member("a"), Member("b")]),
-            AtLeastOne("outer", [Member("pair", when="present"), Member("a")]),
+            AllOrNone("pair", [Member("aa"), Member("bb")]),
+            AtLeastOne("outer", [Member("pair", when="present"), Member("aa")]),
         ])()
     assert str(exc.value) == (
         'command "cmd": constraint "outer" member "pair" is a constraint and '
@@ -795,8 +795,8 @@ def test_a_nested_member_cannot_declare_an_election():
 def test_a_dependency_family_cannot_be_nested():
     with pytest.raises(ValueError) as exc:
         _register([
-            Requires("dep", flag="a", depends_on="b"),
-            AtLeastOne("outer", [Member("dep"), Member("a")]),
+            Requires("dep", flag="aa", depends_on="bb"),
+            AtLeastOne("outer", [Member("dep"), Member("aa")]),
         ])()
     assert str(exc.value) == (
         'command "cmd": constraint "outer" references constraint "dep", which '
@@ -808,8 +808,8 @@ def test_a_dependency_family_cannot_be_nested():
 def test_a_constraint_cycle_is_refused():
     with pytest.raises(ValueError) as exc:
         _register([
-            AtLeastOne("outer", [Member("inner"), Member("a")]),
-            AtLeastOne("inner", [Member("outer"), Member("b")]),
+            AtLeastOne("outer", [Member("inner"), Member("aa")]),
+            AtLeastOne("inner", [Member("outer"), Member("bb")]),
         ])()
     assert str(exc.value) == (
         'command "cmd": constraints form a cycle: outer -> inner -> outer'
@@ -817,22 +817,22 @@ def test_a_constraint_cycle_is_refused():
 
 
 def test_the_cycle_path_opens_on_the_earliest_declared_participant():
-    """The walk starts at "x", enters the cycle at "c" and closes it at "b" --
-    and the path still opens on "b", which is declared first (§12.15)."""
+    """The walk starts at "xx", enters the cycle at "cc" and closes it at "bb" --
+    and the path still opens on "bb", which is declared first (§12.15)."""
     with pytest.raises(ValueError) as exc:
         _register([
-            AtLeastOne("x", [Member("c"), Member("a")]),
-            AtLeastOne("b", [Member("c"), Member("a")]),
-            AtLeastOne("c", [Member("b"), Member("a")]),
-        ], flags=(("a", str),))()
+            AtLeastOne("xx", [Member("cc"), Member("aa")]),
+            AtLeastOne("bb", [Member("cc"), Member("aa")]),
+            AtLeastOne("cc", [Member("bb"), Member("aa")]),
+        ], flags=(("aa", str),))()
     assert str(exc.value) == (
-        'command "cmd": constraints form a cycle: b -> c -> b'
+        'command "cmd": constraints form a cycle: bb -> cc -> bb'
     )
 
 
 def test_a_self_naming_constraint_is_the_degenerate_cycle():
     with pytest.raises(ValueError) as exc:
-        _register([AtLeastOne("outer", [Member("outer"), Member("a")])])()
+        _register([AtLeastOne("outer", [Member("outer"), Member("aa")])])()
     assert str(exc.value) == (
         'command "cmd": constraints form a cycle: outer -> outer'
     )
@@ -844,20 +844,20 @@ def test_deep_nesting_is_legal():
     @app.command(
         "cmd", effect="read_only", help="a command",
         constraints=[
-            AllOrNone("l1", [Member("a"), Member("b")]),
-            AtLeastOne("l2", [Member("l1"), Member("c")]),
-            AtLeastOne("l3", [Member("l2"), Member("d")]),
+            AllOrNone("l1", [Member("aa"), Member("bb")]),
+            AtLeastOne("l2", [Member("l1"), Member("cc")]),
+            AtLeastOne("l3", [Member("l2"), Member("dd")]),
         ],
     )
-    @strictcli.flag("a", type=str, help="a", presence="optional")
-    @strictcli.flag("b", type=str, help="b", presence="optional")
-    @strictcli.flag("c", type=str, help="c", presence="optional")
-    @strictcli.flag("d", type=str, help="d", presence="optional")
-    def cmd(ctx, a, b, c, d):
+    @strictcli.flag("aa", type=str, help="aa", presence="optional")
+    @strictcli.flag("bb", type=str, help="bb", presence="optional")
+    @strictcli.flag("cc", type=str, help="cc", presence="optional")
+    @strictcli.flag("dd", type=str, help="dd", presence="optional")
+    def cmd(ctx, aa, bb, cc, dd):
         print("ran")
 
-    assert app.test(["cmd", "--d", "x"]).exit_code == 1  # l2 fires first
-    assert app.test(["cmd", "--c", "x"]).exit_code == 0
+    assert app.test(["cmd", "--dd", "xx"]).exit_code == 1  # l2 fires first
+    assert app.test(["cmd", "--cc", "xx"]).exit_code == 0
 
 
 # ---------------------------------------------------------------------------
@@ -870,11 +870,11 @@ def test_a_bool_member_must_declare_its_election():
     constraint while selecting nothing (A1, by omission)."""
     with pytest.raises(ValueError) as exc:
         _register(
-            [AtLeastOne("selection", [Member("a"), Member("b")])],
-            flags=(("a", bool), ("b", str)),
+            [AtLeastOne("selection", [Member("aa"), Member("bb")])],
+            flags=(("aa", bool), ("bb", str)),
         )()
     assert str(exc.value) == (
-        'command "cmd": constraint "selection" member \'--a\' is a bool and '
+        'command "cmd": constraint "selection" member \'--aa\' is a bool and '
         'must declare its election: when="true" counts only a true value, '
         'when="present" counts any'
     )
@@ -883,11 +883,11 @@ def test_a_bool_member_must_declare_its_election():
 def test_when_true_on_a_non_bool_is_refused():
     with pytest.raises(ValueError) as exc:
         _register([AtLeastOne("selection", [
-            Member("a", when="true"), Member("b"),
+            Member("aa", when="true"), Member("bb"),
         ])])()
     assert str(exc.value) == (
-        'command "cmd": constraint "selection" member \'--a\' declares '
-        'when="true", which needs a bool; \'--a\' is a str'
+        'command "cmd": constraint "selection" member \'--aa\' declares '
+        'when="true", which needs a bool; \'--aa\' is a str'
     )
 
 
@@ -895,14 +895,14 @@ def test_when_non_empty_on_an_int_is_refused():
     with pytest.raises(ValueError) as exc:
         _register(
             [AtLeastOne("selection", [
-                Member("a", when="non_empty"), Member("b"),
+                Member("aa", when="non_empty"), Member("bb"),
             ])],
-            flags=(("a", int), ("b", str)),
+            flags=(("aa", int), ("bb", str)),
         )()
     assert str(exc.value) == (
-        'command "cmd": constraint "selection" member \'--a\' declares '
+        'command "cmd": constraint "selection" member \'--aa\' declares '
         'when="non_empty", which needs a string or a collection; '
-        "'--a' is a int"
+        "'--aa' is a int"
     )
 
 
@@ -910,30 +910,30 @@ def test_when_non_empty_on_a_bool_is_refused():
     with pytest.raises(ValueError) as exc:
         _register(
             [AtLeastOne("selection", [
-                Member("a", when="non_empty"), Member("b"),
+                Member("aa", when="non_empty"), Member("bb"),
             ])],
-            flags=(("a", bool), ("b", str)),
+            flags=(("aa", bool), ("bb", str)),
         )()
-    assert "'--a' is a bool" in str(exc.value)
+    assert "'--aa' is a bool" in str(exc.value)
 
 
 def test_when_true_on_a_repeatable_names_the_compound_type_word():
     with pytest.raises(ValueError) as exc:
         _register(
             [AtLeastOne("selection", [
-                Member("a", when="true"), Member("b"),
+                Member("aa", when="true"), Member("bb"),
             ])],
-            flags=(("a", list[str]), ("b", str)),
+            flags=(("aa", list[str]), ("bb", str)),
         )()
-    assert "'--a' is a list[str]" in str(exc.value)
+    assert "'--aa' is a list[str]" in str(exc.value)
 
 
 def test_a_bool_arg_member_renders_bare_in_the_election_guard():
     with pytest.raises(ValueError) as exc:
         _register(
-            [AtLeastOne("selection", [Member("target"), Member("a")])],
+            [AtLeastOne("selection", [Member("target"), Member("aa")])],
             args=[strictcli.Arg(
-                "target", type=bool, help="t", presence="optional",
+                "target", type=bool, help="tt", presence="optional",
             )],
         )()
     assert str(exc.value) == (
@@ -957,15 +957,15 @@ def test_a_required_member_is_refused_in_all_or_none():
 
         @app.command(
             "cmd", effect="read_only", help="a command",
-            constraints=[AllOrNone("pair", [Member("a"), Member("b")])],
+            constraints=[AllOrNone("pair", [Member("aa"), Member("bb")])],
         )
-        @strictcli.flag("a", type=str, help="a", presence="required")
-        @strictcli.flag("b", type=str, help="b", presence="optional")
-        def cmd(ctx, a, b):
+        @strictcli.flag("aa", type=str, help="aa", presence="required")
+        @strictcli.flag("bb", type=str, help="bb", presence="optional")
+        def cmd(ctx, aa, bb):
             pass
 
     assert str(exc.value) == (
-        'command "cmd": constraint "pair" member \'--a\' declares '
+        'command "cmd": constraint "pair" member \'--aa\' declares '
         'presence="required": a member the invocation must always supply '
         "leaves the constraint nothing to decide"
     )
@@ -980,14 +980,14 @@ def test_a_required_member_is_refused_in_at_least_one():
 
         @app.command(
             "cmd", effect="read_only", help="a command",
-            constraints=[AtLeastOne("selection", [Member("a"), Member("b")])],
+            constraints=[AtLeastOne("selection", [Member("aa"), Member("bb")])],
         )
-        @strictcli.flag("a", type=str, help="a", presence="optional")
-        @strictcli.flag("b", type=str, help="b", presence="required")
-        def cmd(ctx, a, b):
+        @strictcli.flag("aa", type=str, help="aa", presence="optional")
+        @strictcli.flag("bb", type=str, help="bb", presence="required")
+        def cmd(ctx, aa, bb):
             pass
 
-    assert 'member \'--b\' declares presence="required"' in str(exc.value)
+    assert 'member \'--bb\' declares presence="required"' in str(exc.value)
 
 
 def test_a_required_arg_member_renders_bare():
@@ -998,14 +998,14 @@ def test_a_required_arg_member_renders_bare():
 
         @app.command(
             "cmd", effect="read_only", help="a command",
-            args=[strictcli.Arg("targets", help="t", variadic=True,
+            args=[strictcli.Arg("targets", help="tt", variadic=True,
                                 presence="required")],
             constraints=[AtLeastOne("selection", [
-                Member("targets"), Member("a"),
+                Member("targets"), Member("aa"),
             ])],
         )
-        @strictcli.flag("a", type=str, help="a", presence="optional")
-        def cmd(ctx, targets, a):
+        @strictcli.flag("aa", type=str, help="aa", presence="optional")
+        def cmd(ctx, targets, aa):
             pass
 
     assert str(exc.value) == (
@@ -1021,14 +1021,14 @@ def test_membership_neither_makes_a_flag_required_nor_exempts_it():
 
     @app.command(
         "cmd", effect="read_only", help="a command",
-        constraints=[AtLeastOne("selection", [Member("a"), Member("b")])],
+        constraints=[AtLeastOne("selection", [Member("aa"), Member("bb")])],
     )
-    @strictcli.flag("a", type=str, help="a", presence="optional")
-    @strictcli.flag("b", type=str, help="b", presence="optional")
-    def cmd(ctx, a, b):
-        print(f"a={a!r} b={b!r}")
+    @strictcli.flag("aa", type=str, help="aa", presence="optional")
+    @strictcli.flag("bb", type=str, help="bb", presence="optional")
+    def cmd(ctx, aa, bb):
+        print(f"a={aa!r} b={bb!r}")
 
-    r = app.test(["cmd", "--a", "x"])
+    r = app.test(["cmd", "--aa", "xx"])
     assert r.exit_code == 0
     assert "b=None" in r.stdout
 
@@ -1051,14 +1051,14 @@ def test_a_member_flag_of_a_member_spelled_selector_is_closed_by_two_rules():
 
         @app.command(
             "cmd", effect="read_only", help="a command",
-            constraints=[AtLeastOne("selection", [Member("work"), Member("a")])],
+            constraints=[AtLeastOne("selection", [Member("work"), Member("aa")])],
         )
         @strictcli.choice_flag(
             "profile", help="which profile", presence="required",
             elect_by="member-flags", choices=[Work, Home],
         )
-        @strictcli.flag("a", type=str, help="a", presence="optional")
-        def cmd(ctx, a, profile: Work | Home):
+        @strictcli.flag("aa", type=str, help="aa", presence="optional")
+        def cmd(ctx, aa, profile: Work | Home):
             pass
 
     assert "constraint" in str(exc.value)
@@ -1086,7 +1086,7 @@ def _requires_app(**presence):
 
 
 def test_requires_both_provided_ok():
-    r = _requires_app().test(["cmd", "--output", "f", "--format", "json"])
+    r = _requires_app().test(["cmd", "--output", "ff", "--format", "json"])
     assert r.exit_code == 0
 
 
@@ -1096,7 +1096,7 @@ def test_requires_flag_not_provided_ok():
 
 def test_requires_depends_on_alone_ok():
     """Unidirectional."""
-    assert _requires_app(default="").test(["cmd", "--output", "f"]).exit_code == 0
+    assert _requires_app(default="").test(["cmd", "--output", "ff"]).exit_code == 0
 
 
 def test_requires_violation_carries_the_prefix_and_nothing_else():
@@ -1110,7 +1110,7 @@ def test_requires_violation_carries_the_prefix_and_nothing_else():
 
 def test_requires_same_flag_error():
     with pytest.raises(ValueError, match="cannot be the same"):
-        _register([Requires("dep", flag="a", depends_on="a")])()
+        _register([Requires("dep", flag="aa", depends_on="aa")])()
 
 
 # ---------------------------------------------------------------------------
@@ -1165,24 +1165,24 @@ def test_implies_explicit_agreement_ok():
 def test_implies_self_implication_error():
     with pytest.raises(ValueError, match="cannot be the same"):
         _register(
-            [Implies("imp", flag="a", implies="a", value=True)],
-            flags=(("a", bool), ("b", bool)),
+            [Implies("imp", flag="aa", implies="aa", value=True)],
+            flags=(("aa", bool), ("bb", bool)),
         )()
 
 
 def test_implies_trigger_not_bool_error():
-    with pytest.raises(ValueError, match='trigger flag "a" must be a bool flag'):
+    with pytest.raises(ValueError, match='trigger flag "aa" must be a bool flag'):
         _register(
-            [Implies("imp", flag="a", implies="b", value=True)],
-            flags=(("a", str), ("b", bool)),
+            [Implies("imp", flag="aa", implies="bb", value=True)],
+            flags=(("aa", str), ("bb", bool)),
         )()
 
 
 def test_implies_target_not_bool_error():
-    with pytest.raises(ValueError, match='target flag "b" must be a bool flag'):
+    with pytest.raises(ValueError, match='target flag "bb" must be a bool flag'):
         _register(
-            [Implies("imp", flag="a", implies="b", value=True)],
-            flags=(("a", bool), ("b", str)),
+            [Implies("imp", flag="aa", implies="bb", value=True)],
+            flags=(("aa", bool), ("bb", str)),
         )()
 
 
@@ -1260,7 +1260,7 @@ def test_the_new_names_are_exported():
 
 
 def test_the_families_are_frozen():
-    c = AllOrNone("pair", [Member("a"), Member("b")])
+    c = AllOrNone("pair", [Member("aa"), Member("bb")])
     with pytest.raises(Exception):
         c.name = "other"
     assert isinstance(c.members, tuple)
@@ -1297,15 +1297,15 @@ def test_the_constraint_block_has_its_own_alignment_column():
 
     @app.command(
         "cmd", effect="read_only", help="a command",
-        constraints=[AllOrNone("ab", [Member("a"), Member("b")])],
+        constraints=[AllOrNone("ab", [Member("aa"), Member("bb")])],
     )
-    @strictcli.flag("a", type=str, help="a flag with a very long name", presence="optional")
-    @strictcli.flag("b", type=str, help="b", presence="optional")
-    def cmd(ctx, a, b):
+    @strictcli.flag("aa", type=str, help="a flag with a very long name", presence="optional")
+    @strictcli.flag("bb", type=str, help="bb", presence="optional")
+    def cmd(ctx, aa, bb):
         pass
 
     out = app.test(["cmd", "--help"]).stdout
-    assert "  ab    all or none of --a, --b" in out
+    assert "  ab    all or none of --aa, --bb" in out
 
 
 def test_the_constraints_block_renders_args_bare_and_every_family():
@@ -1317,23 +1317,23 @@ def test_the_constraints_block_renders_args_bare_and_every_family():
                             presence="optional")],
         constraints=[
             AtLeastOne("selection", [
-                Member("targets", when="non_empty"), Member("a"),
+                Member("targets", when="non_empty"), Member("aa"),
             ]),
-            Requires("b-needs-a", flag="b", depends_on="a"),
-            Implies("c-implies-d", flag="c", implies="d", value=False),
+            Requires("b-needs-a", flag="bb", depends_on="aa"),
+            Implies("c-implies-d", flag="cc", implies="dd", value=False),
         ],
     )
-    @strictcli.flag("a", type=str, help="a", presence="optional")
-    @strictcli.flag("b", type=str, help="b", presence="optional")
-    @strictcli.flag("c", type=bool, help="c", default=False)
-    @strictcli.flag("d", type=bool, help="d", default=False)
-    def cmd(ctx, targets, a, b, c, d):
+    @strictcli.flag("aa", type=str, help="aa", presence="optional")
+    @strictcli.flag("bb", type=str, help="bb", presence="optional")
+    @strictcli.flag("cc", type=bool, help="cc", default=False)
+    @strictcli.flag("dd", type=bool, help="dd", default=False)
+    def cmd(ctx, targets, aa, bb, cc, dd):
         pass
 
     out = app.test(["cmd", "--help"]).stdout
-    assert "  selection      at least one of targets, --a\n" in out
-    assert "  b-needs-a      --b requires --a\n" in out
-    assert "  c-implies-d    --c implies --no-d" in out
+    assert "  selection      at least one of targets, --aa\n" in out
+    assert "  b-needs-a      --bb requires --aa\n" in out
+    assert "  c-implies-d    --cc implies --no-dd" in out
 
 
 def test_implies_renders_the_positive_target_when_the_value_is_true():
@@ -1341,22 +1341,22 @@ def test_implies_renders_the_positive_target_when_the_value_is_true():
 
     @app.command(
         "cmd", effect="read_only", help="a command",
-        constraints=[Implies("c-implies-d", flag="c", implies="d", value=True)],
+        constraints=[Implies("c-implies-d", flag="cc", implies="dd", value=True)],
     )
-    @strictcli.flag("c", type=bool, help="c", default=False)
-    @strictcli.flag("d", type=bool, help="d", default=False)
-    def cmd(ctx, c, d):
+    @strictcli.flag("cc", type=bool, help="cc", default=False)
+    @strictcli.flag("dd", type=bool, help="dd", default=False)
+    def cmd(ctx, cc, dd):
         pass
 
-    assert "  c-implies-d    --c implies --d" in app.test(["cmd", "--help"]).stdout
+    assert "  c-implies-d    --cc implies --dd" in app.test(["cmd", "--help"]).stdout
 
 
 def test_no_constraints_no_block():
     app = strictcli.App(name="test", version="1.0.0", help="test app")
 
     @app.command("cmd", effect="read_only", help="a command")
-    @strictcli.flag("a", type=str, help="a", presence="optional")
-    def cmd(ctx, a):
+    @strictcli.flag("aa", type=str, help="aa", presence="optional")
+    def cmd(ctx, aa):
         pass
 
     assert "Constraints:" not in app.test(["cmd", "--help"]).stdout
@@ -1428,21 +1428,21 @@ def test_an_all_or_none_with_a_nested_member_emits_nothing_and_says_why():
     @app.command(
         "cmd", effect="read_only", help="a command",
         constraints=[
-            AtLeastOne("inner", [Member("a"), Member("b")]),
-            AllOrNone("outer", [Member("inner"), Member("c")]),
+            AtLeastOne("inner", [Member("aa"), Member("bb")]),
+            AllOrNone("outer", [Member("inner"), Member("cc")]),
         ],
     )
-    @strictcli.flag("a", type=str, help="a", presence="optional")
-    @strictcli.flag("b", type=str, help="b", presence="optional")
-    @strictcli.flag("c", type=str, help="c", presence="optional")
-    def cmd(ctx, a, b, c):
+    @strictcli.flag("aa", type=str, help="aa", presence="optional")
+    @strictcli.flag("bb", type=str, help="bb", presence="optional")
+    @strictcli.flag("cc", type=str, help="cc", presence="optional")
+    def cmd(ctx, aa, bb, cc):
         pass
 
     schema = app.json_schema("cmd")
     assert "dependentRequired" not in schema
     tool = next(t for t in app.as_tools() if t.name == "cmd")
     assert (
-        "  all or none of: (a or b), c -- not expressed in the schema: "
+        "  all or none of: (aa or bb), cc -- not expressed in the schema: "
         "the nested grouping" in tool.description
     )
 
@@ -1453,25 +1453,25 @@ def test_a_nested_at_least_one_inlines_its_branches():
     @app.command(
         "cmd", effect="read_only", help="a command",
         constraints=[
-            AtLeastOne("inner", [Member("a"), Member("b")]),
-            AtLeastOne("outer", [Member("inner"), Member("c")]),
+            AtLeastOne("inner", [Member("aa"), Member("bb")]),
+            AtLeastOne("outer", [Member("inner"), Member("cc")]),
         ],
     )
-    @strictcli.flag("a", type=str, help="a", presence="optional")
-    @strictcli.flag("b", type=str, help="b", presence="optional")
-    @strictcli.flag("c", type=str, help="c", presence="optional")
-    def cmd(ctx, a, b, c):
+    @strictcli.flag("aa", type=str, help="aa", presence="optional")
+    @strictcli.flag("bb", type=str, help="bb", presence="optional")
+    @strictcli.flag("cc", type=str, help="cc", presence="optional")
+    def cmd(ctx, aa, bb, cc):
         pass
 
     # Two at-least-one constraints are two independent rules, so they are
     # conjoined rather than merged (§18.31 item 284) -- and `inner`'s branches
     # are inlined into `outer`'s own `anyOf`.
     assert app.json_schema("cmd")["allOf"] == [
-        {"anyOf": [{"required": ["a"]}, {"required": ["b"]}]},
+        {"anyOf": [{"required": ["aa"]}, {"required": ["bb"]}]},
         {"anyOf": [
-            {"required": ["a"]},
-            {"required": ["b"]},
-            {"required": ["c"]},
+            {"required": ["aa"]},
+            {"required": ["bb"]},
+            {"required": ["cc"]},
         ]},
     ]
 
@@ -1502,8 +1502,8 @@ def test_a_command_with_no_constraints_gets_no_description_block():
     app = strictcli.App(name="test", version="1.0.0", help="test app")
 
     @app.command("cmd", effect="read_only", help="a command")
-    @strictcli.flag("a", type=str, help="a", presence="optional")
-    def cmd(ctx, a):
+    @strictcli.flag("aa", type=str, help="aa", presence="optional")
+    def cmd(ctx, aa):
         pass
 
     tool = next(t for t in app.as_tools() if t.name == "cmd")
@@ -1525,15 +1525,15 @@ def test_the_scope_block_and_the_constraint_block_coexist():
 
     @app.command(
         "send", effect="read_only", help="send it",
-        constraints=[AllOrNone("pair", [Member("a"), Member("b")])],
+        constraints=[AllOrNone("pair", [Member("aa"), Member("bb")])],
     )
     @strictcli.choice_flag(
         "via", help="delivery channel", presence="required",
         elect_by="selector-token", choices=[Email, Sms],
     )
-    @strictcli.flag("a", type=str, help="a", presence="optional")
-    @strictcli.flag("b", type=str, help="b", presence="optional")
-    def send(ctx, a, b, via: Email | Sms):
+    @strictcli.flag("aa", type=str, help="aa", presence="optional")
+    @strictcli.flag("bb", type=str, help="bb", presence="optional")
+    def send(ctx, aa, bb, via: Email | Sms):
         pass
 
     tool = next(t for t in app.as_tools() if t.name == "send")
@@ -1545,7 +1545,7 @@ def test_the_scope_block_and_the_constraint_block_coexist():
         "  via=sms: phone (required)\n"
         "\n"
         "Constraints (enforced at call time):\n"
-        "  all or none of: a, b"
+        "  all or none of: aa, bb"
     )
 
 
@@ -1553,7 +1553,7 @@ def test_a_violation_at_the_machine_door_uses_the_parsers_own_sentence():
     """Enforcement at call time is unchanged and total (§26.12)."""
     app = _safegit_app()
     with pytest.raises(strictcli.InvokeError) as exc:
-        app.call("rewrite", old_name="a")
+        app.call("rewrite", old_name="aa")
     assert str(exc.value) == (
         'constraint "author-name": --old-name, --new-name must be used together'
     )
@@ -1572,15 +1572,15 @@ def _two_at_least_one_app():
     @app.command(
         "cmd", effect="read_only", help="a command",
         constraints=[
-            AtLeastOne("first", [Member("a"), Member("b")]),
-            AtLeastOne("second", [Member("c"), Member("d")]),
+            AtLeastOne("first", [Member("aa"), Member("bb")]),
+            AtLeastOne("second", [Member("cc"), Member("dd")]),
         ],
     )
-    @strictcli.flag("a", type=str, help="a", presence="optional")
-    @strictcli.flag("b", type=str, help="b", presence="optional")
-    @strictcli.flag("c", type=str, help="c", presence="optional")
-    @strictcli.flag("d", type=str, help="d", presence="optional")
-    def cmd(ctx, a, b, c, d):
+    @strictcli.flag("aa", type=str, help="aa", presence="optional")
+    @strictcli.flag("bb", type=str, help="bb", presence="optional")
+    @strictcli.flag("cc", type=str, help="cc", presence="optional")
+    @strictcli.flag("dd", type=str, help="dd", presence="optional")
+    def cmd(ctx, aa, bb, cc, dd):
         pass
 
     return app
@@ -1592,8 +1592,8 @@ def test_two_at_least_one_constraints_conjoin_in_all_of():
     schema = _two_at_least_one_app().json_schema("cmd")
     assert "anyOf" not in schema
     assert schema["allOf"] == [
-        {"anyOf": [{"required": ["a"]}, {"required": ["b"]}]},
-        {"anyOf": [{"required": ["c"]}, {"required": ["d"]}]},
+        {"anyOf": [{"required": ["aa"]}, {"required": ["bb"]}]},
+        {"anyOf": [{"required": ["cc"]}, {"required": ["dd"]}]},
     ]
 
 
@@ -1613,20 +1613,20 @@ def test_the_all_of_elements_are_in_declaration_order():
     @app.command(
         "cmd", effect="read_only", help="a command",
         constraints=[
-            AtLeastOne("second", [Member("c"), Member("d")]),
-            AtLeastOne("first", [Member("a"), Member("b")]),
+            AtLeastOne("second", [Member("cc"), Member("dd")]),
+            AtLeastOne("first", [Member("aa"), Member("bb")]),
         ],
     )
-    @strictcli.flag("a", type=str, help="a", presence="optional")
-    @strictcli.flag("b", type=str, help="b", presence="optional")
-    @strictcli.flag("c", type=str, help="c", presence="optional")
-    @strictcli.flag("d", type=str, help="d", presence="optional")
-    def cmd(ctx, a, b, c, d):
+    @strictcli.flag("aa", type=str, help="aa", presence="optional")
+    @strictcli.flag("bb", type=str, help="bb", presence="optional")
+    @strictcli.flag("cc", type=str, help="cc", presence="optional")
+    @strictcli.flag("dd", type=str, help="dd", presence="optional")
+    def cmd(ctx, aa, bb, cc, dd):
         pass
 
     assert app.json_schema("cmd")["allOf"] == [
-        {"anyOf": [{"required": ["c"]}, {"required": ["d"]}]},
-        {"anyOf": [{"required": ["a"]}, {"required": ["b"]}]},
+        {"anyOf": [{"required": ["cc"]}, {"required": ["dd"]}]},
+        {"anyOf": [{"required": ["aa"]}, {"required": ["bb"]}]},
     ]
 
 
@@ -1651,8 +1651,8 @@ def test_a_command_with_no_constraints_keeps_the_bare_key_order():
     app = strictcli.App(name="test", version="1.0.0", help="test app")
 
     @app.command("cmd", effect="read_only", help="a command")
-    @strictcli.flag("a", type=str, help="a", presence="optional")
-    def cmd(ctx, a):
+    @strictcli.flag("aa", type=str, help="aa", presence="optional")
+    def cmd(ctx, aa):
         pass
 
     assert list(app.json_schema("cmd")) == [
@@ -1676,16 +1676,16 @@ def test_implies_states_a_true_value_the_same_way():
 
     @app.command(
         "cmd", effect="read_only", help="a command",
-        constraints=[Implies("c-implies-d", flag="c", implies="d", value=True)],
+        constraints=[Implies("c-implies-d", flag="cc", implies="dd", value=True)],
     )
-    @strictcli.flag("c", type=bool, help="c", default=False)
-    @strictcli.flag("d", type=bool, help="d", default=False)
-    def cmd(ctx, c, d):
+    @strictcli.flag("cc", type=bool, help="cc", default=False)
+    @strictcli.flag("dd", type=bool, help="dd", default=False)
+    def cmd(ctx, cc, dd):
         pass
 
     tool = next(t for t in app.as_tools() if t.name == "cmd")
     assert (
-        "  c implies d = true -- not expressed in the schema: the injection"
+        "  cc implies dd = true -- not expressed in the schema: the injection"
         in tool.description
     )
 
@@ -1717,21 +1717,21 @@ def test_a_dict_member_renders_its_value_type_in_one_argument():
     with pytest.raises(ValueError) as exc:
         _register(
             [AtLeastOne("selection", [
-                Member("a", when="true"), Member("b"),
+                Member("aa", when="true"), Member("bb"),
             ])],
-            flags=(("a", dict[str, int]), ("b", str)),
+            flags=(("aa", dict[str, int]), ("bb", str)),
         )()
-    assert "'--a' is a dict[int]" in str(exc.value)
+    assert "'--aa' is a dict[int]" in str(exc.value)
 
 
 def test_a_variadic_arg_member_renders_its_collection_spelling():
     with pytest.raises(ValueError) as exc:
         _register(
             [AtLeastOne("selection", [
-                Member("targets", when="true"), Member("a"),
+                Member("targets", when="true"), Member("aa"),
             ])],
             args=[strictcli.Arg(
-                "targets", type=str, help="t", variadic=True,
+                "targets", type=str, help="tt", variadic=True,
                 presence="optional",
             )],
         )()
@@ -1742,9 +1742,9 @@ def test_a_variadic_bool_arg_is_sized_and_never_bool():
     """§18.31 item 290: its value is a sequence whatever its element type is,
     and it has no `--no-` spelling to decline with."""
     build = _register(
-        [AtLeastOne("selection", [Member("targets"), Member("a")])],
+        [AtLeastOne("selection", [Member("targets"), Member("aa")])],
         args=[strictcli.Arg(
-            "targets", type=bool, help="t", variadic=True, presence="optional",
+            "targets", type=bool, help="tt", variadic=True, presence="optional",
         )],
     )
     build()  # omitting `when` is legal: the bool refusal does not apply
@@ -1752,10 +1752,10 @@ def test_a_variadic_bool_arg_is_sized_and_never_bool():
     with pytest.raises(ValueError) as exc:
         _register(
             [AtLeastOne("selection", [
-                Member("targets", when="true"), Member("a"),
+                Member("targets", when="true"), Member("aa"),
             ])],
             args=[strictcli.Arg(
-                "targets", type=bool, help="t", variadic=True,
+                "targets", type=bool, help="tt", variadic=True,
                 presence="optional",
             )],
         )()
@@ -1763,10 +1763,10 @@ def test_a_variadic_bool_arg_is_sized_and_never_bool():
 
     _register(
         [AtLeastOne("selection", [
-            Member("targets", when="non_empty"), Member("a"),
+            Member("targets", when="non_empty"), Member("aa"),
         ])],
         args=[strictcli.Arg(
-            "targets", type=bool, help="t", variadic=True,
+            "targets", type=bool, help="tt", variadic=True,
             presence="optional",
         )],
     )()  # `non_empty` is legal on it
@@ -1816,7 +1816,7 @@ def test_a_token_spelled_selector_may_be_a_member():
     """§26.2: a token-spelled choice flag is an ordinary root-scope flag."""
     app = _selector_member_app()
     assert app.test(["cmd", "--via", "sms"]).exit_code == 0
-    assert app.test(["cmd", "--note", "x"]).exit_code == 0
+    assert app.test(["cmd", "--note", "xx"]).exit_code == 0
 
 
 def test_a_selector_member_engages_only_when_the_invocation_elected_it():
@@ -1867,15 +1867,15 @@ def test_a_constraint_name_may_not_collide_with_a_selector_name():
 
         @app.command(
             "cmd", effect="read_only", help="a command",
-            constraints=[AtLeastOne("via", [Member("a"), Member("note")])],
+            constraints=[AtLeastOne("via", [Member("aa"), Member("note")])],
         )
         @strictcli.choice_flag(
             "via", help="channel", elect_by="selector-token",
             default=_Email(), choices=[_Email, _Sms],
         )
-        @strictcli.flag("a", type=str, help="a", presence="optional")
-        @strictcli.flag("note", type=str, help="n", presence="optional")
-        def cmd(ctx, via: _Via, a, note):
+        @strictcli.flag("aa", type=str, help="aa", presence="optional")
+        @strictcli.flag("note", type=str, help="nn", presence="optional")
+        def cmd(ctx, via: _Via, aa, note):
             pass
 
     assert str(exc.value) == (
@@ -1899,20 +1899,20 @@ def test_the_decline_clause_searches_direct_members_only():
     @app.command(
         "cmd", effect="read_only", help="a command",
         constraints=[
-            AllOrNone("inner", [Member("a", when="true"), Member("b")]),
-            AtLeastOne("outer", [Member("inner"), Member("c")]),
+            AllOrNone("inner", [Member("aa", when="true"), Member("bb")]),
+            AtLeastOne("outer", [Member("inner"), Member("cc")]),
         ],
     )
-    @strictcli.flag("a", type=bool, help="a", default=False)
-    @strictcli.flag("b", type=str, help="b", presence="optional")
-    @strictcli.flag("c", type=str, help="c", presence="optional")
-    def cmd(ctx, a, b, c):
+    @strictcli.flag("aa", type=bool, help="aa", default=False)
+    @strictcli.flag("bb", type=str, help="bb", presence="optional")
+    @strictcli.flag("cc", type=str, help="cc", presence="optional")
+    def cmd(ctx, aa, bb, cc):
         pass
 
-    r = app.test(["cmd", "--no-a"])
+    r = app.test(["cmd", "--no-aa"])
     assert r.exit_code == 1
     assert r.stderr.splitlines()[0] == (
-        'error: constraint "outer": at least one of (--a with --b), --c '
+        'error: constraint "outer": at least one of (--aa with --bb), --cc '
         "is required"
     )
 
@@ -1923,7 +1923,7 @@ def test_when_non_empty_on_a_scalar_arg_renders_the_member_bare():
     with pytest.raises(ValueError) as exc:
         _register(
             [AtLeastOne("selection", [
-                Member("count", when="non_empty"), Member("a"),
+                Member("count", when="non_empty"), Member("aa"),
             ])],
             args=[strictcli.Arg(
                 "count", type=int, help="how many", presence="optional",
@@ -1953,17 +1953,17 @@ def test_a_constraint_name_may_collide_with_a_scoped_flag_name():
 
     @app.command(
         "cmd", effect="read_only", help="a command",
-        constraints=[AllOrNone("subject", [Member("a"), Member("b")])],
+        constraints=[AllOrNone("subject", [Member("aa"), Member("bb")])],
     )
     @strictcli.choice_flag(
         "via", help="delivery channel", presence="required",
         elect_by="selector-token", choices=[Email, Sms],
     )
-    @strictcli.flag("a", type=str, help="a", presence="optional")
-    @strictcli.flag("b", type=str, help="b", presence="optional")
-    def cmd(ctx, a, b, via: Email | Sms):
+    @strictcli.flag("aa", type=str, help="aa", presence="optional")
+    @strictcli.flag("bb", type=str, help="bb", presence="optional")
+    def cmd(ctx, aa, bb, via: Email | Sms):
         print("ran")
 
     assert app.test(
-        ["cmd", "--via", "sms", "--phone", "1", "--a", "x", "--b", "y"],
+        ["cmd", "--via", "sms", "--phone", "1", "--aa", "xx", "--bb", "yy"],
     ).exit_code == 0

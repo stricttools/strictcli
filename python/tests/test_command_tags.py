@@ -131,24 +131,24 @@ class TestTagStorageAndValidation:
         """Several valid tag names should register without error."""
         app = _make_app()
 
-        @app.command("c1", effect="read_only", help="h", tags={"json"})
+        @app.command("c1", effect="read_only", help="hh", tags={"json"})
         def c1(ctx):
             pass
 
-        @app.command("c2", effect="read_only", help="h", tags={"a"})
+        @app.command("c2", effect="read_only", help="hh", tags={"aa"})
         def c2(ctx):
             pass
 
-        @app.command("c3", effect="read_only", help="h", tags={"my-tag"})
+        @app.command("c3", effect="read_only", help="hh", tags={"my-tag"})
         def c3(ctx):
             pass
 
-        @app.command("c4", effect="read_only", help="h", tags={"a1"})
+        @app.command("c4", effect="read_only", help="hh", tags={"a1"})
         def c4(ctx):
             pass
 
         assert app._commands["c1"].tags == frozenset({"json"})
-        assert app._commands["c2"].tags == frozenset({"a"})
+        assert app._commands["c2"].tags == frozenset({"aa"})
         assert app._commands["c3"].tags == frozenset({"my-tag"})
         assert app._commands["c4"].tags == frozenset({"a1"})
 
@@ -174,16 +174,16 @@ class TestGroupTagInheritance:
 
     def test_nested_group_tag_cascade(self):
         app = _make_app()
-        parent = app.group("parent", help="parent group", tags={"a"})
-        child = parent.group("child", help="child group", tags={"b"})
+        parent = app.group("parent", help="parent group", tags={"aa"})
+        child = parent.group("child", help="child group", tags={"bb"})
 
         @child.command("cmd", effect="read_only", help="a command")
         def cmd(ctx):
             pass
 
         c = child.commands["cmd"]
-        assert "a" in c.tags
-        assert "b" in c.tags
+        assert "aa" in c.tags
+        assert "bb" in c.tags
 
     def test_command_merges_own_and_group_tags(self):
         app = _make_app()

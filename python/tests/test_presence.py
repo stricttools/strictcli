@@ -379,7 +379,7 @@ class TestOptionalDelivery:
             print(f"tag={tag!r}")
 
         assert "tag=None" in app.test(["cmd"]).stdout
-        assert "tag=['a']" in app.test(["cmd", "--tag", "a"]).stdout
+        assert "tag=['aa']" in app.test(["cmd", "--tag", "aa"]).stdout
 
     def test_optional_dict_delivers_absence_not_an_empty_dict(self):
         app = _app()
@@ -425,7 +425,7 @@ class TestRequiredDelivery:
         r = app.test(["cmd"])
         assert r.exit_code == 1
         assert "flag '--tag' is required" in r.stderr
-        assert "tag=['a']" in app.test(["cmd", "--tag", "a"]).stdout
+        assert "tag=['aa']" in app.test(["cmd", "--tag", "aa"]).stdout
 
     def test_required_dict_needs_at_least_one_key(self):
         app = _app()
@@ -484,7 +484,7 @@ class TestArgDelivery:
             print(f"files={files!r}")
 
         assert app.test(["cmd"]).exit_code == 1
-        assert "files=['a']" in app.test(["cmd", "a"]).stdout
+        assert "files=['aa']" in app.test(["cmd", "aa"]).stdout
 
     def test_optional_variadic_delivers_an_empty_list(self):
         app = _app()
@@ -772,23 +772,23 @@ class TestSchemaPresence:
             app = _app()
 
             @app.command("cmd", effect="read_only", help="a command")
-            @strictcli.flag("a", type=str, help="a", presence="required")
-            @strictcli.flag("b", type=str, help="b", presence="optional")
-            @strictcli.flag("c", type=str, help="c", default="x")
-            @strictcli.arg("p", help="p", presence="required")
-            def cmd(ctx, a, b, c, p):
+            @strictcli.flag("aa", type=str, help="aa", presence="required")
+            @strictcli.flag("bb", type=str, help="bb", presence="optional")
+            @strictcli.flag("cc", type=str, help="cc", default="xx")
+            @strictcli.arg("pp", help="pp", presence="required")
+            def cmd(ctx, aa, bb, cc, pp):
                 pass
 
             return app
 
         data = self._dump(build, tmp_path, monkeypatch)
         flags = {f["name"]: f for f in data["commands"]["cmd"]["flags"]}
-        assert flags["a"]["presence"] == "required"
-        assert "default" not in flags["a"]
-        assert flags["b"]["presence"] == "optional"
-        assert "default" not in flags["b"]
-        assert flags["c"]["presence"] == "default"
-        assert flags["c"]["default"] == "x"
+        assert flags["aa"]["presence"] == "required"
+        assert "default" not in flags["aa"]
+        assert flags["bb"]["presence"] == "optional"
+        assert "default" not in flags["bb"]
+        assert flags["cc"]["presence"] == "default"
+        assert flags["cc"]["default"] == "xx"
         arg = data["commands"]["cmd"]["args"][0]
         assert arg["presence"] == "required"
         assert "required" not in arg
@@ -959,13 +959,13 @@ class TestHelpMarkers:
 
         @app.command("cmd", effect="read_only", help="a command")
         @strictcli.flag(
-            "tag", type=list[str], help="tags", default=["x", "y"], unique=False,
+            "tag", type=list[str], help="tags", default=["xx", "yy"], unique=False,
         )
         def cmd(ctx, tag):
             pass
 
         line = next(ln for ln in self._help(app).splitlines() if "--tag" in ln)
-        assert line.endswith("[default: x, y]")
+        assert line.endswith("[default: xx, yy]")
 
     def test_declared_empty_collections_render_the_whole_marker(self):
         """`[default: []]` / `[default: {}]`, brackets included (§23.8)."""
@@ -996,16 +996,16 @@ class TestToolSchemaRequiredness:
         app = _app()
 
         @app.command("cmd", effect="read_only", help="a command")
-        @strictcli.flag("a", type=str, help="a", presence="required")
-        @strictcli.flag("b", type=str, help="b", presence="optional")
-        @strictcli.flag("c", type=str, help="c", default="x")
-        @strictcli.arg("p", help="p", presence="required")
-        @strictcli.arg("q", help="q", presence="optional")
-        def cmd(ctx, a, b, c, p, q=None):
+        @strictcli.flag("aa", type=str, help="aa", presence="required")
+        @strictcli.flag("bb", type=str, help="bb", presence="optional")
+        @strictcli.flag("cc", type=str, help="cc", default="xx")
+        @strictcli.arg("pp", help="pp", presence="required")
+        @strictcli.arg("qq", help="qq", presence="optional")
+        def cmd(ctx, aa, bb, cc, pp, qq=None):
             pass
 
         schema = app.json_schema("cmd")
-        assert schema["required"] == ["a", "p"]
+        assert schema["required"] == ["aa", "pp"]
 
     def test_a_required_bool_is_in_the_required_array(self):
         """Bools were excluded on the reasoning that they always have a

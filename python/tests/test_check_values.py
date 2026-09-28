@@ -242,7 +242,7 @@ class TestHookDeclarationErrors:
 
     @pytest.mark.parametrize("hooks,message", [
         ("[hooks.Pre-Push]\ntag = \"prepush\"\n",
-         'checks.toml: invalid hook name "Pre-Push" (must match [a-z][a-z0-9-]*)'),
+         'checks.toml: invalid hook name "Pre-Push" (must be lowercase kebab-case of at least two characters: [a-z][a-z0-9]*(-[a-z0-9]+)*)'),
         ("[hooks]\npre-push = \"prepush\"\n",
          'checks.toml: hook "pre-push" must be a table'),
         ("[hooks.pre-push]\ntag = \"prepush\"\nname = \"lint\"\n",

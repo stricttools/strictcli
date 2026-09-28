@@ -105,11 +105,11 @@ class TestHumanMode:
 
     def test_the_renderer_receives_the_payload_as_supplied(self):
         seen = []
-        supplied = {"table": "t", "rows": 1}
+        supplied = {"table": "tt", "rows": 1}
 
         def renderer(payload):
             seen.append(payload)
-            return "x"
+            return "xx"
 
         def body(ctx):
             ctx.payload(supplied)
@@ -159,7 +159,7 @@ class TestDeclaration:
 
     def test_ctx_out_is_refused_on_a_command_with_a_renderer(self):
         def body(ctx):
-            ctx.out("x")
+            ctx.out("xx")
             return 0
 
         with pytest.raises(
@@ -173,7 +173,7 @@ class TestDeclaration:
 
     def test_a_group_command_declares_it_the_same_way(self):
         app = strictcli.App(name="app", version="1.0.0", help="app")
-        grp = app.group("g", help="g")
+        grp = app.group("gg", help="gg")
 
         @grp.command(
             "status", effect="read_only", help="status",
@@ -182,7 +182,7 @@ class TestDeclaration:
         def _status(ctx):
             return _supplies(ctx)
 
-        assert app.test(["g", "status"]).stdout == "users: 3 rows\n"
+        assert app.test(["gg", "status"]).stdout == "users: 3 rows\n"
 
     def test_dump_schema_does_not_publish_it(self):
         app = _app(_supplies)

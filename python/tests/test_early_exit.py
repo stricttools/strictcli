@@ -101,7 +101,7 @@ class TestHumanMode:
             "fwd", effect="read_only", help="fwd",
             passthrough=strictcli.Passthrough(handler=_forward),
         )(lambda: None)
-        r = app.test(["fwd", "x"])
+        r = app.test(["fwd", "xx"])
         assert (r.exit_code, r.stderr) == (6, "error: child refused\n")
 
 
@@ -171,7 +171,7 @@ class TestRefusals:
     @pytest.mark.parametrize("code", [0, 256, -1, True, "3"])
     def test_a_code_outside_1_to_255_is_refused_at_the_call(self, code):
         with pytest.raises(ValueError) as e:
-            strictcli.exit_now(code, "x")
+            strictcli.exit_now(code, "xx")
         assert str(e.value) == (
             f"early exit requires an exit code between 1 and 255, got {code}: "
             "a successful run ends with a return from the handler"
@@ -282,15 +282,15 @@ class TestOutsideAHandler:
         def impl(ctx):
             strictcli.exit_now(4, "gave up")
 
-        defs = {"a": _CheckDef(
-            name="a", tags=["t"], severity="error", fast=True, pure=True,
+        defs = {"aa": _CheckDef(
+            name="aa", tags=["tt"], severity="error", fast=True, pure=True,
             needs_network=False, depends_on=[], impl=impl,
         )}
 
         class _Ctx:
             project_root = Path(".")
 
-        results, _, exit_code = _run_checks(defs, ["a"], _Ctx(), False)
+        results, _, exit_code = _run_checks(defs, ["aa"], _Ctx(), False)
         assert exit_code == 1
         (_, outcome, _), = results
         assert outcome.status == "fail"
@@ -303,12 +303,12 @@ class TestOutsideAHandler:
             strictcli.exit_now(4, "gave up")
 
         @app.command("cmd", effect="read_only", help="cmd")
-        @strictcli.flag("x", type=str, presence="required", help="x",
+        @strictcli.flag("xx", type=str, presence="required", help="xx",
                         validate=refuse)
-        def _cmd(ctx, x):
+        def _cmd(ctx, xx):
             return 0
 
         with pytest.raises(BaseException) as e:
-            app.test(["cmd", "--x", "v"])
+            app.test(["cmd", "--xx", "vv"])
         assert not isinstance(e.value, Exception)
         assert str(e.value) == "gave up"

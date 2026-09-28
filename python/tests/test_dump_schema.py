@@ -1645,7 +1645,7 @@ class TestCanonicalKeyOrder:
         app = _make_app()
 
         @app.command(
-            "noop", effect="read_only", help="Does nothing", tags=["z", "a"],
+            "noop", effect="read_only", help="Does nothing", tags=["zz", "aa"],
         )
         @strictcli.flag("dry", type=bool, help="dry", default=False)
         def noop(ctx, dry):
@@ -1653,11 +1653,11 @@ class TestCanonicalKeyOrder:
 
         app.deprecate("zulu", message="gone")
         app.deprecate("alpha", message="gone")
-        app.tag_contract("z", requires_flag="dry")
-        app.tag_contract("a", requires_flag="dry")
+        app.tag_contract("zz", requires_flag="dry")
+        app.tag_contract("aa", requires_flag="dry")
         data = self._dump(tmp_path, app)
         assert list(data["deprecated"]) == ["alpha", "zulu"]
-        assert list(data["tag_contracts"]) == ["a", "z"]
+        assert list(data["tag_contracts"]) == ["aa", "zz"]
 
 
 class TestBehavioralCompleteness:

@@ -55,7 +55,7 @@ class TestHandleAvailability:
         def _e(ctx, **kw):
             return 0
 
-        app.call("exec", _args=["x"])
+        app.call("exec", _args=["xx"])
         assert isinstance(seen["effects"], sc._Effects)
 
     def test_available_in_run_dispatch(self, monkeypatch, tmp_path):
@@ -469,7 +469,7 @@ class TestCarriers:
 
         @app.command("rel", help="rel", effect="mutating")
         def _rel(ctx):
-            holder["c"] = ctx.effects.run(["git", "tag", "v1"])
+            holder["cc"] = ctx.effects.run(["git", "tag", "v1"])
             holder["void"] = ctx.effects.mkdir("build")
             holder["spawned"] = ctx.effects.spawn(["daemon"])
             return 0
@@ -479,11 +479,11 @@ class TestCarriers:
 
     def test_repr_is_the_single_non_poisoned_dunder(self):
         h = self._carrier(_app())
-        assert repr(h["c"]) == "Unsettled(«step 1 output»)"
+        assert repr(h["cc"]) == "Unsettled(«step 1 output»)"
 
     def test_isinstance_still_works(self):
         h = self._carrier(_app())
-        assert isinstance(h["c"], sc.Unsettled)
+        assert isinstance(h["cc"], sc.Unsettled)
 
     @pytest.mark.parametrize("op", [
         lambda c: bool(c),
@@ -501,26 +501,26 @@ class TestCarriers:
         lambda c: c.stdout,
         lambda c: int(c),
         lambda c: float(c),
-        lambda c: "x"[c],
+        lambda c: "xx"[c],
         lambda c: str(c),
         lambda c: format(c),
         lambda c: bytes(c),
-        lambda c: c + "x",
-        lambda c: "x" + c,
-        lambda c: c % "x",
-        lambda c: c.__rmod__("x"),
+        lambda c: c + "xx",
+        lambda c: "xx" + c,
+        lambda c: c % "xx",
+        lambda c: c.__rmod__("xx"),
         lambda c: c(),
     ])
     def test_every_poisoned_dunder_raises(self, op):
         h = self._carrier(_app())
         with pytest.raises(BaseException) as exc:
-            op(h["c"])
+            op(h["cc"])
         assert "dry-run preview ends at step" in str(exc.value)
 
     def test_f_string_interpolation_is_extraction(self):
         h = self._carrier(_app())
         with pytest.raises(BaseException, match="dry-run preview ends"):
-            f"{h['c']}"
+            f"{h['cc']}"
 
     def test_void_carrier_is_never_forwardable(self):
         app = _app()
@@ -571,7 +571,7 @@ class TestCarriers:
         @app.command("rel", help="rel", effect="mutating")
         def _rel(ctx):
             c = ctx.effects.run(["make"])
-            kwargs = {param: c if param == "cwd" else {"K": "v"}}
+            kwargs = {param: c if param == "cwd" else {"K": "vv"}}
             if param == "env":
                 kwargs = {"env": {"K": c}}
             ctx.effects.run(["echo"], **kwargs)
@@ -587,7 +587,7 @@ class TestCarriers:
         @app.command("rel", help="rel", effect="mutating")
         def _rel(ctx):
             c = ctx.effects.run(["make"])
-            ctx.effects.chmod("x", c)
+            ctx.effects.chmod("xx", c)
             return 0
 
         with pytest.raises(ValueError, match=r"parameter 'mode' does not accept"):
@@ -599,7 +599,7 @@ class TestCarriers:
         @app.command("rel", help="rel", effect="mutating")
         def _rel(ctx):
             c = ctx.effects.run(["make"])
-            ctx.effects.mkdir("x", resource=c)
+            ctx.effects.mkdir("xx", resource=c)
             return 0
 
         with pytest.raises(ValueError, match=r"parameter 'resource' does not accept"):
@@ -654,7 +654,7 @@ class TestCarrierSeal:
 
         @app.command("rel", help="rel", effect="mutating")
         def _rel(ctx):
-            holder["c"] = ctx.effects.run(["git", "tag", "v1"])
+            holder["cc"] = ctx.effects.run(["git", "tag", "v1"])
             holder["void"] = ctx.effects.mkdir("build")
             return 0
 
@@ -664,9 +664,9 @@ class TestCarrierSeal:
     def test_forging_the_brand_is_poisoned(self):
         h = self._carrier()
         with pytest.raises(BaseException) as exc:
-            h["c"]._brand = "«forged»"
+            h["cc"]._brand = "«forged»"
         assert "dry-run preview ends at step" in str(exc.value)
-        assert repr(h["c"]) == "Unsettled(«step 1 output»)"
+        assert repr(h["cc"]) == "Unsettled(«step 1 output»)"
 
     def test_forging_forwardability_is_poisoned(self):
         """A void carrier cannot be talked into being forwardable."""
@@ -678,7 +678,7 @@ class TestCarrierSeal:
     def test_setting_a_new_attribute_is_poisoned(self):
         h = self._carrier()
         with pytest.raises(BaseException) as exc:
-            h["c"].stdout = "forged"
+            h["cc"].stdout = "forged"
         assert "dry-run preview ends at step" in str(exc.value)
 
 
@@ -767,11 +767,11 @@ class TestDeclaredSignatures:
         def _rel(ctx):
             holder["run"] = ctx.effects.run(["git", "tag", "v1"])
             holder["spawn"] = ctx.effects.spawn(["daemon"])
-            holder["write"] = ctx.effects.write("f", "x")
-            holder["mkdir"] = ctx.effects.mkdir("d")
-            holder["remove"] = ctx.effects.remove("d")
-            holder["rename"] = ctx.effects.rename("a", "b")
-            holder["chmod"] = ctx.effects.chmod("f", 0o755)
+            holder["write"] = ctx.effects.write("ff", "xx")
+            holder["mkdir"] = ctx.effects.mkdir("dd")
+            holder["remove"] = ctx.effects.remove("dd")
+            holder["rename"] = ctx.effects.rename("aa", "bb")
+            holder["chmod"] = ctx.effects.chmod("ff", 0o755)
             holder["http"] = ctx.effects.http("POST", "https://x/y")
             return 0
 
@@ -792,7 +792,7 @@ class TestDeclaredSignatures:
         @app.command("rel", help="rel", effect="mutating")
         def _rel(ctx):
             holder["run"] = ctx.effects.run([PY, "-c", "print('hi')"])
-            holder["mkdir"] = ctx.effects.mkdir("d")
+            holder["mkdir"] = ctx.effects.mkdir("dd")
             return 0
 
         app.test(["rel"])
@@ -836,12 +836,12 @@ class TestObserves:
         @app.command("rel", help="rel", effect="mutating")
         def _rel(ctx):
             ctx.effects.mkdir("build")
-            holder["o"] = ctx.effects.run([PY, "-c", "pass"])
+            holder["oo"] = ctx.effects.run([PY, "-c", "pass"])
             return 0
 
         app.test(["--dry-run", "rel"])
-        assert isinstance(holder["o"], sc.Unsettled)
-        assert repr(holder["o"]).startswith("Unsettled(«stale: ")
+        assert isinstance(holder["oo"], sc.Unsettled)
+        assert repr(holder["oo"]).startswith("Unsettled(«stale: ")
 
     def test_observe_is_allowed_in_a_read_only_command(self):
         app = _app(proc_observe_allowlist=[[PY, "-c"]])
@@ -870,15 +870,15 @@ class TestObserves:
         app = _app(proc_observe_allowlist=[["git", "status"]])
 
         @app.command("rel", help="rel", effect="mutating",
-                     grants=[sc.Grant("g", "why", sc.PROC_MUTATE)])
+                     grants=[sc.Grant("gg", "why", sc.PROC_MUTATE)])
         def _rel(ctx):
-            ctx.effects.run(["git", "status"], grant="g")
+            ctx.effects.run(["git", "status"], grant="gg")
             return 0
 
         with pytest.raises(ValueError) as exc:
             app.test(["rel"])
         assert str(exc.value) == (
-            'command "rel": grant \'g\' cannot be used on an observe '
+            'command "rel": grant \'gg\' cannot be used on an observe '
             "(an allowlisted effects.run changes nothing)"
         )
 
@@ -900,13 +900,13 @@ class TestObserves:
 
 class TestReadOnlyEnforcement:
     @pytest.mark.parametrize("call", [
-        lambda e: e.write("a", "b"),
-        lambda e: e.mkdir("a"),
-        lambda e: e.remove("a"),
-        lambda e: e.rename("a", "b"),
-        lambda e: e.chmod("a", 0o755),
+        lambda e: e.write("aa", "bb"),
+        lambda e: e.mkdir("aa"),
+        lambda e: e.remove("aa"),
+        lambda e: e.rename("aa", "bb"),
+        lambda e: e.chmod("aa", 0o755),
         lambda e: e.http("POST", "https://x.test"),
-        lambda e: e.spawn(["x"]),
+        lambda e: e.spawn(["xx"]),
     ])
     def test_mutating_members_are_call_time_errors(self, call):
         app = _app()
@@ -937,7 +937,7 @@ class TestGrants:
 
         @app.command("rel", help="rel", effect="mutating")
         def _rel(ctx):
-            ctx.effects.mkdir("x", grant="nope")
+            ctx.effects.mkdir("xx", grant="nope")
             return 0
 
         with pytest.raises(ValueError) as exc:
@@ -952,7 +952,7 @@ class TestGrants:
         @app.command("rel", help="rel", effect="mutating",
                      grants=[sc.Grant("push", "why", sc.PROC_MUTATE)])
         def _rel(ctx):
-            ctx.effects.mkdir("x", grant="push")
+            ctx.effects.mkdir("xx", grant="push")
             return 0
 
         with pytest.raises(ValueError) as exc:
@@ -972,15 +972,15 @@ class TestGrants:
                 return 0
         assert str(exc.value) == (
             f'command "rel": invalid grant name \'{bad}\': '
-            f"must match [a-z][a-z0-9-]*"
+            f"must be lowercase kebab-case of at least two characters: [a-z][a-z0-9]*(-[a-z0-9]+)*"
         )
 
     def test_duplicate_grant(self):
         app = _app()
         with pytest.raises(ValueError) as exc:
             @app.command("rel", help="rel", effect="mutating",
-                         grants=[sc.Grant("push", "a", sc.PROC_MUTATE),
-                                 sc.Grant("push", "b", sc.NET_MUTATE)])
+                         grants=[sc.Grant("push", "aa", sc.PROC_MUTATE),
+                                 sc.Grant("push", "bb", sc.NET_MUTATE)])
             def _rel(ctx):
                 return 0
         assert str(exc.value) == 'command "rel": duplicate grant \'push\''
@@ -1118,7 +1118,7 @@ class TestEffectLog:
 class TestCacheWrites:
     def test_schema_dump_records_a_cache_write(self, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)
-        (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n')
+        (tmp_path / "pyproject.toml").write_text('[project]\nname = "xx"\n')
         app = _app()
 
         @app.command("run", help="run", effect="read_only")
@@ -1135,7 +1135,7 @@ class TestCacheWrites:
 
     def test_cache_writes_execute_in_dry_mode(self, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)
-        (tmp_path / "pyproject.toml").write_text('[project]\nname = "x"\n')
+        (tmp_path / "pyproject.toml").write_text('[project]\nname = "xx"\n')
         app = _app()
 
         @app.command("run", help="run", effect="read_only")
@@ -1366,7 +1366,7 @@ class TestLiveExecution:
     def test_remove_is_recursive(self, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)
         (tmp_path / "tree" / "sub").mkdir(parents=True)
-        (tmp_path / "tree" / "sub" / "f").write_text("x")
+        (tmp_path / "tree" / "sub" / "ff").write_text("xx")
         app = _app()
 
         @app.command("rel", help="rel", effect="mutating")
@@ -1420,7 +1420,7 @@ class TestParameterValidation:
 
         @app.command("rel", help="rel", effect="mutating")
         def _rel(ctx):
-            ctx.effects.mkdir("x", check=False)
+            ctx.effects.mkdir("xx", check=False)
             return 0
 
         with pytest.raises(TypeError, match="check"):
@@ -1429,11 +1429,11 @@ class TestParameterValidation:
     @pytest.mark.parametrize("method,call", [
         ("run", lambda e: e.run(["true"], body=b"x")),
         ("spawn", lambda e: e.spawn(["true"], check=False)),
-        ("write", lambda e: e.write("f", "c", stream=True)),
-        ("mkdir", lambda e: e.mkdir("d", stream=True)),
-        ("remove", lambda e: e.remove("d", check=False)),
-        ("rename", lambda e: e.rename("a", "b", cwd=".")),
-        ("chmod", lambda e: e.chmod("f", 0o755, headers={})),
+        ("write", lambda e: e.write("ff", "cc", stream=True)),
+        ("mkdir", lambda e: e.mkdir("dd", stream=True)),
+        ("remove", lambda e: e.remove("dd", check=False)),
+        ("rename", lambda e: e.rename("aa", "bb", cwd=".")),
+        ("chmod", lambda e: e.chmod("ff", 0o755, headers={})),
         ("http", lambda e: e.http("GET", "http://x", stream=True)),
     ])
     def test_option_not_accepted_message_is_the_pinned_template(self, method, call):
@@ -1458,7 +1458,7 @@ class TestParameterValidation:
 
         @app.command("rel", help="rel", effect="mutating")
         def _rel(ctx):
-            ctx.effects.mkdir("d", stream=True)
+            ctx.effects.mkdir("dd", stream=True)
             return 0
 
         with pytest.raises(TypeError) as excinfo:
@@ -1483,7 +1483,7 @@ class TestParameterValidation:
 
         @app.command("rel", help="rel", effect="mutating")
         def _rel(ctx):
-            ctx.effects.chmod("x", "755")
+            ctx.effects.chmod("xx", "755")
             return 0
 
         with pytest.raises(TypeError, match="'mode' must be an int"):

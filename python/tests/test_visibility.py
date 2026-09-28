@@ -87,11 +87,11 @@ class TestHiddenCommand:
         """If all commands are hidden, the Commands section should not appear."""
         app = _make_app()
 
-        @app.command("a", effect="read_only", help="cmd a", hidden=True)
+        @app.command("aa", effect="read_only", help="cmd a", hidden=True)
         def a(ctx):
             pass
 
-        @app.command("b", effect="read_only", help="cmd b", hidden=True)
+        @app.command("bb", effect="read_only", help="cmd b", hidden=True)
         def b(ctx):
             pass
 
@@ -154,11 +154,11 @@ class TestHiddenGroup:
         visible_sub = grp.group("visible", help="Visible subgroup")
         hidden_sub = grp.group("hidden", help="Hidden subgroup", hidden=True)
 
-        @visible_sub.command("a", effect="read_only", help="cmd a")
+        @visible_sub.command("aa", effect="read_only", help="cmd a")
         def a(ctx):
             pass
 
-        @hidden_sub.command("b", effect="read_only", help="cmd b")
+        @hidden_sub.command("bb", effect="read_only", help="cmd b")
         def b(ctx):
             pass
 
@@ -186,8 +186,8 @@ class TestHiddenGroup:
     def test_all_hidden_groups_no_groups_section(self):
         """If all groups are hidden, the Groups section should not appear."""
         app = _make_app()
-        app.group("a", help="group a", hidden=True)
-        app.group("b", help="group b", hidden=True)
+        app.group("aa", help="group a", hidden=True)
+        app.group("bb", help="group b", hidden=True)
 
         result = app.test(["--help"])
         assert "Groups:" not in result.stdout
@@ -369,7 +369,7 @@ class TestVisibilitySchema:
 
         app = _make_app()
 
-        @app.command("x", effect="read_only", help="x cmd")
+        @app.command("xx", effect="read_only", help="x cmd")
         def x(ctx):
             pass
 

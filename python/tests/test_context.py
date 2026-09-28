@@ -78,12 +78,12 @@ class TestContextAlwaysInjected:
 
         @app.command("ping", effect="read_only", help="ping")
         def ping(c):
-            captured["c"] = c
+            captured["cc"] = c
             c.info("pong")
 
         result = app.test(["ping"])
         assert result.exit_code == 0
-        assert isinstance(captured["c"], Context)
+        assert isinstance(captured["cc"], Context)
         assert "pong" in result.stdout
 
     def test_context_handler_with_no_flags(self):
@@ -129,7 +129,7 @@ class TestOutcomeConstruction:
     def test_factory_rejects_a_data_argument(self):
         """The bare-JSON-print data channel is gone (contract §19.4)."""
         with pytest.raises(TypeError):
-            strictcli.outcome(data={"k": 1})
+            strictcli.outcome(data={"kk": 1})
 
 
 class TestOutcomeDataViaTest:
@@ -267,22 +267,22 @@ class TestOutcomeViaCall:
         app = _build_app()
 
         @app.command("compute", effect="read_only", help="compute", payload_schema={})
-        @strictcli.flag("x", type=int, help="value", presence="required")
-        def compute(ctx, x):
-            ctx.payload({"squared": x * x})
+        @strictcli.flag("xx", type=int, help="value", presence="required")
+        def compute(ctx, xx):
+            ctx.payload({"squared": xx * xx})
             return strictcli.outcome()
 
-        assert app.call("compute", x=5) == {"squared": 25}
+        assert app.call("compute", xx=5) == {"squared": 25}
 
     def test_call_returns_int(self):
         app = _build_app()
 
         @app.command("compute", effect="read_only", help="compute")
-        @strictcli.flag("x", type=int, help="value", presence="required")
-        def compute(ctx, x):
-            return x * 2
+        @strictcli.flag("xx", type=int, help="value", presence="required")
+        def compute(ctx, xx):
+            return xx * 2
 
-        assert app.call("compute", x=5) == 10
+        assert app.call("compute", xx=5) == 10
 
     def test_call_returns_none_for_exit_only_outcome(self):
         app = _build_app()
@@ -331,22 +331,22 @@ class TestContextWithInvoke:
         captured = {}
 
         @app.command("cmd", effect="read_only", help="test", payload_schema={})
-        @strictcli.flag("x", type=int, help="value", presence="required")
-        def cmd(ctx, x):
-            captured["x"] = x
-            ctx.payload({"doubled": x * 2})
+        @strictcli.flag("xx", type=int, help="value", presence="required")
+        def cmd(ctx, xx):
+            captured["xx"] = xx
+            ctx.payload({"doubled": xx * 2})
             return strictcli.outcome()
 
-        result = app._invoke("cmd", {"x": 3})
+        result = app._invoke("cmd", {"xx": 3})
         assert result == {"doubled": 6}
-        assert captured["x"] == 3
+        assert captured["xx"] == 3
 
     def test_invoke_returns_int(self):
         app = _build_app()
 
         @app.command("cmd", effect="read_only", help="test")
-        @strictcli.flag("x", type=int, help="value", presence="required")
-        def cmd(ctx, x):
-            return x + 1
+        @strictcli.flag("xx", type=int, help="value", presence="required")
+        def cmd(ctx, xx):
+            return xx + 1
 
-        assert app._invoke("cmd", {"x": 3}) == 4
+        assert app._invoke("cmd", {"xx": 3}) == 4

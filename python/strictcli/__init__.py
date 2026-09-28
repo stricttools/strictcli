@@ -973,7 +973,6 @@ CACHE_WRITE = "cache_write"
 # The kinds a Grant may be declared for (CACHE_WRITE is excluded: it is not
 # reachable from application code, so nothing could ever use such a grant).
 _GRANTABLE_KINDS = (PROC_MUTATE, PROC_SPAWN, FILE_WRITE, NET_MUTATE)
-_GRANT_NAME_RE = re.compile(r"^[a-z][a-z0-9-]*$")
 
 
 class EffectFailed(Exception):
@@ -2308,7 +2307,7 @@ def _raise_grant_duplicate(name: str, grant: str):
 def _raise_grant_name_invalid(name: str, grant: str):
     raise ValueError(
         f'command "{name}": invalid grant name \'{grant}\': '
-        f"must match [a-z][a-z0-9-]*"
+        f"{_KEBAB_NAME_CLAUSE}"
     )
 
 
@@ -3196,7 +3195,7 @@ def _validate_grants(cmd_name: str, grants) -> tuple:
                 f'command "{cmd_name}": grants must be Grant instances, '
                 f"got {type(g).__name__}"
             )
-        if not isinstance(g.name, str) or not _GRANT_NAME_RE.fullmatch(g.name):
+        if not isinstance(g.name, str) or not _is_kebab_name(g.name):
             _raise_grant_name_invalid(cmd_name, g.name)
         if g.name in seen:
             _raise_grant_duplicate(cmd_name, g.name)
@@ -4518,7 +4517,54 @@ def _config_typename(value: object) -> str:
     return type(value).__name__
 
 
-_IDENTIFIER_RE = re.compile(r"^[a-z][a-z0-9-]*$")
+# The naming rule: one pattern for every identifier a caller types or references
+# (commands, groups, long flags, choices, constraints, tags, checks, hooks,
+# grants, resources, requirements), plus a two-character minimum.
+_KEBAB_NAME_RE = re.compile(r"^[a-z][a-z0-9]*(-[a-z0-9]+)*$")
+_KEBAB_NAME_CLAUSE = (
+    "must be lowercase kebab-case of at least two characters: "
+    "[a-z][a-z0-9]*(-[a-z0-9]+)*"
+)
+
+
+def _is_kebab_name(name: object) -> bool:
+    return (
+        isinstance(name, str) and len(name) >= 2
+        and _KEBAB_NAME_RE.fullmatch(name) is not None
+    )
+
+
+# The framework's own commands; their names are reserved at every level of the
+# command tree, so no app command, group or deprecated command may take one.
+_FRAMEWORK_COMMAND_NAMES = frozenset({"help", "version"})
+
+
+def _check_command_tree_name(kind: str, name: object) -> None:
+    """The reservation and the naming rule for a command, group or
+    deprecated-command name. ``kind`` is "command", "group" or
+    "deprecated command"."""
+    if name in _FRAMEWORK_COMMAND_NAMES:
+        raise ValueError(
+            f'{kind} name "{name}" is reserved: help and version are '
+            f"framework commands at every level of the command tree"
+        )
+    if not _is_kebab_name(name):
+        raise ValueError(f'{kind} name "{name}" {_KEBAB_NAME_CLAUSE}')
+
+
+def _is_short_form(short: object) -> bool:
+    return (
+        isinstance(short, str) and len(short) == 1
+        and ("a" <= short <= "z" or "A" <= short <= "Z")
+    )
+
+
+def _check_short_form(name: str, short: object) -> None:
+    if short is not None and not _is_short_form(short):
+        raise ValueError(
+            f'Flag "{name}": short form "{short}" must be one ASCII letter '
+            f"(a-z or A-Z)"
+        )
 _CHECK_REQUIRED_FIELDS = {
     "tags", "severity", "fast", "pure", "needs_network", "depends_on",
     "description", "subject",
@@ -4551,10 +4597,10 @@ def _parse_check_hooks(hooks_section: object) -> dict[str, str]:
     hooks: dict[str, str] = {}
     for name in sorted(hooks_section):
         fields = hooks_section[name]
-        if not _IDENTIFIER_RE.fullmatch(name):
+        if not _is_kebab_name(name):
             raise ValueError(
                 f'checks.toml: invalid hook name "{name}" '
-                f"(must match [a-z][a-z0-9-]*)"
+                f"({_KEBAB_NAME_CLAUSE})"
             )
         if not isinstance(fields, dict):
             raise ValueError(f'checks.toml: hook "{name}" must be a table')
@@ -4615,10 +4661,10 @@ def _parse_checks_toml_full(
 
     for name, fields in checks_section.items():
         # Validate check name
-        if not _IDENTIFIER_RE.fullmatch(name):
+        if not _is_kebab_name(name):
             raise ValueError(
                 f'checks.toml: invalid check name "{name}" '
-                f"(must match [a-z][a-z0-9-]*)"
+                f"({_KEBAB_NAME_CLAUSE})"
             )
         if not isinstance(fields, dict):
             raise ValueError(f'checks.toml: check "{name}" must be a table')
@@ -5910,6 +5956,7 @@ class Flag:
         # One function holds every flag-name ban, so the scoped declaration
         # surfaces raise the identical messages at every depth (§24.7).
         _check_flag_name_bans(self.name)
+        _check_short_form(self.name, self.short)
 
         # The presence declaration, resolved before anything reads `default`.
         # Nothing downstream infers presence from the shape of another
@@ -6551,7 +6598,7 @@ def _raise_constraint_references_scoped_flag(
 
 def _raise_constraint_name_charset(name: str, c: str):
     raise ValueError(
-        f'command "{name}": constraint name "{c}" must match [a-z][a-z0-9-]*'
+        f'command "{name}": constraint name "{c}" {_KEBAB_NAME_CLAUSE}'
     )
 
 
@@ -6743,7 +6790,7 @@ def _raise_choices_entry_not_choice_class(name: str, index: int, got: str):
 
 def _raise_choice_name_charset(sel: str, c: str):
     raise ValueError(
-        f'Flag "{sel}": choice name "{c}" must match [a-z][a-z0-9-]*'
+        f'Flag "{sel}": choice name "{c}" {_KEBAB_NAME_CLAUSE}'
     )
 
 
@@ -7109,6 +7156,7 @@ def _make_selector(
     # IS a flag (§24.7). A member-spelled selector's name is never typed, but it
     # is the handler key and the noun help and errors use.
     _check_flag_name_bans(name)
+    _check_short_form(name, short)
 
     if isinstance(elect_by, _MissingSentinel):
         _raise_selector_elect_by_undeclared(name)
@@ -7234,6 +7282,9 @@ def _check_flag_name_bans(name: str) -> None:
             f"reserved for the negation system; use a positive "
             f"name instead"
         )
+    # The naming rule, after the bans so a banned name keeps its own message.
+    if not _is_kebab_name(name):
+        raise ValueError(f'flag name "{name}" {_KEBAB_NAME_CLAUSE}')
 
 
 def _build_choice_spec(
@@ -7242,12 +7293,14 @@ def _build_choice_spec(
     """Build one choice's scope, validating every rule at this depth."""
     if not isinstance(decl.help, str) or not decl.help.strip():
         _raise_choice_help_empty(sel_name, decl.name)
-    if not _IDENTIFIER_RE.fullmatch(decl.name):
-        _raise_choice_name_charset(sel_name, decl.name)
     if elect_by == _ELECT_MEMBER_FLAGS:
         # Under member spelling a choice name IS a flag name and inherits every
-        # flag-name rule, including the bans (§24.7).
+        # flag-name rule, including the bans and the naming rule (§24.7), which
+        # run first as they do where the member flag is built by a flag
+        # constructor.
         _check_flag_name_bans(decl.name)
+    if not _is_kebab_name(decl.name):
+        _raise_choice_name_charset(sel_name, decl.name)
 
     cls = decl.cls
     ns = dict(sel_localns)
@@ -7756,7 +7809,6 @@ _CO_OCCURRENCE_FAMILIES = (AtLeastOne, AllOrNone)
 _CONSTRAINT_FAMILIES = (AtLeastOne, AllOrNone, Requires, Implies)
 
 
-_CONSTRAINT_NAME_RE = re.compile(r"^[a-z][a-z0-9-]*$")
 
 
 def _declared_type_word(decl: object) -> str:
@@ -7841,7 +7893,7 @@ def _validate_constraint_set(
                 f"AllOrNone, Requires or Implies declarations, got "
                 f"{type(c).__name__!r}"
             )
-        if not isinstance(c.name, str) or not _CONSTRAINT_NAME_RE.match(c.name):
+        if not isinstance(c.name, str) or not _is_kebab_name(c.name):
             _raise_constraint_name_charset(name, c.name)
         if c.name in seen_names:
             _raise_constraint_name_duplicate(name, c.name)
@@ -8448,8 +8500,8 @@ def _raise_update_write_mode_invalid(name: str, value: object):
 
 def _raise_update_resource_charset(name: str, resource: object):
     raise ValueError(
-        f'command "{name}": update resource "{resource}" must match '
-        f"[a-z][a-z0-9-]*"
+        f'command "{name}": update resource "{resource}" '
+        f"{_KEBAB_NAME_CLAUSE}"
     )
 
 
@@ -8699,9 +8751,7 @@ def _validate_update(
     if d is not None:
         # Step 3: record legality -- the resource name's charset, the write
         # mode's vocabulary, at least one property.
-        if not isinstance(d.resource, str) or not _IDENTIFIER_RE.fullmatch(
-            d.resource,
-        ):
+        if not isinstance(d.resource, str) or not _is_kebab_name(d.resource):
             _raise_update_resource_charset(name, d.resource)
         if d.write_mode not in _WRITE_MODES:
             _raise_update_write_mode_invalid(name, d.write_mode)
@@ -9259,6 +9309,7 @@ class Command:
     _framework_internal: bool = False
 
     def __post_init__(self) -> None:
+        _check_command_tree_name("command", self.name)
         _require_non_empty_str(self.help, "help", "Command")
         if self.effect not in _EFFECT_VALUES:
             _raise_command_effect_invalid(self.name, self.effect)
@@ -9283,8 +9334,8 @@ class Command:
             if self.owns_stdout:
                 raise ValueError(f'command "{self.name}": a payload renderer cannot be declared on a command that owns stdout')
         for tag in self.tags:
-            if not _IDENTIFIER_RE.fullmatch(tag):
-                raise ValueError(f'invalid tag name "{tag}": must match [a-z][a-z0-9-]*')
+            if not _is_kebab_name(tag):
+                raise ValueError(f'invalid tag name "{tag}": {_KEBAB_NAME_CLAUSE}')
 
 
 @dataclass
@@ -9306,10 +9357,11 @@ class Group:
     _connection_env_names: frozenset[str] = frozenset()
 
     def __post_init__(self) -> None:
+        _check_command_tree_name("group", self.name)
         _require_non_empty_str(self.help, "help", "Group")
         for tag in self.tags:
-            if not _IDENTIFIER_RE.fullmatch(tag):
-                raise ValueError(f'invalid tag name "{tag}": must match [a-z][a-z0-9-]*')
+            if not _is_kebab_name(tag):
+                raise ValueError(f'invalid tag name "{tag}": {_KEBAB_NAME_CLAUSE}')
 
     def group(self, name: str, *, help: str, tags: set[str] | None = None,
               hidden: bool = False) -> Group:
@@ -9345,6 +9397,7 @@ class Group:
             _raise_deprecated_command_effect(name)
         if not name or not name.strip():
             raise ValueError("deprecated command name must be a non-empty string")
+        _check_command_tree_name("deprecated command", name)
         if not message or not message.strip():
             raise ValueError(f'deprecated command "{name}": message must not be empty')
         if name in self.commands:
@@ -10842,8 +10895,8 @@ class App:
 
     def tag_contract(self, tag: str, *, requires_flag: str) -> None:
         """Declare that any command with the given tag must have the named flag."""
-        if not _IDENTIFIER_RE.fullmatch(tag):
-            raise ValueError(f'invalid tag name "{tag}": must match [a-z][a-z0-9-]*')
+        if not _is_kebab_name(tag):
+            raise ValueError(f'invalid tag name "{tag}": {_KEBAB_NAME_CLAUSE}')
         self._tag_contracts[tag] = requires_flag
 
     def _validate_tag_contracts(self) -> str | None:
@@ -11455,6 +11508,7 @@ class App:
             _raise_deprecated_command_effect(name)
         if not name or not name.strip():
             raise ValueError("deprecated command name must be a non-empty string")
+        _check_command_tree_name("deprecated command", name)
         if not message or not message.strip():
             raise ValueError(f'deprecated command "{name}": message must not be empty')
         if name in self._commands:

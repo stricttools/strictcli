@@ -1839,7 +1839,7 @@ def test_conflict_malformed_config_value_errors_cleanly(tmp_path, monkeypatch):
 def test_flag_conflict_mode_invalid_value_raises():
     """Registration: invalid per-flag conflict_mode is a ValueError."""
     with pytest.raises(ValueError, match="conflict_mode"):
-        strictcli.Flag(name="x", type=str, help="h", conflict_mode="bogus", presence="required")
+        strictcli.Flag(name="xx", type=str, help="h", conflict_mode="bogus", presence="required")
 
 
 # --- Config set: TOML comment/order preservation ---

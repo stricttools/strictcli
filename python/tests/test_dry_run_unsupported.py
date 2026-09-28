@@ -68,7 +68,7 @@ class TestRegistrationValidation:
 
     def test_read_only_prohibition_in_a_group(self):
         app = strictcli.App(name="app", version="1.0.0", help="app")
-        grp = app.group("g", help="g")
+        grp = app.group("gg", help="gg")
         with pytest.raises(ValueError) as exc:
             @grp.command(
                 "show", effect="read_only", help="show",
