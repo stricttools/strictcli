@@ -126,15 +126,15 @@ func TestRequiredSelectorWithNothingSupplied(t *testing.T) {
 func TestOutOfScopeListsEveryOwner(t *testing.T) {
 	app := simpleApp("cmd", "a command", "mode={mode}",
 		WithFlags(ChoiceFlag("mode", "the mode", Required(),
-			Choice("a", "mode a", StringFlag("target", "the target", Optional())),
-			Choice("b", "mode b", StringFlag("target", "the target", Optional())),
-			Choice("c", "mode c", StringFlag("other", "something else", Optional())),
+			Choice("aa", "mode a", StringFlag("target", "the target", Optional())),
+			Choice("bb", "mode b", StringFlag("target", "the target", Optional())),
+			Choice("cc", "mode c", StringFlag("other", "something else", Optional())),
 		)))
-	r := app.Test([]string{"cmd", "--mode", "c", "--target", "x"})
+	r := app.Test([]string{"cmd", "--mode", "cc", "--target", "xx"})
 	if r.ExitCode != 1 {
 		t.Fatalf("expected exit 1, got %d: stdout=%q", r.ExitCode, r.Stdout)
 	}
-	want := "error: flag '--target' is only valid under '--mode a' or '--mode b', but '--mode c' was elected\n"
+	want := "error: flag '--target' is only valid under '--mode aa' or '--mode bb', but '--mode cc' was elected\n"
 	if !strings.Contains(r.Stderr, want) {
 		t.Fatalf("stderr = %q, want it to contain %q", r.Stderr, want)
 	}
@@ -159,18 +159,18 @@ func recursiveApp() *App {
 
 func TestSelectorRecursesToAnyDepth(t *testing.T) {
 	app := recursiveApp()
-	r := app.Test([]string{"add", "--visibility", "user-facing", "--type", "feature", "--headline", "x"})
+	r := app.Test([]string{"add", "--visibility", "user-facing", "--type", "feature", "--headline", "xx"})
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d: stderr=%q", r.ExitCode, r.Stderr)
 	}
-	if !strings.Contains(r.Stdout, "visibility=user-facing[type:feature[headline:x]]") {
+	if !strings.Contains(r.Stdout, "visibility=user-facing[type:feature[headline:xx]]") {
 		t.Fatalf("stdout = %q", r.Stdout)
 	}
 }
 
 func TestOutOfScopeBlamesOutermostElection(t *testing.T) {
 	app := recursiveApp()
-	r := app.Test([]string{"add", "--visibility", "internal", "--headline", "x"})
+	r := app.Test([]string{"add", "--visibility", "internal", "--headline", "xx"})
 	if r.ExitCode != 1 {
 		t.Fatalf("expected exit 1, got %d: stdout=%q", r.ExitCode, r.Stdout)
 	}
@@ -537,44 +537,44 @@ func TestFlatMachineFormElectsThroughTheSameMachinery(t *testing.T) {
 func TestSelectorCannotBeOptional(t *testing.T) {
 	expectPanic(t, `Flag "via": a choice flag cannot declare Optional(): an absent selection is a choice nobody named, so name it as a choice of its own`, func() {
 		ChoiceFlag("via", "delivery channel", Optional(),
-			Choice("a", "choice a"), Choice("b", "choice b"))
+			Choice("aa", "choice a"), Choice("bb", "choice b"))
 	})
 }
 
 func TestSelectorNeedsTwoChoices(t *testing.T) {
 	expectPanic(t, `Flag "via": a choice flag must declare at least two choices`, func() {
-		ChoiceFlag("via", "delivery channel", Required(), Choice("a", "choice a"))
+		ChoiceFlag("via", "delivery channel", Required(), Choice("aa", "choice a"))
 	})
 }
 
 func TestSelectorDuplicateChoiceName(t *testing.T) {
-	expectPanic(t, `Flag "via": choice "a" is declared twice`, func() {
+	expectPanic(t, `Flag "via": choice "aa" is declared twice`, func() {
 		ChoiceFlag("via", "delivery channel", Required(),
-			Choice("a", "choice a"), Choice("a", "choice a again"))
+			Choice("aa", "choice a"), Choice("aa", "choice a again"))
 	})
 }
 
 func TestChoiceHelpIsRequired(t *testing.T) {
-	expectPanic(t, `Choice "a" of "via": help text is required`, func() {
+	expectPanic(t, `Choice "aa" of "via": help text is required`, func() {
 		ChoiceFlag("via", "delivery channel", Required(),
-			Choice("a", ""), Choice("b", "choice b"))
+			Choice("aa", ""), Choice("bb", "choice b"))
 	})
 }
 
 func TestSelectorDefaultMustNameAChoice(t *testing.T) {
-	expectPanic(t, `Flag "via": Default(carrier) names no declared choice: must be one of: a, b`, func() {
+	expectPanic(t, `Flag "via": Default(carrier) names no declared choice: must be one of: aa, bb`, func() {
 		ChoiceFlag("via", "delivery channel", Default("carrier"),
-			Choice("a", "choice a"), Choice("b", "choice b"))
+			Choice("aa", "choice a"), Choice("bb", "choice b"))
 	})
 }
 
 // A defaulted selection is COMPLETE, and Go's mechanism for that is a
 // registration check (§24.5; the template is Python-excluded).
 func TestSelectorDefaultMustBeComplete(t *testing.T) {
-	expectPanic(t, `Flag "via": Default("a") elects choice "a", whose scope declares the required flag '--target': a defaulted selection must be complete with nothing typed`, func() {
-		ChoiceFlag("via", "delivery channel", Default("a"),
-			Choice("a", "choice a", StringFlag("target", "the target", Required())),
-			Choice("b", "choice b"))
+	expectPanic(t, `Flag "via": Default("aa") elects choice "aa", whose scope declares the required flag '--target': a defaulted selection must be complete with nothing typed`, func() {
+		ChoiceFlag("via", "delivery channel", Default("aa"),
+			Choice("aa", "choice a", StringFlag("target", "the target", Required())),
+			Choice("bb", "choice b"))
 	})
 }
 
@@ -598,33 +598,33 @@ func TestTokenChoiceCannotCarryAPayload(t *testing.T) {
 	expectPanic(t, `Choice "profile" of "via": a token-spelled choice cannot carry a payload: the token names the choice, and a choice that carries its own value belongs to a member-spelled choice flag, declared with MemberChoiceFlag(...)`, func() {
 		ChoiceFlag("via", "delivery channel", Required(),
 			MemberChoice(StringFlag("profile", "a profile", Required()), "use a profile"),
-			Choice("b", "choice b"))
+			Choice("bb", "choice b"))
 	})
 }
 
 func TestMemberChoiceFlagRequiresMemberChoices(t *testing.T) {
-	expectPanic(t, `Choice "b" of "via": a member-spelled choice flag declares its choices with MemberChoice(...), which names the flag that elects the choice`, func() {
+	expectPanic(t, `Choice "bb" of "via": a member-spelled choice flag declares its choices with MemberChoice(...), which names the flag that elects the choice`, func() {
 		MemberChoiceFlag("via", "delivery channel", Required(),
 			MemberChoice(StringFlag("profile", "a profile", Required()), "use a profile"),
-			Choice("b", "choice b"))
+			Choice("bb", "choice b"))
 	})
 }
 
 // --- Reserved names inside a scope (§12.13, S15) ---
 
 func TestScopedNameChoiceIsReserved(t *testing.T) {
-	expectPanic(t, `Choice "a" of "via": flag name 'choice' is reserved by the framework: it tags the delivered record`, func() {
+	expectPanic(t, `Choice "aa" of "via": flag name 'choice' is reserved by the framework: it tags the delivered record`, func() {
 		ChoiceFlag("via", "delivery channel", Required(),
-			Choice("a", "choice a", StringFlag("choice", "a choice", Optional())),
-			Choice("b", "choice b"))
+			Choice("aa", "choice a", StringFlag("choice", "a choice", Optional())),
+			Choice("bb", "choice b"))
 	})
 }
 
 func TestScopedNameValueIsReserved(t *testing.T) {
-	expectPanic(t, `Choice "a" of "via": flag name 'value' is reserved by the framework: it carries a member-spelled choice's own payload`, func() {
+	expectPanic(t, `Choice "aa" of "via": flag name 'value' is reserved by the framework: it carries a member-spelled choice's own payload`, func() {
 		ChoiceFlag("via", "delivery channel", Required(),
-			Choice("a", "choice a", StringFlag("value", "a value", Optional())),
-			Choice("b", "choice b"))
+			Choice("aa", "choice a", StringFlag("value", "a value", Optional())),
+			Choice("bb", "choice b"))
 	})
 }
 
@@ -654,12 +654,12 @@ func TestEveryNameBanReRunsAtEveryDepth(t *testing.T) {
 				}
 			}()
 			ChoiceFlag("outer", "the outer selector", Required(),
-				Choice("a", "choice a",
+				Choice("aa", "choice a",
 					ChoiceFlag("inner", "the inner selector", Required(),
-						Choice("x", "choice x", StringFlag(c.name, "a flag", Optional())),
-						Choice("y", "choice y"),
+						Choice("xx", "choice x", StringFlag(c.name, "a flag", Optional())),
+						Choice("yy", "choice y"),
 					)),
-				Choice("b", "choice b"))
+				Choice("bb", "choice b"))
 		}()
 	}
 }
@@ -667,67 +667,67 @@ func TestEveryNameBanReRunsAtEveryDepth(t *testing.T) {
 // --- Name collisions (§12.13, §24.7) ---
 
 func TestScopedNameCollidesWithRootFlag(t *testing.T) {
-	expectPanic(t, `Choice "a" of "mode": flag '--target' collides with a command-level flag of the same name: the scoped one could never be reached`, func() {
+	expectPanic(t, `Choice "aa" of "mode": flag '--target' collides with a command-level flag of the same name: the scoped one could never be reached`, func() {
 		simpleApp("cmd", "a command", "ok", WithFlags(
 			StringFlag("target", "the target", Optional()),
 			ChoiceFlag("mode", "the mode", Required(),
-				Choice("a", "choice a", StringFlag("target", "the target", Optional())),
-				Choice("b", "choice b")),
+				Choice("aa", "choice a", StringFlag("target", "the target", Optional())),
+				Choice("bb", "choice b")),
 		))
 	})
 }
 
 func TestScopedNameCollidesWithSelectorName(t *testing.T) {
-	expectPanic(t, `Choice "a" of "mode": flag '--mode' collides with the choice flag's own name`, func() {
+	expectPanic(t, `Choice "aa" of "mode": flag '--mode' collides with the choice flag's own name`, func() {
 		ChoiceFlag("mode", "the mode", Required(),
-			Choice("a", "choice a", StringFlag("mode", "the mode again", Optional())),
-			Choice("b", "choice b"))
+			Choice("aa", "choice a", StringFlag("mode", "the mode again", Optional())),
+			Choice("bb", "choice b"))
 	})
 }
 
 func TestSiblingScopesMayReuseANameWithTheSameShape(t *testing.T) {
 	app := simpleApp("cmd", "a command", "mode={mode}",
 		WithFlags(ChoiceFlag("mode", "the mode", Required(),
-			Choice("a", "choice a", StringFlag("target", "the target", Optional())),
-			Choice("b", "choice b", StringFlag("target", "the target", Optional())),
+			Choice("aa", "choice a", StringFlag("target", "the target", Optional())),
+			Choice("bb", "choice b", StringFlag("target", "the target", Optional())),
 		)))
-	r := app.Test([]string{"cmd", "--mode", "b", "--target", "x"})
+	r := app.Test([]string{"cmd", "--mode", "bb", "--target", "xx"})
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d: stderr=%q", r.ExitCode, r.Stderr)
 	}
-	if !strings.Contains(r.Stdout, "mode=b[target:x]") {
+	if !strings.Contains(r.Stdout, "mode=bb[target:xx]") {
 		t.Fatalf("stdout = %q", r.Stdout)
 	}
 }
 
 func TestSiblingScopeTypeMismatchIsRefused(t *testing.T) {
-	expectPanic(t, `Flag "mode": flag '--target' is declared by choices "a" and "b" with different value shapes: sibling scopes may reuse a name only with an identical type and arity, because tokenizing '--target' cannot wait for an election`, func() {
+	expectPanic(t, `Flag "mode": flag '--target' is declared by choices "aa" and "bb" with different value shapes: sibling scopes may reuse a name only with an identical type and arity, because tokenizing '--target' cannot wait for an election`, func() {
 		ChoiceFlag("mode", "the mode", Required(),
-			Choice("a", "choice a", StringFlag("target", "the target", Optional())),
-			Choice("b", "choice b", IntFlag("target", "the target", Optional())),
+			Choice("aa", "choice a", StringFlag("target", "the target", Optional())),
+			Choice("bb", "choice b", IntFlag("target", "the target", Optional())),
 		)
 	})
 }
 
 // The template covers type AND arity in one sentence (§18.18 item 208).
 func TestSiblingScopeArityMismatchIsRefused(t *testing.T) {
-	expectPanic(t, `Flag "mode": flag '--target' is declared by choices "a" and "b" with different value shapes`, func() {
+	expectPanic(t, `Flag "mode": flag '--target' is declared by choices "aa" and "bb" with different value shapes`, func() {
 		ChoiceFlag("mode", "the mode", Required(),
-			Choice("a", "choice a", StringFlag("target", "the target", Optional())),
-			Choice("b", "choice b", ListFlag(TypeStr, "target", "the targets", Optional(), Unique(false))),
+			Choice("aa", "choice a", StringFlag("target", "the target", Optional())),
+			Choice("bb", "choice b", ListFlag(TypeStr, "target", "the targets", Optional(), Unique(false))),
 		)
 	})
 }
 
 func TestSimultaneouslyElectableScopesMayNotReuseAName(t *testing.T) {
-	expectPanic(t, `command "cmd": flag '--target' is declared under '--one a' and under '--two c', which can be elected at the same time: simultaneously electable scopes may not reuse a flag name`, func() {
+	expectPanic(t, `command "cmd": flag '--target' is declared under '--one aa' and under '--two cc', which can be elected at the same time: simultaneously electable scopes may not reuse a flag name`, func() {
 		simpleApp("cmd", "a command", "ok", WithFlags(
 			ChoiceFlag("one", "the first selector", Required(),
-				Choice("a", "choice a", StringFlag("target", "the target", Optional())),
-				Choice("b", "choice b")),
+				Choice("aa", "choice a", StringFlag("target", "the target", Optional())),
+				Choice("bb", "choice b")),
 			ChoiceFlag("two", "the second selector", Required(),
-				Choice("c", "choice c", StringFlag("target", "the target", Optional())),
-				Choice("d", "choice d")),
+				Choice("cc", "choice c", StringFlag("target", "the target", Optional())),
+				Choice("dd", "choice d")),
 		))
 	})
 }
@@ -736,11 +736,11 @@ func TestShortsAreClaimedAcrossSimultaneouslyLiveScopes(t *testing.T) {
 	expectPanic(t, `command "cmd": short '-t' is claimed by '--target' and '--tag', which can be elected at the same time`, func() {
 		simpleApp("cmd", "a command", "ok", WithFlags(
 			ChoiceFlag("one", "the first selector", Required(),
-				Choice("a", "choice a", StringFlag("target", "the target", Optional(), Short("t"))),
-				Choice("b", "choice b")),
+				Choice("aa", "choice a", StringFlag("target", "the target", Optional(), Short("t"))),
+				Choice("bb", "choice b")),
 			ChoiceFlag("two", "the second selector", Required(),
-				Choice("c", "choice c", StringFlag("tag", "the tag", Optional(), Short("t"))),
-				Choice("d", "choice d")),
+				Choice("cc", "choice c", StringFlag("tag", "the tag", Optional(), Short("t"))),
+				Choice("dd", "choice d")),
 		))
 	})
 }
@@ -748,14 +748,14 @@ func TestShortsAreClaimedAcrossSimultaneouslyLiveScopes(t *testing.T) {
 func TestSiblingScopesMayReuseAShort(t *testing.T) {
 	app := simpleApp("cmd", "a command", "mode={mode}",
 		WithFlags(ChoiceFlag("mode", "the mode", Required(),
-			Choice("a", "choice a", StringFlag("target", "the target", Optional(), Short("t"))),
-			Choice("b", "choice b", StringFlag("tag", "the tag", Optional(), Short("t"))),
+			Choice("aa", "choice a", StringFlag("target", "the target", Optional(), Short("t"))),
+			Choice("bb", "choice b", StringFlag("tag", "the tag", Optional(), Short("t"))),
 		)))
-	r := app.Test([]string{"cmd", "--mode", "b", "-t", "x"})
+	r := app.Test([]string{"cmd", "--mode", "bb", "-t", "xx"})
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d: stderr=%q", r.ExitCode, r.Stderr)
 	}
-	if !strings.Contains(r.Stdout, "mode=b[tag:x]") {
+	if !strings.Contains(r.Stdout, "mode=bb[tag:xx]") {
 		t.Fatalf("stdout = %q", r.Stdout)
 	}
 }
@@ -763,26 +763,26 @@ func TestSiblingScopesMayReuseAShort(t *testing.T) {
 // --- Constraints operate at root scope only (§24.8) ---
 
 func TestConstraintNamingAScopedFlagIsRefused(t *testing.T) {
-	expectPanic(t, `command "cmd": constraint "target-needs-host" references 'target', which is declared under '--mode a': constraints operate at root scope only`, func() {
+	expectPanic(t, `command "cmd": constraint "target-needs-host" references 'target', which is declared under '--mode aa': constraints operate at root scope only`, func() {
 		simpleApp("cmd", "a command", "ok",
 			WithFlags(
 				StringFlag("host", "the host", Optional()),
 				ChoiceFlag("mode", "the mode", Required(),
-					Choice("a", "choice a", StringFlag("target", "the target", Optional())),
-					Choice("b", "choice b")),
+					Choice("aa", "choice a", StringFlag("target", "the target", Optional())),
+					Choice("bb", "choice b")),
 			),
 			WithConstraints(Requires("target-needs-host", "target", "host")))
 	})
 }
 
 func TestAllOrNoneNamingAScopedFlagIsRefused(t *testing.T) {
-	expectPanic(t, `command "cmd": constraint "pair" references 'target', which is declared under '--mode a': constraints operate at root scope only`, func() {
+	expectPanic(t, `command "cmd": constraint "pair" references 'target', which is declared under '--mode aa': constraints operate at root scope only`, func() {
 		simpleApp("cmd", "a command", "ok",
 			WithFlags(
 				StringFlag("host", "the host", Optional()),
 				ChoiceFlag("mode", "the mode", Required(),
-					Choice("a", "choice a", StringFlag("target", "the target", Optional())),
-					Choice("b", "choice b")),
+					Choice("aa", "choice a", StringFlag("target", "the target", Optional())),
+					Choice("bb", "choice b")),
 			),
 			WithConstraints(AllOrNone("pair", Member("host"), Member("target"))))
 	})
@@ -967,14 +967,14 @@ func TestMCPProjectionOfAMemberSpelledSelector(t *testing.T) {
 func TestScopedBoolNegationStillWorks(t *testing.T) {
 	app := simpleApp("cmd", "a command", "mode={mode}",
 		WithFlags(ChoiceFlag("mode", "the mode", Required(),
-			Choice("a", "choice a", BoolFlag("cache", "use the cache", Default(true))),
-			Choice("b", "choice b"),
+			Choice("aa", "choice a", BoolFlag("cache", "use the cache", Default(true))),
+			Choice("bb", "choice b"),
 		)))
-	r := app.Test([]string{"cmd", "--mode", "a", "--no-cache"})
+	r := app.Test([]string{"cmd", "--mode", "aa", "--no-cache"})
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d: stderr=%q", r.ExitCode, r.Stderr)
 	}
-	if !strings.Contains(r.Stdout, "mode=a[cache:false]") {
+	if !strings.Contains(r.Stdout, "mode=aa[cache:false]") {
 		t.Fatalf("stdout = %q", r.Stdout)
 	}
 }
@@ -982,17 +982,17 @@ func TestScopedBoolNegationStillWorks(t *testing.T) {
 func TestScopedRepeatableAndDictSubFlags(t *testing.T) {
 	app := simpleApp("cmd", "a command", "mode={mode}",
 		WithFlags(ChoiceFlag("mode", "the mode", Required(),
-			Choice("a", "choice a",
+			Choice("aa", "choice a",
 				ListFlag(TypeStr, "tag", "a tag", Optional(), Unique(false)),
 				DictFlag(TypeStr, "label", "a label", Optional(), Unique(false)),
 			),
-			Choice("b", "choice b"),
+			Choice("bb", "choice b"),
 		)))
-	r := app.Test([]string{"cmd", "--mode", "a", "--tag", "x", "--tag", "y", "--label", "k=v"})
+	r := app.Test([]string{"cmd", "--mode", "aa", "--tag", "xx", "--tag", "yy", "--label", "k=v"})
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d: stderr=%q", r.ExitCode, r.Stderr)
 	}
-	if !strings.Contains(r.Stdout, "label:k=v") || !strings.Contains(r.Stdout, "tag:[x y]") {
+	if !strings.Contains(r.Stdout, "label:k=v") || !strings.Contains(r.Stdout, "tag:[xx yy]") {
 		t.Fatalf("stdout = %q", r.Stdout)
 	}
 }
@@ -1005,10 +1005,10 @@ func TestScopedFlagAtPrefixResolves(t *testing.T) {
 	}
 	app := simpleApp("cmd", "a command", "mode={mode}",
 		WithFlags(ChoiceFlag("mode", "the mode", Required(),
-			Choice("a", "choice a", StringFlag("body", "the body", Optional())),
-			Choice("b", "choice b"),
+			Choice("aa", "choice a", StringFlag("body", "the body", Optional())),
+			Choice("bb", "choice b"),
 		)))
-	r := app.Test([]string{"cmd", "--mode", "a", "--body", "@" + path})
+	r := app.Test([]string{"cmd", "--mode", "aa", "--body", "@" + path})
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d: stderr=%q", r.ExitCode, r.Stderr)
 	}
@@ -1022,13 +1022,13 @@ func TestScopedFlagAtPrefixResolves(t *testing.T) {
 func TestScopedValueErrorAfterScopeBeforePresence(t *testing.T) {
 	app := simpleApp("cmd", "a command", "mode={mode}",
 		WithFlags(ChoiceFlag("mode", "the mode", Required(),
-			Choice("a", "choice a",
+			Choice("aa", "choice a",
 				IntFlag("count", "how many", Optional()),
 				StringFlag("target", "the target", Required()),
 			),
-			Choice("b", "choice b"),
+			Choice("bb", "choice b"),
 		)))
-	r := app.Test([]string{"cmd", "--mode", "a", "--count", "nope"})
+	r := app.Test([]string{"cmd", "--mode", "aa", "--count", "nope"})
 	if r.ExitCode != 1 {
 		t.Fatalf("expected exit 1, got %d", r.ExitCode)
 	}
@@ -1178,8 +1178,8 @@ func TestNestedMemberSelectorCarriesTheScopeSuffix(t *testing.T) {
 // --- Match's other two dispatch guards (Go-only, §24.12) ---
 
 func TestMatchRefusesAForeignCase(t *testing.T) {
-	other := Choice("email", "a choice of another selector", StringFlag("subject", "s", Optional()))
-	ChoiceFlag("elsewhere", "another selector", Required(), other, Choice("z", "choice z"))
+	other := Choice("email", "a choice of another selector", StringFlag("subject", "ss", Optional()))
+	ChoiceFlag("elsewhere", "another selector", Required(), other, Choice("zz", "choice z"))
 
 	app := NewApp("myapp", "1.0.0", "test app")
 	app.Command("send", "send it", func(ctx *Context, kwargs map[string]interface{}) Outcome {
@@ -1198,10 +1198,10 @@ func TestMatchRefusesAForeignCase(t *testing.T) {
 }
 
 func TestChoiceValueBelongsToExactlyOneSelector(t *testing.T) {
-	shared := Choice("a", "choice a")
-	ChoiceFlag("first", "the first selector", Required(), shared, Choice("b", "choice b"))
-	expectPanic(t, `Choice "a" of "second": a choice value belongs to exactly one choice flag; it is already declared by "first"`, func() {
-		ChoiceFlag("second", "the second selector", Required(), shared, Choice("c", "choice c"))
+	shared := Choice("aa", "choice a")
+	ChoiceFlag("first", "the first selector", Required(), shared, Choice("bb", "choice b"))
+	expectPanic(t, `Choice "aa" of "second": a choice value belongs to exactly one choice flag; it is already declared by "first"`, func() {
+		ChoiceFlag("second", "the second selector", Required(), shared, Choice("cc", "choice c"))
 	})
 }
 
@@ -1258,15 +1258,17 @@ func TestScopedFlagUnderAMemberCollidingWithARootFlagKeepsItsOwnError(t *testing
 // --- §24.7's choice-name charset ---
 
 func TestChoiceNameCharsetIsEnforcedOnTokenSpelling(t *testing.T) {
-	expectPanic(t, `Flag "via": choice name "Email" must match [a-z][a-z0-9-]*`, func() {
+	expectPanic(t, `Flag "via": choice name "Email" must be lowercase kebab-case of at least two characters: [a-z][a-z0-9]*(-[a-z0-9]+)*`, func() {
 		ChoiceFlag("via", "delivery channel", Required(),
 			Choice("Email", "an email message"),
 			Choice("sms", "a text message"))
 	})
 }
 
+// A member choice's name is its member flag's name, so the flag constructor's
+// naming rule refuses it before the selector sees it.
 func TestChoiceNameCharsetIsEnforcedOnMemberSpelling(t *testing.T) {
-	expectPanic(t, `Flag "mode": choice name "all_profiles" must match [a-z][a-z0-9-]*`, func() {
+	expectPanic(t, `flag name "all_profiles" must be lowercase kebab-case of at least two characters: [a-z][a-z0-9]*(-[a-z0-9]+)*`, func() {
 		MemberChoiceFlag("mode", "which profiles", Required(),
 			MemberChoice(StringFlag("profile", "a profile", Required()), "one named profile"),
 			MemberChoice(BoolFlag("all_profiles", "every profile", Required()), "every profile"))
@@ -1274,24 +1276,31 @@ func TestChoiceNameCharsetIsEnforcedOnMemberSpelling(t *testing.T) {
 }
 
 func TestChoiceNameCharsetRejectsALeadingDigitAndALeadingDash(t *testing.T) {
-	expectPanic(t, `Flag "via": choice name "2fa" must match [a-z][a-z0-9-]*`, func() {
+	expectPanic(t, `Flag "via": choice name "2fa" must be lowercase kebab-case of at least two characters: [a-z][a-z0-9]*(-[a-z0-9]+)*`, func() {
 		ChoiceFlag("via", "delivery channel", Required(),
 			Choice("2fa", "second factor"),
 			Choice("sms", "a text message"))
 	})
-	expectPanic(t, `Flag "via": choice name "-email" must match [a-z][a-z0-9-]*`, func() {
+	expectPanic(t, `Flag "via": choice name "-email" must be lowercase kebab-case of at least two characters: [a-z][a-z0-9]*(-[a-z0-9]+)*`, func() {
 		ChoiceFlag("via", "delivery channel", Required(),
 			Choice("-email", "an email message"),
 			Choice("sms", "a text message"))
 	})
 }
 
-// The charset is exactly [a-z][a-z0-9-]*: digits and dashes after the first
-// character are legal, a trailing dash included.
+// The naming rule: digits and single inner dashes after the first character
+// are legal; a trailing or doubled dash is not.
 func TestChoiceNameCharsetAcceptsDigitsAndDashes(t *testing.T) {
 	ChoiceFlag("via", "delivery channel", Required(),
 		Choice("email-2", "an email message"),
-		Choice("sms-", "a text message"))
+		Choice("sms-v2", "a text message"))
+	for _, bad := range []string{"sms-", "sms--v2"} {
+		expectPanic(t, `Flag "via": choice name "`+bad+`" must be lowercase kebab-case of at least two characters: [a-z][a-z0-9]*(-[a-z0-9]+)*`, func() {
+			ChoiceFlag("via", "delivery channel", Required(),
+				Choice("email-2", "an email message"),
+				Choice(bad, "a text message"))
+		})
+	}
 }
 
 // --- Item 224: the owners clause of a MEMBER flag stops at its owning scope ---

@@ -6540,7 +6540,7 @@ func TestWithTagsDeduplicates(t *testing.T) {
 
 func TestWithTagsValidNames(t *testing.T) {
 	// These should all be valid tag names
-	validTags := []string{"json", "xml", "a", "abc-def", "a1", "tag-with-numbers-123"}
+	validTags := []string{"json", "xml", "ab", "abc-def", "a1", "tag-with-numbers-123"}
 	for _, tag := range validTags {
 		app := NewApp("myapp", "1.0.0", "test app")
 		app.Command("cmd", "a command", func(ctx *Context, args map[string]interface{}) Outcome { return Exit(0) },

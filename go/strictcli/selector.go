@@ -388,7 +388,7 @@ func validateSelectorDecl(sel *Flag) {
 		// One charset for both spellings: under member spelling the name IS the
 		// flag that elects the choice, and under token spelling it is the value
 		// that names it (§24.7).
-		if !identifierRe.MatchString(ch.Name) {
+		if !isKebabName(ch.Name) {
 			panic(errChoiceNameCharset(sel.Name, ch.Name))
 		}
 		if ch.ownerSel != "" && ch.ownerSel != sel.Name {

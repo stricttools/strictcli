@@ -271,7 +271,7 @@ func TestHooks_AppearInHelp(t *testing.T) {
 func TestHooks_DeclarationRefusalsAndTheirFix(t *testing.T) {
 	base := "app = \"testapp\"\n\n" + cvCheck("lint", []string{"prepush"}, "error")
 	cases := []struct{ toml, msg string }{
-		{base + "[hooks.Pre-Push]\ntag = \"prepush\"\n", `checks.toml: invalid hook name "Pre-Push" (must match [a-z][a-z0-9-]*)`},
+		{base + "[hooks.Pre-Push]\ntag = \"prepush\"\n", `checks.toml: invalid hook name "Pre-Push" (must be lowercase kebab-case of at least two characters: [a-z][a-z0-9]*(-[a-z0-9]+)*)`},
 		{base + "[hooks]\npre-push = \"prepush\"\n", `checks.toml: hook "pre-push" must be a table`},
 		{base + "[hooks.pre-push]\ntag = \"prepush\"\nname = \"lint\"\n", `checks.toml: hook "pre-push": unknown field "name"`},
 		{base + "[hooks.pre-push]\n", `checks.toml: hook "pre-push": missing required field "tag"`},

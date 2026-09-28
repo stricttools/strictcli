@@ -226,7 +226,7 @@ func TestGrantDeclarationValidation(t *testing.T) {
 		want   string
 	}{
 		{[]Grant{{Name: "Push", Reason: "r", Kind: ProcMutate}},
-			`command "go": invalid grant name 'Push': must match [a-z][a-z0-9-]*`},
+			`command "go": invalid grant name 'Push': must be lowercase kebab-case of at least two characters: [a-z][a-z0-9]*(-[a-z0-9]+)*`},
 		{[]Grant{{Name: "push", Reason: "r", Kind: ProcMutate}, {Name: "push", Reason: "r2", Kind: FileWrite}},
 			`command "go": duplicate grant 'push'`},
 		{[]Grant{{Name: "push", Reason: "  ", Kind: ProcMutate}},

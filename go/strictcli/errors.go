@@ -83,7 +83,7 @@ func errConflictModeBadMode(mode string) string {
 // ---------------------------------------------------------------------------
 
 func errInvalidTagName(t string) string {
-	return fmt.Sprintf("invalid tag name %q: must match [a-z][a-z0-9-]*", t)
+	return fmt.Sprintf("invalid tag name %q: %s", t, kebabNameClause)
 }
 
 // ---------------------------------------------------------------------------
@@ -1073,7 +1073,7 @@ func errChecksTomlChecksMustBeTable() error {
 }
 
 func errChecksTomlInvalidCheckName(name string) error {
-	return fmt.Errorf("checks.toml: invalid check name %q (must match [a-z][a-z0-9-]*)", name)
+	return fmt.Errorf("checks.toml: invalid check name %q (%s)", name, kebabNameClause)
 }
 
 func errChecksTomlCheckMustBeTable(name string) error {
@@ -1133,7 +1133,7 @@ func errChecksTomlHooksMustBeTable() error {
 }
 
 func errChecksTomlInvalidHookName(name string) error {
-	return fmt.Errorf("checks.toml: invalid hook name %q (must match [a-z][a-z0-9-]*)", name)
+	return fmt.Errorf("checks.toml: invalid hook name %q (%s)", name, kebabNameClause)
 }
 
 func errChecksTomlHookMustBeTable(name string) error {
@@ -1438,7 +1438,7 @@ func errGrantDuplicate(name string, grant string) string {
 }
 
 func errGrantNameInvalid(name string, grant string) string {
-	return fmt.Sprintf("command %q: invalid grant name '%s': must match [a-z][a-z0-9-]*", name, grant)
+	return fmt.Sprintf("command %q: invalid grant name '%s': %s", name, grant, kebabNameClause)
 }
 
 func errGrantKindInvalid(name string, grant string, kind string) string {
@@ -1724,7 +1724,7 @@ func errChoiceHelpEmpty(sel, c string) string {
 // a name that could not be a flag name would make the two spellings declare
 // different things (§24.7). One charset, both spellings.
 func errChoiceNameCharset(sel, c string) string {
-	return fmt.Sprintf("Flag %q: choice name %q must match [a-z][a-z0-9-]*", sel, c)
+	return fmt.Sprintf("Flag %q: choice name %q %s", sel, c, kebabNameClause)
 }
 
 func errSelectorDefaultUnknownChoice(sel string, v interface{}, names string) string {
@@ -1853,7 +1853,7 @@ func errConstraintReferencesScopedFlag(name, c, x, path string) string {
 // is a typed value rather than a record-or-bare-name union.
 
 func errConstraintNameCharset(name, c string) string {
-	return fmt.Sprintf("command %q: constraint name %q must match [a-z][a-z0-9-]*", name, c)
+	return fmt.Sprintf("command %q: constraint name %q %s", name, c, kebabNameClause)
 }
 
 func errConstraintNameDuplicate(name, c string) string {
@@ -1954,7 +1954,7 @@ func errUpdateWriteModeInvalid(name, v string) string {
 }
 
 func errUpdateResourceCharset(name, r string) string {
-	return fmt.Sprintf("command %q: update resource %q must match [a-z][a-z0-9-]*", name, r)
+	return fmt.Sprintf("command %q: update resource %q %s", name, r, kebabNameClause)
 }
 
 func errUpdatePropertiesEmpty(name, r string) string {
@@ -2182,3 +2182,35 @@ func errLintEnvironmentRead(construct string) string {
 }
 
 const errLintExitNowInGoroutine = "strictcli.ExitNow inside a function literal started by a go statement is not recovered by the exit step; start the function with strictcli.Go"
+
+// kebabNameClause is the clause every naming-rule refusal ends in: one rule for
+// every identifier a caller types or references (commands, groups, long flags,
+// choices, constraints, tags, checks, hooks, grants, resources, requirements).
+const kebabNameClause = "must be lowercase kebab-case of at least two characters: [a-z][a-z0-9]*(-[a-z0-9]+)*"
+
+func errCommandNameInvalid(name string) string {
+	return fmt.Sprintf("command name %q %s", name, kebabNameClause)
+}
+
+func errGroupNameInvalid(name string) string {
+	return fmt.Sprintf("group name %q %s", name, kebabNameClause)
+}
+
+func errDeprecatedNameInvalid(name string) string {
+	return fmt.Sprintf("deprecated command name %q %s", name, kebabNameClause)
+}
+
+func errFlagNameInvalid(name string) string {
+	return fmt.Sprintf("flag name %q %s", name, kebabNameClause)
+}
+
+func errFlagShortInvalid(name, short string) string {
+	return fmt.Sprintf("Flag %q: short form %q must be one ASCII letter (a-z or A-Z)", name, short)
+}
+
+// errFrameworkCommandName refuses an app command, group or deprecated command
+// named after a framework command: help and version are reserved at every
+// level of the command tree. kind is "command", "group" or "deprecated command".
+func errFrameworkCommandName(kind, name string) string {
+	return fmt.Sprintf("%s name %q is reserved: help and version are framework commands at every level of the command tree", kind, name)
+}

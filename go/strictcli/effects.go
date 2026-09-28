@@ -1460,7 +1460,7 @@ func validateGrants(cmdName string, grants []Grant) []Grant {
 	seen := make(map[string]bool, len(grants))
 	resolved := make([]Grant, 0, len(grants))
 	for _, g := range grants {
-		if !identifierRe.MatchString(g.Name) {
+		if !isKebabName(g.Name) {
 			panic(errGrantNameInvalid(cmdName, g.Name))
 		}
 		if seen[g.Name] {

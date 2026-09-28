@@ -153,7 +153,7 @@ func validateUpdate(cmdName string, cmd *Command, globalFlags []Flag) {
 	if d != nil {
 		// Step 3: record legality -- the resource name's charset, the write
 		// mode's vocabulary, at least one property.
-		if !identifierRe.MatchString(d.resource) {
+		if !isKebabName(d.resource) {
 			panic(errUpdateResourceCharset(cmdName, d.resource))
 		}
 		if d.mode != WriteSparse && d.mode != WriteFullReplace {

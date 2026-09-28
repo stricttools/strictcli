@@ -15,7 +15,7 @@ import (
 // --- Registration: name legality (§26.8 pass 1) ---
 
 func TestConstraintNameCharsetIsRefused(t *testing.T) {
-	expectPanic(t, `command "cmd": constraint name "Author_Name" must match [a-z][a-z0-9-]*`, func() {
+	expectPanic(t, `command "cmd": constraint name "Author_Name" must be lowercase kebab-case of at least two characters: [a-z][a-z0-9]*(-[a-z0-9]+)*`, func() {
 		simpleApp("cmd", "a command", "ok",
 			WithFlags(
 				StringFlag("old-name", "the old name", Optional()),
@@ -29,24 +29,24 @@ func TestConstraintDuplicateNameIsRefused(t *testing.T) {
 	expectPanic(t, `command "cmd": duplicate constraint name "pair"`, func() {
 		simpleApp("cmd", "a command", "ok",
 			WithFlags(
-				StringFlag("a", "the a", Optional()),
-				StringFlag("b", "the b", Optional()),
+				StringFlag("aa", "the a", Optional()),
+				StringFlag("bb", "the b", Optional()),
 			),
 			WithConstraints(
-				AllOrNone("pair", Member("a"), Member("b")),
-				AtLeastOne("pair", Member("a"), Member("b")),
+				AllOrNone("pair", Member("aa"), Member("bb")),
+				AtLeastOne("pair", Member("aa"), Member("bb")),
 			))
 	})
 }
 
 func TestConstraintNameCollidingWithAFlagIsRefused(t *testing.T) {
-	expectPanic(t, `command "cmd": constraint name "a" is already a flag or arg name: a member reference resolves by name and would be ambiguous`, func() {
+	expectPanic(t, `command "cmd": constraint name "aa" is already a flag or arg name: a member reference resolves by name and would be ambiguous`, func() {
 		simpleApp("cmd", "a command", "ok",
 			WithFlags(
-				StringFlag("a", "the a", Optional()),
-				StringFlag("b", "the b", Optional()),
+				StringFlag("aa", "the a", Optional()),
+				StringFlag("bb", "the b", Optional()),
 			),
-			WithConstraints(AllOrNone("a", Member("a"), Member("b"))))
+			WithConstraints(AllOrNone("aa", Member("aa"), Member("bb"))))
 	})
 }
 
@@ -54,11 +54,11 @@ func TestConstraintNameCollidingWithAnArgIsRefused(t *testing.T) {
 	expectPanic(t, `command "cmd": constraint name "targets" is already a flag or arg name: a member reference resolves by name and would be ambiguous`, func() {
 		simpleApp("cmd", "a command", "ok",
 			WithFlags(
-				StringFlag("a", "the a", Optional()),
-				StringFlag("b", "the b", Optional()),
+				StringFlag("aa", "the a", Optional()),
+				StringFlag("bb", "the b", Optional()),
 			),
 			WithArgs(NewArg("targets", "the targets", Variadic(), ArgOptional())),
-			WithConstraints(AllOrNone("targets", Member("a"), Member("b"))))
+			WithConstraints(AllOrNone("targets", Member("aa"), Member("bb"))))
 	})
 }
 
@@ -67,8 +67,8 @@ func TestConstraintNameCollidingWithAnArgIsRefused(t *testing.T) {
 func TestConstraintUnknownMemberIsRefused(t *testing.T) {
 	expectPanic(t, `command "cmd": constraint "pair" references unknown member "ghost"`, func() {
 		simpleApp("cmd", "a command", "ok",
-			WithFlags(StringFlag("a", "the a", Optional())),
-			WithConstraints(AllOrNone("pair", Member("a"), Member("ghost"))))
+			WithFlags(StringFlag("aa", "the a", Optional())),
+			WithConstraints(AllOrNone("pair", Member("aa"), Member("ghost"))))
 	})
 }
 
@@ -80,26 +80,26 @@ func TestConstraintAmbiguousMemberIsRefused(t *testing.T) {
 		simpleApp("cmd", "a command", "ok",
 			WithFlags(
 				StringFlag("target", "the flag one", Optional()),
-				StringFlag("b", "the b", Optional()),
+				StringFlag("bb", "the b", Optional()),
 			),
 			WithArgs(NewArg("target", "the arg one", ArgOptional())),
-			WithConstraints(AllOrNone("pair", Member("target"), Member("b"))))
+			WithConstraints(AllOrNone("pair", Member("target"), Member("bb"))))
 	})
 }
 
 func TestConstraintDuplicateMemberIsRefused(t *testing.T) {
-	expectPanic(t, `command "cmd": constraint "pair" declares member "a" twice`, func() {
+	expectPanic(t, `command "cmd": constraint "pair" declares member "aa" twice`, func() {
 		simpleApp("cmd", "a command", "ok",
-			WithFlags(StringFlag("a", "the a", Optional())),
-			WithConstraints(AllOrNone("pair", Member("a"), Member("a"))))
+			WithFlags(StringFlag("aa", "the a", Optional())),
+			WithConstraints(AllOrNone("pair", Member("aa"), Member("aa"))))
 	})
 }
 
 func TestRequiresUnknownFlagKeepsTheFlagNoun(t *testing.T) {
 	expectPanic(t, `command "cmd": constraint "needs" references unknown flag "ghost"`, func() {
 		simpleApp("cmd", "a command", "ok",
-			WithFlags(StringFlag("a", "the a", Optional())),
-			WithConstraints(Requires("needs", "a", "ghost")))
+			WithFlags(StringFlag("aa", "the a", Optional())),
+			WithConstraints(Requires("needs", "aa", "ghost")))
 	})
 }
 
@@ -110,7 +110,7 @@ func TestRequiresUnknownFlagKeepsTheFlagNoun(t *testing.T) {
 func TestRequiresUnknownFlagIsRefusedBeforeTheSameFlagGuard(t *testing.T) {
 	expectPanic(t, `command "cmd": constraint "rr" references unknown flag "zzz"`, func() {
 		simpleApp("cmd", "a command", "ok",
-			WithFlags(StringFlag("a", "the a", Optional())),
+			WithFlags(StringFlag("aa", "the a", Optional())),
 			WithConstraints(Requires("rr", "zzz", "zzz")))
 	})
 }
@@ -118,7 +118,7 @@ func TestRequiresUnknownFlagIsRefusedBeforeTheSameFlagGuard(t *testing.T) {
 func TestImpliesUnknownFlagIsRefusedBeforeTheSameFlagGuard(t *testing.T) {
 	expectPanic(t, `command "cmd": constraint "ii" references unknown flag "zzz"`, func() {
 		simpleApp("cmd", "a command", "ok",
-			WithFlags(BoolFlag("a", "the a", Default(false))),
+			WithFlags(BoolFlag("aa", "the a", Default(false))),
 			WithConstraints(Implies("ii", "zzz", "zzz", true)))
 	})
 }
@@ -126,13 +126,13 @@ func TestImpliesUnknownFlagIsRefusedBeforeTheSameFlagGuard(t *testing.T) {
 // --- Registration: scope (§26.8 pass 4, §24.8) ---
 
 func TestConstraintMemberInsideAScopeIsRefused(t *testing.T) {
-	expectPanic(t, `command "cmd": constraint "pair" references 'target', which is declared under '--mode a': constraints operate at root scope only`, func() {
+	expectPanic(t, `command "cmd": constraint "pair" references 'target', which is declared under '--mode aa': constraints operate at root scope only`, func() {
 		simpleApp("cmd", "a command", "ok",
 			WithFlags(
 				StringFlag("host", "the host", Optional()),
 				ChoiceFlag("mode", "the mode", Required(),
-					Choice("a", "choice a", StringFlag("target", "the target", Optional())),
-					Choice("b", "choice b")),
+					Choice("aa", "choice a", StringFlag("target", "the target", Optional())),
+					Choice("bb", "choice b")),
 			),
 			WithConstraints(AllOrNone("pair", Member("host"), Member("target"))))
 	})
@@ -161,12 +161,12 @@ func TestNestingADependencyFamilyIsRefused(t *testing.T) {
 	expectPanic(t, `command "cmd": constraint "outer" references constraint "inner", which declares a one-way dependency rather than a co-occurrence rule: only at-least-one and all-or-none can be members of another constraint`, func() {
 		simpleApp("cmd", "a command", "ok",
 			WithFlags(
-				StringFlag("a", "the a", Optional()),
-				StringFlag("b", "the b", Optional()),
+				StringFlag("aa", "the a", Optional()),
+				StringFlag("bb", "the b", Optional()),
 			),
 			WithConstraints(
-				Requires("inner", "a", "b"),
-				AtLeastOne("outer", Member("inner"), Member("a")),
+				Requires("inner", "aa", "bb"),
+				AtLeastOne("outer", Member("inner"), Member("aa")),
 			))
 	})
 }
@@ -175,12 +175,12 @@ func TestNestedMemberDeclaringAnElectionIsRefused(t *testing.T) {
 	expectPanic(t, `command "cmd": constraint "outer" member "inner" is a constraint and cannot declare an election: a nested constraint is engaged when its own members are`, func() {
 		simpleApp("cmd", "a command", "ok",
 			WithFlags(
-				StringFlag("a", "the a", Optional()),
-				StringFlag("b", "the b", Optional()),
+				StringFlag("aa", "the a", Optional()),
+				StringFlag("bb", "the b", Optional()),
 			),
 			WithConstraints(
-				AllOrNone("inner", Member("a"), Member("b")),
-				AtLeastOne("outer", Member("inner", WhenPresent()), Member("a")),
+				AllOrNone("inner", Member("aa"), Member("bb")),
+				AtLeastOne("outer", Member("inner", WhenPresent()), Member("aa")),
 			))
 	})
 }
@@ -189,27 +189,27 @@ func TestConstraintCycleIsRefused(t *testing.T) {
 	expectPanic(t, `command "cmd": constraints form a cycle: outer -> inner -> outer`, func() {
 		simpleApp("cmd", "a command", "ok",
 			WithFlags(
-				StringFlag("a", "the a", Optional()),
-				StringFlag("b", "the b", Optional()),
+				StringFlag("aa", "the a", Optional()),
+				StringFlag("bb", "the b", Optional()),
 			),
 			WithConstraints(
-				AtLeastOne("outer", Member("inner"), Member("a")),
-				AllOrNone("inner", Member("outer"), Member("b")),
+				AtLeastOne("outer", Member("inner"), Member("aa")),
+				AllOrNone("inner", Member("outer"), Member("bb")),
 			))
 	})
 }
 
 // The path opens on the participant declared FIRST, not on the one the walk
-// entered the cycle through (§12.15). Here the walk starts at "x", enters the
-// cycle at "c" and closes it at "b", but "b" is declared before "c".
+// entered the cycle through (§12.15). Here the walk starts at "xx", enters the
+// cycle at "cc" and closes it at "bb", but "bb" is declared before "cc".
 func TestConstraintCyclePathOpensOnTheEarliestDeclaredParticipant(t *testing.T) {
-	expectPanic(t, `command "cmd": constraints form a cycle: b -> c -> b`, func() {
+	expectPanic(t, `command "cmd": constraints form a cycle: bb -> cc -> bb`, func() {
 		simpleApp("cmd", "a command", "ok",
-			WithFlags(StringFlag("a", "the a", Optional())),
+			WithFlags(StringFlag("aa", "the a", Optional())),
 			WithConstraints(
-				AtLeastOne("x", Member("c"), Member("a")),
-				AtLeastOne("b", Member("c"), Member("a")),
-				AtLeastOne("c", Member("b"), Member("a")),
+				AtLeastOne("xx", Member("cc"), Member("aa")),
+				AtLeastOne("bb", Member("cc"), Member("aa")),
+				AtLeastOne("cc", Member("bb"), Member("aa")),
 			))
 	})
 }
@@ -219,8 +219,8 @@ func TestConstraintCyclePathOpensOnTheEarliestDeclaredParticipant(t *testing.T) 
 func TestConstraintSelfReferenceIsTheSameCycleTemplate(t *testing.T) {
 	expectPanic(t, `command "cmd": constraints form a cycle: loop -> loop`, func() {
 		simpleApp("cmd", "a command", "ok",
-			WithFlags(StringFlag("a", "the a", Optional())),
-			WithConstraints(AtLeastOne("loop", Member("loop"), Member("a"))))
+			WithFlags(StringFlag("aa", "the a", Optional())),
+			WithConstraints(AtLeastOne("loop", Member("loop"), Member("aa"))))
 	})
 }
 
@@ -269,7 +269,7 @@ func TestWhenNonEmptyOnASelectorIsRefused(t *testing.T) {
 		simpleApp("cmd", "a command", "ok",
 			WithFlags(
 				ChoiceFlag("mode", "the mode", Required(),
-					Choice("a", "choice a"), Choice("b", "choice b")),
+					Choice("aa", "choice a"), Choice("bb", "choice b")),
 				StringFlag("larger-than", "a size", Optional()),
 			),
 			WithConstraints(AtLeastOne("sel", Member("mode", WhenNonEmpty()), Member("larger-than"))))
@@ -376,10 +376,10 @@ func TestArgMemberDeclaringRequiredIsRefusedWithTheBareName(t *testing.T) {
 // a single walk would have met first.
 
 func TestNameLegalityIsReportedBeforeMemberResolution(t *testing.T) {
-	expectPanic(t, `command "cmd": constraint name "BAD" must match [a-z][a-z0-9-]*`, func() {
+	expectPanic(t, `command "cmd": constraint name "BAD" must be lowercase kebab-case of at least two characters: [a-z][a-z0-9]*(-[a-z0-9]+)*`, func() {
 		simpleApp("cmd", "a command", "ok",
-			WithFlags(StringFlag("a", "the a", Optional())),
-			WithConstraints(AllOrNone("BAD", Member("a"), Member("ghost"))))
+			WithFlags(StringFlag("aa", "the a", Optional())),
+			WithConstraints(AllOrNone("BAD", Member("aa"), Member("ghost"))))
 	})
 }
 
@@ -388,20 +388,20 @@ func TestMemberResolutionIsReportedBeforeElectionLegality(t *testing.T) {
 		simpleApp("cmd", "a command", "ok",
 			WithFlags(
 				BoolFlag("all", "everything", Default(false)),
-				StringFlag("a", "the a", Optional()),
+				StringFlag("aa", "the a", Optional()),
 			),
 			WithConstraints(AllOrNone("sel", Member("all"), Member("ghost"))))
 	})
 }
 
 func TestElectionLegalityIsReportedBeforePresenceLegality(t *testing.T) {
-	expectPanic(t, `command "cmd": constraint "sel" member '--a' declares WhenTrue(), which needs a bool; '--a' is a str`, func() {
+	expectPanic(t, `command "cmd": constraint "sel" member '--aa' declares WhenTrue(), which needs a bool; '--aa' is a str`, func() {
 		simpleApp("cmd", "a command", "ok",
 			WithFlags(
-				StringFlag("a", "the a", Optional()),
-				StringFlag("b", "the b", Required()),
+				StringFlag("aa", "the a", Optional()),
+				StringFlag("bb", "the b", Required()),
 			),
-			WithConstraints(AllOrNone("sel", Member("a", WhenTrue()), Member("b"))))
+			WithConstraints(AllOrNone("sel", Member("aa", WhenTrue()), Member("bb"))))
 	})
 }
 
@@ -410,15 +410,15 @@ func TestElectionLegalityIsReportedBeforePresenceLegality(t *testing.T) {
 // that both resolve (§26.8). Only the phase boundary is under test here: the
 // same-flag state is otherwise legal to reach.
 func TestPresenceLegalityIsReportedBeforeTheSameFlagGuard(t *testing.T) {
-	expectPanic(t, `command "cmd": constraint "sel" member '--b' declares Required(): a member the invocation must always supply leaves the constraint nothing to decide`, func() {
+	expectPanic(t, `command "cmd": constraint "sel" member '--bb' declares Required(): a member the invocation must always supply leaves the constraint nothing to decide`, func() {
 		simpleApp("cmd", "a command", "ok",
 			WithFlags(
-				StringFlag("a", "the a", Optional()),
-				StringFlag("b", "the b", Required()),
+				StringFlag("aa", "the a", Optional()),
+				StringFlag("bb", "the b", Required()),
 			),
 			WithConstraints(
-				AllOrNone("sel", Member("a"), Member("b")),
-				Requires("rr", "a", "a"),
+				AllOrNone("sel", Member("aa"), Member("bb")),
+				Requires("rr", "aa", "aa"),
 			))
 	})
 }
@@ -426,16 +426,16 @@ func TestPresenceLegalityIsReportedBeforeTheSameFlagGuard(t *testing.T) {
 // The same boundary for the other guard in the trailing phase: a non-bool
 // `Implies` trigger is read after pass 7 has refused the required member.
 func TestPresenceLegalityIsReportedBeforeTheImpliesTriggerGuard(t *testing.T) {
-	expectPanic(t, `command "cmd": constraint "sel" member '--b' declares Required(): a member the invocation must always supply leaves the constraint nothing to decide`, func() {
+	expectPanic(t, `command "cmd": constraint "sel" member '--bb' declares Required(): a member the invocation must always supply leaves the constraint nothing to decide`, func() {
 		simpleApp("cmd", "a command", "ok",
 			WithFlags(
-				StringFlag("a", "the a", Optional()),
-				StringFlag("b", "the b", Required()),
-				BoolFlag("t", "the target", Default(false)),
+				StringFlag("aa", "the a", Optional()),
+				StringFlag("bb", "the b", Required()),
+				BoolFlag("tt", "the target", Default(false)),
 			),
 			WithConstraints(
-				AllOrNone("sel", Member("a"), Member("b")),
-				Implies("ii", "a", "t", true),
+				AllOrNone("sel", Member("aa"), Member("bb")),
+				Implies("ii", "aa", "tt", true),
 			))
 	})
 }
@@ -621,10 +621,10 @@ func TestOneCompletePairSatisfiesTheParent(t *testing.T) {
 func TestVacuousAllOrNoneIsSatisfied(t *testing.T) {
 	app := simpleApp("cmd", "a command", "ok",
 		WithFlags(
-			StringFlag("a", "the a", Optional()),
-			StringFlag("b", "the b", Optional()),
+			StringFlag("aa", "the a", Optional()),
+			StringFlag("bb", "the b", Optional()),
 		),
-		WithConstraints(AllOrNone("pair", Member("a"), Member("b"))))
+		WithConstraints(AllOrNone("pair", Member("aa"), Member("bb"))))
 	if r := app.Test([]string{"cmd"}); r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d; stderr=%q", r.ExitCode, r.Stderr)
 	}
@@ -635,15 +635,15 @@ func TestVacuousAllOrNoneIsSatisfied(t *testing.T) {
 func TestADefaultNeverEngagesAMember(t *testing.T) {
 	app := simpleApp("cmd", "a command", "ok",
 		WithFlags(
-			StringFlag("a", "the a", Default("x")),
-			StringFlag("b", "the b", Optional()),
+			StringFlag("aa", "the a", Default("xx")),
+			StringFlag("bb", "the b", Optional()),
 		),
-		WithConstraints(AtLeastOne("sel", Member("a"), Member("b"))))
+		WithConstraints(AtLeastOne("sel", Member("aa"), Member("bb"))))
 	r := app.Test([]string{"cmd"})
 	if r.ExitCode != 1 {
 		t.Fatalf("a default must not engage the constraint; got exit %d", r.ExitCode)
 	}
-	if !strings.Contains(r.Stderr, `constraint "sel": at least one of --a, --b is required`) {
+	if !strings.Contains(r.Stderr, `constraint "sel": at least one of --aa, --bb is required`) {
 		t.Fatalf("got %q", r.Stderr)
 	}
 }
@@ -672,16 +672,16 @@ func TestAnImpliedValueEngagesAMember(t *testing.T) {
 func TestSiblingsEvaluateInDeclarationOrder(t *testing.T) {
 	app := simpleApp("cmd", "a command", "ok",
 		WithFlags(
-			StringFlag("a", "the a", Optional()),
-			StringFlag("b", "the b", Optional()),
-			StringFlag("c", "the c", Optional()),
-			StringFlag("d", "the d", Optional()),
+			StringFlag("aa", "the a", Optional()),
+			StringFlag("bb", "the b", Optional()),
+			StringFlag("cc", "the c", Optional()),
+			StringFlag("dd", "the d", Optional()),
 		),
 		WithConstraints(
-			AllOrNone("first", Member("a"), Member("b")),
-			AllOrNone("second", Member("c"), Member("d")),
+			AllOrNone("first", Member("aa"), Member("bb")),
+			AllOrNone("second", Member("cc"), Member("dd")),
 		))
-	r := app.Test([]string{"cmd", "--a", "1", "--c", "2"})
+	r := app.Test([]string{"cmd", "--aa", "1", "--cc", "2"})
 	if !strings.Contains(r.Stderr, `constraint "first"`) {
 		t.Fatalf("expected the first constraint to report, got %q", r.Stderr)
 	}
@@ -709,19 +709,19 @@ func TestArgMemberProvidednessAtTheMachineDoor(t *testing.T) {
 func TestNonVariadicArgMemberEngagesOnItsToken(t *testing.T) {
 	newApp := func() *App {
 		return simpleApp("cmd", "a command", "ok",
-			WithFlags(StringFlag("a", "the a", Optional())),
+			WithFlags(StringFlag("aa", "the a", Optional())),
 			WithArgs(NewArg("name", "the name", ArgOptional())),
-			WithConstraints(AllOrNone("pair", Member("name"), Member("a"))))
+			WithConstraints(AllOrNone("pair", Member("name"), Member("aa"))))
 	}
-	r := newApp().Test([]string{"cmd", "n"})
+	r := newApp().Test([]string{"cmd", "nn"})
 	if r.ExitCode != 1 {
 		t.Fatalf("expected exit 1, got %d", r.ExitCode)
 	}
-	want := "error: constraint \"pair\": name, --a must be used together\ntry 'myapp cmd --help'\n"
+	want := "error: constraint \"pair\": name, --aa must be used together\ntry 'myapp cmd --help'\n"
 	if r.Stderr != want {
 		t.Fatalf("stderr = %q, want %q", r.Stderr, want)
 	}
-	if r := newApp().Test([]string{"cmd", "n", "--a", "1"}); r.ExitCode != 0 {
+	if r := newApp().Test([]string{"cmd", "nn", "--aa", "1"}); r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d; stderr=%q", r.ExitCode, r.Stderr)
 	}
 	if r := newApp().Test([]string{"cmd"}); r.ExitCode != 0 {
@@ -810,20 +810,20 @@ func TestHelpRendersTheConstraintsBlock(t *testing.T) {
 func TestHelpRendersEveryFamilysSentence(t *testing.T) {
 	app := simpleApp("cmd", "a command", "ok",
 		WithFlags(
-			StringFlag("a", "the a", Optional()),
-			StringFlag("b", "the b", Optional()),
+			StringFlag("aa", "the a", Optional()),
+			StringFlag("bb", "the b", Optional()),
 			BoolFlag("trigger", "the trigger", Default(false)),
 			BoolFlag("target", "the target", Optional()),
 		),
 		WithConstraints(
-			AtLeastOne("one-of", Member("a"), Member("b")),
-			Requires("a-needs-b", "a", "b"),
+			AtLeastOne("one-of", Member("aa"), Member("bb")),
+			Requires("a-needs-b", "aa", "bb"),
 			Implies("trigger-declines", "trigger", "target", false),
 		))
 	r := app.Test([]string{"cmd", "--help"})
 	want := `Constraints:
-  one-of              at least one of --a, --b
-  a-needs-b           --a requires --b
+  one-of              at least one of --aa, --bb
+  a-needs-b           --aa requires --bb
   trigger-declines    --trigger implies --no-target`
 	if !strings.Contains(r.Stdout, want) {
 		t.Fatalf("help = %q, want it to contain %q", r.Stdout, want)
@@ -919,21 +919,21 @@ func TestAtLeastOneProjectsAnyOfBranches(t *testing.T) {
 func TestTwoAtLeastOnesWrapInAllOf(t *testing.T) {
 	app := simpleApp("cmd", "a command", "ok",
 		WithFlags(
-			StringFlag("a", "the a", Optional()),
-			StringFlag("b", "the b", Optional()),
-			StringFlag("c", "the c", Optional()),
-			StringFlag("d", "the d", Optional()),
+			StringFlag("aa", "the a", Optional()),
+			StringFlag("bb", "the b", Optional()),
+			StringFlag("cc", "the c", Optional()),
+			StringFlag("dd", "the d", Optional()),
 		),
 		WithConstraints(
-			AtLeastOne("first", Member("a"), Member("b")),
-			AtLeastOne("second", Member("c"), Member("d")),
+			AtLeastOne("first", Member("aa"), Member("bb")),
+			AtLeastOne("second", Member("cc"), Member("dd")),
 		))
 	schema := app.JsonSchema("cmd")
 	if _, present := schema["anyOf"]; present {
 		t.Fatalf("two at-least-one constraints emit no bare anyOf, got %v", schema["anyOf"])
 	}
 	got, _ := json.Marshal(schema["allOf"])
-	want := `[{"anyOf":[{"required":["a"]},{"required":["b"]}]},{"anyOf":[{"required":["c"]},{"required":["d"]}]}]`
+	want := `[{"anyOf":[{"required":["aa"]},{"required":["bb"]}]},{"anyOf":[{"required":["cc"]},{"required":["dd"]}]}]`
 	if string(got) != want {
 		t.Fatalf("allOf = %s, want %s", got, want)
 	}
@@ -1016,17 +1016,17 @@ func TestPartialProjectionReasons(t *testing.T) {
 		WithFlags(
 			BoolFlag("trigger", "the trigger", Default(false)),
 			BoolFlag("target", "the target", Optional()),
-			StringFlag("a", "the a", Optional()),
-			StringFlag("b", "the b", Optional()),
+			StringFlag("aa", "the a", Optional()),
+			StringFlag("bb", "the b", Optional()),
 		),
 		WithConstraints(
-			AllOrNone("inner", Member("a"), Member("b")),
+			AllOrNone("inner", Member("aa"), Member("bb")),
 			AllOrNone("outer", Member("inner"), Member("target", WhenTrue())),
 			Implies("trigger-implies-target", "trigger", "target", true),
 		))
 	tools := app.AsTools()
 	desc := tools[0].Description
-	if !strings.Contains(desc, "  all or none of: (a with b), target -- not expressed in the schema: the nested grouping") {
+	if !strings.Contains(desc, "  all or none of: (aa with bb), target -- not expressed in the schema: the nested grouping") {
 		t.Fatalf("expected the nested-grouping reason, got %q", desc)
 	}
 	if !strings.Contains(desc, "  trigger implies target = true -- not expressed in the schema: the injection") {

@@ -28,14 +28,14 @@ func TestFlagPresenceUndeclared(t *testing.T) {
 
 func TestFlagPresenceUndeclaredEveryConstructor(t *testing.T) {
 	cases := map[string]func(){
-		"str":   func() { StringFlag("x", "h") },
-		"bool":  func() { BoolFlag("x", "h") },
-		"int":   func() { IntFlag("x", "h") },
-		"float": func() { FloatFlag("x", "h") },
-		"list":  func() { ListFlag(TypeStr, "x", "h", Unique(false)) },
-		"dict":  func() { DictFlag(TypeStr, "x", "h", Unique(false)) },
+		"str":   func() { StringFlag("xx", "hh") },
+		"bool":  func() { BoolFlag("xx", "hh") },
+		"int":   func() { IntFlag("xx", "hh") },
+		"float": func() { FloatFlag("xx", "hh") },
+		"list":  func() { ListFlag(TypeStr, "xx", "hh", Unique(false)) },
+		"dict":  func() { DictFlag(TypeStr, "xx", "hh", Unique(false)) },
 	}
-	want := `Flag "x": presence is undeclared: declare exactly one of Required(), Optional(), or Default(<value>)`
+	want := `Flag "xx": presence is undeclared: declare exactly one of Required(), Optional(), or Default(<value>)`
 	for name, fn := range cases {
 		t.Run(name, func(t *testing.T) {
 			if got := mustPanic(t, fn); got != want {
@@ -104,11 +104,11 @@ func TestFlagStructLiteralInFlagSetDoesNotRegister(t *testing.T) {
 // declares none and does not register (contract §23.1 as amended by §18.15
 // item 178, §24.1).
 func TestFlagStructLiteralInScopeDoesNotRegister(t *testing.T) {
-	want := `Flag "a": presence is undeclared: declare exactly one of Required(), Optional(), or Default(<value>)`
+	want := `Flag "aa": presence is undeclared: declare exactly one of Required(), Optional(), or Default(<value>)`
 	got := mustPanic(t, func() {
 		ChoiceFlag("via", "delivery channel", Required(),
-			Choice("email", "as an email", Flag{Name: "a", Type: TypeStr, Help: "a"}),
-			Choice("sms", "as a text", StringFlag("b", "b", Optional())),
+			Choice("email", "as an email", Flag{Name: "aa", Type: TypeStr, Help: "aa"}),
+			Choice("sms", "as a text", StringFlag("bb", "bb", Optional())),
 		)
 	})
 	if got != want {
@@ -142,30 +142,30 @@ func TestFlagPresenceDeclaredTwice(t *testing.T) {
 	}{
 		{
 			"required+optional",
-			func() { StringFlag("x", "h", Required(), Optional()) },
-			`Flag "x": presence is declared twice: Required() and Optional() cannot be combined; declare exactly one`,
+			func() { StringFlag("xx", "hh", Required(), Optional()) },
+			`Flag "xx": presence is declared twice: Required() and Optional() cannot be combined; declare exactly one`,
 		},
 		{
 			"required+default",
-			func() { StringFlag("x", "h", Required(), Default("fast")) },
-			`Flag "x": presence is declared twice: Required() and Default(fast) cannot be combined; declare exactly one`,
+			func() { StringFlag("xx", "hh", Required(), Default("fast")) },
+			`Flag "xx": presence is declared twice: Required() and Default(fast) cannot be combined; declare exactly one`,
 		},
 		{
 			"optional+default",
-			func() { IntFlag("x", "h", Optional(), Default(5)) },
-			`Flag "x": presence is declared twice: Optional() and Default(5) cannot be combined; declare exactly one`,
+			func() { IntFlag("xx", "hh", Optional(), Default(5)) },
+			`Flag "xx": presence is declared twice: Optional() and Default(5) cannot be combined; declare exactly one`,
 		},
 		{
 			// Written the other way round, rendered the same way: the order is
 			// canonical (required, optional, default), never the written one.
 			"default+required",
-			func() { StringFlag("x", "h", Default("fast"), Required()) },
-			`Flag "x": presence is declared twice: Required() and Default(fast) cannot be combined; declare exactly one`,
+			func() { StringFlag("xx", "hh", Default("fast"), Required()) },
+			`Flag "xx": presence is declared twice: Required() and Default(fast) cannot be combined; declare exactly one`,
 		},
 		{
 			"all three",
-			func() { BoolFlag("x", "h", Default(true), Optional(), Required()) },
-			`Flag "x": presence is declared twice: Required() and Optional() cannot be combined; declare exactly one`,
+			func() { BoolFlag("xx", "hh", Default(true), Optional(), Required()) },
+			`Flag "xx": presence is declared twice: Required() and Optional() cannot be combined; declare exactly one`,
 		},
 	}
 	for _, tc := range cases {
@@ -185,21 +185,21 @@ func TestArgPresenceDeclaredTwice(t *testing.T) {
 	}{
 		{
 			"required+optional",
-			func() { NewArg("x", "h", ArgRequired(), ArgOptional()) },
-			`Arg "x": presence is declared twice: ArgRequired() and ArgOptional() cannot be combined; declare exactly one`,
+			func() { NewArg("xx", "hh", ArgRequired(), ArgOptional()) },
+			`Arg "xx": presence is declared twice: ArgRequired() and ArgOptional() cannot be combined; declare exactly one`,
 		},
 		{
 			// This pair used to be `required arg cannot have a default`, which
 			// the two-declared error subsumes: it says the same thing and names
 			// both spellings.
 			"required+default",
-			func() { NewArg("x", "h", ArgRequired(), ArgDefault("prod")) },
-			`Arg "x": presence is declared twice: ArgRequired() and ArgDefault(prod) cannot be combined; declare exactly one`,
+			func() { NewArg("xx", "hh", ArgRequired(), ArgDefault("prod")) },
+			`Arg "xx": presence is declared twice: ArgRequired() and ArgDefault(prod) cannot be combined; declare exactly one`,
 		},
 		{
 			"optional+default",
-			func() { NewArg("x", "h", ArgOptional(), ArgDefault("prod")) },
-			`Arg "x": presence is declared twice: ArgOptional() and ArgDefault(prod) cannot be combined; declare exactly one`,
+			func() { NewArg("xx", "hh", ArgOptional(), ArgDefault("prod")) },
+			`Arg "xx": presence is declared twice: ArgOptional() and ArgDefault(prod) cannot be combined; declare exactly one`,
 		},
 	}
 	for _, tc := range cases {
@@ -228,34 +228,34 @@ func TestPresenceDeclaredTwiceRendersNilDefaultAsNilSpelling(t *testing.T) {
 	}{
 		{
 			"flag required+nil default",
-			func() { StringFlag("x", "h", Required(), Default(nil)) },
-			`Flag "x": presence is declared twice: Required() and Default(nil) cannot be combined; declare exactly one`,
+			func() { StringFlag("xx", "hh", Required(), Default(nil)) },
+			`Flag "xx": presence is declared twice: Required() and Default(nil) cannot be combined; declare exactly one`,
 		},
 		{
 			"flag optional+nil default",
-			func() { StringFlag("x", "h", Optional(), Default(nil)) },
-			`Flag "x": presence is declared twice: Optional() and Default(nil) cannot be combined; declare exactly one`,
+			func() { StringFlag("xx", "hh", Optional(), Default(nil)) },
+			`Flag "xx": presence is declared twice: Optional() and Default(nil) cannot be combined; declare exactly one`,
 		},
 		{
 			// Written default-first, rendered the canonical way round.
 			"flag nil default+required",
-			func() { StringFlag("x", "h", Default(nil), Required()) },
-			`Flag "x": presence is declared twice: Required() and Default(nil) cannot be combined; declare exactly one`,
+			func() { StringFlag("xx", "hh", Default(nil), Required()) },
+			`Flag "xx": presence is declared twice: Required() and Default(nil) cannot be combined; declare exactly one`,
 		},
 		{
 			"arg required+nil default",
-			func() { NewArg("x", "h", ArgRequired(), ArgDefault(nil)) },
-			`Arg "x": presence is declared twice: ArgRequired() and ArgDefault(nil) cannot be combined; declare exactly one`,
+			func() { NewArg("xx", "hh", ArgRequired(), ArgDefault(nil)) },
+			`Arg "xx": presence is declared twice: ArgRequired() and ArgDefault(nil) cannot be combined; declare exactly one`,
 		},
 		{
 			"arg optional+nil default",
-			func() { NewArg("x", "h", ArgOptional(), ArgDefault(nil)) },
-			`Arg "x": presence is declared twice: ArgOptional() and ArgDefault(nil) cannot be combined; declare exactly one`,
+			func() { NewArg("xx", "hh", ArgOptional(), ArgDefault(nil)) },
+			`Arg "xx": presence is declared twice: ArgOptional() and ArgDefault(nil) cannot be combined; declare exactly one`,
 		},
 		{
 			"arg nil default+optional",
-			func() { NewArg("x", "h", ArgDefault(nil), ArgOptional()) },
-			`Arg "x": presence is declared twice: ArgOptional() and ArgDefault(nil) cannot be combined; declare exactly one`,
+			func() { NewArg("xx", "hh", ArgDefault(nil), ArgOptional()) },
+			`Arg "xx": presence is declared twice: ArgOptional() and ArgDefault(nil) cannot be combined; declare exactly one`,
 		},
 	}
 	for _, tc := range cases {
@@ -320,12 +320,12 @@ func TestScopedSubFlagTakesAllThreePresences(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestOptionalScalarsDeliverNil(t *testing.T) {
-	app := simpleApp("cmd", "a command", "s={s} i={i} f={f} b={b}",
+	app := simpleApp("cmd", "a command", "s={ss} i={ii} f={ff} b={bb}",
 		WithFlags(
-			StringFlag("s", "a string", Optional()),
-			IntFlag("i", "an int", Optional()),
-			FloatFlag("f", "a float", Optional()),
-			BoolFlag("b", "a bool", Optional()),
+			StringFlag("ss", "a string", Optional()),
+			IntFlag("ii", "an int", Optional()),
+			FloatFlag("ff", "a float", Optional()),
+			BoolFlag("bb", "a bool", Optional()),
 		))
 	r := app.Test([]string{"cmd"})
 	if r.ExitCode != 0 {
@@ -337,13 +337,13 @@ func TestOptionalScalarsDeliverNil(t *testing.T) {
 }
 
 // TestOptionalBoolIsRealTristate pins what retires the string-pseudo-bool
-// idiom: --x is true, --no-x is false, absent is absent.
+// idiom: --xx is true, --no-xx is false, absent is absent.
 func TestOptionalBoolIsRealTristate(t *testing.T) {
-	app := simpleApp("cmd", "a command", "b={b}",
-		WithFlags(BoolFlag("b", "a bool", Optional())))
+	app := simpleApp("cmd", "a command", "b={bb}",
+		WithFlags(BoolFlag("bb", "a bool", Optional())))
 	for _, tc := range []struct{ argv, want string }{
-		{"--b", "b=true"},
-		{"--no-b", "b=false"},
+		{"--bb", "b=true"},
+		{"--no-bb", "b=false"},
 		{"", "b=None"},
 	} {
 		argv := []string{"cmd"}
@@ -361,13 +361,13 @@ func TestOptionalBoolIsRealTristate(t *testing.T) {
 }
 
 func TestRequiredBoolMustBePassed(t *testing.T) {
-	app := simpleApp("cmd", "a command", "b={b}",
-		WithFlags(BoolFlag("b", "a bool", Required())))
+	app := simpleApp("cmd", "a command", "b={bb}",
+		WithFlags(BoolFlag("bb", "a bool", Required())))
 	r := app.Test([]string{"cmd"})
 	if r.ExitCode != 1 {
 		t.Fatalf("expected exit 1, got %d", r.ExitCode)
 	}
-	if !strings.Contains(r.Stderr, "flag '--b' must be passed as --b or --no-b") {
+	if !strings.Contains(r.Stderr, "flag '--bb' must be passed as --bb or --no-bb") {
 		t.Fatalf("got %q", r.Stderr)
 	}
 }
@@ -435,7 +435,7 @@ func TestCompoundRequiredNeedsAtLeastOneValue(t *testing.T) {
 	if !strings.Contains(r.Stderr, "flag '--tag' is required") {
 		t.Fatalf("got %q", r.Stderr)
 	}
-	if r := app.Test([]string{"cmd", "--tag", "a"}); r.ExitCode != 0 {
+	if r := app.Test([]string{"cmd", "--tag", "aa"}); r.ExitCode != 0 {
 		t.Fatalf("one occurrence satisfies requiredness: exit %d, stderr=%q", r.ExitCode, r.Stderr)
 	}
 }
@@ -656,11 +656,11 @@ func TestRequiredURLClassFlagSatisfiedByConnectionEnv(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestProvidedAcrossSources(t *testing.T) {
-	os.Setenv("MYAPP_FROM_ENV", "e")
+	os.Setenv("MYAPP_FROM_ENV", "ee")
 	defer os.Unsetenv("MYAPP_FROM_ENV")
 	tmpDir := t.TempDir()
 	configFile := tmpDir + "/config.json"
-	if err := os.WriteFile(configFile, []byte(`{"from_config": "c"}`), 0o644); err != nil {
+	if err := os.WriteFile(configFile, []byte(`{"from_config": "cc"}`), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	app := NewApp("myapp", "1.0.0", "test app", WithConfig(), WithConfigPath(configFile))
@@ -672,14 +672,14 @@ func TestProvidedAcrossSources(t *testing.T) {
 		StringFlag("from-cli", "cli", Optional()),
 		StringFlag("from-env", "env", Env("MYAPP_FROM_ENV"), Optional()),
 		StringFlag("from-config", "config", Optional()),
-		StringFlag("defaulted", "defaulted", Default("d")),
+		StringFlag("defaulted", "defaulted", Default("dd")),
 		StringFlag("absent", "absent", Optional()),
 		BoolFlag("trigger", "trigger", Default(false)),
 		BoolFlag("implied-target", "implied", Optional()),
 	), WithConstraints(Implies("trigger-implies-target", "trigger", "implied-target", true)),
 		WithEffect(EffectReadOnly))
 
-	if r := app.Test([]string{"cmd", "--from-cli", "v", "--trigger"}); r.ExitCode != 0 {
+	if r := app.Test([]string{"cmd", "--from-cli", "vv", "--trigger"}); r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d; stderr=%q", r.ExitCode, r.Stderr)
 	}
 	cases := []struct {
@@ -756,11 +756,11 @@ func TestHelpRendersOnePresencePartPerFlag(t *testing.T) {
 		WithFlags(
 			StringFlag("req", "required flag", Required()),
 			StringFlag("opt", "optional flag", Optional()),
-			StringFlag("dfl", "defaulted flag", Default("x")),
+			StringFlag("dfl", "defaulted flag", Default("xx")),
 			BoolFlag("bdfl", "defaulted bool", Default(true)),
 			ListFlag(TypeStr, "empty-list", "an empty list", Unique(false), Default([]interface{}{})),
 			DictFlag(TypeStr, "empty-dict", "an empty dict", Unique(false), Default(map[string]interface{}{})),
-			DictFlag(TypeStr, "full-dict", "a full dict", Unique(false), Default(map[string]interface{}{"b": "2", "a": "1"})),
+			DictFlag(TypeStr, "full-dict", "a full dict", Unique(false), Default(map[string]interface{}{"bb": "2", "aa": "1"})),
 		))
 	r := app.Test([]string{"cmd", "--help"})
 	if r.ExitCode != 0 {
@@ -769,11 +769,11 @@ func TestHelpRendersOnePresencePartPerFlag(t *testing.T) {
 	for _, want := range []string{
 		"required flag [required]",
 		"optional flag [optional]",
-		"defaulted flag [default: x]",
+		"defaulted flag [default: xx]",
 		"defaulted bool [default: true]",
 		"an empty list [list] [default: []]",
 		"an empty dict [dict] [default: {}]",
-		"a full dict [dict] [default: a=1, b=2]",
+		"a full dict [dict] [default: aa=1, bb=2]",
 	} {
 		if !strings.Contains(r.Stdout, want) {
 			t.Fatalf("help missing %q; got:\n%s", want, r.Stdout)

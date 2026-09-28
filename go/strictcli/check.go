@@ -271,8 +271,15 @@ type checkDef struct {
 	implForm string // "error" or "warn" -- the registration form, for the severity cross-check
 }
 
-// identifierRe validates identifier names (check names, tag names): lowercase letter followed by lowercase letters, digits, or hyphens.
-var identifierRe = regexp.MustCompile(`^[a-z][a-z0-9-]*$`)
+// kebabNameRe is the naming rule's pattern: lowercase kebab-case, no leading,
+// trailing or doubled hyphen. isKebabName adds the two-character minimum.
+var kebabNameRe = regexp.MustCompile(`^[a-z][a-z0-9]*(-[a-z0-9]+)*$`)
+
+// isKebabName reports whether name satisfies the naming rule every identifier
+// a caller types or references follows (kebabNameClause).
+func isKebabName(name string) bool {
+	return len(name) >= 2 && kebabNameRe.MatchString(name)
+}
 
 // knownCheckFields enumerates the allowed fields in a check definition table.
 var knownCheckFields = map[string]bool{
@@ -353,7 +360,7 @@ func parseCheckHooks(raw interface{}) (map[string]string, error) {
 	sort.Strings(names)
 	hooks := make(map[string]string, len(names))
 	for _, name := range names {
-		if !identifierRe.MatchString(name) {
+		if !isKebabName(name) {
 			return nil, errChecksTomlInvalidHookName(name)
 		}
 		fields, ok := table[name].(map[string]interface{})
@@ -444,7 +451,7 @@ func parseChecksTomlWithHooks(data []byte) (string, map[string]*checkDef, []stri
 		val := checksMap[name]
 
 		// Validate check name
-		if !identifierRe.MatchString(name) {
+		if !isKebabName(name) {
 			return "", nil, nil, nil, errChecksTomlInvalidCheckName(name)
 		}
 

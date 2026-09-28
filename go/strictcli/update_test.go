@@ -40,20 +40,20 @@ func updateFixture(t *testing.T, handler func(ctx *Context, args map[string]inte
 // --- §27.1: the mutating-default ban ---
 
 func TestMutatingDefaultIsRefusedOnAFlag(t *testing.T) {
-	app := NewApp("t", "1.0.0", "t")
-	expectPanic(t, `command "u": flag '--ttl' declares Default(300) on a mutating command: absence would write a value the invocation never stated (declare Required() or Optional(), or apply the fallback in the handler and say so in its help)`, func() {
-		app.Command("u", "update", noop, WithEffect(EffectMutating),
+	app := NewApp("tt", "1.0.0", "tt")
+	expectPanic(t, `command "uu": flag '--ttl' declares Default(300) on a mutating command: absence would write a value the invocation never stated (declare Required() or Optional(), or apply the fallback in the handler and say so in its help)`, func() {
+		app.Command("uu", "update", noop, WithEffect(EffectMutating),
 			WithFlags(IntFlag("ttl", "time to live", Default(300))))
 	})
 }
 
 func TestMutatingDefaultIsRefusedOnAPositionalArg(t *testing.T) {
-	app := NewApp("t", "1.0.0", "t")
+	app := NewApp("tt", "1.0.0", "tt")
 	// The presence spelling inside the sentence takes the FLAG spelling even
 	// when the subject is an arg (§12.16): the prefix names the command rather
 	// than a surface.
-	expectPanic(t, `command "u": argument 'target' declares Default(prod) on a mutating command`, func() {
-		app.Command("u", "update", noop, WithEffect(EffectMutating),
+	expectPanic(t, `command "uu": argument 'target' declares Default(prod) on a mutating command`, func() {
+		app.Command("uu", "update", noop, WithEffect(EffectMutating),
 			WithArgs(NewArg("target", "where", ArgDefault("prod"))))
 	})
 }
@@ -71,45 +71,45 @@ func TestMutatingDefaultIsRefusedOnEveryScalarIncludingTheEmptyOnes(t *testing.T
 		{"float", FloatFlag("rate", "rate", Default(1.5)), `flag '--rate' declares Default(1.5) on a mutating command`},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			app := NewApp("t", "1.0.0", "t")
+			app := NewApp("tt", "1.0.0", "tt")
 			expectPanic(t, tc.want, func() {
-				app.Command("u", "update", noop, WithEffect(EffectMutating), WithFlags(tc.flag))
+				app.Command("uu", "update", noop, WithEffect(EffectMutating), WithFlags(tc.flag))
 			})
 		})
 	}
 }
 
 func TestMutatingDefaultIsRefusedOnANonEmptyCompound(t *testing.T) {
-	app := NewApp("t", "1.0.0", "t")
-	expectPanic(t, `command "u": flag '--tag' declares Default([a]) on a mutating command`, func() {
-		app.Command("u", "update", noop, WithEffect(EffectMutating),
-			WithFlags(StringFlag("tag", "tags", Repeatable(), Unique(false), Default([]interface{}{"a"}))))
+	app := NewApp("tt", "1.0.0", "tt")
+	expectPanic(t, `command "uu": flag '--tag' declares Default([aa]) on a mutating command`, func() {
+		app.Command("uu", "update", noop, WithEffect(EffectMutating),
+			WithFlags(StringFlag("tag", "tags", Repeatable(), Unique(false), Default([]interface{}{"aa"}))))
 	})
 }
 
 // The two carve-outs and the two exemptions, each of which must REGISTER.
 func TestMutatingDefaultCarveOutsAndExemptions(t *testing.T) {
 	t.Run("an empty collection declares no elements", func(t *testing.T) {
-		app := NewApp("t", "1.0.0", "t")
-		app.Command("u", "update", noop, WithEffect(EffectMutating), WithFlags(
+		app := NewApp("tt", "1.0.0", "tt")
+		app.Command("uu", "update", noop, WithEffect(EffectMutating), WithFlags(
 			StringFlag("tag", "tags", Repeatable(), Unique(false), Default([]interface{}{})),
 			DictFlag(TypeStr, "header", "headers", Unique(false), Default(map[string]interface{}{})),
 		))
 	})
 	t.Run("a RelativeToRoot default decides where, never what", func(t *testing.T) {
-		app := NewApp("t", "1.0.0", "t", WithInfraRoot("T_HOME", "~/.t"))
-		app.Command("u", "update", noop, WithEffect(EffectMutating),
+		app := NewApp("tt", "1.0.0", "tt", WithInfraRoot("T_HOME", "~/.t"))
+		app.Command("uu", "update", noop, WithEffect(EffectMutating),
 			WithFlags(StringFlag("path", "a path", Default(RelativeToRoot("T_HOME", "store")))))
 	})
 	t.Run("a read_only command writes no value, invented or otherwise", func(t *testing.T) {
-		app := NewApp("t", "1.0.0", "t")
-		app.Command("r", "read", noop, WithEffect(EffectReadOnly),
+		app := NewApp("tt", "1.0.0", "tt")
+		app.Command("rr", "read", noop, WithEffect(EffectReadOnly),
 			WithFlags(IntFlag("ttl", "ttl", Default(300))))
 	})
 	t.Run("an app-level global is not reached", func(t *testing.T) {
-		app := NewApp("t", "1.0.0", "t")
+		app := NewApp("tt", "1.0.0", "tt")
 		app.GlobalFlag(IntFlag("depth", "depth", Default(3)))
-		app.Command("u", "update", noop, WithEffect(EffectMutating))
+		app.Command("uu", "update", noop, WithEffect(EffectMutating))
 	})
 }
 
@@ -118,12 +118,12 @@ func TestMutatingDefaultReachesAFlagSetsFlag(t *testing.T) {
 	// command is not -- the ban is evaluated per command, over the flags that
 	// command carries (§27.1, §18.33 item 302).
 	set := FlagSet{Name: "shared", Flags: []Flag{IntFlag("ttl", "time to live", Default(300))}}
-	readOnly := NewApp("t", "1.0.0", "t")
-	readOnly.Command("r", "read", noop, WithEffect(EffectReadOnly), WithFlagSets(set))
+	readOnly := NewApp("tt", "1.0.0", "tt")
+	readOnly.Command("rr", "read", noop, WithEffect(EffectReadOnly), WithFlagSets(set))
 
-	app := NewApp("t", "1.0.0", "t")
-	expectPanic(t, `command "u": flag '--ttl' declares Default(300) on a mutating command`, func() {
-		app.Command("u", "update", noop, WithEffect(EffectMutating), WithFlagSets(set))
+	app := NewApp("tt", "1.0.0", "tt")
+	expectPanic(t, `command "uu": flag '--ttl' declares Default(300) on a mutating command`, func() {
+		app.Command("uu", "update", noop, WithEffect(EffectMutating), WithFlagSets(set))
 	})
 }
 
@@ -131,17 +131,17 @@ func TestMutatingDefaultSparesTheSelectorAndReachesItsScope(t *testing.T) {
 	// A choice name is not a value written to anything: it names which scope is
 	// live. The flags INSIDE the scope are ordinary flags of a mutating
 	// command, reached at every depth.
-	app := NewApp("t", "1.0.0", "t")
-	expectPanic(t, `command "u": flag '--retries' declares Default(3) on a mutating command`, func() {
-		app.Command("u", "update", noop, WithEffect(EffectMutating),
+	app := NewApp("tt", "1.0.0", "tt")
+	expectPanic(t, `command "uu": flag '--retries' declares Default(3) on a mutating command`, func() {
+		app.Command("uu", "update", noop, WithEffect(EffectMutating),
 			WithFlags(ChoiceFlag("via", "channel", Default("webhook"),
 				Choice("webhook", "post to a URL", IntFlag("retries", "attempts", Default(3))),
 				Choice("email", "send an email", StringFlag("subject", "subject", Optional())),
 			)))
 	})
 
-	ok := NewApp("t", "1.0.0", "t")
-	ok.Command("u", "update", noop, WithEffect(EffectMutating),
+	ok := NewApp("tt", "1.0.0", "tt")
+	ok.Command("uu", "update", noop, WithEffect(EffectMutating),
 		WithFlags(ChoiceFlag("via", "channel", Default("webhook"),
 			Choice("webhook", "post to a URL", IntFlag("retries", "attempts", Optional())),
 			Choice("email", "send an email", StringFlag("subject", "subject", Optional())),
@@ -151,39 +151,39 @@ func TestMutatingDefaultSparesTheSelectorAndReachesItsScope(t *testing.T) {
 // --- §27.2, §27.3, §27.11: the registration guards, in the pinned order ---
 
 func TestUpdateOnReadOnlyIsRefused(t *testing.T) {
-	app := NewApp("t", "1.0.0", "t")
-	expectPanic(t, `command "u": a read_only command cannot declare update_of (a command that changes nothing writes no properties)`, func() {
-		app.Command("u", "update", noop, WithEffect(EffectReadOnly),
+	app := NewApp("tt", "1.0.0", "tt")
+	expectPanic(t, `command "uu": a read_only command cannot declare update_of (a command that changes nothing writes no properties)`, func() {
+		app.Command("uu", "update", noop, WithEffect(EffectReadOnly),
 			WithUpdateOf("thing", WriteSparse, Properties("content")),
 			WithFlags(StringFlag("content", "content", Optional())))
 	})
 }
 
 func TestUpdateWriteModeVocabulary(t *testing.T) {
-	app := NewApp("t", "1.0.0", "t")
+	app := NewApp("tt", "1.0.0", "tt")
 	// Go's reachable input is the ZERO VALUE of the string-based WriteMode,
 	// which renders "".
-	expectPanic(t, `command "u": invalid write_mode "": must be "sparse" or "full_replace"`, func() {
+	expectPanic(t, `command "uu": invalid write_mode "": must be "sparse" or "full_replace"`, func() {
 		var unset WriteMode
-		app.Command("u", "update", noop, WithEffect(EffectMutating),
+		app.Command("uu", "update", noop, WithEffect(EffectMutating),
 			WithUpdateOf("thing", unset, Properties("content")),
 			WithFlags(StringFlag("content", "content", Optional())))
 	})
 }
 
 func TestUpdateResourceCharset(t *testing.T) {
-	app := NewApp("t", "1.0.0", "t")
-	expectPanic(t, `command "u": update resource "DNS_Record" must match [a-z][a-z0-9-]*`, func() {
-		app.Command("u", "update", noop, WithEffect(EffectMutating),
+	app := NewApp("tt", "1.0.0", "tt")
+	expectPanic(t, `command "uu": update resource "DNS_Record" must be lowercase kebab-case of at least two characters: [a-z][a-z0-9]*(-[a-z0-9]+)*`, func() {
+		app.Command("uu", "update", noop, WithEffect(EffectMutating),
 			WithUpdateOf("DNS_Record", WriteSparse, Properties("content")),
 			WithFlags(StringFlag("content", "content", Optional())))
 	})
 }
 
 func TestUpdateWithNoPropertiesIsRefused(t *testing.T) {
-	app := NewApp("t", "1.0.0", "t")
-	expectPanic(t, `command "u": update of "thing" declares no properties: an update with nothing to write is not an update`, func() {
-		app.Command("u", "update", noop, WithEffect(EffectMutating),
+	app := NewApp("tt", "1.0.0", "tt")
+	expectPanic(t, `command "uu": update of "thing" declares no properties: an update with nothing to write is not an update`, func() {
+		app.Command("uu", "update", noop, WithEffect(EffectMutating),
 			WithUpdateOf("thing", WriteSparse, Identity("id")),
 			WithFlags(StringFlag("id", "id", Required())))
 	})
@@ -201,7 +201,7 @@ func TestUpdateNameResolutionRefusals(t *testing.T) {
 				WithUpdateOf("thing", WriteSparse, Properties("nope")),
 				WithFlags(StringFlag("content", "content", Optional())),
 			},
-			`command "u": update of "thing" references unknown name "nope"`,
+			`command "uu": update of "thing" references unknown name "nope"`,
 		},
 		{
 			"ambiguous",
@@ -210,7 +210,7 @@ func TestUpdateNameResolutionRefusals(t *testing.T) {
 				WithFlags(StringFlag("target", "a flag", Optional()), StringFlag("content", "content", Optional())),
 				WithArgs(NewArg("target", "an arg", ArgOptional())),
 			},
-			`command "u": update of "thing" references "target", which names both a flag and a positional arg`,
+			`command "uu": update of "thing" references "target", which names both a flag and a positional arg`,
 		},
 		{
 			"duplicated",
@@ -218,7 +218,7 @@ func TestUpdateNameResolutionRefusals(t *testing.T) {
 				WithUpdateOf("thing", WriteSparse, Properties("content", "content")),
 				WithFlags(StringFlag("content", "content", Optional())),
 			},
-			`command "u": update of "thing" declares "content" twice`,
+			`command "uu": update of "thing" declares "content" twice`,
 		},
 		{
 			"both roles",
@@ -226,7 +226,7 @@ func TestUpdateNameResolutionRefusals(t *testing.T) {
 				WithUpdateOf("thing", WriteSparse, Identity("content"), Properties("content")),
 				WithFlags(StringFlag("content", "content", Optional())),
 			},
-			`command "u": update of "thing" declares "content" as both identity and property`,
+			`command "uu": update of "thing" declares "content" as both identity and property`,
 		},
 		{
 			"scoped",
@@ -237,13 +237,13 @@ func TestUpdateNameResolutionRefusals(t *testing.T) {
 					Choice("sms", "by sms", StringFlag("number", "number", Optional())),
 				)),
 			},
-			`command "u": update of "thing" references 'subject', which is declared under '--via email': an update's identity and properties are declared at root scope only`,
+			`command "uu": update of "thing" references 'subject', which is declared under '--via email': an update's identity and properties are declared at root scope only`,
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			app := NewApp("t", "1.0.0", "t")
+			app := NewApp("tt", "1.0.0", "tt")
 			expectPanic(t, tc.want, func() {
-				app.Command("u", "update", noop, append([]CmdOption{WithEffect(EffectMutating)}, tc.opts...)...)
+				app.Command("uu", "update", noop, append([]CmdOption{WithEffect(EffectMutating)}, tc.opts...)...)
 			})
 		})
 	}
@@ -251,26 +251,26 @@ func TestUpdateNameResolutionRefusals(t *testing.T) {
 
 func TestUpdatePropertyRoleAndPresenceRefusals(t *testing.T) {
 	t.Run("a property may not be a positional arg", func(t *testing.T) {
-		app := NewApp("t", "1.0.0", "t")
-		expectPanic(t, `command "u": update of "thing" property "content" is a positional arg: a property must be individually omissible and clearable, and only a flag is`, func() {
-			app.Command("u", "update", noop, WithEffect(EffectMutating),
+		app := NewApp("tt", "1.0.0", "tt")
+		expectPanic(t, `command "uu": update of "thing" property "content" is a positional arg: a property must be individually omissible and clearable, and only a flag is`, func() {
+			app.Command("uu", "update", noop, WithEffect(EffectMutating),
 				WithUpdateOf("thing", WriteSparse, Properties("content")),
 				WithArgs(NewArg("content", "content", ArgOptional())))
 		})
 	})
 	t.Run("a property may not be a choice flag", func(t *testing.T) {
-		app := NewApp("t", "1.0.0", "t")
-		expectPanic(t, `command "u": update of "thing" property '--via' is a choice flag: an elected record is a selection, not a property value`, func() {
-			app.Command("u", "update", noop, WithEffect(EffectMutating),
+		app := NewApp("tt", "1.0.0", "tt")
+		expectPanic(t, `command "uu": update of "thing" property '--via' is a choice flag: an elected record is a selection, not a property value`, func() {
+			app.Command("uu", "update", noop, WithEffect(EffectMutating),
 				WithUpdateOf("thing", WriteSparse, Properties("via")),
 				WithFlags(ChoiceFlag("via", "channel", Required(),
 					Choice("email", "by email"), Choice("sms", "by sms"))))
 		})
 	})
 	t.Run("a property declares optional and nothing else", func(t *testing.T) {
-		app := NewApp("t", "1.0.0", "t")
-		expectPanic(t, `command "u": update of "thing" property flag '--content' declares Required(): a property is absent exactly when it is not being written, and the presence declaration for that is Optional()`, func() {
-			app.Command("u", "update", noop, WithEffect(EffectMutating),
+		app := NewApp("tt", "1.0.0", "tt")
+		expectPanic(t, `command "uu": update of "thing" property flag '--content' declares Required(): a property is absent exactly when it is not being written, and the presence declaration for that is Optional()`, func() {
+			app.Command("uu", "update", noop, WithEffect(EffectMutating),
 				WithUpdateOf("thing", WriteSparse, Properties("content")),
 				WithFlags(StringFlag("content", "content", Required())))
 		})
@@ -278,8 +278,8 @@ func TestUpdatePropertyRoleAndPresenceRefusals(t *testing.T) {
 }
 
 func TestIdentityMayBeAnArgOrAChoiceFlagAndMayBeOptional(t *testing.T) {
-	app := NewApp("t", "1.0.0", "t")
-	app.Command("u", "update", noop, WithEffect(EffectMutating),
+	app := NewApp("tt", "1.0.0", "tt")
+	app.Command("uu", "update", noop, WithEffect(EffectMutating),
 		WithUpdateOf("thing", WriteSparse,
 			Identity("record-id", "addressing", "name"),
 			Properties("content")),
@@ -297,16 +297,16 @@ func TestIdentityMayBeAnArgOrAChoiceFlagAndMayBeOptional(t *testing.T) {
 
 func TestNullableIsRefusedOffAProperty(t *testing.T) {
 	t.Run("on a command with no update at all", func(t *testing.T) {
-		app := NewApp("t", "1.0.0", "t")
-		expectPanic(t, `command "u": flag '--content' declares Nullable() but is not a property of an update: only a property can be cleared`, func() {
-			app.Command("u", "update", noop, WithEffect(EffectMutating),
+		app := NewApp("tt", "1.0.0", "tt")
+		expectPanic(t, `command "uu": flag '--content' declares Nullable() but is not a property of an update: only a property can be cleared`, func() {
+			app.Command("uu", "update", noop, WithEffect(EffectMutating),
 				WithFlags(StringFlag("content", "content", Optional(), Nullable())))
 		})
 	})
 	t.Run("on an identity member of an update", func(t *testing.T) {
-		app := NewApp("t", "1.0.0", "t")
-		expectPanic(t, `command "u": flag '--zone' declares Nullable() but is not a property of an update`, func() {
-			app.Command("u", "update", noop, WithEffect(EffectMutating),
+		app := NewApp("tt", "1.0.0", "tt")
+		expectPanic(t, `command "uu": flag '--zone' declares Nullable() but is not a property of an update`, func() {
+			app.Command("uu", "update", noop, WithEffect(EffectMutating),
 				WithUpdateOf("thing", WriteSparse, Identity("zone"), Properties("content")),
 				WithFlags(
 					StringFlag("zone", "zone", Optional(), Nullable()),
@@ -317,9 +317,9 @@ func TestNullableIsRefusedOffAProperty(t *testing.T) {
 }
 
 func TestUnsetNameIsReserved(t *testing.T) {
-	app := NewApp("t", "1.0.0", "t")
-	expectPanic(t, `command "u": flag name "unset-content" is reserved: property '--content' declares Nullable(), which mints '--unset-content'`, func() {
-		app.Command("u", "update", noop, WithEffect(EffectMutating),
+	app := NewApp("tt", "1.0.0", "tt")
+	expectPanic(t, `command "uu": flag name "unset-content" is reserved: property '--content' declares Nullable(), which mints '--unset-content'`, func() {
+		app.Command("uu", "update", noop, WithEffect(EffectMutating),
 			WithUpdateOf("thing", WriteSparse, Properties("content")),
 			WithFlags(
 				StringFlag("content", "content", Optional(), Nullable()),
@@ -331,42 +331,42 @@ func TestUnsetNameIsReserved(t *testing.T) {
 // The pinned order matters only where one declaration carries two faults.
 func TestUpdateRegistrationOrder(t *testing.T) {
 	t.Run("the ban runs ahead of every update step", func(t *testing.T) {
-		app := NewApp("t", "1.0.0", "t")
+		app := NewApp("tt", "1.0.0", "tt")
 		expectPanic(t, `flag '--ttl' declares Default(300) on a mutating command`, func() {
-			app.Command("u", "update", noop, WithEffect(EffectMutating),
+			app.Command("uu", "update", noop, WithEffect(EffectMutating),
 				WithUpdateOf("BAD-NAME", WriteSparse, Properties("nope")),
 				WithFlags(IntFlag("ttl", "ttl", Default(300))))
 		})
 	})
 	t.Run("classification runs ahead of record legality", func(t *testing.T) {
-		app := NewApp("t", "1.0.0", "t")
+		app := NewApp("tt", "1.0.0", "tt")
 		expectPanic(t, `a read_only command cannot declare update_of`, func() {
-			app.Command("u", "update", noop, WithEffect(EffectReadOnly),
+			app.Command("uu", "update", noop, WithEffect(EffectReadOnly),
 				WithUpdateOf("BAD-NAME", WriteSparse, Properties("nope")))
 		})
 	})
 	t.Run("the record's own legality runs ahead of the names it carries", func(t *testing.T) {
-		app := NewApp("t", "1.0.0", "t")
-		expectPanic(t, `update resource "BAD-NAME" must match`, func() {
-			app.Command("u", "update", noop, WithEffect(EffectMutating),
+		app := NewApp("tt", "1.0.0", "tt")
+		expectPanic(t, `update resource "BAD-NAME" must be lowercase kebab-case`, func() {
+			app.Command("uu", "update", noop, WithEffect(EffectMutating),
 				WithUpdateOf("BAD-NAME", WriteSparse, Properties("nope")))
 		})
 	})
 	t.Run("role legality runs ahead of presence legality", func(t *testing.T) {
-		app := NewApp("t", "1.0.0", "t")
+		app := NewApp("tt", "1.0.0", "tt")
 		expectPanic(t, `property "content" is a positional arg`, func() {
-			app.Command("u", "update", noop, WithEffect(EffectMutating),
+			app.Command("uu", "update", noop, WithEffect(EffectMutating),
 				WithUpdateOf("thing", WriteSparse, Properties("content")),
 				WithArgs(NewArg("content", "content", ArgRequired())))
 		})
 	})
 	t.Run("the name reservation runs last", func(t *testing.T) {
-		app := NewApp("t", "1.0.0", "t")
+		app := NewApp("tt", "1.0.0", "tt")
 		// The nullable-off-a-property refusal is step 8's first half and the
 		// reservation its second, so a declaration carrying both reports the
 		// first.
 		expectPanic(t, `flag '--zone' declares Nullable() but is not a property of an update`, func() {
-			app.Command("u", "update", noop, WithEffect(EffectMutating),
+			app.Command("uu", "update", noop, WithEffect(EffectMutating),
 				WithUpdateOf("thing", WriteSparse, Properties("content")),
 				WithFlags(
 					StringFlag("zone", "zone", Optional(), Nullable()),
@@ -414,9 +414,9 @@ func TestAnEnvProvidedPropertySatisfiesTheRule(t *testing.T) {
 	// There is no source filter: the framework has exactly one definition of
 	// "was this supplied" (§23.6), and the containment is that the write set is
 	// rendered, so a configured value cannot join a write invisibly.
-	app := NewApp("t", "1.0.0", "t")
+	app := NewApp("tt", "1.0.0", "tt")
 	var writes *writesEnvelope
-	app.Command("u", "update", func(ctx *Context, args map[string]interface{}) Outcome {
+	app.Command("uu", "update", func(ctx *Context, args map[string]interface{}) Outcome {
 		writes = ctx.writes.envelopeMember()
 		return Exit(0)
 	}, WithEffect(EffectMutating),
@@ -426,7 +426,7 @@ func TestAnEnvProvidedPropertySatisfiesTheRule(t *testing.T) {
 			IntFlag("ttl", "ttl", Optional()),
 		))
 	t.Setenv("T_CONTENT", "from-env")
-	r := app.Test([]string{"u"})
+	r := app.Test([]string{"uu"})
 	if r.ExitCode != 0 {
 		t.Fatalf("exit = %d, stderr=%q", r.ExitCode, r.Stderr)
 	}
@@ -460,15 +460,15 @@ func TestUnsetDeliversAbsenceAndReportsProvided(t *testing.T) {
 }
 
 func TestUnsetAcceptsDashedAndUnderscoredNames(t *testing.T) {
-	app := NewApp("t", "1.0.0", "t")
+	app := NewApp("tt", "1.0.0", "tt")
 	var dashed, underscored bool
-	app.Command("u", "update", func(ctx *Context, args map[string]interface{}) Outcome {
+	app.Command("uu", "update", func(ctx *Context, args map[string]interface{}) Outcome {
 		dashed, underscored = ctx.Unset("phone-number"), ctx.Unset("phone_number")
 		return Exit(0)
 	}, WithEffect(EffectMutating),
 		WithUpdateOf("thing", WriteSparse, Properties("phone-number")),
 		WithFlags(StringFlag("phone-number", "the number", Optional(), Nullable())))
-	if r := app.Test([]string{"u", "--unset-phone-number"}); r.ExitCode != 0 {
+	if r := app.Test([]string{"uu", "--unset-phone-number"}); r.ExitCode != 0 {
 		t.Fatalf("exit = %d, stderr=%q", r.ExitCode, r.Stderr)
 	}
 	if !dashed || !underscored {
@@ -482,7 +482,7 @@ func TestUnsetOnAnUnknownNamePanicsLikeProvided(t *testing.T) {
 		return Exit(0)
 	})
 	got := mustPanic(t, func() {
-		app.Test([]string{"update-record", "--zone", "z1", "--record-id", "r7", "--content", "x"})
+		app.Test([]string{"update-record", "--zone", "z1", "--record-id", "r7", "--content", "xx"})
 	})
 	if !strings.Contains(got, "nope") {
 		t.Fatalf("panic = %q", got)
@@ -555,11 +555,11 @@ func TestTheWriteSetLinesPinnedForms(t *testing.T) {
 		mode WriteMode
 		want string
 	}{
-		{"one written", []string{"--content", "x"}, WriteSparse, "  writes: content (other properties unchanged)"},
-		{"two written, declaration order", []string{"--ttl", "5", "--content", "x"}, WriteSparse, "  writes: content, ttl (other properties unchanged)"},
-		{"both segments", []string{"--content", "x", "--unset-ttl"}, WriteSparse, "  writes: content; clears: ttl (other properties unchanged)"},
+		{"one written", []string{"--content", "xx"}, WriteSparse, "  writes: content (other properties unchanged)"},
+		{"two written, declaration order", []string{"--ttl", "5", "--content", "xx"}, WriteSparse, "  writes: content, ttl (other properties unchanged)"},
+		{"both segments", []string{"--content", "xx", "--unset-ttl"}, WriteSparse, "  writes: content; clears: ttl (other properties unchanged)"},
 		{"clears only", []string{"--unset-ttl"}, WriteSparse, "  clears: ttl (other properties unchanged)"},
-		{"full replace", []string{"--content", "x"}, WriteFullReplace, "  writes: content (other properties are re-sent as read)"},
+		{"full replace", []string{"--content", "xx"}, WriteFullReplace, "  writes: content (other properties are re-sent as read)"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			app := NewApp("dnsapp", "1.0.0", "manage DNS")
@@ -582,7 +582,7 @@ func TestTheWriteSetLinesPinnedForms(t *testing.T) {
 
 func TestTheWriteSetLineRendersInDryModeOnly(t *testing.T) {
 	app := updateFixture(t, func(ctx *Context, args map[string]interface{}) Outcome { return Exit(0) })
-	r := app.Test([]string{"update-record", "--zone", "z1", "--record-id", "r7", "--content", "x"})
+	r := app.Test([]string{"update-record", "--zone", "z1", "--record-id", "r7", "--content", "xx"})
 	if strings.Contains(r.Stdout, "writes:") {
 		t.Fatalf("a live run printed the write-set line: %q", r.Stdout)
 	}
@@ -632,7 +632,7 @@ func TestTheEnvelopeCarriesTheWriteSetInBothModes(t *testing.T) {
 
 func TestTheEnvelopesWriteSetKeyOrderIsPinned(t *testing.T) {
 	app := updateFixture(t, nil)
-	r := app.Test([]string{"--json", "update-record", "--zone", "z1", "--record-id", "r7", "--content", "x"})
+	r := app.Test([]string{"--json", "update-record", "--zone", "z1", "--record-id", "r7", "--content", "xx"})
 	want := `"writes":{"resource":"dns-record","write_mode":"sparse","written":["content"],"cleared":[],"resent":[],"untouched":["ttl","proxied"]}`
 	if !strings.Contains(r.Stdout, want) {
 		t.Fatalf("stdout = %q, want it to contain %q", r.Stdout, want)
@@ -640,14 +640,14 @@ func TestTheEnvelopesWriteSetKeyOrderIsPinned(t *testing.T) {
 }
 
 func TestFullReplaceSwapsResentAndUntouched(t *testing.T) {
-	app := NewApp("t", "1.0.0", "t")
-	app.Command("u", "update", noop, WithEffect(EffectMutating),
+	app := NewApp("tt", "1.0.0", "tt")
+	app.Command("uu", "update", noop, WithEffect(EffectMutating),
 		WithUpdateOf("thing", WriteFullReplace, Properties("content", "ttl")),
 		WithFlags(
 			StringFlag("content", "content", Optional()),
 			IntFlag("ttl", "ttl", Optional()),
 		))
-	r := app.Test([]string{"--json", "u", "--content", "x"})
+	r := app.Test([]string{"--json", "uu", "--content", "xx"})
 	want := `"writes":{"resource":"thing","write_mode":"full_replace","written":["content"],"cleared":[],"resent":["ttl"],"untouched":[]}`
 	if !strings.Contains(r.Stdout, want) {
 		t.Fatalf("stdout = %q, want it to contain %q", r.Stdout, want)
@@ -655,34 +655,34 @@ func TestFullReplaceSwapsResentAndUntouched(t *testing.T) {
 }
 
 func TestACommandWithNoUpdateCarriesANullWritesMember(t *testing.T) {
-	app := NewApp("t", "1.0.0", "t")
-	app.Command("r", "read", noop, WithEffect(EffectReadOnly))
-	r := app.Test([]string{"--json", "r"})
+	app := NewApp("tt", "1.0.0", "tt")
+	app.Command("rr", "read", noop, WithEffect(EffectReadOnly))
+	r := app.Test([]string{"--json", "rr"})
 	if !strings.Contains(r.Stdout, `"writes":null`) {
 		t.Fatalf("stdout = %q", r.Stdout)
 	}
 }
 
 func TestTheEnvelopeUsesUnderscoredParameterNames(t *testing.T) {
-	app := NewApp("t", "1.0.0", "t")
-	app.Command("u", "update", noop, WithEffect(EffectMutating),
+	app := NewApp("tt", "1.0.0", "tt")
+	app.Command("uu", "update", noop, WithEffect(EffectMutating),
 		WithUpdateOf("thing", WriteSparse, Properties("phone-number", "display-name")),
 		WithFlags(
 			StringFlag("phone-number", "the number", Optional()),
 			StringFlag("display-name", "the name", Optional()),
 		))
-	r := app.Test([]string{"--json", "u", "--phone-number", "555"})
+	r := app.Test([]string{"--json", "uu", "--phone-number", "555"})
 	if !strings.Contains(r.Stdout, `"written":["phone_number"],"cleared":[],"resent":[],"untouched":["display_name"]`) {
 		t.Fatalf("stdout = %q", r.Stdout)
 	}
 }
 
 func TestTheHumanLineUsesDeclaredNamesWithoutThePrefix(t *testing.T) {
-	app := NewApp("t", "1.0.0", "t")
-	app.Command("u", "update", noop, WithEffect(EffectMutating),
+	app := NewApp("tt", "1.0.0", "tt")
+	app.Command("uu", "update", noop, WithEffect(EffectMutating),
 		WithUpdateOf("thing", WriteSparse, Properties("phone-number")),
 		WithFlags(StringFlag("phone-number", "the number", Optional())))
-	r := app.Test([]string{"--dry-run", "u", "--phone-number", "555"})
+	r := app.Test([]string{"--dry-run", "uu", "--phone-number", "555"})
 	if !strings.Contains(r.Stdout, "  writes: phone-number (other properties unchanged)\n") {
 		t.Fatalf("stdout = %q", r.Stdout)
 	}
@@ -712,11 +712,11 @@ func TestNullableRendersItsMintedSpellingOnOneLine(t *testing.T) {
 }
 
 func TestANullableBoolRendersAllThreeSpellings(t *testing.T) {
-	app := NewApp("t", "1.0.0", "t")
-	app.Command("u", "update", noop, WithEffect(EffectMutating),
+	app := NewApp("tt", "1.0.0", "tt")
+	app.Command("uu", "update", noop, WithEffect(EffectMutating),
 		WithUpdateOf("thing", WriteSparse, Properties("proxied")),
 		WithFlags(BoolFlag("proxied", "whether the record is proxied", Optional(), Nullable())))
-	r := app.Test([]string{"u", "--help"})
+	r := app.Test([]string{"uu", "--help"})
 	if !strings.Contains(r.Stdout, "--proxied, --no-proxied, --unset-proxied") {
 		t.Fatalf("help:\n%s", r.Stdout)
 	}
@@ -768,8 +768,8 @@ func TestTheDumpPublishesTheUpdatePairAndNullable(t *testing.T) {
 
 func TestACommandWithNoUpdateOmitsThePair(t *testing.T) {
 	chdirTemp(t)
-	app := NewApp("t", "1.0.0", "t")
-	app.Command("r", "read", noop, WithEffect(EffectReadOnly))
+	app := NewApp("tt", "1.0.0", "tt")
+	app.Command("rr", "read", noop, WithEffect(EffectReadOnly))
 	// Read past the `defaults` block, which carries both keys' baselines.
 	text := dumpText(t, app)
 	entries := text[strings.Index(text, "\n  \"commands\""):]
@@ -855,13 +855,13 @@ func TestTheUpdateDescriptionBlock(t *testing.T) {
 }
 
 func TestTheUpdateDescriptionBlockOmitsIdentifiesAndTheNullClause(t *testing.T) {
-	app := NewApp("t", "1.0.0", "t")
-	app.Command("u", "update it", noop, WithEffect(EffectMutating),
+	app := NewApp("tt", "1.0.0", "tt")
+	app.Command("uu", "update it", noop, WithEffect(EffectMutating),
 		WithUpdateOf("thing", WriteFullReplace, Properties("content")),
 		WithFlags(StringFlag("content", "content", Optional())))
 	var got string
 	for _, tool := range app.AsTools() {
-		if tool.Name == "u" {
+		if tool.Name == "uu" {
 			got = tool.Description
 		}
 	}
@@ -928,11 +928,11 @@ func TestDryRunUnsupportedComposesWithAnUpdate(t *testing.T) {
 	// The human write-set line then never renders, there being no dry run to
 	// render it in; the envelope's member still does, in a live run.
 	app := updateFixture(t, nil, WithDryRunUnsupported("the API has no preview endpoint"))
-	r := app.Test([]string{"--dry-run", "update-record", "--zone", "z1", "--record-id", "r7", "--content", "x"})
+	r := app.Test([]string{"--dry-run", "update-record", "--zone", "z1", "--record-id", "r7", "--content", "xx"})
 	if r.ExitCode != 1 || !strings.Contains(r.Stderr, "the API has no preview endpoint") {
 		t.Fatalf("exit=%d stderr=%q", r.ExitCode, r.Stderr)
 	}
-	live := app.Test([]string{"--json", "update-record", "--zone", "z1", "--record-id", "r7", "--content", "x"})
+	live := app.Test([]string{"--json", "update-record", "--zone", "z1", "--record-id", "r7", "--content", "xx"})
 	if !strings.Contains(live.Stdout, `"written":["content"]`) {
 		t.Fatalf("stdout = %q", live.Stdout)
 	}
@@ -941,8 +941,8 @@ func TestDryRunUnsupportedComposesWithAnUpdate(t *testing.T) {
 func TestAnUpdateCommandDeclaresConstraintsLikeAnyCommand(t *testing.T) {
 	// Alternative addressing over two optional identity members IS an
 	// AtLeastOne, which is the intended composition (§27.12).
-	app := NewApp("t", "1.0.0", "t")
-	app.Command("u", "update", noop, WithEffect(EffectMutating),
+	app := NewApp("tt", "1.0.0", "tt")
+	app.Command("uu", "update", noop, WithEffect(EffectMutating),
 		WithUpdateOf("thing", WriteSparse, Identity("id", "name"), Properties("content")),
 		WithFlags(
 			StringFlag("id", "by id", Optional()),
@@ -950,7 +950,7 @@ func TestAnUpdateCommandDeclaresConstraintsLikeAnyCommand(t *testing.T) {
 			StringFlag("content", "content", Optional()),
 		),
 		WithConstraints(AtLeastOne("addressing", Member("id"), Member("name"))))
-	r := app.Test([]string{"u", "--content", "x"})
+	r := app.Test([]string{"uu", "--content", "xx"})
 	if r.ExitCode != 1 || !strings.Contains(r.Stderr, `constraint "addressing"`) {
 		t.Fatalf("exit=%d stderr=%q", r.ExitCode, r.Stderr)
 	}
@@ -960,15 +960,15 @@ func TestAnImpliedPropertyIsAProvision(t *testing.T) {
 	// A value injected by an Implies exists only because the invocation
 	// contained the trigger, so it is provided (§23.6) and joins the write set
 	// -- the write set has no source filter (§27.4).
-	app := NewApp("t", "1.0.0", "t")
-	app.Command("u", "update", noop, WithEffect(EffectMutating),
+	app := NewApp("tt", "1.0.0", "tt")
+	app.Command("uu", "update", noop, WithEffect(EffectMutating),
 		WithUpdateOf("thing", WriteSparse, Properties("proxied")),
 		WithFlags(
 			BoolFlag("secure", "turn on the secure mode", Optional()),
 			BoolFlag("proxied", "whether the record is proxied", Optional()),
 		),
 		WithConstraints(Implies("secure-proxies", "secure", "proxied", true)))
-	r := app.Test([]string{"--json", "u", "--secure"})
+	r := app.Test([]string{"--json", "uu", "--secure"})
 	if !strings.Contains(r.Stdout, `"written":["proxied"]`) {
 		t.Fatalf("stdout = %q", r.Stdout)
 	}
@@ -978,8 +978,8 @@ func TestAnUpdateWithNoIdentityPublishesAnEmptyArray(t *testing.T) {
 	// All three keys are always present inside the object; identity is []
 	// when the resource declares none (contract §13's amendment).
 	chdirTemp(t)
-	app := NewApp("t", "1.0.0", "t")
-	app.Command("u", "update", noop, WithEffect(EffectMutating),
+	app := NewApp("tt", "1.0.0", "tt")
+	app.Command("uu", "update", noop, WithEffect(EffectMutating),
 		WithUpdateOf("thing", WriteFullReplace, Properties("content")),
 		WithFlags(StringFlag("content", "content", Optional())))
 	text := dumpText(t, app)
@@ -1002,14 +1002,14 @@ func TestClearingABoolProperty(t *testing.T) {
 	// shape (§27.6).
 	var value interface{}
 	var unset bool
-	app := NewApp("t", "1.0.0", "t")
-	app.Command("u", "update", func(ctx *Context, args map[string]interface{}) Outcome {
+	app := NewApp("tt", "1.0.0", "tt")
+	app.Command("uu", "update", func(ctx *Context, args map[string]interface{}) Outcome {
 		value, unset = args["proxied"], ctx.Unset("proxied")
 		return Exit(0)
 	}, WithEffect(EffectMutating),
 		WithUpdateOf("thing", WriteSparse, Properties("proxied")),
 		WithFlags(BoolFlag("proxied", "whether the record is proxied", Optional(), Nullable())))
-	if r := app.Test([]string{"u", "--unset-proxied"}); r.ExitCode != 0 {
+	if r := app.Test([]string{"uu", "--unset-proxied"}); r.ExitCode != 0 {
 		t.Fatalf("exit=%d stderr=%q", r.ExitCode, r.Stderr)
 	}
 	if value != nil || !unset {
@@ -1020,10 +1020,10 @@ func TestClearingABoolProperty(t *testing.T) {
 func TestTheUnsetNameReservationReachesTheAppsGlobals(t *testing.T) {
 	// A global is recognized after the command name too, so a global of the
 	// minted name would be unreachable behind the clear spelling.
-	app := NewApp("t", "1.0.0", "t")
+	app := NewApp("tt", "1.0.0", "tt")
 	app.GlobalFlag(StringFlag("unset-content", "a global of that name", Optional()))
-	expectPanic(t, `command "u": flag name "unset-content" is reserved: property '--content' declares Nullable(), which mints '--unset-content'`, func() {
-		app.Command("u", "update", noop, WithEffect(EffectMutating),
+	expectPanic(t, `command "uu": flag name "unset-content" is reserved: property '--content' declares Nullable(), which mints '--unset-content'`, func() {
+		app.Command("uu", "update", noop, WithEffect(EffectMutating),
 			WithUpdateOf("thing", WriteSparse, Properties("content")),
 			WithFlags(StringFlag("content", "content", Optional(), Nullable())))
 	})

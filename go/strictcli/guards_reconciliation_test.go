@@ -49,8 +49,8 @@ func TestShortShapeMismatchAcrossSiblingScopes(t *testing.T) {
 		return Exit(0)
 	}, WithEffect(EffectReadOnly), WithFlags(
 		ChoiceFlag("mode", "the mode", Required(),
-			Choice("a", "mode a", StringFlag("target", "the target", Required(), Short("t"))),
-			Choice("b", "mode b", StringFlag("tag", "the tag", Required(), Short("t"), Repeatable(), Unique(false))),
+			Choice("aa", "mode a", StringFlag("target", "the target", Required(), Short("t"))),
+			Choice("bb", "mode b", StringFlag("tag", "the tag", Required(), Short("t"), Repeatable(), Unique(false))),
 		)))
 }
 
@@ -60,10 +60,10 @@ func TestShortReuseIsLegalWhenSiblingScopesTokenizeIdentically(t *testing.T) {
 		return Exit(0)
 	}, WithEffect(EffectReadOnly), WithFlags(
 		ChoiceFlag("mode", "the mode", Required(),
-			Choice("a", "mode a", StringFlag("target", "the target", Required(), Short("t"))),
-			Choice("b", "mode b", StringFlag("tag", "the tag", Required(), Short("t"))),
+			Choice("aa", "mode a", StringFlag("target", "the target", Required(), Short("t"))),
+			Choice("bb", "mode b", StringFlag("tag", "the tag", Required(), Short("t"))),
 		)))
-	r := app.Test([]string{"run", "--mode", "a", "-t", "x"})
+	r := app.Test([]string{"run", "--mode", "aa", "-t", "xx"})
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d: %s", r.ExitCode, r.Stderr)
 	}
@@ -84,12 +84,12 @@ func TestShortOnAnAmbiguousElectionIsRefusedForANestedSelector(t *testing.T) {
 		return Exit(0)
 	}, WithEffect(EffectReadOnly), WithFlags(
 		ChoiceFlag("mode", "the mode", Required(),
-			Choice("a", "mode a",
+			Choice("aa", "mode a",
 				ChoiceFlag("transport", "the transport", Required(), Short("t"),
 					Choice("tcp", "over TCP"),
 					Choice("udp", "over UDP"),
 				)),
-			Choice("b", "mode b", StringFlag("tag", "the tag", Required(), Short("t"))),
+			Choice("bb", "mode b", StringFlag("tag", "the tag", Required(), Short("t"))),
 		)))
 }
 
@@ -128,7 +128,7 @@ func TestShortReuseBetweenMemberScopesIsLegalWhenShapesAgree(t *testing.T) {
 			MemberChoice(BoolFlag("many", "many profiles", Required()), "many profiles",
 				StringFlag("names", "their names", Required(), Short("n"))),
 		)))
-	r := app.Test([]string{"run", "--one", "-n", "x"})
+	r := app.Test([]string{"run", "--one", "-n", "xx"})
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d: %s", r.ExitCode, r.Stderr)
 	}

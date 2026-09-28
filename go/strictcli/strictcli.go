@@ -1366,7 +1366,7 @@ func WithTags(tags ...string) CmdOption {
 	return func(c *Command) {
 		seen := make(map[string]bool)
 		for _, t := range tags {
-			if !identifierRe.MatchString(t) {
+			if !isKebabName(t) {
 				panic(errInvalidTagName(t))
 			}
 			if !seen[t] {
@@ -1385,7 +1385,7 @@ func validateAndDedup(tags []string) []string {
 	seen := make(map[string]bool)
 	result := make([]string, 0, len(tags))
 	for _, t := range tags {
-		if !identifierRe.MatchString(t) {
+		if !isKebabName(t) {
 			panic(errInvalidTagName(t))
 		}
 		if !seen[t] {
@@ -1827,6 +1827,13 @@ func validateFlagConfig(f *Flag) {
 	if strings.HasPrefix(f.Name, "no-") {
 		panic(errFlagNoPrefixReserved(f.Name))
 	}
+	// The naming rule, after the bans so a banned name keeps its own message.
+	if !isKebabName(f.Name) {
+		panic(errFlagNameInvalid(f.Name))
+	}
+	if f.Short != "" && !isShortForm(f.Short) {
+		panic(errFlagShortInvalid(f.Name, f.Short))
+	}
 	// Presence is mandatory and is never inferred from another declaration
 	// (contract §23.1).
 	resolveFlagPresence(f)
@@ -2264,7 +2271,7 @@ func (a *App) SetCheckContext(factory func() CheckContext) {
 // TagContract declares that any command tagged with the given tag must have a flag
 // with the given name. Validated at Run/Test time.
 func (a *App) TagContract(tag, requiresFlag string) {
-	if !identifierRe.MatchString(tag) {
+	if !isKebabName(tag) {
 		panic(errInvalidTagName(tag))
 	}
 	if a.tagContracts == nil {
@@ -2600,6 +2607,7 @@ func (a *App) GlobalFlag(f Flag) {
 
 // Group creates and registers a command group.
 func (a *App) Group(name, help string, tags ...string) *Group {
+	checkCommandTreeName("group", name)
 	if strings.TrimSpace(help) == "" {
 		panic(errGroupHelpEmpty)
 	}
@@ -2623,6 +2631,7 @@ func (a *App) Group(name, help string, tags ...string) *Group {
 
 // Group creates and registers a child subgroup.
 func (g *Group) Group(name, help string, tags ...string) *Group {
+	checkCommandTreeName("group", name)
 	if strings.TrimSpace(help) == "" {
 		panic(errGroupHelpEmpty)
 	}
@@ -2672,6 +2681,7 @@ func (a *App) Deprecated(name, message string, opts ...CmdOption) {
 	if strings.TrimSpace(name) == "" {
 		panic(errDeprecatedNameEmpty)
 	}
+	checkCommandTreeName("deprecated command", name)
 	if strings.TrimSpace(message) == "" {
 		panic(errDeprecatedMessageEmpty(name))
 	}
@@ -2695,6 +2705,7 @@ func (g *Group) Deprecated(name, message string, opts ...CmdOption) {
 	if strings.TrimSpace(name) == "" {
 		panic(errDeprecatedNameEmpty)
 	}
+	checkCommandTreeName("deprecated command", name)
 	if strings.TrimSpace(message) == "" {
 		panic(errDeprecatedMessageEmpty(name))
 	}
@@ -4221,6 +4232,7 @@ func (a *App) extractGlobalFlags(argv []string, hermetic bool) (map[string]inter
 
 // buildAndValidateCommand creates and validates a Command.
 func buildAndValidateCommand(name, help string, handler func(ctx *Context, kwargs map[string]interface{}) Outcome, envPrefix string, globalFlags []Flag, inheritedTags []string, opts []CmdOption) *Command {
+	checkCommandTreeName("command", name)
 	if strings.TrimSpace(help) == "" {
 		panic(errCommandMissingHelp(name))
 	}
@@ -4515,4 +4527,37 @@ func searchGroupsForCommand(groups map[string]*Group, cmd *Command, path []strin
 		}
 	}
 	return ""
+}
+
+// frameworkCommandNames are the framework's own commands. Their names are
+// reserved at every level of the command tree, so no app command, group or
+// deprecated command anywhere may take one.
+var frameworkCommandNames = map[string]bool{"help": true, "version": true}
+
+// checkCommandTreeName applies the naming rule and the framework-command
+// reservation to a command, group or deprecated-command name.
+func checkCommandTreeName(kind, name string) {
+	if frameworkCommandNames[name] {
+		panic(errFrameworkCommandName(kind, name))
+	}
+	if !isKebabName(name) {
+		switch kind {
+		case "group":
+			panic(errGroupNameInvalid(name))
+		case "deprecated command":
+			panic(errDeprecatedNameInvalid(name))
+		default:
+			panic(errCommandNameInvalid(name))
+		}
+	}
+}
+
+// isShortForm reports whether s is a legal short form: one ASCII letter,
+// lowercase or uppercase.
+func isShortForm(s string) bool {
+	if len(s) != 1 {
+		return false
+	}
+	c := s[0]
+	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
 }

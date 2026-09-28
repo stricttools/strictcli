@@ -234,7 +234,7 @@ func validateConstraints(cmdName string, cmd *Command) {
 	byName := make(map[string]int, len(cmd.constraints))
 	for i := range cmd.constraints {
 		c := &cmd.constraints[i]
-		if !identifierRe.MatchString(c.name) {
+		if !isKebabName(c.name) {
 			panic(errConstraintNameCharset(cmdName, c.name))
 		}
 		if _, dup := byName[c.name]; dup {
