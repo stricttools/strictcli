@@ -58,7 +58,8 @@
       "interactive": false,
       "config_fields": [],
       "grants": [],
-      "forwarding": null
+      "forwarding": null,
+      "requires": []
     },
     "group": {
       "commands": {},
@@ -367,7 +368,7 @@
       "pure": false,
       "needs_network": false,
       "depends_on": [],
-      "description": "A rich app produces byte-identical --dump-schema output from all three implementations",
+      "description": "A rich app produces a byte-identical help document (help --json) from all three implementations",
       "subject": "parity"
     },
     "trace-sweeps": {

@@ -71,7 +71,7 @@ needs_network = false
 depends_on = ["conformance-python", "conformance-go", "conformance-typescript"]
 
 [checks.schema-parity]
-description = "A rich app produces byte-identical --dump-schema output from all three implementations"
+description = "A rich app produces a byte-identical help document (help --json) from all three implementations"
 subject = "parity"
 tags = ["pre-release", "conformance", "parity"]
 severity = "error"

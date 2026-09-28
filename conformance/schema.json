@@ -723,12 +723,12 @@
         },
         "payload_schema": {
           "type": "object",
-          "description": "The command's machine payload contract (effects contract §19.5): an inline JSON Schema literal, registered as written, validated at registration over the closed subset, enforced against the payload at emission, and published verbatim by --dump-schema. Absence means the command cannot produce a payload -- ctx.payload is then a call-time hard error. Most cases leave this key out: the harnesses declare the permissive literal {} for every command whose handler_returns supplies a payload, identically in all three languages. Write it explicitly when the case is ABOUT the declaration -- a non-empty literal published by the schema dump, or a payload validated against real keywords."
+          "description": "The command's machine payload contract (effects contract §19.5): an inline JSON Schema literal, registered as written, validated at registration over the closed subset, enforced against the payload at emission, and published verbatim in the help document (help --json). Absence means the command cannot produce a payload -- ctx.payload is then a call-time hard error. Most cases leave this key out: the harnesses declare the permissive literal {} for every command whose handler_returns supplies a payload, identically in all three languages. Write it explicitly when the case is ABOUT the declaration -- a non-empty literal published by the schema dump, or a payload validated against real keywords."
         },
         "owns_stdout": {
           "type": "boolean",
           "default": false,
-          "description": "Declares that this command's stdout IS the artifact (effects contract §19.6): in machine mode stdout carries the command's own document byte-exactly and the envelope moves to stderr, together with every framework diagnostic it carries. Outside machine mode the declaration changes nothing at all. Emitted by --dump-schema only when true; absence means the framework owns stdout, which is the baseline."
+          "description": "Declares that this command's stdout IS the artifact (effects contract §19.6): in machine mode stdout carries the command's own document byte-exactly and the envelope moves to stderr, together with every framework diagnostic it carries. Outside machine mode the declaration changes nothing at all. Emitted in the help document only when true; absence means the framework owns stdout, which is the baseline."
         },
         "dry_run_unsupported_reason": {
           "type": "string",
@@ -741,7 +741,7 @@
           "required": [
             "resource"
           ],
-          "description": "The update declaration (contract §27.2), in the registration-level family effect / consequential / dry_run_supported belong to. The case schema follows the DECLARATION side -- ONE record carrying its write mode (§13's amendment box) -- where --dump-schema publishes the two command-entry keys `update_of` and `write_mode`. Declaring it on a read_only command is a registration-time hard error, so an update command is always mutating and §27.1's mutating-default ban reaches every declaration it carries.",
+          "description": "The update declaration (contract §27.2), in the registration-level family effect / consequential / dry_run_supported belong to. The case schema follows the DECLARATION side -- ONE record carrying its write mode (§13's amendment box) -- where the help document publishes the two command-entry keys `update_of` and `write_mode`. Declaring it on a read_only command is a registration-time hard error, so an update command is always mutating and §27.1's mutating-default ban reaches every declaration it carries.",
           "properties": {
             "resource": {
               "type": "string",
@@ -1952,7 +1952,7 @@
         "nullable": {
           "type": "boolean",
           "default": false,
-          "description": "Declares that this flag is a CLEARABLE property of the command's update (contract §27.6). It mints --unset-<name>, which carries no value, delivers absence, reports provided() true and is answered by ctx.unset(name); at the machine doors the same act is spelled `null` on the property's own key (§24.11's carve-out). Absence means the property cannot be cleared, which is the baseline: --dump-schema emits the key only when true, and mints no second flag entry for the minted spelling. Declaring it on anything that is not a property of an update is a registration-time hard error, and it reserves the flag name `unset-<name>` on the same command."
+          "description": "Declares that this flag is a CLEARABLE property of the command's update (contract §27.6). It mints --unset-<name>, which carries no value, delivers absence, reports provided() true and is answered by ctx.unset(name); at the machine doors the same act is spelled `null` on the property's own key (§24.11's carve-out). Absence means the property cannot be cleared, which is the baseline: the help document emits the key only when true, and mints no second flag entry for the minted spelling. Declaring it on anything that is not a property of an update is a registration-time hard error, and it reserves the flag name `unset-<name>` on the same command."
         },
         "unique": {
           "type": "boolean"
@@ -2398,7 +2398,7 @@
           "additionalProperties": {
             "type": "object"
           },
-          "description": "Per-command key assertions against the .strictcli/schema.json a --dump-schema run emitted. Maps a dotted command path (groups then command, e.g. 'release.run') to the keys that entry must carry, with their expected values. Values are compared structurally by the same comparator effects_equals uses, so '$ANY' is the per-field wildcard here too: it asserts the key's presence and nothing about its content. Requires --dump-schema in the case argv."
+          "description": "Per-command key assertions against the help document a help --json run printed. Maps a dotted command path (groups then command, e.g. 'release.run') to the keys that entry must carry, with their expected values. Values are compared structurally by the same comparator effects_equals uses, so '$ANY' is the per-field wildcard here too: it asserts the key's presence and nothing about its content. Requires help ... --json in the case argv."
         },
         "schema_command_absent_keys": {
           "type": "object",
@@ -2408,11 +2408,11 @@
               "type": "string"
             }
           },
-          "description": "The mirror of schema_command_keys: maps a dotted command path to keys that must NOT appear on that entry. Pins the emit-when-declared contract (a key omitted by one implementation and emitted with a default value by another is a silent divergence). Requires --dump-schema in the case argv."
+          "description": "The mirror of schema_command_keys: maps a dotted command path to keys that must NOT appear on that entry. Pins the emit-when-declared contract (a key omitted by one implementation and emitted with a default value by another is a silent divergence). Requires help ... --json in the case argv."
         },
         "schema_bytes_equal": {
           "type": "string",
-          "description": "The WHOLE bytes of the emitted .strictcli/schema.json (contract §25.8's byte canon). Key order, escaping, number form, two-space indentation and the single trailing newline are all part of the contract after schema v2, so the assertion compares the file as text rather than parsing it first. Requires --dump-schema in the case argv."
+          "description": "The WHOLE bytes of the help document a help --json run printed (contract §25.8's byte canon), apart from the project_id line, which names each target's own program and must be present. Key order, escaping, number form, two-space indentation and the single trailing newline are all part of the contract after schema v2, so the assertion compares the document as text rather than parsing it first. Requires help ... --json in the case argv."
         }
       }
     }
