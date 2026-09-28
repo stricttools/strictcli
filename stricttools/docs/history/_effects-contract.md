@@ -1318,6 +1318,10 @@ mechanism behind the warning: no specificity rule, no per-subcommand table, no r
 (`help`, `h`, `version`, `v`, `dump-schema`, `mcp`, `config`, `hermetic`) in all three
 implementations:
 
+> **Amendment (§18.39 items 367 and 379): `--dump-schema` is refused.** The name stays reserved, and
+> passing it is a parse error naming `<app> help --json`, which prints the help document (§29.5). The
+> `help` and `version` command names are reserved at every level of the command tree (§29.1).
+
 - Python `_RESERVED_GLOBAL_FLAG_NAMES`
 - Go `reservedGlobalFlagNames` (`go/strictcli/context.go`)
 - TypeScript `RESERVED_GLOBAL_FLAG_NAMES` (`typescript/src/app.ts`)
@@ -9856,6 +9860,89 @@ the rulings left them open.
      forwards each chunk, and the main thread appends the chunks that have arrived before each
      other append to `output`, at `wait`, and at the exit step.
 
+### 18.39 The help and version commands, the naming rule, and declared runtime requirements
+
+Items numbered on from §18.38. This section records the owner's rulings behind §29 and amends §7.1
+and §25 with a box each. A ruling made by picking the **recommended option** of its question is
+tagged `[%%]`: freely reversible, and never to be cited back as a deliberate directive. An untagged
+ruling in the first list is the owner's own choice or words. The second list is authored in the
+§18.3 class: picked by the build because the rulings left it open, each with its evidence, and freely
+reversible.
+
+**The owner's rulings.**
+
+360. **[%%] `help` is a framework command in every app (§29.1).** strictcli registers `help` and
+     refuses an app command named `help`; per-flag help and the machine form of help live there.
+361. **[%%] `version` is a framework command in every app (§29.1),** refusing an app command of that
+     name, with a `--json` form.
+362. **[%%] The `--version` flag stays** beside the command; `tool --version` and `tool version`
+     print the same line. The owner had already kept the `--help` flag ("the help flag would remain").
+363. **The names are reserved at every level (§29.1).** The owner picked "Every level" over the
+     recommended top-level-only reservation: no command, group, or deprecated command anywhere in an
+     app may be named `help` or `version`.
+364. **A flag is addressed as it is typed (§29.2):** `tool help compile --device`. The owner picked
+     this over the recommended `--flag <name>` selector.
+365. **[%%] Help's own options come before the address (§29.2):** `tool help --depth 1 compile`;
+     everything after the first address word is the target.
+366. **[%%] The self-description takes an address and a depth (§29.3).**
+367. **[%%] `help --json` replaces `--dump-schema` (§29.5)** and the self-description command that
+     was planned beside it: one surface, text by default and the help document with `--json`,
+     removed without a compatibility period. The chosen option carried "takes `project_id` from the
+     binary's own build information" (§29.6), and that the committed schema file is produced from
+     `help --json`.
+368. **The `--help` flag is text only (§29.4).** The owner picked "Flag is text only" over the
+     recommended "same output": `--help --json` is refused with a pointer to the help command.
+369. **Names are lowercase kebab-case (§29.7).** The owner proposed reducing commands and flags to
+     lowercase kebab-case, ruled that a long name has at least two characters ("yes ban that too"),
+     and that a short form is one letter, uppercase allowed ("short variants of flags allowed to be
+     single letter uppercase").
+370. **[%%] The same rule everywhere identifiers are typed or referenced (§29.7):** checks, tags,
+     choices, constraints, grants, and update resources take the command and flag pattern; config
+     fields keep snake_case because they are TOML keys.
+371. **Optional dependencies with an informative error (§29.8).** The owner's rule: a dependency
+     only some commands need does not block anything else, and when such a command runs without it,
+     "an informative error names the missing dep and the resolution". The proposal the owner was
+     shown and did not object to: commands declare their runtime requirements, strictcli checks
+     them before the command runs with one error format, and `help` and `help --json` show them;
+     a requirement is declared once.
+
+**Authored by the build.**
+
+372. **Covered and exempt identifiers (§29.7).** Positional argument names are exempt: they are never
+     typed, and the committed schemas of the owner's tools carry snake_case argument names in many
+     tools. The App's own name is exempt: the program name a user types is set by packaging, and one
+     tool's app is named `c`. Plain `choices` values, config field names, environment variable names,
+     check subjects, and MCP metadata names are exempt. Member choices are flag names and meet the
+     flag rule first, as Go's flag constructor does before the selector sees them.
+373. **One sentence per identifier kind**, each ending in the shared clause (§29.7).
+374. **Dispatch-level commands (§29.1).** `help` and `version` are recognized as the first command
+     word and are not entries of the app's command table: they appear in no app's `commands` in the
+     help document, in no MCP `tools/list`, and in no tool descriptor. The root and group help pages
+     end naming the help command. `tool <group> help` and `tool <group> version` are refused naming
+     the root form.
+375. **`--version --json` is refused (§29.4)** as `--help --json` is, since it would otherwise print
+     text while `--json` asked for JSON.
+376. **The depth and address details (§29.2, §29.3):** help's only option is `--depth`; `--help` or
+     `-h` after `help` is the help command's own page; a flag's other spellings are refused naming its
+     long form; positional arguments are not addressable; text defaults to depth 1 and JSON to the
+     whole subtree.
+377. **The help document's shape (§29.5):** the whole-app document is the schema document byte for
+     byte; a slice is the same document pruned to its address with `address` and `depth` keys after
+     `project_id`; stdout carries only the document and the `--json` document goes to stderr, the
+     owns-stdout rule of §19.6. `version --json` follows the same rule.
+378. **`project_id` per language (§29.6).** Go: the main module path from the build information.
+     Python: the installed distribution recording the constructing module's file under
+     `site-packages` or `dist-packages`, otherwise the nearest `pyproject.toml`'s `[project] name`,
+     because a distribution lookup finds nothing for an editable install. TypeScript: the nearest
+     `package.json` above the entry script's real path. None found is a refusal.
+379. **`--dump-schema` is refused naming `help --json`,** and the schema-location options are
+     removed with the writer; the programmatic accessors (`DumpSchemaDict()`, `dump_schema_dict()`,
+     `dumpSchemaDict()`) stay.
+380. **The requirement mechanism (§29.8):** one declaration of a name, a one-line help, a one-line
+     install instruction, and a load function; commands only (not groups or flag choices); loaded
+     before the handler on every door and in dry mode, ending the command through the early exit of
+     §19.9 with exit 1; `ctx.need` / `Need` for the loaded value; a `Requirements:` help section and a
+     `requires` command key; no requirements-check command and no MCP tool-schema projection.
 ---
 
 ## 19. Machine mode and the envelope
@@ -12828,7 +12915,15 @@ Stated so the boundary is a decision rather than an omission:
 
 Added 2026-08-14 (schema-v2 round, §18.16). This is the third phase of the declaration-regime
 campaign, and it is the **normative record of the whole v2 format**: everything `--dump-schema`
-writes, how it is spelled, in what order, and in what bytes. §13 keeps pinning which command-entry
+writes, how it is spelled, in what order, and in what bytes.
+
+> **Amendment (§18.39 items 367, 377, 378, and 380): the document is printed by `help --json`.**
+> `--dump-schema` and its schema-location options are removed; `<app> help --json` prints this
+> document on stdout in the byte canon of §25.8, and a committed `.strictcli/schema.json` is that
+> output redirected into the file. `project_id` comes from the program's build information (§29.6),
+> not from the working directory. A slice of the document carries `address` and `depth` after
+> `project_id` (§29.5). A command entry gains `requires` after `forwarding`, omitted when empty, and
+> the `defaults` block's `command` entry gains `"requires": []` (§29.8). §13 keeps pinning which command-entry
 facts exist; this section pins the format they are published in, and the two boxes at the end of §13
 mark exactly where v1's text stops applying.
 
@@ -15102,3 +15197,103 @@ infrastructure kinds), so a raw read is a finding whatever variable it reads, de
 own entry point, next to `--dump-schema`, and to block the release on a finding. That wiring
 belongs to the release tool and is not part of this repository; this section is the contract it
 reads.
+
+---
+
+## 29. The help and version commands, the naming rule, and declared runtime requirements
+
+Recorded at §18.39. This section is normative exactly as §§1-17 are.
+
+### 29.1 The commands
+
+`help` and `version` are the framework's own commands, recognized as the first command word of any
+app. Their names are reserved at every level of the command tree: an app command, group, or
+deprecated command named `help` or `version` at any depth is a registration error, and
+`<app> <group> help` / `<app> <group> version` is a parse error naming the root form. They are not
+entries of the app's command table: no app's help document lists them, and they are no MCP tools.
+
+- `<app> version` prints `<name> <version>`, the line `--version` prints. `version --json` prints
+  `{"name": ..., "version": ...}` in the byte canon. `version` takes no other argument.
+- `<app> help <address>` prints the help page `<address> --help` prints. `help --help` (a `--help` or
+  `-h` anywhere after `help`) prints the help command's own page, and `version --help` the version
+  command's.
+- The root and group help pages close with `Use '<app> help <command>' for more information.` and
+  `Use '<app> help <group path> <command>' for more information.`.
+
+### 29.2 The address
+
+Help's own options come first, then the address: zero or more group names, optionally a command,
+optionally one of the command's flags spelled as typed (`--device`). The addressable flags are the
+command's flags at every scope -- ordinary flags, token-spelled selectors, member flags, and every
+choice's scoped flags -- and the app's global flags. Positional arguments are not addressable; the
+command's page shows them.
+
+Refused, each naming the spelling that works where there is one: an unknown word (the routing
+sentences), a word after a command, a second flag, a short form (naming the long form), a flag with a
+value (naming the flag alone), `--no-<x>` and `--unset-<x>` (naming `--<x>`), an unknown flag (listing
+the command's flags), a flag after a group or before any address (naming the command form), and help's
+own option after the address (naming the before-the-address form).
+
+The one-flag page is the command's header line and the section holding the flag -- `Flags:`, or
+`Global flags:` for a global -- restricted to the flag's own lines and, for a scoped flag, the selector
+and choice lines above it, rendered and aligned as the whole page renders them.
+
+### 29.3 The depth
+
+`--depth <int>`, an integer of at least 1, counts command-tree levels below the addressed app or
+group; on a command it is refused. In text the default is 1, the page `--help` shows; at depth 2 or
+more the `Commands:` and `Groups:` sections list every visible command and group within that many
+levels by its path relative to the address, depth-first in declaration order. In JSON the default is
+the whole subtree, and a depth keeps the groups at the last level with their children removed.
+
+### 29.4 The flags stay text only
+
+`--help` and `--version` print text. Under `--json` both are refused: `help pages are text; for the
+machine form use '<app> help <address> --json'` and `the version line is text; for the machine form
+use '<app> version --json'`. The same refusal answers `<app> --json` with no command.
+
+### 29.5 The help document
+
+`help --json` prints one canonical JSON document (§25.8) on stdout, and the `--json` document of
+§19.2 on stderr, as for a command that owns stdout (§19.6). Without an address and depth it is §25's
+schema document byte for byte. With them, it is the same document with the command tree pruned to the
+address -- each ancestor keeps only the addressed child, an addressed command keeps only its entry,
+and an addressed flag keeps only the flag entries that declare it, selectors pruned to the choices
+that do -- and with `address` (the address words as typed) and `depth` after `project_id`.
+
+### 29.6 The project_id
+
+`project_id` names the program's own project, from where the program lives rather than from the
+working directory: Go's main module path from the build information; for Python, the installed
+distribution that records the file of the module that constructed the App when that file lies under
+`site-packages` or `dist-packages`, otherwise the nearest `pyproject.toml`'s `[project] name`; for
+TypeScript, the `name` of the nearest `package.json` above the real path of the entry script. When
+none can be determined, `help --json` is refused with `cannot determine project_id: <reason>`.
+
+### 29.7 The naming rule
+
+Every identifier a caller types or references is lowercase kebab-case of at least two characters,
+matching `[a-z][a-z0-9]*(-[a-z0-9]+)*`: command, group, and deprecated-command names; long flag names
+at every level; token-elected choice names; constraint, tag, check, hook, grant, update-resource, and
+requirement names. A member choice's name is a flag name. A short form is one ASCII letter, lowercase
+or uppercase; an empty short is no short. Positional argument names, the App's own name, plain
+`choices` values, config field names, environment variables, check subjects, and MCP metadata names
+are exempt. Each refusal is one sentence per identifier kind ending in the clause `must be lowercase
+kebab-case of at least two characters: [a-z][a-z0-9]*(-[a-z0-9]+)*`.
+
+### 29.8 Declared runtime requirements
+
+A requirement is declared once -- `NewRequirement(name, help, install, load)` (Go),
+`Requirement(name=, help=, install=, load=)` (Python), `requirement({ name, help, install, load })`
+(TypeScript) -- with a name under the naming rule, a one-line help, a one-line install instruction, and
+a load function returning the loaded value or failing with the reason it is not available. Commands
+reference it: `WithRequires(...)`, `requires=[...]`, `requires: [...]`. A command referencing one
+requirement twice, and a second value under a name the app already declared, are registration errors.
+
+Before the handler runs, on every door (the CLI, `test()`, `call()`, and MCP `tools/call`) and in dry
+mode, the framework loads the command's requirements in declaration order. The first that fails ends
+the command through the early exit of §19.9 with exit 1 and `command '<path>' needs <name> (<help>),
+which is not available: <reason>; install it: <install>`. The handler reads a loaded value through
+`ctx.need(r)` / `Need(ctx, r)` / `ctx.need(r)`; asking for one the command did not declare is a hard
+error at the call. Help never loads a requirement: command help shows a `Requirements:` section, and
+the help document a `requires` list of `{name, help, install}` on the command entry.
