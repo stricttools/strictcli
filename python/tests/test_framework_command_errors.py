@@ -77,7 +77,7 @@ def test_config_edit_failure_goes_through_the_writer(tmp_path, monkeypatch):
 def _check_app(tmp_path):
     toml = tmp_path / "checks.toml"
     toml.write_text(
-        'app = "app"\n[checks.lint]\ntags = ["release"]\nseverity = "error"\n'
+        'app = "app"\n[checks.lint]\ndescription = \"Checks lint\"\nsubject = \"quality\"\ntags = ["release"]\nseverity = "error"\n'
         "fast = true\npure = true\nneeds_network = false\ndepends_on = []\n"
     )
     app = strictcli.App(

@@ -17,6 +17,8 @@ TOML = """\
 app = "testapp"
 
 [checks.version-consistency]
+description = "Checks version-consistency"
+subject = "quality"
 tags = ["release"]
 severity = "error"
 fast = true
@@ -25,6 +27,8 @@ needs_network = false
 depends_on = []
 
 [checks.changelog-coverage]
+description = "Checks changelog-coverage"
+subject = "quality"
 tags = ["changelog"]
 severity = "error"
 fast = true

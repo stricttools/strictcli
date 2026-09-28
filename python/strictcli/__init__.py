@@ -22,7 +22,7 @@ __all__ = [
     "Grant", "EffectFailed", "Unsettled", "Completed", "Spawned", "Response",
     "PROC_MUTATE", "PROC_SPAWN", "FILE_WRITE", "NET_MUTATE",
     "flag", "arg",
-    "CheckContext", "ConnectionEnvReader", "CheckRunResult",
+    "CheckContext", "ConnectionEnvReader", "CheckRunResult", "CheckValue",
     "ErrorReporter", "WarnReporter", "SkipCheck",
     "CheckSpec", "error_check_spec", "warn_check_spec",
     "format_check_results", "format_check_results_json",
@@ -4519,24 +4519,80 @@ def _config_typename(value: object) -> str:
 
 
 _IDENTIFIER_RE = re.compile(r"^[a-z][a-z0-9-]*$")
-_CHECK_REQUIRED_FIELDS = {"tags", "severity", "fast", "pure", "needs_network", "depends_on"}
+_CHECK_REQUIRED_FIELDS = {
+    "tags", "severity", "fast", "pure", "needs_network", "depends_on",
+    "description", "subject",
+}
 _CHECK_OPTIONAL_FIELDS = {"scope"}
 _CHECK_VALID_SEVERITIES = {"error", "warn"}
+# A check's options subject: the subject file its option belongs in, named in
+# the options model's value-name grammar. `manifest` names the options
+# directory's own manifest, never a subject document.
+_CHECK_SUBJECT_RE = re.compile(r"^[a-z0-9-]+$")
+_HOOK_REQUIRED_FIELDS = {"tag"}
 
 
 def _parse_checks_toml(data: bytes) -> tuple[str, dict[str, _CheckDef]]:
     """Parse and validate checks TOML data, returning (app_name, check_defs).
 
-    Raises ValueError on any schema violation or invalid TOML.
+    Raises ValueError on any schema violation or invalid TOML. The declared
+    hooks are validated too; :func:`_parse_checks_toml_full` returns them.
     """
+    app_name, defs, _hooks = _parse_checks_toml_full(data)
+    return (app_name, defs)
+
+
+def _parse_check_hooks(hooks_section: object) -> dict[str, str]:
+    """Validate the ``[hooks.<name>]`` tables: each names one check selection
+    (a tag expression) that ``--hook <name>`` runs. Returns name -> tag
+    expression, sorted by name."""
+    if not isinstance(hooks_section, dict):
+        raise ValueError("checks.toml: [hooks] must be a table")
+    hooks: dict[str, str] = {}
+    for name in sorted(hooks_section):
+        fields = hooks_section[name]
+        if not _IDENTIFIER_RE.fullmatch(name):
+            raise ValueError(
+                f'checks.toml: invalid hook name "{name}" '
+                f"(must match [a-z][a-z0-9-]*)"
+            )
+        if not isinstance(fields, dict):
+            raise ValueError(f'checks.toml: hook "{name}" must be a table')
+        unknown = set(fields.keys()) - _HOOK_REQUIRED_FIELDS
+        if unknown:
+            raise ValueError(
+                f'checks.toml: hook "{name}": unknown field "{sorted(unknown)[0]}"'
+            )
+        if "tag" not in fields:
+            raise ValueError(
+                f'checks.toml: hook "{name}": missing required field "tag"'
+            )
+        tag = fields["tag"]
+        if not isinstance(tag, str) or not tag.strip():
+            raise ValueError(
+                f'checks.toml: hook "{name}": "tag" must be a non-empty string'
+            )
+        try:
+            _match_tag_expr(tag, set())
+        except ValueError as exc:
+            raise ValueError(f'checks.toml: hook "{name}": {exc}') from None
+        hooks[name] = tag
+    return hooks
+
+
+def _parse_checks_toml_full(
+    data: bytes,
+) -> tuple[str, dict[str, _CheckDef], dict[str, str]]:
+    """Parse and validate checks TOML data, returning
+    (app_name, check_defs, hooks)."""
     try:
         parsed = tomllib.loads(data.decode())
     except (tomllib.TOMLDecodeError, UnicodeDecodeError) as exc:
         raise ValueError(f"checks.toml: {exc}") from exc
 
-    # Only "app" and [checks] are allowed at the top level
+    # Only "app", [checks] and [hooks] are allowed at the top level
     for key in parsed:
-        if key not in ("app", "checks"):
+        if key not in ("app", "checks", "hooks"):
             raise ValueError(f'checks.toml: unknown top-level key "{key}"')
 
     # Validate required "app" field
@@ -4546,8 +4602,10 @@ def _parse_checks_toml(data: bytes) -> tuple[str, dict[str, _CheckDef]]:
         raise ValueError('checks.toml: "app" must be a non-empty string')
     app_name = parsed["app"]
 
+    hooks = _parse_check_hooks(parsed["hooks"]) if "hooks" in parsed else {}
+
     if "checks" not in parsed:
-        return (app_name, {})
+        return (app_name, {}, hooks)
 
     checks_section = parsed["checks"]
     if not isinstance(checks_section, dict):
@@ -4620,6 +4678,32 @@ def _parse_checks_toml(data: bytes) -> tuple[str, dict[str, _CheckDef]]:
                     f'checks.toml: check "{name}": "depends_on" entries must be strings'
                 )
 
+        # Validate description: one line of prose
+        description = fields["description"]
+        if (
+            not isinstance(description, str)
+            or not description.strip()
+            or "\n" in description
+            or "\r" in description
+        ):
+            raise ValueError(
+                f'checks.toml: check "{name}": "description" must be a '
+                f"non-empty single-line string"
+            )
+
+        # Validate subject: the options subject file the check's option
+        # belongs in
+        subject = fields["subject"]
+        if (
+            not isinstance(subject, str)
+            or not _CHECK_SUBJECT_RE.fullmatch(subject)
+            or subject == "manifest"
+        ):
+            raise ValueError(
+                f'checks.toml: check "{name}": "subject" must be lowercase '
+                f'letters, digits, and hyphens, and not "manifest"'
+            )
+
         # Validate optional scope field
         scope = fields.get("scope", "")
         if not isinstance(scope, str):
@@ -4637,6 +4721,8 @@ def _parse_checks_toml(data: bytes) -> tuple[str, dict[str, _CheckDef]]:
             needs_network=fields["needs_network"],
             depends_on=depends_on,
             scope=scope,
+            description=description,
+            subject=subject,
         )
 
     # Cross-validate depends_on references
@@ -4648,11 +4734,23 @@ def _parse_checks_toml(data: bytes) -> tuple[str, dict[str, _CheckDef]]:
                     f'unknown check "{dep}"'
                 )
 
-    return (app_name, result)
+    return (app_name, result, hooks)
 
 
 def _load_checks_toml(path: str | Path) -> tuple[str, dict[str, _CheckDef]]:
     """Read and parse a checks.toml file, returning (app_name, check_defs).
+
+    Raises ValueError on any file error, schema violation, or invalid TOML.
+    """
+    app_name, defs, _hooks = _load_checks_toml_full(path)
+    return (app_name, defs)
+
+
+def _load_checks_toml_full(
+    path: str | Path,
+) -> tuple[str, dict[str, _CheckDef], dict[str, str]]:
+    """Read and parse a checks.toml file, returning
+    (app_name, check_defs, hooks).
 
     Raises ValueError on any file error, schema violation, or invalid TOML.
     """
@@ -4661,7 +4759,7 @@ def _load_checks_toml(path: str | Path) -> tuple[str, dict[str, _CheckDef]]:
         raw = path.read_bytes()
     except OSError as exc:
         raise ValueError(f"checks.toml: {exc}") from exc
-    return _parse_checks_toml(raw)
+    return _parse_checks_toml_full(raw)
 
 
 class _HelpRequested(Exception):
@@ -8901,7 +8999,42 @@ _FRAMEWORK_INTERNAL_FORWARDING_REASON = (
 # §19.5). Inline literals, byte-identical across the three implementations.
 # The check command's payload is an array in both of its machine shapes -- the
 # listing (--list) and the run results.
-_CHECK_PAYLOAD_SCHEMA = {"type": "array", "items": {"type": "object"}}
+# Keys in sorted order: Go publishes a payload-schema literal with its keys
+# sorted (a Go map holds no order), so writing this framework-owned literal in
+# that order keeps a checks-enabled app's schema dump byte-identical across the
+# three implementations.
+_CHECK_PAYLOAD_SCHEMA = {"items": {"type": "object"}, "type": "array"}
+
+_CHECK_COMMAND_HELP = (
+    "Run project checks registered via the check framework and report results"
+)
+_FAILING_CHECKS_COMMAND_HELP = (
+    "Run project checks and report only error-level failures, "
+    "exiting nonzero when any exist"
+)
+
+
+def _msg_check_hook_combined() -> str:
+    return "--hook cannot be combined with --all, --tag, or --name"
+
+
+def _msg_check_hook_unknown(hook: str, declared: str) -> str:
+    return f'unknown hook "{hook}"; declared hooks: {declared}'
+
+
+def _msg_check_hook_none_declared(hook: str) -> str:
+    return f'unknown hook "{hook}"; checks.toml declares no hooks'
+
+
+def _check_hook_flag_help(hooks: dict[str, str]) -> str:
+    """The --hook flag's help: what it does plus every declared hook and the
+    tag expression it selects, sorted by hook name."""
+    if not hooks:
+        return "Run the checks a hook declared in checks.toml selects (no hooks are declared)"
+    declared = ", ".join(f"{n} (tag '{hooks[n]}')" for n in sorted(hooks))
+    return f"Run the checks a hook declared in checks.toml selects: {declared}"
+
+
 # config show's payload is one object keyed by flag/config-field name, plus the
 # "__infrastructure__" entry; the keys are dynamic, so the declaration names
 # the container only. Every value it carries is a JSON document, which is what
@@ -9394,7 +9527,7 @@ class _CheckOutcome:
     skip mint, both of which pass ``_MINT_TOKEN``. Direct construction raises.
     """
 
-    kind: str  # "passed", "skipped", "found"
+    kind: str  # "passed", "skipped", "found", "off"
     message: str
     problems: tuple[_CheckProblem, ...] = ()
     # notes is an informational, verdict-inert channel: notes are recorded
@@ -9413,7 +9546,7 @@ class _CheckOutcome:
 
     @property
     def status(self) -> str:
-        """Derived verdict label ("pass"/"fail"/"warn"/"skip")."""
+        """Derived verdict label ("pass"/"fail"/"warn"/"skip"/"off")."""
         return _derive_status(self)
 
     def _ordered_problems(self) -> tuple[_CheckProblem, ...]:
@@ -9426,6 +9559,29 @@ class _CheckOutcome:
 def _mint_skip(message: str) -> _CheckOutcome:
     """Runner-internal mint for cascade/scope skip outcomes."""
     return _CheckOutcome(kind="skipped", message=message, _token=_MINT_TOKEN)
+
+
+def _mint_off(source: str) -> _CheckOutcome:
+    """Runner-internal mint for a check its resolved value turned off: it did
+    not run, and the row says so and where the value came from."""
+    return _CheckOutcome(kind="off", message=f"off: {source}", _token=_MINT_TOKEN)
+
+
+def _mint_as_warnings(outcome: _CheckOutcome) -> _CheckOutcome:
+    """Runner-internal re-mint for a check resolved to ``warn``: every
+    error-severity problem is reported as a warning, so the outcome derives
+    WARN (never FAIL) and blocks nothing. Other outcomes are returned as-is."""
+    if outcome.kind != "found":
+        return outcome
+    return _CheckOutcome(
+        kind="found",
+        message=outcome.message,
+        problems=tuple(
+            _CheckProblem(text=p.text, severity="warn") for p in outcome.problems
+        ),
+        notes=outcome.notes,
+        _token=_MINT_TOKEN,
+    )
 
 
 def _check_abort_text(name: str, type_name: str, message: str) -> str:
@@ -9462,12 +9618,15 @@ def _derive_status(outcome: _CheckOutcome) -> str:
     """Map a minted outcome to its verdict label.
 
     passed => pass; skipped => skip; found with an error problem => fail;
-    found with only warns => warn.
+    found with only warns => warn; off (the check's resolved value turned it
+    off) => off.
     """
     if outcome.kind == "passed":
         return "pass"
     if outcome.kind == "skipped":
         return "skip"
+    if outcome.kind == "off":
+        return "off"
     if outcome.kind == "found":
         if any(p.severity == "error" for p in outcome.problems):
             return "fail"
@@ -9620,7 +9779,7 @@ class CheckRunResult:
 
     @property
     def status(self) -> str:
-        """Derived label: "pass", "fail", "warn", or "skip"."""
+        """Derived label: "pass", "fail", "warn", "skip", or "off"."""
         return _derive_status(self.outcome)
 
     @property
@@ -9645,6 +9804,90 @@ class CheckRunResult:
     def warned(self) -> bool:
         """Whether the outcome carries only warn-severity problems (derived WARN)."""
         return self.status == "warn"
+
+
+@dataclass(frozen=True)
+class CheckValue:
+    """The value an app's check value resolver assigns one check.
+
+    ``value`` is one of ``"error"``, ``"warn"``, ``"off"``: ``error`` runs the
+    check as registered, ``warn`` runs it and reports its failures as warnings
+    (never blocking), ``off`` does not run it (the check is shown as off, with
+    its source). ``source`` says where the value came from -- for example an
+    options entry id and the file holding it -- and is shown beside the value.
+    A value may lower a check's registered severity, never raise it: a
+    warn-registered check resolved to ``"error"`` is refused when the checks
+    are selected.
+    """
+
+    value: str
+    source: str
+
+
+# The closed set of check values a resolver may return.
+_CHECK_VALUES = ("error", "warn", "off")
+# The source shown for a check the resolver assigns no value: it runs at its
+# registered severity.
+_CHECK_VALUE_DEFAULT_SOURCE = "default"
+
+
+def _msg_check_value_invalid(name: str, value: object) -> str:
+    return (
+        f'check "{name}": the check value resolver returned "{value}"; '
+        f"a check value is one of error, warn, off"
+    )
+
+
+def _msg_check_value_source_empty(name: str, value: str) -> str:
+    return (
+        f'check "{name}": the check value resolver returned "{value}" with an '
+        f"empty source; name where the value came from"
+    )
+
+
+def _msg_check_value_above_severity(
+    name: str, value: str, source: str, severity: str,
+) -> str:
+    return (
+        f'check "{name}": the check value resolver returned "{value}" (from '
+        f'{source}) for a check registered as "{severity}"; a check value may '
+        f"lower a check's severity, never raise it"
+    )
+
+
+def _resolve_check_values(
+    check_defs: dict, names, resolver: Callable | None,
+) -> dict[str, tuple[str, str]]:
+    """Resolve each named check's effective value and its source.
+
+    Returns name -> (value, source). A check the resolver assigns no value
+    (``None``), and every check when no resolver is set, runs at its registered
+    severity with the source ``default``. Raises ValueError naming the first
+    check whose resolved value is not a check value, carries no source, or
+    would raise the check above its registered severity.
+    """
+    values: dict[str, tuple[str, str]] = {}
+    for name in names:
+        severity = check_defs[name].severity
+        resolved = resolver(name) if resolver is not None else None
+        if resolved is None:
+            values[name] = (severity, _CHECK_VALUE_DEFAULT_SOURCE)
+            continue
+        if not isinstance(resolved, CheckValue):
+            raise ValueError(
+                f'check "{name}": the check value resolver returned '
+                f"{resolved!r}, not a CheckValue or None"
+            )
+        if not isinstance(resolved.value, str) or resolved.value not in _CHECK_VALUES:
+            raise ValueError(_msg_check_value_invalid(name, resolved.value))
+        if not isinstance(resolved.source, str) or not resolved.source.strip():
+            raise ValueError(_msg_check_value_source_empty(name, resolved.value))
+        if resolved.value == "error" and severity == "warn":
+            raise ValueError(_msg_check_value_above_severity(
+                name, resolved.value, resolved.source, severity,
+            ))
+        values[name] = (resolved.value, resolved.source)
+    return values
 
 
 @runtime_checkable
@@ -9724,6 +9967,10 @@ class _CheckDef:
     needs_network: bool
     depends_on: list[str]
     scope: str = ""
+    # The two metadata fields every checks.toml declaration carries. Empty on
+    # provider-sourced checks, which have no TOML.
+    description: str = ""
+    subject: str = ""
     impl: object | None = None
     impl_form: str = ""  # "error" or "warn" -- registration form, for the severity cross-check
 
@@ -10034,6 +10281,10 @@ class App:
         # Discover checks TOML
         self._check_context_factory: Callable | None = None
         self._scope_adapter: Callable | None = None
+        # The per-check value resolver (set_check_value_resolver) and the
+        # named hook selections checks.toml declares.
+        self._check_value_resolver: Callable | None = None
+        self._check_hooks: dict[str, str] = {}
         # Check-provider hook state. Providers populate the registry lazily at
         # the first registry read (materialization), memoized per cwd.
         self._check_providers: list[Callable] = []
@@ -10045,20 +10296,26 @@ class App:
             checks_toml_path = Path(self.checks_path).resolve()
             if not checks_toml_path.is_file():
                 raise ValueError(f"checks_path does not exist: {self.checks_path}")
-            app_name, parsed_defs = _load_checks_toml(checks_toml_path)
+            app_name, parsed_defs, parsed_hooks = _load_checks_toml_full(
+                checks_toml_path,
+            )
             if app_name != self.name:
                 raise ValueError(
                     f'checks.toml: app "{app_name}" does not match app name "{self.name}"'
                 )
+            self._check_hooks = parsed_hooks
             self._enable_checks()
             for cdef in parsed_defs.values():
                 self._add_check_def(cdef)
         elif self.checks_embed is not None:
-            app_name, parsed_defs = _parse_checks_toml(self.checks_embed)
+            app_name, parsed_defs, parsed_hooks = _parse_checks_toml_full(
+                self.checks_embed,
+            )
             if app_name != self.name:
                 raise ValueError(
                     f'checks.toml: app "{app_name}" does not match app name "{self.name}"'
                 )
+            self._check_hooks = parsed_hooks
             self._enable_checks()
             for cdef in parsed_defs.values():
                 self._add_check_def(cdef)
@@ -10275,9 +10532,10 @@ class App:
                     self._record_cache_write(manifest_path)
 
             # Compare against command surface (exclude the framework-injected
-            # check command -- it is not a user command)
+            # check commands -- they are not user commands)
             all_commands = self._collect_all_command_paths()
             all_commands.discard("check")
+            all_commands.discard("failing-checks")
             uncovered = sorted(all_commands - covered)
 
             if uncovered:
@@ -10710,6 +10968,29 @@ class App:
             return base
         return _CheckContextWithConn(base, self._connection_env_names, self._last_hermetic)
 
+    def set_check_value_resolver(
+        self, resolver: "Callable[[str], CheckValue | None]",
+    ) -> None:
+        """Set the resolver that assigns each check its value.
+
+        The resolver is called with a check name and returns a
+        :class:`CheckValue` -- ``error``, ``warn`` or ``off`` plus the source
+        that value came from -- or ``None`` to leave the check at its
+        registered severity (shown with the source ``default``). The check
+        command, the failing-checks command and :meth:`run_checks` apply it:
+        ``off`` does not run the check, ``warn`` reports its failures as
+        warnings, ``error`` runs it as registered. A value may lower a check's
+        registered severity, never raise it; a warn-registered check resolved
+        to ``error`` is refused when the checks are selected, as is a value
+        outside the three or an empty source.
+
+        ``depends_on`` is unaffected: a dependency still runs first, and a
+        dependency resolved to ``warn`` cannot fail, so it blocks nothing.
+        """
+        if not callable(resolver):
+            raise ValueError("check value resolver must be callable")
+        self._check_value_resolver = resolver
+
     def set_scope_adapter(self, adapter: Callable) -> None:
         """Set the scope adapter callback for scoped checks.
 
@@ -10840,20 +11121,25 @@ class App:
         tag_expr: str | None = None,
         name_glob: str | None = None,
         run_all: bool = False,
-        ignore_warnings: bool = False,
         pure_only: bool = False,
     ) -> tuple[list[CheckRunResult], list[str], int]:
         """Run checks programmatically with filtering and dependency resolution.
 
         Returns (results, impure_listed, exit_code):
 
-        - results: the executed checks as a list of CheckRunResult.
+        - results: the executed checks as a list of CheckRunResult, plus an
+          ``off`` result for every selected check the check value resolver
+          (:meth:`set_check_value_resolver`) turned off.
         - impure_listed: the ordered names of checks NOT executed because of the
           purity partition (empty unless ``pure_only`` is set). Listed checks
           contribute nothing to the exit code -- a consumer renders them as e.g.
           ``"would run: <name> (impure)"``.
-        - exit_code: 0 if all executed checks pass (or all warn with
-          ``ignore_warnings``), else 1.
+        - exit_code: 0 if every executed check passes or skips, else 1 (a
+          warning counts). The error-level failures alone are the results
+          whose ``gated()`` is true.
+
+        The resolver's values apply exactly as they do in the check command;
+        a value the resolver may not return raises ValueError.
 
         With ``pure_only`` set, only checks that are declared pure AND do not
         need network access execute; every other selected check (including a
@@ -10871,8 +11157,11 @@ class App:
         if not selected:
             return ([], [], 0)
         order = _resolve_check_order(self._check_defs, selected)
+        values = _resolve_check_values(
+            self._check_defs, order, self._check_value_resolver,
+        )
         raw_results, impure_listed, exit_code = _run_checks(
-            self._check_defs, order, context, ignore_warnings,
+            self._check_defs, order, context, values,
             scope_adapter=self._scope_adapter, pure_only=pure_only,
         )
         results = [
@@ -10914,12 +11203,23 @@ class App:
         self._check_defs[cdef.name] = cdef
 
     def _register_check_command(self) -> None:
-        """Register the auto-generated 'check' command when checks.toml exists."""
+        """Register the auto-generated ``check`` and ``failing-checks``
+        commands when the check system is enabled."""
+        for command_name in ("check", "failing-checks"):
+            self._register_one_check_command(command_name)
+
+    def _register_one_check_command(self, command_name: str) -> None:
+        """Register one of the two check commands.
+
+        ``check`` is the full report and exits nonzero on any failure or
+        warning; ``failing-checks`` runs the same selection and reports only
+        the error-level failures, exiting nonzero exactly when one exists.
+        """
         app_ref = self  # capture for closure
+        failing_only = command_name == "failing-checks"
 
         def _check_handler(
-            ctx, *, all: bool, tag: str, name: str,
-            list: bool, ignore_warnings: bool,
+            ctx, *, all: bool, tag: str, name: str, hook: str, list: bool,
             **_kw,
         ) -> int:
             # --verbose, --dry-run and --json are framework-owned reserved
@@ -10940,16 +11240,41 @@ class App:
             name_glob = name if name else None
 
             if list:
-                ctx.payload(_check_list_items(app_ref._check_defs))
-                _check_list_mode(app_ref._check_defs, ctx)
+                names = sorted(app_ref._check_defs)
+                try:
+                    values = _resolve_check_values(
+                        app_ref._check_defs, names,
+                        app_ref._check_value_resolver,
+                    )
+                except ValueError as e:
+                    ctx.error(str(e))
+                    return 1
+                ctx.payload(_check_list_items(app_ref._check_defs, values))
+                _check_list_mode(app_ref._check_defs, values, ctx)
                 return 0
+
+            # A named hook stands for its declared selection, and is the whole
+            # selection: it combines with no other selection flag.
+            if hook:
+                if all or tag_expr is not None or name_glob is not None:
+                    ctx.error(_msg_check_hook_combined())
+                    return 1
+                if hook not in app_ref._check_hooks:
+                    if app_ref._check_hooks:
+                        ctx.error(_msg_check_hook_unknown(
+                            hook, ", ".join(sorted(app_ref._check_hooks)),
+                        ))
+                    else:
+                        ctx.error(_msg_check_hook_none_declared(hook))
+                    return 1
+                tag_expr = app_ref._check_hooks[hook]
 
             # Determine if any execution filter is active
             has_filter = all or tag_expr is not None or name_glob is not None
 
             if not has_filter:
-                # No flags: show help for the check command
-                check_cmd = app_ref._commands["check"]
+                # No flags: show help for this command
+                check_cmd = app_ref._commands[command_name]
                 prefix = app_ref._find_command_prefix(check_cmd)
                 ctx.info(_format_command_help(app_ref, check_cmd, prefix))
                 return 0
@@ -10980,9 +11305,18 @@ class App:
                     "Call app.set_check_context(factory) before running."
                 )
                 return 1
+            # Every selected check's value is resolved before any check runs,
+            # so a value the resolver may not return stops the run up front.
+            try:
+                values = _resolve_check_values(
+                    app_ref._check_defs, order, app_ref._check_value_resolver,
+                )
+            except ValueError as e:
+                ctx.error(str(e))
+                return 1
             context = app_ref._wrap_check_context(app_ref._check_context_factory())
             raw_results, impure_listed, exit_code = _run_checks(
-                app_ref._check_defs, order, context, ignore_warnings,
+                app_ref._check_defs, order, context, values,
                 scope_adapter=app_ref._scope_adapter, pure_only=dry_run,
             )
 
@@ -10990,6 +11324,12 @@ class App:
                 CheckRunResult(name=n, outcome=o, duration_ms=d)
                 for n, o, d in raw_results
             ]
+            if failing_only:
+                # Only the error-level failures, after the resolver: a check
+                # resolved to warn reported its failures as warnings, so it is
+                # not among them.
+                results_wrapped = [r for r in results_wrapped if r.gated()]
+                exit_code = 1 if results_wrapped else 0
             ctx.payload(_check_result_items(results_wrapped))
             output = format_check_results(results_wrapped, verbose)
             if output:
@@ -11008,15 +11348,18 @@ class App:
             Flag(name="all", type=bool, default=False, help="Run every registered check regardless of tag or name filters"),
             Flag(name="tag", type=str, default="", help="Tag DSL expression to select checks (e.g. 'changelog & !quality')"),
             Flag(name="name", type=str, default="", help="Glob pattern to filter checks by name (e.g. 'hash-*', '*coverage*')"),
-            Flag(name="list", type=bool, default=False, help="List all registered checks with their tags and exit without running"),
-            Flag(name="ignore-warnings", type=bool, default=False, help="Treat warn-severity results as passing so they do not cause nonzero exit"),
+            Flag(name="hook", type=str, default="", help=_check_hook_flag_help(self._check_hooks)),
+            Flag(name="list", type=bool, default=False, help="List all registered checks with their tags and values and exit without running"),
         ]
         extra_flags = [f for f in candidate_extra_flags if f.name not in global_flag_names]
         # read_only: the check command's only writes are framework-blessed
         # CACHE_WRITEs (the coverage manifest), which never trip enforcement.
-        self._commands["check"] = self._build_framework_command(
-            "check",
-            help="Run project checks registered via the check framework and report results",
+        self._commands[command_name] = self._build_framework_command(
+            command_name,
+            help=(
+                _FAILING_CHECKS_COMMAND_HELP if failing_only
+                else _CHECK_COMMAND_HELP
+            ),
             effect=EFFECT_READ_ONLY,
             handler=_check_handler,
             extra_flags=extra_flags,
@@ -17776,7 +18119,7 @@ def _run_checks(
     check_defs: dict,
     check_names: list[str],
     context: CheckContext,
-    ignore_warnings: bool,
+    values: dict[str, tuple[str, str]] | None = None,
     scope_adapter: object | None = None,
     pure_only: bool = False,
 ) -> tuple[list[tuple[str, _CheckOutcome, int]], list[str], int]:
@@ -17788,14 +18131,22 @@ def _run_checks(
     impure_listed holds the
     ordered names of checks left unexecuted by the purity partition (empty
     unless pure_only=True); listed checks contribute nothing to the exit code.
-    exit_code is 0 if all executed checks pass (or all warn with
-    ignore_warnings=True), 1 otherwise.
+    exit_code is 0 if every executed check passes (or skips), 1 otherwise --
+    a warning makes it 1 too.
+
+    ``values`` maps a check name to its resolved (value, source) (see
+    :func:`_resolve_check_values`); a check absent from it runs as registered.
+    A check resolved ``off`` does not run: it gets an OFF row, cascades
+    nothing, and leaves the exit code alone. A check resolved ``warn`` runs
+    and has its failures reported as warnings, so it never blocks its
+    dependents.
 
     Purity partition (pure_only): only pure, non-network checks execute; every
     other check is listed. A check also joins the listing if any dependency was
     listed (its precondition cannot be verified). The failed-dependency cascade
     takes precedence over the listing.
     """
+    values = values or {}
     results: list[tuple[str, _CheckOutcome, int]] = []
     # Checks whose dependents should be cascade-skipped: cascade keys ONLY on a
     # derived FAIL (an error-severity problem present) or a cascade-skip. A WARN
@@ -17816,12 +18167,18 @@ def _run_checks(
             failed_checks.add(name)
             exit_code = 1
         elif status == "warn":
-            if not ignore_warnings:
-                exit_code = 1
+            exit_code = 1
         # "pass" / "skip": no cascade, no exit code change.
 
     for name in check_names:
         cdef = check_defs[name]
+        value, source = values.get(name, (cdef.severity, _CHECK_VALUE_DEFAULT_SOURCE))
+
+        # A check its resolved value turned off never runs, whatever its
+        # dependencies did: it is shown as off, with where that came from.
+        if value == "off":
+            results.append((name, _mint_off(source), 0))
+            continue
 
         # Check if any dependency failed
         failed_dep = None
@@ -17870,7 +18227,7 @@ def _run_checks(
                 )
             check_context = adapted
 
-        # Capture wall-clock duration around the impl call only.
+    # Capture wall-clock duration around the impl call only.
         _start = time.perf_counter()
         try:
             outcome = cdef.impl(check_context)
@@ -17884,6 +18241,8 @@ def _run_checks(
             # implementation is not a handler, so it must never reach the check
             # command's exit step as that command's early exit (§19.9).
             duration_ms = int((time.perf_counter() - _start) * 1000)
+            # A broken check fails whatever its value: resolving it to warn
+            # lowers what its findings mean, not what an abort means.
             outcome = _mint_check_abort(name, exc)
             results.append((name, outcome, duration_ms))
             record(name, outcome)
@@ -17895,6 +18254,9 @@ def _run_checks(
                 f'check "{name}" returned {outcome!r}, not an outcome minted by '
                 f"its reporter (use passed/skipped/found)"
             )
+        # A check resolved to warn reports its failures as warnings.
+        if value == "warn":
+            outcome = _mint_as_warnings(outcome)
         results.append((name, outcome, duration_ms))
         record(name, outcome)
 
@@ -17905,21 +18267,35 @@ def _run_checks(
 # Check command output helpers
 # ---------------------------------------------------------------------------
 
-_CHECK_STATUS_LABELS = {"pass": "PASS", "fail": "FAIL", "warn": "WARN", "skip": "SKIP"}
+_CHECK_STATUS_LABELS = {
+    "pass": "PASS", "fail": "FAIL", "warn": "WARN", "skip": "SKIP", "off": "OFF",
+}
 
 
-def _check_list_items(check_defs: dict[str, _CheckDef]) -> list[dict]:
-    """The check listing as machine data (the check command's payload)."""
+def _check_list_items(
+    check_defs: dict[str, _CheckDef], values: dict[str, tuple[str, str]],
+) -> list[dict]:
+    """The check listing as machine data (the check command's payload).
+
+    Each entry carries the check's effective value (after the check value
+    resolver) and where that value came from."""
     items = []
     for cdef in sorted(check_defs.values(), key=lambda c: c.name):
-        entry: dict = {"name": cdef.name, "tags": cdef.tags, "severity": cdef.severity}
+        value, source = values[cdef.name]
+        entry: dict = {
+            "name": cdef.name, "tags": cdef.tags, "severity": cdef.severity,
+            "value": value, "source": source,
+        }
         if cdef.scope:
             entry["scope"] = cdef.scope
         items.append(entry)
     return items
 
 
-def _check_list_mode(check_defs: dict[str, _CheckDef], ctx: "Context") -> None:
+def _check_list_mode(
+    check_defs: dict[str, _CheckDef], values: dict[str, tuple[str, str]],
+    ctx: "Context",
+) -> None:
     """Write the human-readable check listing through the context writer.
 
     The whole table is ONE ``ctx.info`` call, so machine mode carries it as a
@@ -17937,12 +18313,19 @@ def _check_list_mode(check_defs: dict[str, _CheckDef], ctx: "Context") -> None:
     name_width = max(name_width, len("NAME"))
     tags_width = max(len(", ".join(cdef.tags)) for cdef in sorted_defs)
     tags_width = max(tags_width, len("TAGS"))
+    sev_width = len("SEVERITY")
+    value_width = len("VALUE")
 
-    lines = [f"{'NAME':<{name_width}}   {'TAGS':<{tags_width}}   SEVERITY"]
+    lines = [
+        f"{'NAME':<{name_width}}   {'TAGS':<{tags_width}}   "
+        f"{'SEVERITY':<{sev_width}}   {'VALUE':<{value_width}}   SOURCE"
+    ]
     for cdef in sorted_defs:
         tags_str = ", ".join(cdef.tags)
+        value, source = values[cdef.name]
         lines.append(
-            f"{cdef.name:<{name_width}}   {tags_str:<{tags_width}}   {cdef.severity}"
+            f"{cdef.name:<{name_width}}   {tags_str:<{tags_width}}   "
+            f"{cdef.severity:<{sev_width}}   {value:<{value_width}}   {source}"
         )
     ctx.info("\n".join(lines))
 
@@ -17991,13 +18374,13 @@ def format_check_results(
 
     name_width = max(len(r.name) for r in results)
     lines: list[str] = []
-    counts = {"pass": 0, "fail": 0, "warn": 0, "skip": 0}
+    counts = {"pass": 0, "fail": 0, "warn": 0, "skip": 0, "off": 0}
 
     for r in results:
         status = r.status
         counts[status] += 1
         label = _CHECK_STATUS_LABELS[status]
-        row = f"{label}  {r.name:<{name_width}}    {r.outcome.message}"
+        row = f"{label:<4}  {r.name:<{name_width}}    {r.outcome.message}"
         # Under --verbose, append the per-check duration in a stable, pattern-
         # matchable shape: "(<n>ms)".
         if verbose:
@@ -18017,10 +18400,15 @@ def format_check_results(
     # Under --verbose, append a trailing blank line and a count summary.
     if verbose:
         lines.append("")
-        lines.append(
+        summary = (
             f"{counts['pass']} passed / {counts['fail']} failed / "
             f"{counts['warn']} warned / {counts['skip']} skipped"
         )
+        # A check turned off by its resolved value is counted only when there
+        # is one, so a run without the resolver reads as it always has.
+        if counts["off"]:
+            summary += f" / {counts['off']} off"
+        lines.append(summary)
 
     return "\n".join(lines)
 
@@ -18758,8 +19146,9 @@ def _build_schema_defaults() -> dict:
     is exactly the set of always-emitted facts: `name`, `help`, `version`,
     `schema_version`, `project_id`, `effect`, `presence`, `value_schema` on
     every entry that has one, a choice object's `name` and `help`, a choice
-    record's `value`, a config field's `help` and `required`, and a check's six
-    mandatory fields.
+    record's `value`, a config field's `help` and `required`, and a check's
+    mandatory fields (every field of its checks.toml declaration except
+    `scope`).
 
     `default` on a flag or arg has no baseline either: since presence became
     the authority, it is emitted exactly when `presence` is `"default"`, and a
@@ -18967,6 +19356,8 @@ def _dump_schema_core(app: App) -> dict:
                 "pure": cdef.pure,
                 "needs_network": cdef.needs_network,
                 "depends_on": cdef.depends_on,
+                "description": cdef.description,
+                "subject": cdef.subject,
             }
             if cdef.scope:
                 entry["scope"] = cdef.scope

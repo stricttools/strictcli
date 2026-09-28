@@ -125,6 +125,8 @@ class TestRunChecks:
             toml_lines.append(f"pure = {'true' if cdef.pure else 'false'}")
             toml_lines.append(f"needs_network = {'true' if cdef.needs_network else 'false'}")
             toml_lines.append(f"depends_on = [{deps_str}]")
+            toml_lines.append(f'description = "Checks {name}"')
+            toml_lines.append('subject = "quality"')
             toml_lines.append("")
 
         toml_file = tmp_path / "checks.toml"
@@ -149,7 +151,7 @@ class TestRunChecks:
         }
         app = self._make_app_with_checks(defs, tmp_path, monkeypatch)
         ctx = SimpleContext(project_root=tmp_path)
-        results, _, exit_code = _run_checks(app._check_defs, ["a"], ctx, ignore_warnings=False)
+        results, _, exit_code = _run_checks(app._check_defs, ["a"], ctx)
         assert exit_code == 0
         assert len(results) == 1
         assert results[0][0] == "a"
@@ -164,7 +166,7 @@ class TestRunChecks:
         }
         app = self._make_app_with_checks(defs, tmp_path, monkeypatch)
         ctx = SimpleContext(project_root=tmp_path)
-        results, _, exit_code = _run_checks(app._check_defs, ["a"], ctx, ignore_warnings=False)
+        results, _, exit_code = _run_checks(app._check_defs, ["a"], ctx)
         assert exit_code == 1
         assert results[0][1].status == "fail"
 
@@ -183,7 +185,7 @@ class TestRunChecks:
         app = self._make_app_with_checks(defs, tmp_path, monkeypatch)
         ctx = SimpleContext(project_root=tmp_path)
         order = _resolve_check_order(app._check_defs, {"a", "b"})
-        results, _, exit_code = _run_checks(app._check_defs, order, ctx, ignore_warnings=False)
+        results, _, exit_code = _run_checks(app._check_defs, order, ctx)
         assert exit_code == 0
         statuses = {name: r.status for name, r, _ in results}
         assert statuses["a"] == "pass"
@@ -204,7 +206,7 @@ class TestRunChecks:
         app = self._make_app_with_checks(defs, tmp_path, monkeypatch)
         ctx = SimpleContext(project_root=tmp_path)
         order = _resolve_check_order(app._check_defs, {"a", "b"})
-        results, _, exit_code = _run_checks(app._check_defs, order, ctx, ignore_warnings=False)
+        results, _, exit_code = _run_checks(app._check_defs, order, ctx)
         assert exit_code == 1
         statuses = {name: r.status for name, r, _ in results}
         assert statuses["b"] == "fail"
@@ -233,14 +235,14 @@ class TestRunChecks:
         app = self._make_app_with_checks(defs, tmp_path, monkeypatch)
         ctx = SimpleContext(project_root=tmp_path)
         order = _resolve_check_order(app._check_defs, {"a", "b", "c"})
-        results, _, exit_code = _run_checks(app._check_defs, order, ctx, ignore_warnings=False)
+        results, _, exit_code = _run_checks(app._check_defs, order, ctx)
         assert exit_code == 1
         statuses = {name: r.status for name, r, _ in results}
         assert statuses["c"] == "fail"
         assert statuses["b"] == "skip"
         assert statuses["a"] == "skip"
 
-    def test_warn_with_ignore_warnings_true(self, tmp_path, monkeypatch):
+    def test_warn_exits_nonzero(self, tmp_path, monkeypatch):
         defs = {
             "a": _make_check_def(
                 "a",
@@ -250,28 +252,14 @@ class TestRunChecks:
         }
         app = self._make_app_with_checks(defs, tmp_path, monkeypatch)
         ctx = SimpleContext(project_root=tmp_path)
-        results, _, exit_code = _run_checks(app._check_defs, ["a"], ctx, ignore_warnings=True)
-        assert exit_code == 0
-        assert results[0][1].status == "warn"
-
-    def test_warn_with_ignore_warnings_false(self, tmp_path, monkeypatch):
-        defs = {
-            "a": _make_check_def(
-                "a",
-                severity="warn",
-                impl=lambda ctx: warn_outcome("Watch out"),
-            ),
-        }
-        app = self._make_app_with_checks(defs, tmp_path, monkeypatch)
-        ctx = SimpleContext(project_root=tmp_path)
-        results, _, exit_code = _run_checks(app._check_defs, ["a"], ctx, ignore_warnings=False)
+        results, _, exit_code = _run_checks(app._check_defs, ["a"], ctx)
         assert exit_code == 1
         assert results[0][1].status == "warn"
 
     def test_warn_dependency_runs_dependent(self, tmp_path, monkeypatch):
         # A warn satisfies a dependency: only fail (or cascade-skip) skips
-        # dependents. The warn still makes the run exit non-zero when
-        # ignore_warnings=False, but the dependent must run.
+        # dependents. The warning makes the run exit nonzero, but the
+        # dependent must run.
         defs = {
             "b": _make_check_def(
                 "b",
@@ -286,7 +274,7 @@ class TestRunChecks:
         app = self._make_app_with_checks(defs, tmp_path, monkeypatch)
         ctx = SimpleContext(project_root=tmp_path)
         order = _resolve_check_order(app._check_defs, {"a", "b"})
-        results, _, exit_code = _run_checks(app._check_defs, order, ctx, ignore_warnings=False)
+        results, _, exit_code = _run_checks(app._check_defs, order, ctx)
         assert exit_code == 1
         statuses = {name: r.status for name, r, _ in results}
         assert statuses["b"] == "warn"
@@ -313,7 +301,7 @@ class TestRunChecks:
         app = self._make_app_with_checks(defs, tmp_path, monkeypatch)
         ctx = SimpleContext(project_root=tmp_path)
         order = _resolve_check_order(app._check_defs, {"a", "b", "c"})
-        results, _, exit_code = _run_checks(app._check_defs, order, ctx, ignore_warnings=False)
+        results, _, exit_code = _run_checks(app._check_defs, order, ctx)
         assert exit_code == 1
         statuses = {name: r.status for name, r, _ in results}
         assert statuses["c"] == "warn"
@@ -345,14 +333,14 @@ class TestRunChecks:
         ctx = SimpleContext(project_root=tmp_path)
         order = _resolve_check_order(app._check_defs, {"a", "b"})
         results, _, exit_code = _run_checks(
-            app._check_defs, order, ctx, ignore_warnings=False, scope_adapter=adapter
+            app._check_defs, order, ctx, scope_adapter=adapter
         )
         assert exit_code == 0
         statuses = {name: r.status for name, r, _ in results}
         assert statuses["b"] == "skip"
         assert statuses["a"] == "pass"
 
-    def test_warn_does_not_cascade_when_ignored(self, tmp_path, monkeypatch):
+    def test_warn_does_not_cascade(self, tmp_path, monkeypatch):
         defs = {
             "b": _make_check_def(
                 "b",
@@ -367,8 +355,8 @@ class TestRunChecks:
         app = self._make_app_with_checks(defs, tmp_path, monkeypatch)
         ctx = SimpleContext(project_root=tmp_path)
         order = _resolve_check_order(app._check_defs, {"a", "b"})
-        results, _, exit_code = _run_checks(app._check_defs, order, ctx, ignore_warnings=True)
-        assert exit_code == 0
+        results, _, exit_code = _run_checks(app._check_defs, order, ctx)
+        assert exit_code == 1
         statuses = {name: r.status for name, r, _ in results}
         assert statuses["b"] == "warn"
         assert statuses["a"] == "pass"
@@ -383,7 +371,7 @@ class TestNonMintedOutcome:
         }
         ctx = SimpleContext(project_root=Path("/tmp"))
         with pytest.raises(TypeError, match="not an outcome minted by its reporter"):
-            _run_checks(defs, ["a"], ctx, False)
+            _run_checks(defs, ["a"], ctx)
 
 
 class TestRaisingImplContained:
@@ -401,7 +389,7 @@ class TestRaisingImplContained:
             "b": _make_check_def("b", impl=lambda ctx: pass_outcome("b ok")),
         }
         ctx = SimpleContext(project_root=Path("/tmp"))
-        results, _, exit_code = _run_checks(defs, ["a", "b"], ctx, False)
+        results, _, exit_code = _run_checks(defs, ["a", "b"], ctx)
         assert exit_code == 1
         statuses = {name: outcome.status for name, outcome, _ in results}
         assert statuses == {"a": "fail", "b": "pass"}
@@ -412,7 +400,7 @@ class TestRaisingImplContained:
     def test_contained_failure_carries_an_error_problem(self):
         defs = {"a": _make_check_def("a", impl=self._raiser(RuntimeError("nope")))}
         ctx = SimpleContext(project_root=Path("/tmp"))
-        results, _, _ = _run_checks(defs, ["a"], ctx, False)
+        results, _, _ = _run_checks(defs, ["a"], ctx)
         _, outcome, _ = results[0]
         assert [(p.severity, p.text) for p in outcome.problems] == [
             ("error", 'check "a" aborted with RuntimeError: nope'),
@@ -421,7 +409,7 @@ class TestRaisingImplContained:
     def test_empty_exception_message_drops_the_colon(self):
         defs = {"a": _make_check_def("a", impl=self._raiser(ValueError()))}
         ctx = SimpleContext(project_root=Path("/tmp"))
-        results, _, _ = _run_checks(defs, ["a"], ctx, False)
+        results, _, _ = _run_checks(defs, ["a"], ctx)
         assert results[0][1].message == 'check "a" aborted with ValueError'
 
     def test_contained_failure_cascade_skips_dependents(self):
@@ -432,20 +420,20 @@ class TestRaisingImplContained:
             ),
         }
         ctx = SimpleContext(project_root=Path("/tmp"))
-        results, _, exit_code = _run_checks(defs, ["a", "b"], ctx, False)
+        results, _, exit_code = _run_checks(defs, ["a", "b"], ctx)
         assert exit_code == 1
         statuses = {name: outcome.status for name, outcome, _ in results}
         assert statuses == {"a": "fail", "b": "skip"}
 
     def test_a_warn_check_that_raises_still_fails(self):
-        # --ignore-warnings forgives warn RESULTS, never a broken check.
+        # A warn check's findings are warnings; a broken check still fails.
         defs = {
             "a": _make_check_def(
                 "a", severity="warn", impl=self._raiser(ValueError("boom")),
             ),
         }
         ctx = SimpleContext(project_root=Path("/tmp"))
-        results, _, exit_code = _run_checks(defs, ["a"], ctx, True)
+        results, _, exit_code = _run_checks(defs, ["a"], ctx)
         assert exit_code == 1
         assert results[0][1].status == "fail"
 
@@ -454,7 +442,7 @@ class TestRaisingImplContained:
         defs = {"a": _make_check_def("a", impl=self._raiser(KeyboardInterrupt()))}
         ctx = SimpleContext(project_root=Path("/tmp"))
         with pytest.raises(KeyboardInterrupt):
-            _run_checks(defs, ["a"], ctx, False)
+            _run_checks(defs, ["a"], ctx)
 
 
 class TestFilterChecks:

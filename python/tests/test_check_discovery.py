@@ -11,6 +11,8 @@ VALID_TOML = """\
 app = "testapp"
 
 [checks.lint-code]
+description = "Checks lint-code"
+subject = "quality"
 tags = ["code", "fast"]
 severity = "error"
 fast = true
@@ -19,6 +21,8 @@ needs_network = false
 depends_on = []
 
 [checks.check-deps]
+description = "Checks check-deps"
+subject = "quality"
 tags = ["deps"]
 severity = "warn"
 fast = false
@@ -31,6 +35,8 @@ INVALID_TOML = """\
 app = "testapp"
 
 [checks.BadName]
+description = "Checks BadName"
+subject = "quality"
 tags = ["a"]
 severity = "error"
 fast = true
@@ -282,6 +288,8 @@ class TestDoubleEntryValidation:
 app = "wrong"
 
 [checks.my-check]
+description = "Checks my-check"
+subject = "quality"
 tags = ["a"]
 severity = "error"
 fast = true
@@ -362,6 +370,8 @@ class TestScopeFieldParsing:
 app = "testapp"
 
 [checks.my-check]
+description = "Checks my-check"
+subject = "quality"
 tags = ["release"]
 severity = "error"
 fast = true
@@ -378,6 +388,8 @@ depends_on = []
 app = "testapp"
 
 [checks.my-check]
+description = "Checks my-check"
+subject = "quality"
 tags = ["release"]
 severity = "error"
 fast = true
@@ -395,6 +407,8 @@ scope = "changelog"
 app = "testapp"
 
 [checks.my-check]
+description = "Checks my-check"
+subject = "quality"
 tags = ["release"]
 severity = "error"
 fast = true
@@ -412,6 +426,8 @@ scope = ""
 app = "testapp"
 
 [checks.my-check]
+description = "Checks my-check"
+subject = "quality"
 tags = ["release"]
 severity = "error"
 fast = true
@@ -429,6 +445,8 @@ scope = 42
 app = "testapp"
 
 [checks.my-check]
+description = "Checks my-check"
+subject = "quality"
 tags = ["release"]
 severity = "error"
 fast = true
@@ -448,6 +466,8 @@ bogus = true
 app = "testapp"
 
 [checks.my-check]
+description = "Checks my-check"
+subject = "quality"
 tags = ["release"]
 severity = "error"
 fast = true
@@ -469,6 +489,8 @@ scope = "workspace"
 app = "testapp"
 
 [checks.my-check]
+description = "Checks my-check"
+subject = "quality"
 tags = ["release"]
 severity = "error"
 fast = true

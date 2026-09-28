@@ -14,6 +14,8 @@ TWO_CHECKS_TOML = """\
 app = "testapp"
 
 [checks.version-check]
+description = "Checks version-check"
+subject = "quality"
 tags = ["release"]
 severity = "error"
 fast = true
@@ -22,6 +24,8 @@ needs_network = false
 depends_on = []
 
 [checks.lint-check]
+description = "Checks lint-check"
+subject = "quality"
 tags = ["code", "fast"]
 severity = "error"
 fast = true
@@ -34,6 +38,8 @@ PURE_AND_IMPURE_TOML = """\
 app = "testapp"
 
 [checks.lint-check]
+description = "Checks lint-check"
+subject = "quality"
 tags = ["code"]
 severity = "error"
 fast = true
@@ -42,6 +48,8 @@ needs_network = false
 depends_on = []
 
 [checks.deploy-check]
+description = "Checks deploy-check"
+subject = "quality"
 tags = ["release"]
 severity = "error"
 fast = false
@@ -54,6 +62,8 @@ THREE_CHECKS_WITH_DEP_TOML = """\
 app = "testapp"
 
 [checks.base-check]
+description = "Checks base-check"
+subject = "quality"
 tags = ["infra"]
 severity = "error"
 fast = true
@@ -62,6 +72,8 @@ needs_network = false
 depends_on = []
 
 [checks.version-check]
+description = "Checks version-check"
+subject = "quality"
 tags = ["release"]
 severity = "error"
 fast = true
@@ -70,6 +82,8 @@ needs_network = false
 depends_on = ["base-check"]
 
 [checks.lint-check]
+description = "Checks lint-check"
+subject = "quality"
 tags = ["code", "fast"]
 severity = "warn"
 fast = true
@@ -344,9 +358,10 @@ class TestCheckVerbose:
         assert "[warn]" not in result.stdout
 
 
-class TestCheckIgnoreWarnings:
-    def test_ignore_warnings(self, tmp_path, monkeypatch):
-        """--ignore-warnings makes warn severity not cause exit 1."""
+class TestCheckWarnings:
+    def test_ignore_warnings_is_gone(self, tmp_path, monkeypatch):
+        """The --ignore-warnings escape hatch no longer exists: the flag is
+        refused like any undeclared flag."""
         app = _setup_checks_app(
             tmp_path, monkeypatch, THREE_CHECKS_WITH_DEP_TOML,
             pass_results={
@@ -354,11 +369,11 @@ class TestCheckIgnoreWarnings:
             },
         )
         result = app.test(["check", "--all", "--ignore-warnings"])
-        assert result.exit_code == 0
-        assert "WARN" in result.stdout
+        assert result.exit_code == 1
+        assert "--ignore-warnings" in result.stderr
 
     def test_warn_without_ignore_causes_exit_1(self, tmp_path, monkeypatch):
-        """Without --ignore-warnings, warn causes exit 1."""
+        """A warning makes check exit 1: check is the full report."""
         app = _setup_checks_app(
             tmp_path, monkeypatch, THREE_CHECKS_WITH_DEP_TOML,
             pass_results={
@@ -466,7 +481,7 @@ class TestCheckCommandVerboseNotes:
         app = _setup_checks_app(tmp_path, monkeypatch, TWO_CHECKS_TOML)
         check_cmd = app._commands["check"]
         names = {f.name for f in check_cmd.flags}
-        assert names == {"all", "tag", "name", "list", "ignore-warnings"}
+        assert names == {"all", "tag", "name", "hook", "list"}
         result = app.test(["check", "--help"])
         assert result.exit_code == 0
         assert "--verbose" not in result.stdout

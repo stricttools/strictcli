@@ -10,6 +10,8 @@ VALID_TOML = """\
 app = "testapp"
 
 [checks.lint-code]
+description = "Checks lint-code"
+subject = "quality"
 tags = ["code", "fast"]
 severity = "error"
 fast = true
@@ -18,6 +20,8 @@ needs_network = false
 depends_on = []
 
 [checks.check-deps]
+description = "Checks check-deps"
+subject = "quality"
 tags = ["deps"]
 severity = "warn"
 fast = false
@@ -57,6 +61,8 @@ class TestLoadChecksToml:
 app = "testapp"
 
 [checks.my-check]
+description = "Checks my-check"
+subject = "quality"
 tags = ["a"]
 fast = true
 pure = true
@@ -73,6 +79,8 @@ depends_on = []
 app = "testapp"
 
 [checks.my-check]
+description = "Checks my-check"
+subject = "quality"
 tags = ["a"]
 severity = "error"
 fast = "yes"
@@ -90,6 +98,8 @@ depends_on = []
 app = "testapp"
 
 [checks.my-check]
+description = "Checks my-check"
+subject = "quality"
 tags = ["a"]
 severity = "error"
 fast = true
@@ -111,6 +121,8 @@ app = "testapp"
 version = "1.0"
 
 [checks.my-check]
+description = "Checks my-check"
+subject = "quality"
 tags = ["a"]
 severity = "error"
 fast = true
@@ -128,6 +140,8 @@ depends_on = []
 app = "testapp"
 
 [checks.MyCheck]
+description = "Checks MyCheck"
+subject = "quality"
 tags = ["a"]
 severity = "error"
 fast = true
@@ -145,6 +159,8 @@ depends_on = []
 app = "testapp"
 
 [checks."my.check"]
+description = "Checks my.check"
+subject = "quality"
 tags = ["a"]
 severity = "error"
 fast = true
@@ -179,6 +195,8 @@ depends_on = []
 app = "testapp"
 
 [checks.my-check]
+description = "Checks my-check"
+subject = "quality"
 tags = ["a"]
 severity = "error"
 fast = true
@@ -208,6 +226,8 @@ depends_on = ["nonexistent"]
 app = "testapp"
 
 [checks.my-check]
+description = "Checks my-check"
+subject = "quality"
 tags = ["a"]
 severity = "critical"
 fast = true
@@ -225,6 +245,8 @@ depends_on = []
 app = "testapp"
 
 [checks.my-check]
+description = "Checks my-check"
+subject = "quality"
 tags = []
 severity = "error"
 fast = true
@@ -242,6 +264,8 @@ depends_on = []
 app = "testapp"
 
 [checks.my-check]
+description = "Checks my-check"
+subject = "quality"
 tags = [""]
 severity = "error"
 fast = true
@@ -262,6 +286,8 @@ depends_on = []
     def test_missing_app_field(self, tmp_path):
         toml = """\
 [checks.my-check]
+description = "Checks my-check"
+subject = "quality"
 tags = ["a"]
 severity = "error"
 fast = true
@@ -279,6 +305,8 @@ depends_on = []
 app = 42
 
 [checks.my-check]
+description = "Checks my-check"
+subject = "quality"
 tags = ["a"]
 severity = "error"
 fast = true
@@ -296,6 +324,8 @@ depends_on = []
 app = ""
 
 [checks.my-check]
+description = "Checks my-check"
+subject = "quality"
 tags = ["a"]
 severity = "error"
 fast = true

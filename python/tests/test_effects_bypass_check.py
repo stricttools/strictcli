@@ -584,10 +584,10 @@ class TestObserveAllowlistBreadth:
         assert "really executes under --dry-run" in r.stdout
 
     def test_a_warning_is_not_an_error(self, tmp_path):
-        """--ignore-warnings clears it; an error-severity check could not."""
+        """failing-checks passes it; an error-severity finding would not."""
         app = self._app(tmp_path, [["git"]])
         assert app.test([
-            "check", "--name", "observe-allowlist-breadth", "--ignore-warnings",
+            "failing-checks", "--name", "observe-allowlist-breadth",
         ]).exit_code == 0
 
     def test_multi_token_prefixes_pass(self, tmp_path):
@@ -671,8 +671,7 @@ class TestConsequentialGrantAgreement:
         app = self._app(tmp_path, kind=strictcli.PROC_MUTATE,
                         consequential=False)
         assert app.test([
-            "check", "--name", "consequential-grant-agreement",
-            "--ignore-warnings",
+            "failing-checks", "--name", "consequential-grant-agreement",
         ]).exit_code == 0
 
     def test_a_consequential_command_passes(self, tmp_path):

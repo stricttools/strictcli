@@ -17,6 +17,8 @@ CHECKS_TOML = """\
 app = "testapp"
 
 [checks.lint-code]
+description = "Checks lint-code"
+subject = "quality"
 tags = ["code", "fast"]
 severity = "error"
 fast = true
@@ -25,6 +27,8 @@ needs_network = false
 depends_on = []
 
 [checks.check-deps]
+description = "Checks check-deps"
+subject = "quality"
 tags = ["deps"]
 severity = "warn"
 fast = false
@@ -130,6 +134,8 @@ SCOPED_CHECKS_TOML = """\
 app = "testapp"
 
 [checks.scoped-check]
+description = "Checks scoped-check"
+subject = "quality"
 tags = ["release"]
 severity = "error"
 fast = true
@@ -139,6 +145,8 @@ depends_on = []
 scope = "changelog"
 
 [checks.unscoped-check]
+description = "Checks unscoped-check"
+subject = "quality"
 tags = ["code"]
 severity = "warn"
 fast = true

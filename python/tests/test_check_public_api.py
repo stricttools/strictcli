@@ -21,6 +21,8 @@ TWO_CHECKS_TOML = """\
 app = "testapp"
 
 [checks.alpha]
+description = "Checks alpha"
+subject = "quality"
 tags = ["release"]
 severity = "error"
 fast = true
@@ -29,6 +31,8 @@ needs_network = false
 depends_on = []
 
 [checks.beta]
+description = "Checks beta"
+subject = "quality"
 tags = ["code"]
 severity = "error"
 fast = true
@@ -41,6 +45,8 @@ DEP_CHAIN_TOML = """\
 app = "testapp"
 
 [checks.base]
+description = "Checks base"
+subject = "quality"
 tags = ["infra"]
 severity = "error"
 fast = true
@@ -49,6 +55,8 @@ needs_network = false
 depends_on = []
 
 [checks.mid]
+description = "Checks mid"
+subject = "quality"
 tags = ["release"]
 severity = "error"
 fast = true
@@ -57,6 +65,8 @@ needs_network = false
 depends_on = ["base"]
 
 [checks.top]
+description = "Checks top"
+subject = "quality"
 tags = ["release"]
 severity = "error"
 fast = true
@@ -69,6 +79,8 @@ WARN_CHECK_TOML = """\
 app = "testapp"
 
 [checks.warn-check]
+description = "Checks warn-check"
+subject = "quality"
 tags = ["all"]
 severity = "warn"
 fast = true
@@ -81,6 +93,8 @@ SINGLE_CHECK_TOML = """\
 app = "testapp"
 
 [checks.only]
+description = "Checks only"
+subject = "quality"
 tags = ["default"]
 severity = "error"
 fast = true
@@ -228,29 +242,22 @@ class TestRunChecks:
         assert statuses["mid"] == "skip"
         assert statuses["top"] == "skip"
 
-    def test_warn_without_ignore(self, tmp_path):
+    def test_warn_exits_nonzero(self, tmp_path):
         impls = {
             "warn-check": lambda ctx: warn_outcome("caution"),
         }
         app = _make_app(tmp_path, WARN_CHECK_TOML, impls=impls)
         ctx = SimpleContext(project_root=tmp_path)
-        results, _, exit_code = app.run_checks(
-            ctx, run_all=True, ignore_warnings=False,
-        )
+        results, _, exit_code = app.run_checks(ctx, run_all=True)
         assert exit_code == 1
         assert results[0].status == "warn"
+        assert not results[0].gated()
 
-    def test_warn_with_ignore(self, tmp_path):
-        impls = {
-            "warn-check": lambda ctx: warn_outcome("caution"),
-        }
-        app = _make_app(tmp_path, WARN_CHECK_TOML, impls=impls)
+    def test_ignore_warnings_is_gone(self, tmp_path):
+        app = _make_app(tmp_path, WARN_CHECK_TOML)
         ctx = SimpleContext(project_root=tmp_path)
-        results, _, exit_code = app.run_checks(
-            ctx, run_all=True, ignore_warnings=True,
-        )
-        assert exit_code == 0
-        assert results[0].status == "warn"
+        with pytest.raises(TypeError, match="ignore_warnings"):
+            app.run_checks(ctx, run_all=True, ignore_warnings=True)
 
     def test_no_matches_empty(self, tmp_path):
         app = _make_app(tmp_path, TWO_CHECKS_TOML)
@@ -426,6 +433,8 @@ SCOPED_CHECK_TOML = """\
 app = "testapp"
 
 [checks.scoped-check]
+description = "Checks scoped-check"
+subject = "quality"
 tags = ["release"]
 severity = "error"
 fast = true
@@ -534,6 +543,8 @@ PARTITION_TOML = """\
 app = "testapp"
 
 [checks.pure-a]
+description = "Checks pure-a"
+subject = "quality"
 tags = ["p"]
 severity = "error"
 fast = true
@@ -542,6 +553,8 @@ needs_network = false
 depends_on = []
 
 [checks.net-b]
+description = "Checks net-b"
+subject = "quality"
 tags = ["p"]
 severity = "error"
 fast = true
@@ -550,6 +563,8 @@ needs_network = true
 depends_on = []
 
 [checks.impure-c]
+description = "Checks impure-c"
+subject = "quality"
 tags = ["p"]
 severity = "error"
 fast = true
@@ -558,6 +573,8 @@ needs_network = false
 depends_on = []
 
 [checks.dep-on-impure]
+description = "Checks dep-on-impure"
+subject = "quality"
 tags = ["p"]
 severity = "error"
 fast = true
@@ -566,6 +583,8 @@ needs_network = false
 depends_on = ["impure-c"]
 
 [checks.dep-on-pure]
+description = "Checks dep-on-pure"
+subject = "quality"
 tags = ["p"]
 severity = "error"
 fast = true

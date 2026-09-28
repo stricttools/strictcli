@@ -334,7 +334,7 @@ class TestFrameworkOwnedSchemas:
     def test_check_list_payload_satisfies_its_declaration(self, tmp_path):
         toml = tmp_path / "checks.toml"
         toml.write_text(
-            'app = "t"\n\n[checks.one]\ntags = ["a"]\nseverity = "error"\n'
+            'app = "t"\n\n[checks.one]\ndescription = \"Checks one\"\nsubject = \"quality\"\ntags = ["a"]\nseverity = "error"\n'
             "fast = true\npure = true\nneeds_network = false\ndepends_on = []\n"
         )
         app = strictcli.App(
