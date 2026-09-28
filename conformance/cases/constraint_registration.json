@@ -13,13 +13,13 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "a",
+              "name": "aa",
               "type": "str",
               "help": "the a",
               "presence": "optional"
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -31,10 +31,10 @@
               "name": "Bad Name",
               "members": [
                 {
-                  "name": "a"
+                  "name": "aa"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -48,7 +48,7 @@
     "expect": {
       "exit_code": 1,
       "stdout_equals": "",
-      "stderr_equals": "error: command \"cmd\": constraint name \"Bad Name\" must match [a-z][a-z0-9-]*\n"
+      "stderr_equals": "error: command \"cmd\": constraint name \"Bad Name\" must be lowercase kebab-case of at least two characters: [a-z][a-z0-9]*(-[a-z0-9]+)*\n"
     }
   },
   {
@@ -65,19 +65,19 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "a",
+              "name": "aa",
               "type": "str",
               "help": "the a",
               "presence": "optional"
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
             },
             {
-              "name": "c",
+              "name": "cc",
               "type": "str",
               "help": "the c",
               "presence": "optional"
@@ -89,10 +89,10 @@
               "name": "pair",
               "members": [
                 {
-                  "name": "a"
+                  "name": "aa"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             },
@@ -101,10 +101,10 @@
               "name": "pair",
               "members": [
                 {
-                  "name": "a"
+                  "name": "aa"
                 },
                 {
-                  "name": "c"
+                  "name": "cc"
                 }
               ]
             }
@@ -135,13 +135,13 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "a",
+              "name": "aa",
               "type": "str",
               "help": "the a",
               "presence": "optional"
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -159,10 +159,10 @@
               "name": "pair",
               "members": [
                 {
-                  "name": "a"
+                  "name": "aa"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -193,13 +193,13 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "a",
+              "name": "aa",
               "type": "str",
               "help": "the a",
               "presence": "optional"
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -218,10 +218,10 @@
               "name": "pair",
               "members": [
                 {
-                  "name": "a"
+                  "name": "aa"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -258,7 +258,7 @@
               "presence": "optional"
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -280,7 +280,7 @@
                   "name": "dup"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -311,13 +311,13 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "a",
+              "name": "aa",
               "type": "str",
               "help": "the a",
               "presence": "optional"
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -328,9 +328,9 @@
               "type": "all_or_none",
               "name": "pair",
               "members": [
-                "a",
+                "aa",
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -364,13 +364,13 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "a",
+              "name": "aa",
               "type": "str",
               "help": "the a",
               "presence": "optional"
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -381,9 +381,9 @@
               "type": "all_or_none",
               "name": "pair",
               "members": [
-                "a",
+                "aa",
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -417,13 +417,13 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "a",
+              "name": "aa",
               "type": "str",
               "help": "the a",
               "presence": "required"
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -435,10 +435,10 @@
               "name": "pair",
               "members": [
                 {
-                  "name": "a"
+                  "name": "aa"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -452,7 +452,7 @@
     "expect": {
       "exit_code": 1,
       "stdout_equals": "",
-      "stderr_equals": "error: command \"cmd\": constraint \"pair\" member '--a' declares presence=\"required\": a member the invocation must always supply leaves the constraint nothing to decide\n"
+      "stderr_equals": "error: command \"cmd\": constraint \"pair\" member '--aa' declares presence=\"required\": a member the invocation must always supply leaves the constraint nothing to decide\n"
     },
     "targets": [
       "python"
@@ -472,13 +472,13 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "a",
+              "name": "aa",
               "type": "str",
               "help": "the a",
               "presence": "required"
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -490,10 +490,10 @@
               "name": "pair",
               "members": [
                 {
-                  "name": "a"
+                  "name": "aa"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -507,7 +507,7 @@
     "expect": {
       "exit_code": 1,
       "stdout_equals": "",
-      "stderr_equals": "error: command \"cmd\": constraint \"pair\" member '--a' declares Required(): a member the invocation must always supply leaves the constraint nothing to decide\n"
+      "stderr_equals": "error: command \"cmd\": constraint \"pair\" member '--aa' declares Required(): a member the invocation must always supply leaves the constraint nothing to decide\n"
     },
     "targets": [
       "go"
@@ -527,13 +527,13 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "a",
+              "name": "aa",
               "type": "str",
               "help": "the a",
               "presence": "required"
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -545,10 +545,10 @@
               "name": "pair",
               "members": [
                 {
-                  "name": "a"
+                  "name": "aa"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -562,7 +562,7 @@
     "expect": {
       "exit_code": 1,
       "stdout_equals": "",
-      "stderr_equals": "error: command \"cmd\": constraint \"pair\" member '--a' declares presence: \"required\": a member the invocation must always supply leaves the constraint nothing to decide\n"
+      "stderr_equals": "error: command \"cmd\": constraint \"pair\" member '--aa' declares presence: \"required\": a member the invocation must always supply leaves the constraint nothing to decide\n"
     },
     "targets": [
       "typescript"
@@ -582,13 +582,13 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "a",
+              "name": "aa",
               "type": "str",
               "help": "the a",
               "presence": "required"
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -600,10 +600,10 @@
               "name": "pick",
               "members": [
                 {
-                  "name": "a"
+                  "name": "aa"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -617,7 +617,7 @@
     "expect": {
       "exit_code": 1,
       "stdout_equals": "",
-      "stderr_equals": "error: command \"cmd\": constraint \"pick\" member '--a' declares presence=\"required\": a member the invocation must always supply leaves the constraint nothing to decide\n"
+      "stderr_equals": "error: command \"cmd\": constraint \"pick\" member '--aa' declares presence=\"required\": a member the invocation must always supply leaves the constraint nothing to decide\n"
     },
     "targets": [
       "python"
@@ -637,13 +637,13 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "a",
+              "name": "aa",
               "type": "str",
               "help": "the a",
               "presence": "required"
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -655,10 +655,10 @@
               "name": "pick",
               "members": [
                 {
-                  "name": "a"
+                  "name": "aa"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -672,7 +672,7 @@
     "expect": {
       "exit_code": 1,
       "stdout_equals": "",
-      "stderr_equals": "error: command \"cmd\": constraint \"pick\" member '--a' declares Required(): a member the invocation must always supply leaves the constraint nothing to decide\n"
+      "stderr_equals": "error: command \"cmd\": constraint \"pick\" member '--aa' declares Required(): a member the invocation must always supply leaves the constraint nothing to decide\n"
     },
     "targets": [
       "go"
@@ -692,13 +692,13 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "a",
+              "name": "aa",
               "type": "str",
               "help": "the a",
               "presence": "required"
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -710,10 +710,10 @@
               "name": "pick",
               "members": [
                 {
-                  "name": "a"
+                  "name": "aa"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -727,7 +727,7 @@
     "expect": {
       "exit_code": 1,
       "stdout_equals": "",
-      "stderr_equals": "error: command \"cmd\": constraint \"pick\" member '--a' declares presence: \"required\": a member the invocation must always supply leaves the constraint nothing to decide\n"
+      "stderr_equals": "error: command \"cmd\": constraint \"pick\" member '--aa' declares presence: \"required\": a member the invocation must always supply leaves the constraint nothing to decide\n"
     },
     "targets": [
       "typescript"
@@ -747,7 +747,7 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -769,7 +769,7 @@
                   "name": "targets"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -803,7 +803,7 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -825,7 +825,7 @@
                   "name": "targets"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -859,7 +859,7 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -881,7 +881,7 @@
                   "name": "targets"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -922,7 +922,7 @@
               "default": false
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -937,7 +937,7 @@
                   "name": "all"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -978,7 +978,7 @@
               "default": false
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -993,7 +993,7 @@
                   "name": "all"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -1034,7 +1034,7 @@
               "default": false
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -1049,7 +1049,7 @@
                   "name": "all"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -1083,13 +1083,13 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "a",
+              "name": "aa",
               "type": "str",
               "help": "the a",
               "presence": "optional"
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -1101,11 +1101,11 @@
               "name": "pick",
               "members": [
                 {
-                  "name": "a",
+                  "name": "aa",
                   "when": "true"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -1119,7 +1119,7 @@
     "expect": {
       "exit_code": 1,
       "stdout_equals": "",
-      "stderr_equals": "error: command \"cmd\": constraint \"pick\" member '--a' declares when=\"true\", which needs a bool; '--a' is a str\n"
+      "stderr_equals": "error: command \"cmd\": constraint \"pick\" member '--aa' declares when=\"true\", which needs a bool; '--aa' is a str\n"
     },
     "targets": [
       "python"
@@ -1139,13 +1139,13 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "a",
+              "name": "aa",
               "type": "str",
               "help": "the a",
               "presence": "optional"
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -1157,11 +1157,11 @@
               "name": "pick",
               "members": [
                 {
-                  "name": "a",
+                  "name": "aa",
                   "when": "true"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -1175,7 +1175,7 @@
     "expect": {
       "exit_code": 1,
       "stdout_equals": "",
-      "stderr_equals": "error: command \"cmd\": constraint \"pick\" member '--a' declares WhenTrue(), which needs a bool; '--a' is a str\n"
+      "stderr_equals": "error: command \"cmd\": constraint \"pick\" member '--aa' declares WhenTrue(), which needs a bool; '--aa' is a str\n"
     },
     "targets": [
       "go"
@@ -1195,13 +1195,13 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "a",
+              "name": "aa",
               "type": "str",
               "help": "the a",
               "presence": "optional"
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -1213,11 +1213,11 @@
               "name": "pick",
               "members": [
                 {
-                  "name": "a",
+                  "name": "aa",
                   "when": "true"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -1231,7 +1231,7 @@
     "expect": {
       "exit_code": 1,
       "stdout_equals": "",
-      "stderr_equals": "error: command \"cmd\": constraint \"pick\" member '--a' declares when: \"true\", which needs a bool; '--a' is a str\n"
+      "stderr_equals": "error: command \"cmd\": constraint \"pick\" member '--aa' declares when: \"true\", which needs a bool; '--aa' is a str\n"
     },
     "targets": [
       "typescript"
@@ -1251,13 +1251,13 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "n",
+              "name": "nn",
               "type": "int",
               "help": "the n",
               "presence": "optional"
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -1269,11 +1269,11 @@
               "name": "pick",
               "members": [
                 {
-                  "name": "n",
+                  "name": "nn",
                   "when": "true"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -1287,7 +1287,7 @@
     "expect": {
       "exit_code": 1,
       "stdout_equals": "",
-      "stderr_equals": "error: command \"cmd\": constraint \"pick\" member '--n' declares when=\"true\", which needs a bool; '--n' is a int\n"
+      "stderr_equals": "error: command \"cmd\": constraint \"pick\" member '--nn' declares when=\"true\", which needs a bool; '--nn' is a int\n"
     },
     "targets": [
       "python"
@@ -1307,13 +1307,13 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "n",
+              "name": "nn",
               "type": "int",
               "help": "the n",
               "presence": "optional"
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -1325,11 +1325,11 @@
               "name": "pick",
               "members": [
                 {
-                  "name": "n",
+                  "name": "nn",
                   "when": "true"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -1343,7 +1343,7 @@
     "expect": {
       "exit_code": 1,
       "stdout_equals": "",
-      "stderr_equals": "error: command \"cmd\": constraint \"pick\" member '--n' declares WhenTrue(), which needs a bool; '--n' is a int\n"
+      "stderr_equals": "error: command \"cmd\": constraint \"pick\" member '--nn' declares WhenTrue(), which needs a bool; '--nn' is a int\n"
     },
     "targets": [
       "go"
@@ -1363,13 +1363,13 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "n",
+              "name": "nn",
               "type": "int",
               "help": "the n",
               "presence": "optional"
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -1381,11 +1381,11 @@
               "name": "pick",
               "members": [
                 {
-                  "name": "n",
+                  "name": "nn",
                   "when": "true"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -1399,7 +1399,7 @@
     "expect": {
       "exit_code": 1,
       "stdout_equals": "",
-      "stderr_equals": "error: command \"cmd\": constraint \"pick\" member '--n' declares when: \"true\", which needs a bool; '--n' is a int\n"
+      "stderr_equals": "error: command \"cmd\": constraint \"pick\" member '--nn' declares when: \"true\", which needs a bool; '--nn' is a int\n"
     },
     "targets": [
       "typescript"
@@ -1419,13 +1419,13 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "r",
+              "name": "rr",
               "type": "float",
               "help": "the r",
               "presence": "optional"
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -1437,11 +1437,11 @@
               "name": "pick",
               "members": [
                 {
-                  "name": "r",
+                  "name": "rr",
                   "when": "true"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -1455,7 +1455,7 @@
     "expect": {
       "exit_code": 1,
       "stdout_equals": "",
-      "stderr_equals": "error: command \"cmd\": constraint \"pick\" member '--r' declares when=\"true\", which needs a bool; '--r' is a float\n"
+      "stderr_equals": "error: command \"cmd\": constraint \"pick\" member '--rr' declares when=\"true\", which needs a bool; '--rr' is a float\n"
     },
     "targets": [
       "python"
@@ -1475,13 +1475,13 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "r",
+              "name": "rr",
               "type": "float",
               "help": "the r",
               "presence": "optional"
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -1493,11 +1493,11 @@
               "name": "pick",
               "members": [
                 {
-                  "name": "r",
+                  "name": "rr",
                   "when": "true"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -1511,7 +1511,7 @@
     "expect": {
       "exit_code": 1,
       "stdout_equals": "",
-      "stderr_equals": "error: command \"cmd\": constraint \"pick\" member '--r' declares WhenTrue(), which needs a bool; '--r' is a float\n"
+      "stderr_equals": "error: command \"cmd\": constraint \"pick\" member '--rr' declares WhenTrue(), which needs a bool; '--rr' is a float\n"
     },
     "targets": [
       "go"
@@ -1531,13 +1531,13 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "r",
+              "name": "rr",
               "type": "float",
               "help": "the r",
               "presence": "optional"
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -1549,11 +1549,11 @@
               "name": "pick",
               "members": [
                 {
-                  "name": "r",
+                  "name": "rr",
                   "when": "true"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -1567,7 +1567,7 @@
     "expect": {
       "exit_code": 1,
       "stdout_equals": "",
-      "stderr_equals": "error: command \"cmd\": constraint \"pick\" member '--r' declares when: \"true\", which needs a bool; '--r' is a float\n"
+      "stderr_equals": "error: command \"cmd\": constraint \"pick\" member '--rr' declares when: \"true\", which needs a bool; '--rr' is a float\n"
     },
     "targets": [
       "typescript"
@@ -1596,7 +1596,7 @@
               "default": []
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -1612,7 +1612,7 @@
                   "when": "true"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -1655,7 +1655,7 @@
               "default": []
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -1671,7 +1671,7 @@
                   "when": "true"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -1714,7 +1714,7 @@
               "default": []
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -1730,7 +1730,7 @@
                   "when": "true"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -1771,7 +1771,7 @@
               "default": {}
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -1787,7 +1787,7 @@
                   "when": "true"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -1828,7 +1828,7 @@
               "default": {}
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -1844,7 +1844,7 @@
                   "when": "true"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -1885,7 +1885,7 @@
               "default": {}
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -1901,7 +1901,7 @@
                   "when": "true"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -1935,7 +1935,7 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -1960,7 +1960,7 @@
                   "when": "true"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -1994,7 +1994,7 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -2019,7 +2019,7 @@
                   "when": "true"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -2053,7 +2053,7 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -2078,7 +2078,7 @@
                   "when": "true"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -2136,7 +2136,7 @@
               ]
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -2152,7 +2152,7 @@
                   "when": "true"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -2210,7 +2210,7 @@
               ]
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -2226,7 +2226,7 @@
                   "when": "true"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -2284,7 +2284,7 @@
               ]
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -2300,7 +2300,7 @@
                   "when": "true"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -2341,7 +2341,7 @@
               "default": false
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -2357,7 +2357,7 @@
                   "when": "non_empty"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -2398,7 +2398,7 @@
               "default": false
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -2414,7 +2414,7 @@
                   "when": "non_empty"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -2455,7 +2455,7 @@
               "default": false
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -2471,7 +2471,7 @@
                   "when": "non_empty"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -2505,13 +2505,13 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "n",
+              "name": "nn",
               "type": "int",
               "help": "the n",
               "presence": "optional"
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -2523,11 +2523,11 @@
               "name": "pick",
               "members": [
                 {
-                  "name": "n",
+                  "name": "nn",
                   "when": "non_empty"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -2541,7 +2541,7 @@
     "expect": {
       "exit_code": 1,
       "stdout_equals": "",
-      "stderr_equals": "error: command \"cmd\": constraint \"pick\" member '--n' declares when=\"non_empty\", which needs a string or a collection; '--n' is a int\n"
+      "stderr_equals": "error: command \"cmd\": constraint \"pick\" member '--nn' declares when=\"non_empty\", which needs a string or a collection; '--nn' is a int\n"
     },
     "targets": [
       "python"
@@ -2561,13 +2561,13 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "n",
+              "name": "nn",
               "type": "int",
               "help": "the n",
               "presence": "optional"
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -2579,11 +2579,11 @@
               "name": "pick",
               "members": [
                 {
-                  "name": "n",
+                  "name": "nn",
                   "when": "non_empty"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -2597,7 +2597,7 @@
     "expect": {
       "exit_code": 1,
       "stdout_equals": "",
-      "stderr_equals": "error: command \"cmd\": constraint \"pick\" member '--n' declares WhenNonEmpty(), which needs a string or a collection; '--n' is a int\n"
+      "stderr_equals": "error: command \"cmd\": constraint \"pick\" member '--nn' declares WhenNonEmpty(), which needs a string or a collection; '--nn' is a int\n"
     },
     "targets": [
       "go"
@@ -2617,13 +2617,13 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "n",
+              "name": "nn",
               "type": "int",
               "help": "the n",
               "presence": "optional"
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -2635,11 +2635,11 @@
               "name": "pick",
               "members": [
                 {
-                  "name": "n",
+                  "name": "nn",
                   "when": "non_empty"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -2653,7 +2653,7 @@
     "expect": {
       "exit_code": 1,
       "stdout_equals": "",
-      "stderr_equals": "error: command \"cmd\": constraint \"pick\" member '--n' declares when: \"non_empty\", which needs a string or a collection; '--n' is a int\n"
+      "stderr_equals": "error: command \"cmd\": constraint \"pick\" member '--nn' declares when: \"non_empty\", which needs a string or a collection; '--nn' is a int\n"
     },
     "targets": [
       "typescript"
@@ -2673,13 +2673,13 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "r",
+              "name": "rr",
               "type": "float",
               "help": "the r",
               "presence": "optional"
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -2691,11 +2691,11 @@
               "name": "pick",
               "members": [
                 {
-                  "name": "r",
+                  "name": "rr",
                   "when": "non_empty"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -2709,7 +2709,7 @@
     "expect": {
       "exit_code": 1,
       "stdout_equals": "",
-      "stderr_equals": "error: command \"cmd\": constraint \"pick\" member '--r' declares when=\"non_empty\", which needs a string or a collection; '--r' is a float\n"
+      "stderr_equals": "error: command \"cmd\": constraint \"pick\" member '--rr' declares when=\"non_empty\", which needs a string or a collection; '--rr' is a float\n"
     },
     "targets": [
       "python"
@@ -2729,13 +2729,13 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "r",
+              "name": "rr",
               "type": "float",
               "help": "the r",
               "presence": "optional"
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -2747,11 +2747,11 @@
               "name": "pick",
               "members": [
                 {
-                  "name": "r",
+                  "name": "rr",
                   "when": "non_empty"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -2765,7 +2765,7 @@
     "expect": {
       "exit_code": 1,
       "stdout_equals": "",
-      "stderr_equals": "error: command \"cmd\": constraint \"pick\" member '--r' declares WhenNonEmpty(), which needs a string or a collection; '--r' is a float\n"
+      "stderr_equals": "error: command \"cmd\": constraint \"pick\" member '--rr' declares WhenNonEmpty(), which needs a string or a collection; '--rr' is a float\n"
     },
     "targets": [
       "go"
@@ -2785,13 +2785,13 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "r",
+              "name": "rr",
               "type": "float",
               "help": "the r",
               "presence": "optional"
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -2803,11 +2803,11 @@
               "name": "pick",
               "members": [
                 {
-                  "name": "r",
+                  "name": "rr",
                   "when": "non_empty"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -2821,7 +2821,7 @@
     "expect": {
       "exit_code": 1,
       "stdout_equals": "",
-      "stderr_equals": "error: command \"cmd\": constraint \"pick\" member '--r' declares when: \"non_empty\", which needs a string or a collection; '--r' is a float\n"
+      "stderr_equals": "error: command \"cmd\": constraint \"pick\" member '--rr' declares when: \"non_empty\", which needs a string or a collection; '--rr' is a float\n"
     },
     "targets": [
       "typescript"
@@ -2841,19 +2841,19 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "a",
+              "name": "aa",
               "type": "str",
               "help": "the a",
               "presence": "optional"
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
             },
             {
-              "name": "c",
+              "name": "cc",
               "type": "str",
               "help": "the c",
               "presence": "optional"
@@ -2865,10 +2865,10 @@
               "name": "inner",
               "members": [
                 {
-                  "name": "a"
+                  "name": "aa"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             },
@@ -2881,7 +2881,7 @@
                   "when": "present"
                 },
                 {
-                  "name": "c"
+                  "name": "cc"
                 }
               ]
             }
@@ -2912,19 +2912,19 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "a",
+              "name": "aa",
               "type": "str",
               "help": "the a",
               "presence": "optional"
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
             },
             {
-              "name": "c",
+              "name": "cc",
               "type": "str",
               "help": "the c",
               "presence": "optional"
@@ -2934,8 +2934,8 @@
             {
               "type": "requires",
               "name": "dep",
-              "flag": "a",
-              "depends_on": "b"
+              "flag": "aa",
+              "depends_on": "bb"
             },
             {
               "type": "at_least_one",
@@ -2945,7 +2945,7 @@
                   "name": "dep"
                 },
                 {
-                  "name": "c"
+                  "name": "cc"
                 }
               ]
             }
@@ -2976,19 +2976,19 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "a",
+              "name": "aa",
               "type": "str",
               "help": "the a",
               "presence": "optional"
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
             },
             {
-              "name": "c",
+              "name": "cc",
               "type": "str",
               "help": "the c",
               "presence": "optional"
@@ -3003,7 +3003,7 @@
                   "name": "second"
                 },
                 {
-                  "name": "a"
+                  "name": "aa"
                 }
               ]
             },
@@ -3015,7 +3015,7 @@
                   "name": "first"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -3046,13 +3046,13 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "a",
+              "name": "aa",
               "type": "str",
               "help": "the a",
               "presence": "optional"
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -3067,7 +3067,7 @@
                   "name": "loop"
                 },
                 {
-                  "name": "a"
+                  "name": "aa"
                 }
               ]
             }
@@ -3098,13 +3098,13 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "a",
+              "name": "aa",
               "type": "str",
               "help": "the a",
               "presence": "optional"
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -3116,11 +3116,11 @@
               "name": "pick",
               "members": [
                 {
-                  "name": "a",
+                  "name": "aa",
                   "when": "tru"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -3134,7 +3134,7 @@
     "expect": {
       "exit_code": 1,
       "stdout_equals": "",
-      "stderr_equals": "error: Member \"a\": when must be \"present\", \"true\" or \"non_empty\", got 'tru'\n"
+      "stderr_equals": "error: Member \"aa\": when must be \"present\", \"true\" or \"non_empty\", got 'tru'\n"
     },
     "skip_schema_validation": true,
     "targets": [
@@ -3179,13 +3179,13 @@
               ]
             },
             {
-              "name": "a",
+              "name": "aa",
               "type": "str",
               "help": "the a",
               "presence": "optional"
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -3197,10 +3197,10 @@
               "name": "subject",
               "members": [
                 {
-                  "name": "a"
+                  "name": "aa"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -3212,10 +3212,10 @@
       "cmd",
       "--via",
       "sms",
-      "--a",
-      "x",
-      "--b",
-      "y"
+      "--aa",
+      "xx",
+      "--bb",
+      "yy"
     ],
     "expect": {
       "exit_code": 0,
@@ -3261,7 +3261,7 @@
               ]
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -3276,7 +3276,7 @@
                   "name": "subject"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -3309,13 +3309,13 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "a",
+              "name": "aa",
               "type": "str",
               "help": "the a",
               "presence": "optional"
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -3330,7 +3330,7 @@
                   "name": "nope"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             },
@@ -3338,9 +3338,9 @@
               "type": "all_or_none",
               "name": "other",
               "members": [
-                "a",
+                "aa",
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -3374,13 +3374,13 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "a",
+              "name": "aa",
               "type": "str",
               "help": "the a",
               "presence": "optional"
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -3395,7 +3395,7 @@
                   "name": "nope"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             },
@@ -3403,9 +3403,9 @@
               "type": "all_or_none",
               "name": "other",
               "members": [
-                "a",
+                "aa",
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -3439,13 +3439,13 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "a",
+              "name": "aa",
               "type": "str",
               "help": "the a",
               "presence": "optional"
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -3457,7 +3457,7 @@
               "name": "lonely",
               "members": [
                 {
-                  "name": "a"
+                  "name": "aa"
                 }
               ]
             },
@@ -3465,9 +3465,9 @@
               "type": "all_or_none",
               "name": "other",
               "members": [
-                "a",
+                "aa",
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -3501,13 +3501,13 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "a",
+              "name": "aa",
               "type": "str",
               "help": "the a",
               "presence": "optional"
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -3519,7 +3519,7 @@
               "name": "lonely",
               "members": [
                 {
-                  "name": "a"
+                  "name": "aa"
                 }
               ]
             },
@@ -3527,9 +3527,9 @@
               "type": "all_or_none",
               "name": "other",
               "members": [
-                "a",
+                "aa",
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -3563,13 +3563,13 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "a",
+              "name": "aa",
               "type": "str",
               "help": "the a",
               "presence": "optional"
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -3609,13 +3609,13 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "a",
+              "name": "aa",
               "type": "str",
               "help": "the a",
               "presence": "required"
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -3627,10 +3627,10 @@
               "name": "pair",
               "members": [
                 {
-                  "name": "a"
+                  "name": "aa"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             },
@@ -3667,26 +3667,26 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "s",
+              "name": "ss",
               "type": "str",
               "help": "the s",
               "presence": "optional"
             },
             {
-              "name": "t",
+              "name": "tt",
               "type": "bool",
               "help": "the t",
               "presence": "default",
               "default": false
             },
             {
-              "name": "a",
+              "name": "aa",
               "type": "str",
               "help": "the a",
               "presence": "required"
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -3696,8 +3696,8 @@
             {
               "type": "implies",
               "name": "ii",
-              "flag": "s",
-              "implies": "t",
+              "flag": "ss",
+              "implies": "tt",
               "value": true
             },
             {
@@ -3705,10 +3705,10 @@
               "name": "pair",
               "members": [
                 {
-                  "name": "a"
+                  "name": "aa"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -3722,7 +3722,7 @@
     "expect": {
       "exit_code": 1,
       "stdout_equals": "",
-      "stderr_equals": "error: command \"cmd\": constraint \"pair\" member '--a' declares presence=\"required\": a member the invocation must always supply leaves the constraint nothing to decide\n"
+      "stderr_equals": "error: command \"cmd\": constraint \"pair\" member '--aa' declares presence=\"required\": a member the invocation must always supply leaves the constraint nothing to decide\n"
     },
     "targets": [
       "python"
@@ -3742,19 +3742,19 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "s",
+              "name": "ss",
               "type": "str",
               "help": "the s",
               "presence": "optional"
             },
             {
-              "name": "a",
+              "name": "aa",
               "type": "str",
               "help": "the a",
               "presence": "required"
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -3764,18 +3764,18 @@
             {
               "type": "requires",
               "name": "rr",
-              "flag": "s",
-              "depends_on": "s"
+              "flag": "ss",
+              "depends_on": "ss"
             },
             {
               "type": "all_or_none",
               "name": "pair",
               "members": [
                 {
-                  "name": "a"
+                  "name": "aa"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -3789,7 +3789,7 @@
     "expect": {
       "exit_code": 1,
       "stdout_equals": "",
-      "stderr_equals": "error: command \"cmd\": constraint \"pair\" member '--a' declares presence=\"required\": a member the invocation must always supply leaves the constraint nothing to decide\n"
+      "stderr_equals": "error: command \"cmd\": constraint \"pair\" member '--aa' declares presence=\"required\": a member the invocation must always supply leaves the constraint nothing to decide\n"
     },
     "targets": [
       "python"
@@ -3809,26 +3809,26 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "s",
+              "name": "ss",
               "type": "str",
               "help": "the s",
               "presence": "optional"
             },
             {
-              "name": "t",
+              "name": "tt",
               "type": "bool",
               "help": "the t",
               "presence": "default",
               "default": false
             },
             {
-              "name": "a",
+              "name": "aa",
               "type": "str",
               "help": "the a",
               "presence": "required"
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -3838,8 +3838,8 @@
             {
               "type": "implies",
               "name": "ii",
-              "flag": "s",
-              "implies": "t",
+              "flag": "ss",
+              "implies": "tt",
               "value": true
             },
             {
@@ -3847,10 +3847,10 @@
               "name": "pair",
               "members": [
                 {
-                  "name": "a"
+                  "name": "aa"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -3864,7 +3864,7 @@
     "expect": {
       "exit_code": 1,
       "stdout_equals": "",
-      "stderr_equals": "error: command \"cmd\": constraint \"pair\" member '--a' declares Required(): a member the invocation must always supply leaves the constraint nothing to decide\n"
+      "stderr_equals": "error: command \"cmd\": constraint \"pair\" member '--aa' declares Required(): a member the invocation must always supply leaves the constraint nothing to decide\n"
     },
     "targets": [
       "go"
@@ -3884,19 +3884,19 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "s",
+              "name": "ss",
               "type": "str",
               "help": "the s",
               "presence": "optional"
             },
             {
-              "name": "a",
+              "name": "aa",
               "type": "str",
               "help": "the a",
               "presence": "required"
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -3906,18 +3906,18 @@
             {
               "type": "requires",
               "name": "rr",
-              "flag": "s",
-              "depends_on": "s"
+              "flag": "ss",
+              "depends_on": "ss"
             },
             {
               "type": "all_or_none",
               "name": "pair",
               "members": [
                 {
-                  "name": "a"
+                  "name": "aa"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -3931,7 +3931,7 @@
     "expect": {
       "exit_code": 1,
       "stdout_equals": "",
-      "stderr_equals": "error: command \"cmd\": constraint \"pair\" member '--a' declares Required(): a member the invocation must always supply leaves the constraint nothing to decide\n"
+      "stderr_equals": "error: command \"cmd\": constraint \"pair\" member '--aa' declares Required(): a member the invocation must always supply leaves the constraint nothing to decide\n"
     },
     "targets": [
       "go"
@@ -3951,26 +3951,26 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "s",
+              "name": "ss",
               "type": "str",
               "help": "the s",
               "presence": "optional"
             },
             {
-              "name": "t",
+              "name": "tt",
               "type": "bool",
               "help": "the t",
               "presence": "default",
               "default": false
             },
             {
-              "name": "a",
+              "name": "aa",
               "type": "str",
               "help": "the a",
               "presence": "required"
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -3980,8 +3980,8 @@
             {
               "type": "implies",
               "name": "ii",
-              "flag": "s",
-              "implies": "t",
+              "flag": "ss",
+              "implies": "tt",
               "value": true
             },
             {
@@ -3989,10 +3989,10 @@
               "name": "pair",
               "members": [
                 {
-                  "name": "a"
+                  "name": "aa"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -4006,7 +4006,7 @@
     "expect": {
       "exit_code": 1,
       "stdout_equals": "",
-      "stderr_equals": "error: command \"cmd\": constraint \"pair\" member '--a' declares presence: \"required\": a member the invocation must always supply leaves the constraint nothing to decide\n"
+      "stderr_equals": "error: command \"cmd\": constraint \"pair\" member '--aa' declares presence: \"required\": a member the invocation must always supply leaves the constraint nothing to decide\n"
     },
     "targets": [
       "typescript"
@@ -4026,19 +4026,19 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "s",
+              "name": "ss",
               "type": "str",
               "help": "the s",
               "presence": "optional"
             },
             {
-              "name": "a",
+              "name": "aa",
               "type": "str",
               "help": "the a",
               "presence": "required"
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -4048,18 +4048,18 @@
             {
               "type": "requires",
               "name": "rr",
-              "flag": "s",
-              "depends_on": "s"
+              "flag": "ss",
+              "depends_on": "ss"
             },
             {
               "type": "all_or_none",
               "name": "pair",
               "members": [
                 {
-                  "name": "a"
+                  "name": "aa"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -4073,7 +4073,7 @@
     "expect": {
       "exit_code": 1,
       "stdout_equals": "",
-      "stderr_equals": "error: command \"cmd\": constraint \"pair\" member '--a' declares presence: \"required\": a member the invocation must always supply leaves the constraint nothing to decide\n"
+      "stderr_equals": "error: command \"cmd\": constraint \"pair\" member '--aa' declares presence: \"required\": a member the invocation must always supply leaves the constraint nothing to decide\n"
     },
     "targets": [
       "typescript"
@@ -4114,10 +4114,10 @@
           "constraints": [
             {
               "type": "all_or_none",
-              "name": "a",
+              "name": "aa",
               "members": [
                 {
-                  "name": "c"
+                  "name": "cc"
                 },
                 {
                   "name": "f1"
@@ -4126,10 +4126,10 @@
             },
             {
               "type": "all_or_none",
-              "name": "b",
+              "name": "bb",
               "members": [
                 {
-                  "name": "c"
+                  "name": "cc"
                 },
                 {
                   "name": "f2"
@@ -4138,10 +4138,10 @@
             },
             {
               "type": "all_or_none",
-              "name": "c",
+              "name": "cc",
               "members": [
                 {
-                  "name": "b"
+                  "name": "bb"
                 },
                 {
                   "name": "f3"
@@ -4158,7 +4158,7 @@
     "expect": {
       "exit_code": 1,
       "stdout_equals": "",
-      "stderr_equals": "error: command \"cmd\": constraints form a cycle: b -> c -> b\n"
+      "stderr_equals": "error: command \"cmd\": constraints form a cycle: bb -> cc -> bb\n"
     }
   },
   {
@@ -4196,10 +4196,10 @@
           "constraints": [
             {
               "type": "all_or_none",
-              "name": "a",
+              "name": "aa",
               "members": [
                 {
-                  "name": "b"
+                  "name": "bb"
                 },
                 {
                   "name": "f1"
@@ -4208,10 +4208,10 @@
             },
             {
               "type": "all_or_none",
-              "name": "b",
+              "name": "bb",
               "members": [
                 {
-                  "name": "c"
+                  "name": "cc"
                 },
                 {
                   "name": "f2"
@@ -4220,10 +4220,10 @@
             },
             {
               "type": "all_or_none",
-              "name": "c",
+              "name": "cc",
               "members": [
                 {
-                  "name": "b"
+                  "name": "bb"
                 },
                 {
                   "name": "f3"
@@ -4240,7 +4240,7 @@
     "expect": {
       "exit_code": 1,
       "stdout_equals": "",
-      "stderr_equals": "error: command \"cmd\": constraints form a cycle: b -> c -> b\n"
+      "stderr_equals": "error: command \"cmd\": constraints form a cycle: bb -> cc -> bb\n"
     }
   },
   {
@@ -4273,7 +4273,7 @@
               ]
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -4288,7 +4288,7 @@
                   "name": "file"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -4319,13 +4319,13 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "a",
+              "name": "aa",
               "type": "str",
               "help": "the a",
               "presence": "optional"
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -4337,10 +4337,10 @@
               "name": "pair",
               "members": [
                 {
-                  "name": "a"
+                  "name": "aa"
                 },
                 {
-                  "name": "a"
+                  "name": "aa"
                 }
               ]
             }
@@ -4354,7 +4354,7 @@
     "expect": {
       "exit_code": 1,
       "stdout_equals": "",
-      "stderr_equals": "error: command \"cmd\": constraint \"pair\" declares member \"a\" twice\n"
+      "stderr_equals": "error: command \"cmd\": constraint \"pair\" declares member \"aa\" twice\n"
     }
   },
   {
@@ -4371,7 +4371,7 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -4395,7 +4395,7 @@
                   "name": "switch"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -4429,7 +4429,7 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -4454,7 +4454,7 @@
                   "when": "non_empty"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -4488,7 +4488,7 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -4512,7 +4512,7 @@
                   "name": "switch"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -4546,7 +4546,7 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -4571,7 +4571,7 @@
                   "when": "non_empty"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -4605,7 +4605,7 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -4629,7 +4629,7 @@
                   "name": "switch"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -4663,7 +4663,7 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -4688,7 +4688,7 @@
                   "when": "non_empty"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }

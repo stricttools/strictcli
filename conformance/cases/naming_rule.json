@@ -1,0 +1,725 @@
+[
+  {
+    "name": "naming rule: an uppercase command name is refused",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "Run",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok"
+        }
+      ]
+    },
+    "argv": [
+      "run"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command name \"Run\" must be lowercase kebab-case of at least two characters: [a-z][a-z0-9]*(-[a-z0-9]+)*"
+    }
+  },
+  {
+    "name": "naming rule: an underscored command name is refused",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "run_all",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok"
+        }
+      ]
+    },
+    "argv": [
+      "run"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command name \"run_all\" must be lowercase kebab-case of at least two characters: [a-z][a-z0-9]*(-[a-z0-9]+)*"
+    }
+  },
+  {
+    "name": "naming rule: a one-letter command name is refused",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "r",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok"
+        }
+      ]
+    },
+    "argv": [
+      "run"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command name \"r\" must be lowercase kebab-case of at least two characters: [a-z][a-z0-9]*(-[a-z0-9]+)*"
+    }
+  },
+  {
+    "name": "naming rule: a trailing hyphen is refused",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "run-",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok"
+        }
+      ]
+    },
+    "argv": [
+      "run"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command name \"run-\" must be lowercase kebab-case of at least two characters: [a-z][a-z0-9]*(-[a-z0-9]+)*"
+    }
+  },
+  {
+    "name": "naming rule: a doubled hyphen is refused",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "run--all",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok"
+        }
+      ]
+    },
+    "argv": [
+      "run"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command name \"run--all\" must be lowercase kebab-case of at least two characters: [a-z][a-z0-9]*(-[a-z0-9]+)*"
+    }
+  },
+  {
+    "name": "naming rule: the fix: a kebab-case command name of two or more characters",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "run-all",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok"
+        }
+      ]
+    },
+    "argv": [
+      "run-all"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "ok"
+    }
+  },
+  {
+    "name": "naming rule: a group name follows the rule",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "run",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok"
+        }
+      ],
+      "groups": [
+        {
+          "name": "Db",
+          "help": "a group",
+          "commands": [
+            {
+              "name": "list",
+              "help": "a command",
+              "effect": "read_only",
+              "handler_prints": "ok"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "run"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: group name \"Db\" must be lowercase kebab-case of at least two characters: [a-z][a-z0-9]*(-[a-z0-9]+)*"
+    }
+  },
+  {
+    "name": "naming rule: the fix: a kebab-case group name",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "run",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok"
+        }
+      ],
+      "groups": [
+        {
+          "name": "db-tools",
+          "help": "a group",
+          "commands": [
+            {
+              "name": "list",
+              "help": "a command",
+              "effect": "read_only",
+              "handler_prints": "ok"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "db-tools",
+      "list"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "ok"
+    }
+  },
+  {
+    "name": "naming rule: a deprecated command name follows the rule",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "run",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok"
+        },
+        {
+          "name": "Old",
+          "help": "old",
+          "deprecated": true,
+          "deprecated_message": "gone"
+        }
+      ]
+    },
+    "argv": [
+      "run"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: deprecated command name \"Old\" must be lowercase kebab-case of at least two characters: [a-z][a-z0-9]*(-[a-z0-9]+)*"
+    }
+  },
+  {
+    "name": "naming rule: a one-letter long flag is refused",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "run",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "m",
+              "type": "str",
+              "help": "a value",
+              "presence": "optional"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "run"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: flag name \"m\" must be lowercase kebab-case of at least two characters: [a-z][a-z0-9]*(-[a-z0-9]+)*"
+    }
+  },
+  {
+    "name": "naming rule: an uppercase long flag is refused",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "run",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "F",
+              "type": "str",
+              "help": "a value",
+              "presence": "optional"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "run"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: flag name \"F\" must be lowercase kebab-case of at least two characters: [a-z][a-z0-9]*(-[a-z0-9]+)*"
+    }
+  },
+  {
+    "name": "naming rule: an underscored long flag is refused",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "run",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "message_file",
+              "type": "str",
+              "help": "a value",
+              "presence": "optional"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "run"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: flag name \"message_file\" must be lowercase kebab-case of at least two characters: [a-z][a-z0-9]*(-[a-z0-9]+)*"
+    }
+  },
+  {
+    "name": "naming rule: a global flag follows the rule",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "run",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok"
+        }
+      ],
+      "global_flags": [
+        {
+          "name": "Config_Dir",
+          "type": "str",
+          "help": "a value",
+          "presence": "optional"
+        }
+      ]
+    },
+    "argv": [
+      "run"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: flag name \"Config_Dir\" must be lowercase kebab-case of at least two characters: [a-z][a-z0-9]*(-[a-z0-9]+)*"
+    }
+  },
+  {
+    "name": "naming rule: the fix: a long name with a one-letter uppercase short form",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "run",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "file={message-file}",
+          "flags": [
+            {
+              "name": "message-file",
+              "type": "str",
+              "help": "a value",
+              "presence": "optional",
+              "short": "F"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "run",
+      "-F",
+      "notes.txt"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "file=notes.txt"
+    }
+  },
+  {
+    "name": "naming rule: a short form that is not a letter is refused",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "run",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "message",
+              "type": "str",
+              "help": "a value",
+              "presence": "optional",
+              "short": "1"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "run"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: Flag \"message\": short form \"1\" must be one ASCII letter (a-z or A-Z)"
+    }
+  },
+  {
+    "name": "naming rule: a two-character short form is refused",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "run",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "message",
+              "type": "str",
+              "help": "a value",
+              "presence": "optional",
+              "short": "mm"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "run"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: Flag \"message\": short form \"mm\" must be one ASCII letter (a-z or A-Z)"
+    }
+  },
+  {
+    "name": "naming rule: the fix: a one-letter lowercase short form",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "run",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "m={message}",
+          "flags": [
+            {
+              "name": "message",
+              "type": "str",
+              "help": "a value",
+              "presence": "optional",
+              "short": "m"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "run",
+      "-m",
+      "hi"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "m=hi"
+    }
+  },
+  {
+    "name": "naming rule: a command named help is refused",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "help",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok"
+        }
+      ]
+    },
+    "argv": [
+      "run"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command name \"help\" is reserved: help and version are framework commands at every level of the command tree"
+    }
+  },
+  {
+    "name": "naming rule: a command named version is refused inside a group",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "run",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok"
+        }
+      ],
+      "groups": [
+        {
+          "name": "tools",
+          "help": "a group",
+          "commands": [
+            {
+              "name": "version",
+              "help": "a command",
+              "effect": "read_only",
+              "handler_prints": "ok"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "run"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command name \"version\" is reserved: help and version are framework commands at every level of the command tree"
+    }
+  },
+  {
+    "name": "naming rule: a group named help is refused",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "run",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok"
+        }
+      ],
+      "groups": [
+        {
+          "name": "help",
+          "help": "a group",
+          "commands": [
+            {
+              "name": "list",
+              "help": "a command",
+              "effect": "read_only",
+              "handler_prints": "ok"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "run"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: group name \"help\" is reserved: help and version are framework commands at every level of the command tree"
+    }
+  },
+  {
+    "name": "naming rule: a nested group named version is refused",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "run",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok"
+        }
+      ],
+      "groups": [
+        {
+          "name": "tools",
+          "help": "a group",
+          "groups": [
+            {
+              "name": "version",
+              "help": "sub",
+              "commands": [
+                {
+                  "name": "list",
+                  "help": "a command",
+                  "effect": "read_only",
+                  "handler_prints": "ok"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "run"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: group name \"version\" is reserved: help and version are framework commands at every level of the command tree"
+    }
+  },
+  {
+    "name": "naming rule: a deprecated command named help is refused",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "run",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok"
+        },
+        {
+          "name": "help",
+          "help": "old",
+          "deprecated": true,
+          "deprecated_message": "gone"
+        }
+      ]
+    },
+    "argv": [
+      "run"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: deprecated command name \"help\" is reserved: help and version are framework commands at every level of the command tree"
+    }
+  },
+  {
+    "name": "naming rule: the fix: a name other than help or version",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "run",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok"
+        }
+      ],
+      "groups": [
+        {
+          "name": "versions",
+          "help": "a group",
+          "commands": [
+            {
+              "name": "show-help",
+              "help": "a command",
+              "effect": "read_only",
+              "handler_prints": "ok"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "versions",
+      "show-help"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "ok"
+    }
+  }
+]

@@ -159,7 +159,7 @@
     "expect": {
       "exit_code": 1,
       "stdout_equals": "",
-      "stderr_equals": "error: command \"cmd\": update resource \"DNS_Record\" must match [a-z][a-z0-9-]*\n"
+      "stderr_equals": "error: command \"cmd\": update resource \"DNS_Record\" must be lowercase kebab-case of at least two characters: [a-z][a-z0-9]*(-[a-z0-9]+)*\n"
     }
   },
   {

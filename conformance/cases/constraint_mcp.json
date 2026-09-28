@@ -38,7 +38,7 @@
               ]
             }
           ],
-          "handler_prints": "x"
+          "handler_prints": "xx"
         }
       ]
     },
@@ -178,7 +178,7 @@
               ]
             }
           ],
-          "handler_prints": "x"
+          "handler_prints": "xx"
         }
       ]
     },
@@ -356,7 +356,7 @@
               ]
             }
           ],
-          "handler_prints": "x"
+          "handler_prints": "xx"
         }
       ]
     },
@@ -470,19 +470,19 @@
           "effect": "read_only",
           "flags": [
             {
-              "name": "a",
+              "name": "aa",
               "type": "str",
               "help": "the a",
               "presence": "optional"
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
             },
             {
-              "name": "c",
+              "name": "cc",
               "type": "str",
               "help": "the c",
               "presence": "optional"
@@ -494,10 +494,10 @@
               "name": "inner",
               "members": [
                 {
-                  "name": "a"
+                  "name": "aa"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             },
@@ -509,12 +509,12 @@
                   "name": "inner"
                 },
                 {
-                  "name": "c"
+                  "name": "cc"
                 }
               ]
             }
           ],
-          "handler_prints": "x"
+          "handler_prints": "xx"
         }
       ]
     },
@@ -542,20 +542,20 @@
               "tools": [
                 {
                   "name": "pick",
-                  "description": "pick it\n\nConstraints (enforced at call time):\n  at least one of: a, b\n  at least one of: (a or b), c",
+                  "description": "pick it\n\nConstraints (enforced at call time):\n  at least one of: aa, bb\n  at least one of: (aa or bb), cc",
                   "effect": "read_only",
                   "inputSchema": {
                     "type": "object",
                     "properties": {
-                      "a": {
+                      "aa": {
                         "type": "string",
                         "description": "the a"
                       },
-                      "b": {
+                      "bb": {
                         "type": "string",
                         "description": "the b"
                       },
-                      "c": {
+                      "cc": {
                         "type": "string",
                         "description": "the c"
                       }
@@ -566,12 +566,12 @@
                         "anyOf": [
                           {
                             "required": [
-                              "a"
+                              "aa"
                             ]
                           },
                           {
                             "required": [
-                              "b"
+                              "bb"
                             ]
                           }
                         ]
@@ -580,17 +580,17 @@
                         "anyOf": [
                           {
                             "required": [
-                              "a"
+                              "aa"
                             ]
                           },
                           {
                             "required": [
-                              "b"
+                              "bb"
                             ]
                           },
                           {
                             "required": [
-                              "c"
+                              "cc"
                             ]
                           }
                         ]
@@ -631,7 +631,7 @@
           "effect": "read_only",
           "flags": [
             {
-              "name": "a",
+              "name": "aa",
               "type": "str",
               "help": "the a",
               "presence": "optional"
@@ -644,7 +644,7 @@
               "default": false
             },
             {
-              "name": "c",
+              "name": "cc",
               "type": "str",
               "help": "the c",
               "presence": "optional"
@@ -656,7 +656,7 @@
               "name": "inner",
               "members": [
                 {
-                  "name": "a"
+                  "name": "aa"
                 },
                 {
                   "name": "all",
@@ -672,12 +672,12 @@
                   "name": "inner"
                 },
                 {
-                  "name": "c"
+                  "name": "cc"
                 }
               ]
             }
           ],
-          "handler_prints": "x"
+          "handler_prints": "xx"
         }
       ]
     },
@@ -705,12 +705,12 @@
               "tools": [
                 {
                   "name": "pick",
-                  "description": "pick it\n\nConstraints (enforced at call time):\n  all or none of: a, all -- not expressed in the schema: the \"true\" and \"non_empty\" selectors\n  at least one of: (a with all), c -- not expressed in the schema: the \"true\" and \"non_empty\" selectors",
+                  "description": "pick it\n\nConstraints (enforced at call time):\n  all or none of: aa, all -- not expressed in the schema: the \"true\" and \"non_empty\" selectors\n  at least one of: (aa with all), cc -- not expressed in the schema: the \"true\" and \"non_empty\" selectors",
                   "effect": "read_only",
                   "inputSchema": {
                     "type": "object",
                     "properties": {
-                      "a": {
+                      "aa": {
                         "type": "string",
                         "description": "the a"
                       },
@@ -718,7 +718,7 @@
                         "type": "boolean",
                         "description": "the all"
                       },
-                      "c": {
+                      "cc": {
                         "type": "string",
                         "description": "the c"
                       }
@@ -727,13 +727,13 @@
                     "anyOf": [
                       {
                         "required": [
-                          "a",
+                          "aa",
                           "all"
                         ]
                       },
                       {
                         "required": [
-                          "c"
+                          "cc"
                         ]
                       }
                     ],
@@ -807,7 +807,7 @@
               ]
             }
           ],
-          "handler_prints": "x"
+          "handler_prints": "xx"
         }
       ]
     },
@@ -903,19 +903,19 @@
           "effect": "read_only",
           "flags": [
             {
-              "name": "a",
+              "name": "aa",
               "type": "str",
               "help": "the a",
               "presence": "optional"
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
             },
             {
-              "name": "c",
+              "name": "cc",
               "type": "str",
               "help": "the c",
               "presence": "optional"
@@ -927,10 +927,10 @@
               "name": "inner",
               "members": [
                 {
-                  "name": "a"
+                  "name": "aa"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             },
@@ -942,12 +942,12 @@
                   "name": "inner"
                 },
                 {
-                  "name": "c"
+                  "name": "cc"
                 }
               ]
             }
           ],
-          "handler_prints": "x"
+          "handler_prints": "xx"
         }
       ]
     },
@@ -975,20 +975,20 @@
               "tools": [
                 {
                   "name": "pick",
-                  "description": "pick it\n\nConstraints (enforced at call time):\n  at least one of: a, b\n  all or none of: (a or b), c -- not expressed in the schema: the nested grouping",
+                  "description": "pick it\n\nConstraints (enforced at call time):\n  at least one of: aa, bb\n  all or none of: (aa or bb), cc -- not expressed in the schema: the nested grouping",
                   "effect": "read_only",
                   "inputSchema": {
                     "type": "object",
                     "properties": {
-                      "a": {
+                      "aa": {
                         "type": "string",
                         "description": "the a"
                       },
-                      "b": {
+                      "bb": {
                         "type": "string",
                         "description": "the b"
                       },
-                      "c": {
+                      "cc": {
                         "type": "string",
                         "description": "the c"
                       }
@@ -997,12 +997,12 @@
                     "anyOf": [
                       {
                         "required": [
-                          "a"
+                          "aa"
                         ]
                       },
                       {
                         "required": [
-                          "b"
+                          "bb"
                         ]
                       }
                     ],
@@ -1107,7 +1107,7 @@
               "value": false
             }
           ],
-          "handler_prints": "x"
+          "handler_prints": "xx"
         }
       ]
     },
@@ -1242,7 +1242,7 @@
               ]
             }
           ],
-          "handler_prints": "x"
+          "handler_prints": "xx"
         }
       ]
     },
@@ -1385,7 +1385,7 @@
               ]
             }
           ],
-          "handler_prints": "x"
+          "handler_prints": "xx"
         }
       ]
     },
@@ -1713,9 +1713,9 @@
     ],
     "protocol_script": [
       {
-        "send": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/call\",\"params\":{\"name\":\"purge\",\"arguments\":{\"targets\":[\"a\"]},\"_meta\":{\"io.modelcontextprotocol/protocolVersion\":\"2026-07-28\",\"io.modelcontextprotocol/clientCapabilities\":{}}}}",
+        "send": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/call\",\"params\":{\"name\":\"purge\",\"arguments\":{\"targets\":[\"aa\"]},\"_meta\":{\"io.modelcontextprotocol/protocolVersion\":\"2026-07-28\",\"io.modelcontextprotocol/clientCapabilities\":{}}}}",
         "expect_line": {
-          "equals": "targets=a"
+          "equals": "targets=aa"
         }
       },
       {

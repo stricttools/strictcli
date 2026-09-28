@@ -2098,7 +2098,7 @@
           "effect": "read_only",
           "flags": [
             {
-              "name": "a",
+              "name": "aa",
               "type": "str",
               "help": "the a",
               "presence": "optional"
@@ -2111,7 +2111,7 @@
               "default": false
             },
             {
-              "name": "c",
+              "name": "cc",
               "type": "str",
               "help": "the c",
               "presence": "optional"
@@ -2123,7 +2123,7 @@
               "name": "inner",
               "members": [
                 {
-                  "name": "a"
+                  "name": "aa"
                 },
                 {
                   "name": "all",
@@ -2139,7 +2139,7 @@
                   "name": "inner"
                 },
                 {
-                  "name": "c"
+                  "name": "cc"
                 }
               ]
             }
@@ -2155,11 +2155,11 @@
     "expect": {
       "exit_code": 1,
       "stdout_equals": "",
-      "stderr_equals": "error: constraint \"outer\": at least one of (--a with --all), --c is required\ntry 'myapp cmd --help'\n"
+      "stderr_equals": "error: constraint \"outer\": at least one of (--aa with --all), --cc is required\ntry 'myapp cmd --help'\n"
     }
   },
   {
-    "name": "constraints: a nested at-least-one renders (--a or --b) inside its parent's sentence",
+    "name": "constraints: a nested at-least-one renders (--aa or --bb) inside its parent's sentence",
     "app": {
       "name": "myapp",
       "version": "1.0.0",
@@ -2171,19 +2171,19 @@
           "effect": "read_only",
           "flags": [
             {
-              "name": "a",
+              "name": "aa",
               "type": "str",
               "help": "the a",
               "presence": "optional"
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
             },
             {
-              "name": "c",
+              "name": "cc",
               "type": "str",
               "help": "the c",
               "presence": "optional"
@@ -2195,10 +2195,10 @@
               "name": "inner",
               "members": [
                 {
-                  "name": "a"
+                  "name": "aa"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             },
@@ -2210,7 +2210,7 @@
                   "name": "inner"
                 },
                 {
-                  "name": "c"
+                  "name": "cc"
                 }
               ]
             }
@@ -2221,13 +2221,13 @@
     },
     "argv": [
       "cmd",
-      "--a",
-      "x"
+      "--aa",
+      "xx"
     ],
     "expect": {
       "exit_code": 1,
       "stdout_equals": "",
-      "stderr_equals": "error: constraint \"outer\": (--a or --b), --c must be used together\ntry 'myapp cmd --help'\n"
+      "stderr_equals": "error: constraint \"outer\": (--aa or --bb), --cc must be used together\ntry 'myapp cmd --help'\n"
     }
   },
   {
@@ -2354,19 +2354,19 @@
           "effect": "read_only",
           "flags": [
             {
-              "name": "a",
+              "name": "aa",
               "type": "str",
               "help": "the a",
               "presence": "optional"
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
             },
             {
-              "name": "c",
+              "name": "cc",
               "type": "str",
               "help": "the c",
               "presence": "optional"
@@ -2378,10 +2378,10 @@
               "name": "inner",
               "members": [
                 {
-                  "name": "a"
+                  "name": "aa"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             },
@@ -2393,23 +2393,23 @@
                   "name": "inner"
                 },
                 {
-                  "name": "c"
+                  "name": "cc"
                 }
               ]
             }
           ],
-          "handler_prints": "a={a}"
+          "handler_prints": "a={aa}"
         }
       ]
     },
     "argv": [
       "cmd",
-      "--a",
-      "x"
+      "--aa",
+      "xx"
     ],
     "expect": {
       "exit_code": 0,
-      "stdout_equals": "a=x\n",
+      "stdout_equals": "a=xx\n",
       "stderr_equals": ""
     }
   },
@@ -2513,7 +2513,7 @@
               ]
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -2528,7 +2528,7 @@
                   "name": "transport"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -2542,7 +2542,7 @@
     "expect": {
       "exit_code": 1,
       "stdout_equals": "",
-      "stderr_equals": "error: constraint \"pick\": at least one of --transport, --b is required\ntry 'myapp cmd --help'\n"
+      "stderr_equals": "error: constraint \"pick\": at least one of --transport, --bb is required\ntry 'myapp cmd --help'\n"
     }
   },
   {
@@ -2578,7 +2578,7 @@
               ]
             },
             {
-              "name": "b",
+              "name": "bb",
               "type": "str",
               "help": "the b",
               "presence": "optional"
@@ -2593,7 +2593,7 @@
                   "name": "transport"
                 },
                 {
-                  "name": "b"
+                  "name": "bb"
                 }
               ]
             }
@@ -2742,7 +2742,7 @@
           "command": "purge",
           "kwargs": {
             "targets": [
-              "a"
+              "aa"
             ]
           }
         }
@@ -2753,7 +2753,7 @@
     ],
     "expect": {
       "exit_code": 0,
-      "stdout_equals": "targets=a\ncall ok: purge\n",
+      "stdout_equals": "targets=aa\ncall ok: purge\n",
       "stderr_equals": ""
     }
   }

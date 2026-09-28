@@ -694,7 +694,7 @@
               "elect_by": "selector-token",
               "choices": [
                 {
-                  "name": "a",
+                  "name": "aa",
                   "help": "the first way",
                   "flags": [
                     {
@@ -705,11 +705,11 @@
                       "elect_by": "selector-token",
                       "choices": [
                         {
-                          "name": "x",
+                          "name": "xx",
                           "help": "the x sub-way"
                         },
                         {
-                          "name": "y",
+                          "name": "yy",
                           "help": "the y sub-way"
                         }
                       ]
@@ -717,7 +717,7 @@
                   ]
                 },
                 {
-                  "name": "b",
+                  "name": "bb",
                   "help": "the second way",
                   "flags": [
                     {

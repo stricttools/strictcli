@@ -276,7 +276,7 @@
               "elect_by": "selector-token",
               "choices": [
                 {
-                  "name": "a",
+                  "name": "aa",
                   "help": "the first way",
                   "flags": [
                     {
@@ -288,7 +288,7 @@
                   ]
                 },
                 {
-                  "name": "b",
+                  "name": "bb",
                   "help": "the second way",
                   "flags": [
                     {
@@ -300,7 +300,7 @@
                   ]
                 },
                 {
-                  "name": "c",
+                  "name": "cc",
                   "help": "the third way"
                 }
               ]
@@ -313,13 +313,13 @@
     "argv": [
       "run",
       "--mode",
-      "c",
+      "cc",
       "--depth",
       "2"
     ],
     "expect": {
       "exit_code": 1,
-      "stderr_equals": "error: flag '--depth' is only valid under '--mode a' or '--mode b', but '--mode c' was elected\ntry 'myapp run --help'"
+      "stderr_equals": "error: flag '--depth' is only valid under '--mode aa' or '--mode bb', but '--mode cc' was elected\ntry 'myapp run --help'"
     }
   },
   {
@@ -543,7 +543,7 @@
       "--visibility",
       "internal",
       "--description",
-      "x"
+      "xx"
     ],
     "expect": {
       "exit_code": 1,

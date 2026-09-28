@@ -85,7 +85,7 @@
           "handler_prints": "ok",
           "flags": [
             {
-              "name": "a",
+              "name": "aa",
               "help": "the first level",
               "presence": "required",
               "elect_by": "selector-token",
@@ -95,7 +95,7 @@
                   "help": "the first choice",
                   "flags": [
                     {
-                      "name": "b",
+                      "name": "bb",
                       "help": "the second level",
                       "presence": "required",
                       "elect_by": "selector-token",
@@ -105,7 +105,7 @@
                           "help": "the second choice",
                           "flags": [
                             {
-                              "name": "c",
+                              "name": "cc",
                               "help": "the third level",
                               "presence": "required",
                               "elect_by": "selector-token",
@@ -161,7 +161,7 @@
     ],
     "expect": {
       "exit_code": 0,
-      "stdout_equals": "myapp send -- send one notification\n\nFlags:\n  --a <choice>                             the first level [required]\n    one                                    the first choice\n      --b <choice>                         the second level [required]\n        two                                the second choice\n          --c <choice>                     the third level [required]\n            three                          the third choice\n              --deepest <str>              the deepest flag of all [optional]\n            four                           the fourth choice\n        five                               the fifth choice\n    six                                    the sixth choice\n  --dry-run-report, --no-dry-run-report    print what would be sent [default: false]"
+      "stdout_equals": "myapp send -- send one notification\n\nFlags:\n  --aa <choice>                            the first level [required]\n    one                                    the first choice\n      --bb <choice>                        the second level [required]\n        two                                the second choice\n          --cc <choice>                    the third level [required]\n            three                          the third choice\n              --deepest <str>              the deepest flag of all [optional]\n            four                           the fourth choice\n        five                               the fifth choice\n    six                                    the sixth choice\n  --dry-run-report, --no-dry-run-report    print what would be sent [default: false]"
     }
   },
   {

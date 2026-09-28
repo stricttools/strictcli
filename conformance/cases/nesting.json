@@ -667,8 +667,8 @@
       "help": "test app",
       "commands": [
         {
-          "name": "version",
-          "help": "show version",
+          "name": "status",
+          "help": "show status",
           "effect": "read_only",
           "handler_prints": "1.0.0"
         }
