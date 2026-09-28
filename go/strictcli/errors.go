@@ -1120,6 +1120,42 @@ func errChecksTomlDependsOnUnknown(name string, dep string) error {
 	return fmt.Errorf("checks.toml: check %q: depends_on references unknown check %q", name, dep)
 }
 
+func errChecksTomlDescriptionInvalid(name string) error {
+	return fmt.Errorf("checks.toml: check %q: \"description\" must be a non-empty single-line string", name)
+}
+
+func errChecksTomlSubjectInvalid(name string) error {
+	return fmt.Errorf("checks.toml: check %q: \"subject\" must be lowercase letters, digits, and hyphens, and not \"manifest\"", name)
+}
+
+func errChecksTomlHooksMustBeTable() error {
+	return fmt.Errorf("checks.toml: [hooks] must be a table")
+}
+
+func errChecksTomlInvalidHookName(name string) error {
+	return fmt.Errorf("checks.toml: invalid hook name %q (must match [a-z][a-z0-9-]*)", name)
+}
+
+func errChecksTomlHookMustBeTable(name string) error {
+	return fmt.Errorf("checks.toml: hook %q must be a table", name)
+}
+
+func errChecksTomlHookUnknownField(name string, field string) error {
+	return fmt.Errorf("checks.toml: hook %q: unknown field %q", name, field)
+}
+
+func errChecksTomlHookMissingTag(name string) error {
+	return fmt.Errorf("checks.toml: hook %q: missing required field \"tag\"", name)
+}
+
+func errChecksTomlHookTagInvalid(name string) error {
+	return fmt.Errorf("checks.toml: hook %q: \"tag\" must be a non-empty string", name)
+}
+
+func errChecksTomlHookTagExpr(name string, err error) error {
+	return fmt.Errorf("checks.toml: hook %q: %s", name, err)
+}
+
 // ---------------------------------------------------------------------------
 // check_runner.go
 // ---------------------------------------------------------------------------
@@ -1142,6 +1178,35 @@ func errCheckOutcomeNotMinted(name string) string {
 
 func errInvalidGlobPattern(pattern string, err error) error {
 	return fmt.Errorf("invalid glob pattern %q: %s", pattern, err)
+}
+
+// ---------------------------------------------------------------------------
+// check_values.go, check_cmd.go — check values and hook selections (parse-time)
+//
+// The check commands report these through the error writer: a value the app's
+// check value resolver may not return, and a --hook the invocation cannot use.
+// ---------------------------------------------------------------------------
+
+func errCheckValueInvalid(name string, value string) string {
+	return fmt.Sprintf("check %q: the check value resolver returned %q; a check value is one of error, warn, off", name, value)
+}
+
+func errCheckValueSourceEmpty(name string, value string) string {
+	return fmt.Sprintf("check %q: the check value resolver returned %q with an empty source; name where the value came from", name, value)
+}
+
+func errCheckValueAboveSeverity(name string, value string, source string, severity string) string {
+	return fmt.Sprintf("check %q: the check value resolver returned %q (from %s) for a check registered as %q; a check value may lower a check's severity, never raise it", name, value, source, severity)
+}
+
+const errCheckHookCombined = "--hook cannot be combined with --all, --tag, or --name"
+
+func errCheckHookUnknown(hook string, declared string) string {
+	return fmt.Sprintf("unknown hook %q; declared hooks: %s", hook, declared)
+}
+
+func errCheckHookNoneDeclared(hook string) string {
+	return fmt.Sprintf("unknown hook %q; checks.toml declares no hooks", hook)
 }
 
 // ---------------------------------------------------------------------------

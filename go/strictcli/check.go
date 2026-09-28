@@ -90,7 +90,7 @@ type checkProblem struct {
 // impl that returns something a reporter did not mint).
 type CheckOutcome struct {
 	minted   bool           // proves this value came from a reporter
-	kind     string         // "passed", "skipped", "found"
+	kind     string         // "passed", "skipped", "found", "off"
 	message  string         // pass/found message or skip reason
 	problems []checkProblem // accumulated problems (only for kind == "found")
 	// notes is an informational, verdict-inert channel: notes are recorded
@@ -219,13 +219,16 @@ func (r *ErrorReporter) Error(text string) {
 
 // deriveStatus maps a minted CheckOutcome to a display/verdict label.
 // found + any error-severity problem => "fail"; found + only warns => "warn";
-// passed => "pass"; skipped => "skip".
+// passed => "pass"; skipped => "skip"; off (the check's resolved value turned
+// it off) => "off".
 func deriveStatus(o CheckOutcome) string {
 	switch o.kind {
 	case "passed":
 		return "pass"
 	case "skipped":
 		return "skip"
+	case "off":
+		return "off"
 	case "found":
 		for _, p := range o.problems {
 			if p.severity == "error" {
@@ -257,6 +260,10 @@ type checkDef struct {
 	needsNetwork bool
 	dependsOn    []string
 	scope        string // optional, defaults to ""
+	// description and subject are the two metadata fields every checks.toml
+	// declaration carries; empty on provider-sourced checks, which have no TOML.
+	description string
+	subject     string
 	// impl is the wrapped runner installed at registration time. It constructs
 	// the appropriate reporter and invokes the user's function. nil until
 	// registered via RegisterErrorCheck/RegisterWarnCheck.
@@ -275,8 +282,15 @@ var knownCheckFields = map[string]bool{
 	"pure":          true,
 	"needs_network": true,
 	"depends_on":    true,
+	"description":   true,
+	"subject":       true,
 	"scope":         true,
 }
+
+// checkSubjectRe is a check's options subject: the subject file its option
+// belongs in, named in the options model's value-name grammar. "manifest"
+// names the options directory's own manifest and is refused separately.
+var checkSubjectRe = regexp.MustCompile(`^[a-z0-9-]+$`)
 
 // addCheckDef inserts a check definition into the registry, rejecting
 // duplicate names as a hard error. It maintains checkOrder in sorted order so
@@ -304,49 +318,117 @@ func (a *App) resortCheckOrder() {
 
 // loadChecksToml reads a checks.toml file from disk and parses it.
 func loadChecksToml(path string) (string, map[string]*checkDef, []string, error) {
+	appName, defs, names, _, err := loadChecksTomlWithHooks(path)
+	return appName, defs, names, err
+}
+
+// loadChecksTomlWithHooks is loadChecksToml plus the declared hooks.
+func loadChecksTomlWithHooks(path string) (string, map[string]*checkDef, []string, map[string]string, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return "", nil, nil, err
+		return "", nil, nil, nil, err
 	}
-	return parseChecksToml(data)
+	return parseChecksTomlWithHooks(data)
 }
 
 // parseChecksToml parses TOML bytes and returns the app name, validated check definitions,
-// and check names in sorted order (for deterministic listing).
+// and check names in sorted order (for deterministic listing). The declared
+// hooks are validated too; parseChecksTomlWithHooks returns them.
 func parseChecksToml(data []byte) (string, map[string]*checkDef, []string, error) {
+	appName, defs, names, _, err := parseChecksTomlWithHooks(data)
+	return appName, defs, names, err
+}
+
+// parseCheckHooks validates the [hooks.<name>] tables: each names one check
+// selection (a tag expression) that --hook <name> runs.
+func parseCheckHooks(raw interface{}) (map[string]string, error) {
+	table, ok := raw.(map[string]interface{})
+	if !ok {
+		return nil, errChecksTomlHooksMustBeTable()
+	}
+	names := make([]string, 0, len(table))
+	for name := range table {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	hooks := make(map[string]string, len(names))
+	for _, name := range names {
+		if !identifierRe.MatchString(name) {
+			return nil, errChecksTomlInvalidHookName(name)
+		}
+		fields, ok := table[name].(map[string]interface{})
+		if !ok {
+			return nil, errChecksTomlHookMustBeTable(name)
+		}
+		var unknown []string
+		for field := range fields {
+			if field != "tag" {
+				unknown = append(unknown, field)
+			}
+		}
+		if len(unknown) > 0 {
+			sort.Strings(unknown)
+			return nil, errChecksTomlHookUnknownField(name, unknown[0])
+		}
+		tagRaw, ok := fields["tag"]
+		if !ok {
+			return nil, errChecksTomlHookMissingTag(name)
+		}
+		tag, ok := tagRaw.(string)
+		if !ok || strings.TrimSpace(tag) == "" {
+			return nil, errChecksTomlHookTagInvalid(name)
+		}
+		if _, err := matchTagExpr(tag, map[string]bool{}); err != nil {
+			return nil, errChecksTomlHookTagExpr(name, err)
+		}
+		hooks[name] = tag
+	}
+	return hooks, nil
+}
+
+// parseChecksTomlWithHooks is parseChecksToml plus the declared hooks (hook
+// name -> tag expression).
+func parseChecksTomlWithHooks(data []byte) (string, map[string]*checkDef, []string, map[string]string, error) {
 	// Unmarshal into a generic map for strict validation
 	rawPtr, err := tomledit.Unmarshal[map[string]interface{}](data)
 	if err != nil {
-		return "", nil, nil, errChecksTomlParse(err)
+		return "", nil, nil, nil, errChecksTomlParse(err)
 	}
 	raw := *rawPtr
 
-	// Validate top-level keys: only "app" and "checks" are allowed
+	// Validate top-level keys: only "app", "checks" and "hooks" are allowed
 	for key := range raw {
-		if key != "checks" && key != "app" {
-			return "", nil, nil, errChecksTomlUnknownTopLevelKey(key)
+		if key != "checks" && key != "app" && key != "hooks" {
+			return "", nil, nil, nil, errChecksTomlUnknownTopLevelKey(key)
 		}
 	}
 
 	// Validate required "app" field
 	appRaw, ok := raw["app"]
 	if !ok {
-		return "", nil, nil, errChecksTomlMissingApp()
+		return "", nil, nil, nil, errChecksTomlMissingApp()
 	}
 	appName, ok := appRaw.(string)
 	if !ok || appName == "" {
-		return "", nil, nil, errChecksTomlAppNotString()
+		return "", nil, nil, nil, errChecksTomlAppNotString()
+	}
+
+	hooks := map[string]string{}
+	if hooksRaw, ok := raw["hooks"]; ok {
+		if hooks, err = parseCheckHooks(hooksRaw); err != nil {
+			return "", nil, nil, nil, err
+		}
 	}
 
 	// Handle missing [checks] section gracefully — a file with just app = "x" is valid
 	checksRaw, ok := raw["checks"]
 	if !ok {
-		return appName, make(map[string]*checkDef), nil, nil
+		return appName, make(map[string]*checkDef), nil, hooks, nil
 	}
 
 	checksMap, ok := checksRaw.(map[string]interface{})
 	if !ok {
-		return "", nil, nil, errChecksTomlChecksMustBeTable()
+		return "", nil, nil, nil, errChecksTomlChecksMustBeTable()
 	}
 
 	result := make(map[string]*checkDef, len(checksMap))
@@ -363,18 +445,18 @@ func parseChecksToml(data []byte) (string, map[string]*checkDef, []string, error
 
 		// Validate check name
 		if !identifierRe.MatchString(name) {
-			return "", nil, nil, errChecksTomlInvalidCheckName(name)
+			return "", nil, nil, nil, errChecksTomlInvalidCheckName(name)
 		}
 
 		fields, ok := val.(map[string]interface{})
 		if !ok {
-			return "", nil, nil, errChecksTomlCheckMustBeTable(name)
+			return "", nil, nil, nil, errChecksTomlCheckMustBeTable(name)
 		}
 
 		// Reject unknown fields
 		for field := range fields {
 			if !knownCheckFields[field] {
-				return "", nil, nil, errChecksTomlUnknownField(name, field)
+				return "", nil, nil, nil, errChecksTomlUnknownField(name, field)
 			}
 		}
 
@@ -382,39 +464,61 @@ func parseChecksToml(data []byte) (string, map[string]*checkDef, []string, error
 
 		// Parse tags (required, []string — may be empty)
 		if err := parseCheckTags(name, fields, def); err != nil {
-			return "", nil, nil, err
+			return "", nil, nil, nil, err
 		}
 
 		// Parse severity (required, "error" or "warn")
 		if err := parseCheckSeverity(name, fields, def); err != nil {
-			return "", nil, nil, err
+			return "", nil, nil, nil, err
 		}
 
 		// Parse fast (required, bool)
 		if err := parseCheckBool(name, fields, "fast", &def.fast); err != nil {
-			return "", nil, nil, err
+			return "", nil, nil, nil, err
 		}
 
 		// Parse pure (required, bool)
 		if err := parseCheckBool(name, fields, "pure", &def.pure); err != nil {
-			return "", nil, nil, err
+			return "", nil, nil, nil, err
 		}
 
 		// Parse needs_network (required, bool)
 		if err := parseCheckBool(name, fields, "needs_network", &def.needsNetwork); err != nil {
-			return "", nil, nil, err
+			return "", nil, nil, nil, err
 		}
 
 		// Parse depends_on (required, []string, can be empty)
 		if err := parseCheckDependsOn(name, fields, def); err != nil {
-			return "", nil, nil, err
+			return "", nil, nil, nil, err
 		}
+
+		// Parse description (required, one line of prose)
+		descRaw, ok := fields["description"]
+		if !ok {
+			return "", nil, nil, nil, errChecksTomlMissingField(name, "description")
+		}
+		desc, ok := descRaw.(string)
+		if !ok || strings.TrimSpace(desc) == "" || strings.ContainsAny(desc, "\n\r") {
+			return "", nil, nil, nil, errChecksTomlDescriptionInvalid(name)
+		}
+		def.description = desc
+
+		// Parse subject (required, the options subject file its option belongs in)
+		subjectRaw, ok := fields["subject"]
+		if !ok {
+			return "", nil, nil, nil, errChecksTomlMissingField(name, "subject")
+		}
+		subject, ok := subjectRaw.(string)
+		if !ok || !checkSubjectRe.MatchString(subject) || subject == "manifest" {
+			return "", nil, nil, nil, errChecksTomlSubjectInvalid(name)
+		}
+		def.subject = subject
 
 		// Parse scope (optional, string, default "")
 		if scopeRaw, ok := fields["scope"]; ok {
 			scopeStr, ok := scopeRaw.(string)
 			if !ok {
-				return "", nil, nil, errChecksTomlScopeMustBeString(name, scopeRaw)
+				return "", nil, nil, nil, errChecksTomlScopeMustBeString(name, scopeRaw)
 			}
 			def.scope = scopeStr
 		}
@@ -427,12 +531,12 @@ func parseChecksToml(data []byte) (string, map[string]*checkDef, []string, error
 		def := result[name]
 		for _, dep := range def.dependsOn {
 			if _, ok := result[dep]; !ok {
-				return "", nil, nil, errChecksTomlDependsOnUnknown(name, dep)
+				return "", nil, nil, nil, errChecksTomlDependsOnUnknown(name, dep)
 			}
 		}
 	}
 
-	return appName, result, names, nil
+	return appName, result, names, hooks, nil
 }
 
 // parseCheckTags extracts and validates the "tags" field.

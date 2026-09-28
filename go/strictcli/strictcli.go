@@ -433,6 +433,10 @@ type App struct {
 	checkDefs           map[string]*checkDef
 	checkOrder          []string // sorted check names for deterministic listing
 	checkContextFactory func() CheckContext
+	// checkValueResolver assigns each check its value (SetCheckValueResolver);
+	// checkHooks holds the named hook selections checks.toml declares.
+	checkValueResolver func(name string) (CheckValue, bool)
+	checkHooks         map[string]string
 
 	// Check-provider hook state. Providers populate the registry lazily at the
 	// first registry read (materialization), memoized per cwd. See
@@ -2143,13 +2147,14 @@ func NewApp(name, version, help string, opts ...AppOption) *App {
 		if _, err := os.Stat(a.checksPath); err != nil {
 			panic(errChecksPathNotExist(a.checksPath))
 		}
-		appName, defs, order, err := loadChecksToml(a.checksPath)
+		appName, defs, order, hooks, err := loadChecksTomlWithHooks(a.checksPath)
 		if err != nil {
 			panic(err.Error())
 		}
 		if appName != a.Name {
 			panic(errChecksTomlAppMismatch(appName, a.Name))
 		}
+		a.checkHooks = hooks
 		a.enableChecks()
 		for _, name := range order {
 			if err := a.addCheckDef(defs[name]); err != nil {
@@ -2157,13 +2162,14 @@ func NewApp(name, version, help string, opts ...AppOption) *App {
 			}
 		}
 	} else if len(a.checksEmbed) > 0 {
-		appName, defs, order, err := parseChecksToml(a.checksEmbed)
+		appName, defs, order, hooks, err := parseChecksTomlWithHooks(a.checksEmbed)
 		if err != nil {
 			panic(err.Error())
 		}
 		if appName != a.Name {
 			panic(errChecksTomlAppMismatch(appName, a.Name))
 		}
+		a.checkHooks = hooks
 		a.enableChecks()
 		for _, name := range order {
 			if err := a.addCheckDef(defs[name]); err != nil {

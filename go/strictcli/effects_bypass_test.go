@@ -321,9 +321,9 @@ func TestObserveAllowlistBreadthWarnsOnSingleTokenPrefixes(t *testing.T) {
 	if !strings.Contains(r.Stdout, "EVERY 'git' invocation becomes an observe") {
 		t.Fatalf("expected the breadth warning, got %q", r.Stdout)
 	}
-	// A warning, not an error: --ignore-warnings clears it.
-	if r2 := app.Test([]string{"check", "--name", "observe-allowlist-breadth", "--ignore-warnings"}); r2.ExitCode != 0 {
-		t.Fatalf("expected --ignore-warnings to clear the warning, got %d", r2.ExitCode)
+	// A warning, not an error: failing-checks passes it.
+	if r2 := app.Test([]string{"failing-checks", "--name", "observe-allowlist-breadth"}); r2.ExitCode != 0 {
+		t.Fatalf("expected failing-checks to pass the warning, got %d", r2.ExitCode)
 	}
 }
 
@@ -521,8 +521,8 @@ func TestConsequentialGrantAgreementWarnsOnAProcMutateGrant(t *testing.T) {
 	if !strings.Contains(r.Stdout, want) {
 		t.Fatalf("expected %q, got %q", want, r.Stdout)
 	}
-	if r2 := app.Test([]string{"check", "--name", "consequential-grant-agreement", "--ignore-warnings"}); r2.ExitCode != 0 {
-		t.Fatalf("expected --ignore-warnings to clear the warning, got %d", r2.ExitCode)
+	if r2 := app.Test([]string{"failing-checks", "--name", "consequential-grant-agreement"}); r2.ExitCode != 0 {
+		t.Fatalf("expected failing-checks to pass the warning, got %d", r2.ExitCode)
 	}
 }
 

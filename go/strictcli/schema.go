@@ -558,8 +558,8 @@ func sortedStringMapKeys(m map[string]string) []string {
 // exactly the set of always-emitted facts: `name`, `help`, `version`,
 // `schema_version`, `project_id`, `effect`, `presence`, `value_schema` on every
 // entry that has one, a choice object's `name` and `help`, a choice record's
-// `value`, a config field's `help` and `required`, and a check's six mandatory
-// fields.
+// `value`, a config field's `help` and `required`, and a check's mandatory
+// fields (every field of its checks.toml declaration except `scope`).
 //
 // `default` on a flag or arg has no baseline either: since presence became the
 // authority it is emitted exactly when `presence` is `"default"`, and a `null`
@@ -784,7 +784,9 @@ func dumpSchemaObject(app *App) *schemaObject {
 				set("fast", def.fast).
 				set("pure", def.pure).
 				set("needs_network", def.needsNetwork).
-				set("depends_on", def.dependsOn)
+				set("depends_on", def.dependsOn).
+				set("description", def.description).
+				set("subject", def.subject)
 			if def.scope != "" {
 				entry.set("scope", def.scope)
 			}

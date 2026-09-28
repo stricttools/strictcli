@@ -6,12 +6,11 @@ import (
 	"strings"
 )
 
-// RunChecksOptions configures which checks to run and how to handle results.
+// RunChecksOptions configures which checks to run.
 type RunChecksOptions struct {
-	TagExpr        string
-	NameGlob       string
-	RunAll         bool
-	IgnoreWarnings bool
+	TagExpr  string
+	NameGlob string
+	RunAll   bool
 	// PureOnly enables the purity partition: only checks that are declared pure
 	// AND do not need network access are executed; every other selected check is
 	// returned in the impureListed name list (see RunChecks) without being run
@@ -23,10 +22,14 @@ type RunChecksOptions struct {
 // RunChecks executes checks programmatically and returns the executed results,
 // the ordered names of checks left unexecuted by the purity partition, the exit
 // code, and any error. The exit code follows the same rules as the check
-// command: 0 for all pass (or warn with IgnoreWarnings), 1 for any
-// failure/warn/cascade-skip. impureListed is empty unless opts.PureOnly is set;
-// listed checks contribute nothing to the exit code (a consumer renders them as
-// e.g. "would run: <name> (impure)").
+// command: 0 when every executed check passes or skips, 1 for any
+// failure/warn/cascade-skip; the error-level failures alone are the results
+// whose Gated() is true. The check value resolver (SetCheckValueResolver)
+// applies exactly as it does in the check command: a check it turns off is
+// returned with the status "off", and a value it may not return is an error.
+// impureListed is empty unless opts.PureOnly is set; listed checks contribute
+// nothing to the exit code (a consumer renders them as e.g.
+// "would run: <name> (impure)").
 func (a *App) RunChecks(ctx CheckContext, opts RunChecksOptions) ([]CheckRunResult, []string, int, error) {
 	if !a.checksEnabled {
 		return nil, nil, 0, errChecksNotEnabled()
@@ -53,7 +56,12 @@ func (a *App) RunChecks(ctx CheckContext, opts RunChecksOptions) ([]CheckRunResu
 		return nil, nil, 0, err
 	}
 
-	results, impureListed, exitCode := runChecks(a.checkDefs, order, ctx, opts.IgnoreWarnings, opts.PureOnly)
+	values, err := a.resolveCheckValues(order)
+	if err != nil {
+		return nil, nil, 0, err
+	}
+
+	results, impureListed, exitCode := runChecks(a.checkDefs, order, ctx, values, opts.PureOnly)
 	return results, impureListed, exitCode, nil
 }
 
@@ -73,6 +81,7 @@ func FormatCheckResults(results []CheckRunResult, verbose bool) string {
 		"fail": "FAIL",
 		"warn": "WARN",
 		"skip": "SKIP",
+		"off":  "OFF",
 	}
 
 	// Compute dynamic name column width
@@ -84,7 +93,7 @@ func FormatCheckResults(results []CheckRunResult, verbose bool) string {
 	}
 
 	var b strings.Builder
-	var passed, failed, warned, skipped int
+	var passed, failed, warned, skipped, off int
 	for i, r := range results {
 		status := r.Status()
 		switch status {
@@ -96,6 +105,8 @@ func FormatCheckResults(results []CheckRunResult, verbose bool) string {
 			warned++
 		case "skip":
 			skipped++
+		case "off":
+			off++
 		}
 		label := statusLabel[status]
 		if label == "" {
@@ -130,6 +141,11 @@ func FormatCheckResults(results []CheckRunResult, verbose bool) string {
 	if verbose {
 		fmt.Fprintf(&b, "\n\n%d passed / %d failed / %d warned / %d skipped",
 			passed, failed, warned, skipped)
+		// A check turned off by its resolved value is counted only when there
+		// is one, so a run without the resolver reads as it always has.
+		if off > 0 {
+			fmt.Fprintf(&b, " / %d off", off)
+		}
 	}
 	return b.String()
 }

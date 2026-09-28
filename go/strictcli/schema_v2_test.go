@@ -743,6 +743,8 @@ func TestTheChecksBlockExcludesProviderSourcedNames(t *testing.T) {
 	os.WriteFile(checksPath, []byte(`app = "testapp"
 
 [checks.declared-one]
+description = "Checks declared-one"
+subject = "quality"
 tags = ["pre-release"]
 severity = "error"
 fast = true

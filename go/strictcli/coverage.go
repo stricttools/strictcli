@@ -176,9 +176,10 @@ func (a *App) testCoverageProvider() []CheckSpec {
 		}
 
 		// Compare against command surface (exclude the framework-injected
-		// check command -- it is not a user command)
+		// check commands -- they are not user commands)
 		allCommands := a.collectAllCommandPaths()
 		delete(allCommands, "check")
+		delete(allCommands, "failing-checks")
 		var uncovered []string
 		for cmd := range allCommands {
 			if !covered[cmd] {

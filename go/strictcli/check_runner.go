@@ -21,8 +21,8 @@ type CheckRunResult struct {
 	DurationMs int64
 }
 
-// Status returns the derived label ("pass", "fail", "warn", "skip") used for
-// display and JSON output.
+// Status returns the derived label ("pass", "fail", "warn", "skip", "off")
+// used for display and JSON output.
 func (r CheckRunResult) Status() string {
 	return deriveStatus(r.Outcome)
 }
@@ -34,7 +34,7 @@ func (r CheckRunResult) Gated() bool {
 }
 
 // Warned reports whether the outcome carries only warn-severity problems
-// (derived WARN). The --ignore-warnings predicate keys on this.
+// (derived WARN).
 func (r CheckRunResult) Warned() bool {
 	return r.Status() == "warn"
 }
@@ -266,8 +266,14 @@ func runCheckImpl(name string, impl func(CheckContext) CheckOutcome, ctx CheckCo
 
 // runChecks executes checks in order, skipping dependents of failed checks.
 // Returns results, the ordered names of checks that were NOT executed because of
-// the purity partition (empty unless pureOnly is set), and an exit code (0 = all
-// pass or all warn with ignoreWarnings, 1 otherwise).
+// the purity partition (empty unless pureOnly is set), and an exit code (0 when
+// every executed check passes or skips, 1 otherwise -- a warning counts).
+//
+// values maps a check name to its resolved value (see resolveCheckValues); a
+// check absent from it runs as registered. A check resolved "off" does not run:
+// it gets an OFF row, cascades nothing, and leaves the exit code alone. A check
+// resolved "warn" runs and has its failures reported as warnings, so it never
+// blocks its dependents.
 //
 // Purity partition (pureOnly): when set, only checks that are pure and do not
 // need network EXECUTE; every other selected check is listed (its name appended
@@ -277,7 +283,7 @@ func runCheckImpl(name string, impl func(CheckContext) CheckOutcome, ctx CheckCo
 // either. The failed-dependency cascade takes precedence over the listing: a
 // genuinely failed (executed) pure dependency still cascade-skips its dependents
 // as usual.
-func runChecks(checkDefs map[string]*checkDef, order []string, ctx CheckContext, ignoreWarnings bool, pureOnly bool) ([]CheckRunResult, []string, int) {
+func runChecks(checkDefs map[string]*checkDef, order []string, ctx CheckContext, values map[string]resolvedCheckValue, pureOnly bool) ([]CheckRunResult, []string, int) {
 	results := make([]CheckRunResult, 0, len(order))
 	// Track checks whose dependents should be cascade-skipped. Cascade keys
 	// ONLY on a derived FAIL (Gated: an error-severity problem present) or a
@@ -294,6 +300,16 @@ func runChecks(checkDefs map[string]*checkDef, order []string, ctx CheckContext,
 	exitCode := 0
 	for _, name := range order {
 		def := checkDefs[name]
+		value := def.severity
+		if v, ok := values[name]; ok {
+			value = v.value
+			// A check its resolved value turned off never runs, whatever its
+			// dependencies did: it is shown as off, with where that came from.
+			if value == "off" {
+				results = append(results, CheckRunResult{Name: name, Outcome: mintCheckOff(v.source)})
+				continue
+			}
+		}
 
 		// Check if any dependency failed -- skip if so
 		skipReason := ""
@@ -343,6 +359,12 @@ func runChecks(checkDefs map[string]*checkDef, order []string, ctx CheckContext,
 		if !aborted && !o.minted {
 			panic(errCheckOutcomeNotMinted(name))
 		}
+		// A check resolved to warn reports its failures as warnings. A broken
+		// check fails whatever its value: resolving it to warn lowers what its
+		// findings mean, not what an abort means.
+		if value == "warn" && !aborted {
+			o = mintAsWarnings(o)
+		}
 		r := CheckRunResult{Name: name, Outcome: o, DurationMs: durationMs}
 		results = append(results, r)
 
@@ -352,10 +374,8 @@ func runChecks(checkDefs map[string]*checkDef, order []string, ctx CheckContext,
 			exitCode = 1
 		case r.Warned():
 			// Warn satisfies the dependency (no cascade), but still makes
-			// the run exit non-zero unless warnings are ignored.
-			if !ignoreWarnings {
-				exitCode = 1
-			}
+			// the run exit non-zero.
+			exitCode = 1
 			// pass / skip: not a failure, no cascade, no exit code change.
 		}
 	}

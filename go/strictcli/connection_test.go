@@ -275,6 +275,8 @@ const connChecksToml = `
 app = "myapp"
 
 [checks.db-reachable]
+description = "Checks db-reachable"
+subject = "quality"
 tags = ["db"]
 severity = "error"
 fast = true

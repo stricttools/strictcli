@@ -445,7 +445,7 @@ func TestPayloadEmissionAcceptsAMatchingValue(t *testing.T) {
 func TestCheckPayloadSatisfiesItsDeclaration(t *testing.T) {
 	dir := t.TempDir()
 	tomlPath := filepath.Join(dir, "checks.toml")
-	body := "app = \"t\"\n\n[checks.one]\ntags = [\"a\"]\nseverity = \"error\"\n" +
+	body := "app = \"t\"\n\n[checks.one]\ndescription = \"Checks one\"\nsubject = \"quality\"\ntags = [\"a\"]\nseverity = \"error\"\n" +
 		"fast = true\npure = true\nneeds_network = false\ndepends_on = []\n"
 	if err := os.WriteFile(tomlPath, []byte(body), 0o644); err != nil {
 		t.Fatal(err)

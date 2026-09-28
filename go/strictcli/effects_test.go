@@ -1478,7 +1478,7 @@ func TestCheckCommandDropsTheReservedFlagsAndFiltersGlobalCollisions(t *testing.
 	if names["all"] {
 		t.Fatal("a candidate colliding with a global flag must be filtered out")
 	}
-	for _, kept := range []string{"tag", "name", "list", "ignore-warnings"} {
+	for _, kept := range []string{"tag", "name", "hook", "list"} {
 		if !names[kept] {
 			t.Fatalf("check lost its %q flag", kept)
 		}

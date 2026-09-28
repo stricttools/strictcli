@@ -95,6 +95,8 @@ func TestLoadChecksToml_Valid(t *testing.T) {
 app = "testapp"
 
 [checks.lint-code]
+description = "Checks lint-code"
+subject = "quality"
 tags = ["code", "fast"]
 severity = "error"
 fast = true
@@ -103,6 +105,8 @@ needs_network = false
 depends_on = []
 
 [checks.check-deps]
+description = "Checks check-deps"
+subject = "quality"
 tags = ["deps"]
 severity = "warn"
 fast = false
@@ -187,6 +191,8 @@ func TestLoadChecksToml_MissingField(t *testing.T) {
 			toml: `
 app = "testapp"
 [checks.foo]
+description = "Checks foo"
+subject = "quality"
 severity = "error"
 fast = true
 pure = true
@@ -200,6 +206,8 @@ depends_on = []
 			toml: `
 app = "testapp"
 [checks.foo]
+description = "Checks foo"
+subject = "quality"
 tags = ["a"]
 fast = true
 pure = true
@@ -213,6 +221,8 @@ depends_on = []
 			toml: `
 app = "testapp"
 [checks.foo]
+description = "Checks foo"
+subject = "quality"
 tags = ["a"]
 severity = "error"
 pure = true
@@ -226,6 +236,8 @@ depends_on = []
 			toml: `
 app = "testapp"
 [checks.foo]
+description = "Checks foo"
+subject = "quality"
 tags = ["a"]
 severity = "error"
 fast = true
@@ -239,6 +251,8 @@ depends_on = []
 			toml: `
 app = "testapp"
 [checks.foo]
+description = "Checks foo"
+subject = "quality"
 tags = ["a"]
 severity = "error"
 fast = true
@@ -252,6 +266,8 @@ depends_on = []
 			toml: `
 app = "testapp"
 [checks.foo]
+description = "Checks foo"
+subject = "quality"
 tags = ["a"]
 severity = "error"
 fast = true
@@ -288,6 +304,8 @@ func TestLoadChecksToml_WrongTypes(t *testing.T) {
 			toml: `
 app = "testapp"
 [checks.foo]
+description = "Checks foo"
+subject = "quality"
 tags = "not-an-array"
 severity = "error"
 fast = true
@@ -302,6 +320,8 @@ depends_on = []
 			toml: `
 app = "testapp"
 [checks.foo]
+description = "Checks foo"
+subject = "quality"
 tags = ["a"]
 severity = 42
 fast = true
@@ -316,6 +336,8 @@ depends_on = []
 			toml: `
 app = "testapp"
 [checks.foo]
+description = "Checks foo"
+subject = "quality"
 tags = ["a"]
 severity = "error"
 fast = "yes"
@@ -330,6 +352,8 @@ depends_on = []
 			toml: `
 app = "testapp"
 [checks.foo]
+description = "Checks foo"
+subject = "quality"
 tags = ["a"]
 severity = "critical"
 fast = true
@@ -361,6 +385,8 @@ func TestLoadChecksToml_UnknownFields(t *testing.T) {
 	path := writeToml(t, dir, `
 app = "testapp"
 [checks.foo]
+description = "Checks foo"
+subject = "quality"
 tags = ["a"]
 severity = "error"
 fast = true
@@ -383,6 +409,8 @@ func TestLoadChecksToml_UnknownTopLevelKey(t *testing.T) {
 	path := writeToml(t, dir, `
 app = "testapp"
 [checks.foo]
+description = "Checks foo"
+subject = "quality"
 tags = ["a"]
 severity = "error"
 fast = true
@@ -443,6 +471,8 @@ func TestLoadChecksToml_DependsOnValidation(t *testing.T) {
 	path := writeToml(t, dir, `
 app = "testapp"
 [checks.foo]
+description = "Checks foo"
+subject = "quality"
 tags = ["a"]
 severity = "error"
 fast = true
@@ -464,6 +494,8 @@ func TestLoadChecksToml_EmptyTags(t *testing.T) {
 	path := writeToml(t, dir, `
 app = "testapp"
 [checks.foo]
+description = "Checks foo"
+subject = "quality"
 tags = []
 severity = "error"
 fast = true
@@ -539,6 +571,8 @@ const validChecksToml = `
 app = "testapp"
 
 [checks.lint-code]
+description = "Checks lint-code"
+subject = "quality"
 tags = ["code", "fast"]
 severity = "error"
 fast = true
@@ -547,6 +581,8 @@ needs_network = false
 depends_on = []
 
 [checks.check-deps]
+description = "Checks check-deps"
+subject = "quality"
 tags = ["deps"]
 severity = "warn"
 fast = false
@@ -758,7 +794,7 @@ func TestRunChecks_SinglePass(t *testing.T) {
 	})
 
 	ctx := &testCheckContext{root: "/tmp/test"}
-	results, _, exitCode := runChecks(defs, []string{"check-a"}, ctx, false, false)
+	results, _, exitCode := runChecks(defs, []string{"check-a"}, ctx, nil, false)
 
 	if exitCode != 0 {
 		t.Fatalf("expected exit code 0, got %d", exitCode)
@@ -789,7 +825,7 @@ func TestRunChecks_SingleFail(t *testing.T) {
 	})
 
 	ctx := &testCheckContext{root: "/tmp/test"}
-	results, _, exitCode := runChecks(defs, []string{"check-a"}, ctx, false, false)
+	results, _, exitCode := runChecks(defs, []string{"check-a"}, ctx, nil, false)
 
 	if exitCode != 1 {
 		t.Fatalf("expected exit code 1, got %d", exitCode)
@@ -833,7 +869,7 @@ func TestRunChecks_DependencyChain_Pass(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	results, _, exitCode := runChecks(defs, order, ctx, false, false)
+	results, _, exitCode := runChecks(defs, order, ctx, nil, false)
 
 	if exitCode != 0 {
 		t.Fatalf("expected exit code 0, got %d", exitCode)
@@ -875,7 +911,7 @@ func TestRunChecks_DependencyFailure_Skip(t *testing.T) {
 
 	ctx := &testCheckContext{root: "/tmp/test"}
 	// Order: check-b first, then check-a
-	results, _, exitCode := runChecks(defs, []string{"check-b", "check-a"}, ctx, false, false)
+	results, _, exitCode := runChecks(defs, []string{"check-b", "check-a"}, ctx, nil, false)
 
 	if exitCode != 1 {
 		t.Fatalf("expected exit code 1, got %d", exitCode)
@@ -930,7 +966,7 @@ func TestRunChecks_TransitiveSkip(t *testing.T) {
 	})
 
 	ctx := &testCheckContext{root: "/tmp/test"}
-	results, _, exitCode := runChecks(defs, []string{"check-c", "check-b", "check-a"}, ctx, false, false)
+	results, _, exitCode := runChecks(defs, []string{"check-c", "check-b", "check-a"}, ctx, nil, false)
 
 	if exitCode != 1 {
 		t.Fatalf("expected exit code 1, got %d", exitCode)
@@ -1108,7 +1144,7 @@ func TestResolveCheckOrder_DependencyPullIn(t *testing.T) {
 	}
 }
 
-func TestRunChecks_WarnWithIgnoreWarnings(t *testing.T) {
+func TestRunChecks_WarnExitsNonzero(t *testing.T) {
 	defs := makeCheckDefs(map[string]struct {
 		tags      []string
 		severity  string
@@ -1127,36 +1163,10 @@ func TestRunChecks_WarnWithIgnoreWarnings(t *testing.T) {
 
 	ctx := &testCheckContext{root: "/tmp/test"}
 
-	// With ignoreWarnings=true, exit code should be 0
-	_, _, exitCode := runChecks(defs, []string{"check-a"}, ctx, true, false)
-	if exitCode != 0 {
-		t.Fatalf("expected exit code 0 with ignoreWarnings=true, got %d", exitCode)
-	}
-}
-
-func TestRunChecks_WarnWithoutIgnoreWarnings(t *testing.T) {
-	defs := makeCheckDefs(map[string]struct {
-		tags      []string
-		severity  string
-		dependsOn []string
-		impl      func(CheckContext) CheckOutcome
-	}{
-		"check-a": {
-			tags:      []string{"fast"},
-			severity:  "warn",
-			dependsOn: []string{},
-			impl: func(ctx CheckContext) CheckOutcome {
-				return warnOutcome("minor issue")
-			},
-		},
-	})
-
-	ctx := &testCheckContext{root: "/tmp/test"}
-
-	// With ignoreWarnings=false, exit code should be 1
-	_, _, exitCode := runChecks(defs, []string{"check-a"}, ctx, false, false)
+	// A warning makes the run exit 1.
+	_, _, exitCode := runChecks(defs, []string{"check-a"}, ctx, nil, false)
 	if exitCode != 1 {
-		t.Fatalf("expected exit code 1 with ignoreWarnings=false, got %d", exitCode)
+		t.Fatalf("expected exit code 1 for a warning, got %d", exitCode)
 	}
 }
 
@@ -1197,7 +1207,7 @@ func TestResolveCheckOrder_NoDependencies(t *testing.T) {
 func TestRunChecks_WarnDependency_RunsDependent(t *testing.T) {
 	// A warn satisfies a dependency: only FAIL (or cascade-skip) skips
 	// dependents. The warn still makes the run exit non-zero when
-	// ignoreWarnings=false, but the dependent must run.
+	// the warning makes the run exit 1, but the dependent must run.
 	aRan := false
 	defs := makeCheckDefs(map[string]struct {
 		tags      []string
@@ -1225,10 +1235,10 @@ func TestRunChecks_WarnDependency_RunsDependent(t *testing.T) {
 	})
 
 	ctx := &testCheckContext{root: "/tmp/test"}
-	results, _, exitCode := runChecks(defs, []string{"check-b", "check-a"}, ctx, false, false)
+	results, _, exitCode := runChecks(defs, []string{"check-b", "check-a"}, ctx, nil, false)
 
 	if exitCode != 1 {
-		t.Fatalf("expected exit code 1 (warn without ignoreWarnings), got %d", exitCode)
+		t.Fatalf("expected exit code 1 (a warning), got %d", exitCode)
 	}
 	if !aRan {
 		t.Fatal("expected check-a to run when dependency warned")
@@ -1276,10 +1286,10 @@ func TestRunChecks_WarnDependency_TransitiveDependentsRun(t *testing.T) {
 	})
 
 	ctx := &testCheckContext{root: "/tmp/test"}
-	results, _, exitCode := runChecks(defs, []string{"check-c", "check-b", "check-a"}, ctx, false, false)
+	results, _, exitCode := runChecks(defs, []string{"check-c", "check-b", "check-a"}, ctx, nil, false)
 
 	if exitCode != 1 {
-		t.Fatalf("expected exit code 1 (warn without ignoreWarnings), got %d", exitCode)
+		t.Fatalf("expected exit code 1 (a warning), got %d", exitCode)
 	}
 	if results[0].Status() != "warn" {
 		t.Fatalf("expected check-c warn, got %q", results[0].Status())
@@ -1292,7 +1302,7 @@ func TestRunChecks_WarnDependency_TransitiveDependentsRun(t *testing.T) {
 	}
 }
 
-func TestRunChecks_WarnDependency_RunsWhenIgnored(t *testing.T) {
+func TestRunChecks_WarnDependency_Runs(t *testing.T) {
 	defs := makeCheckDefs(map[string]struct {
 		tags      []string
 		severity  string
@@ -1318,10 +1328,10 @@ func TestRunChecks_WarnDependency_RunsWhenIgnored(t *testing.T) {
 	})
 
 	ctx := &testCheckContext{root: "/tmp/test"}
-	results, _, exitCode := runChecks(defs, []string{"check-b", "check-a"}, ctx, true, false)
+	results, _, exitCode := runChecks(defs, []string{"check-b", "check-a"}, ctx, nil, false)
 
-	if exitCode != 0 {
-		t.Fatalf("expected exit code 0 (warnings ignored), got %d", exitCode)
+	if exitCode != 1 {
+		t.Fatalf("expected exit code 1 (a warning), got %d", exitCode)
 	}
 	if results[0].Status() != "warn" {
 		t.Fatalf("expected check-b warn, got %q", results[0].Status())
@@ -1337,6 +1347,8 @@ const twoChecksToml = `
 app = "testapp"
 
 [checks.version-consistency]
+description = "Checks version-consistency"
+subject = "quality"
 tags = ["release"]
 severity = "error"
 fast = true
@@ -1345,6 +1357,8 @@ needs_network = false
 depends_on = []
 
 [checks.changelog-coverage]
+description = "Checks changelog-coverage"
+subject = "quality"
 tags = ["changelog", "pre-push"]
 severity = "error"
 fast = true
@@ -1725,7 +1739,7 @@ func TestCheckCommand_All_Verbose(t *testing.T) {
 	}
 }
 
-func TestCheckCommand_IgnoreWarnings(t *testing.T) {
+func TestCheckCommand_IgnoreWarningsIsGone(t *testing.T) {
 	checksPath := writeChecksFile(t, twoChecksToml)
 
 	app := NewApp("testapp", "1.0.0", "test app", WithChecks(checksPath))
@@ -1740,16 +1754,16 @@ func TestCheckCommand_IgnoreWarnings(t *testing.T) {
 		return &testCheckContext{root: emptyProjectRoot}
 	})
 
-	// Without --ignore-warnings, warn = exit 1
+	// A warning makes check exit 1: check is the full report.
 	r := app.Test([]string{"check", "--all"})
 	if r.ExitCode != 1 {
-		t.Fatalf("expected exit code 1 without --ignore-warnings, got %d", r.ExitCode)
+		t.Fatalf("expected exit code 1 for a warning, got %d", r.ExitCode)
 	}
 
-	// With --ignore-warnings, warn = exit 0
+	// The --ignore-warnings escape hatch no longer exists.
 	r = app.Test([]string{"check", "--all", "--ignore-warnings"})
-	if r.ExitCode != 0 {
-		t.Fatalf("expected exit code 0 with --ignore-warnings, got %d; stderr=%q", r.ExitCode, r.Stderr)
+	if r.ExitCode != 1 || !strings.Contains(r.Stderr, "--ignore-warnings") {
+		t.Fatalf("expected --ignore-warnings to be refused, got %d; stderr=%q", r.ExitCode, r.Stderr)
 	}
 }
 
@@ -1969,6 +1983,8 @@ func TestLoadChecksToml_MissingAppField(t *testing.T) {
 	dir := t.TempDir()
 	path := writeToml(t, dir, `
 [checks.foo]
+description = "Checks foo"
+subject = "quality"
 tags = ["a"]
 severity = "error"
 fast = true
@@ -1991,6 +2007,8 @@ func TestLoadChecksToml_AppFieldWrongType(t *testing.T) {
 	path := writeToml(t, dir, `
 app = 42
 [checks.foo]
+description = "Checks foo"
+subject = "quality"
 tags = ["a"]
 severity = "error"
 fast = true
@@ -2013,6 +2031,8 @@ func TestLoadChecksToml_AppFieldEmpty(t *testing.T) {
 	path := writeToml(t, dir, `
 app = ""
 [checks.foo]
+description = "Checks foo"
+subject = "quality"
 tags = ["a"]
 severity = "error"
 fast = true
@@ -2053,6 +2073,8 @@ func TestNewApp_AppMismatch(t *testing.T) {
 	path := writeToml(t, dir, `
 app = "wrong"
 [checks.foo]
+description = "Checks foo"
+subject = "quality"
 tags = ["a"]
 severity = "error"
 fast = true
@@ -2166,6 +2188,8 @@ func TestWithChecksEmbed_WrongAppName(t *testing.T) {
 app = "wrong"
 
 [checks.lint-code]
+description = "Checks lint-code"
+subject = "quality"
 tags = ["code"]
 severity = "error"
 fast = true
@@ -2212,7 +2236,7 @@ func TestRunChecks_ExplicitSkip_ExitZero(t *testing.T) {
 	})
 
 	ctx := &testCheckContext{root: "/tmp/test"}
-	results, _, exitCode := runChecks(defs, []string{"check-a"}, ctx, false, false)
+	results, _, exitCode := runChecks(defs, []string{"check-a"}, ctx, nil, false)
 
 	if exitCode != 0 {
 		t.Fatalf("expected exit code 0 for explicit skip, got %d", exitCode)
@@ -2253,7 +2277,7 @@ func TestRunChecks_ExplicitSkip_NoCascade(t *testing.T) {
 	})
 
 	ctx := &testCheckContext{root: "/tmp/test"}
-	results, _, exitCode := runChecks(defs, []string{"check-a", "check-b"}, ctx, false, false)
+	results, _, exitCode := runChecks(defs, []string{"check-a", "check-b"}, ctx, nil, false)
 
 	if exitCode != 0 {
 		t.Fatalf("expected exit code 0, got %d", exitCode)
@@ -2286,6 +2310,8 @@ const threeChecksToml = `
 app = "testapp"
 
 [checks.check-a]
+description = "Checks check-a"
+subject = "quality"
 tags = ["fast"]
 severity = "error"
 fast = true
@@ -2294,6 +2320,8 @@ needs_network = false
 depends_on = []
 
 [checks.check-b]
+description = "Checks check-b"
+subject = "quality"
 tags = ["slow"]
 severity = "error"
 fast = false
@@ -2302,6 +2330,8 @@ needs_network = false
 depends_on = ["check-a"]
 
 [checks.check-c]
+description = "Checks check-c"
+subject = "quality"
 tags = ["fast"]
 severity = "warn"
 fast = true
@@ -2523,7 +2553,7 @@ func TestRunChecks_DependencyFailureCascade(t *testing.T) {
 	t.Fatal("check-b not found in results")
 }
 
-func TestRunChecks_WarnWithIgnoreWarningsFalse(t *testing.T) {
+func TestRunChecks_WarnExitCode(t *testing.T) {
 	app := makeAppWithRegisteredChecks(t, threeChecksToml)
 	app.RegisterErrorCheck("check-a", func(ctx CheckContext, _ *ErrorReporter) CheckOutcome {
 		return passOutcome("ok")
@@ -2536,34 +2566,12 @@ func TestRunChecks_WarnWithIgnoreWarningsFalse(t *testing.T) {
 	})
 
 	ctx := &testCheckContext{root: emptyProjectRoot}
-	_, _, exitCode, err := app.RunChecks(ctx, RunChecksOptions{RunAll: true, IgnoreWarnings: false})
+	_, _, exitCode, err := app.RunChecks(ctx, RunChecksOptions{RunAll: true})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if exitCode != 1 {
-		t.Fatalf("expected exit code 1 for warn without IgnoreWarnings, got %d", exitCode)
-	}
-}
-
-func TestRunChecks_WarnWithIgnoreWarningsTrue(t *testing.T) {
-	app := makeAppWithRegisteredChecks(t, threeChecksToml)
-	app.RegisterErrorCheck("check-a", func(ctx CheckContext, _ *ErrorReporter) CheckOutcome {
-		return passOutcome("ok")
-	})
-	app.RegisterErrorCheck("check-b", func(ctx CheckContext, _ *ErrorReporter) CheckOutcome {
-		return passOutcome("ok")
-	})
-	app.RegisterWarnCheck("check-c", func(ctx CheckContext, _ *WarnReporter) CheckOutcome {
-		return warnOutcome("minor issue")
-	})
-
-	ctx := &testCheckContext{root: emptyProjectRoot}
-	_, _, exitCode, err := app.RunChecks(ctx, RunChecksOptions{RunAll: true, IgnoreWarnings: true})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if exitCode != 0 {
-		t.Fatalf("expected exit code 0 for warn with IgnoreWarnings, got %d", exitCode)
+		t.Fatalf("expected exit code 1 for a warning, got %d", exitCode)
 	}
 }
 
@@ -2793,6 +2801,8 @@ func TestLoadChecksToml_ScopeFieldAccepted(t *testing.T) {
 	path := writeToml(t, dir, `
 app = "testapp"
 [checks.scoped-check]
+description = "Checks scoped-check"
+subject = "quality"
 tags = ["release"]
 severity = "error"
 fast = true
@@ -2819,6 +2829,8 @@ func TestLoadChecksToml_ScopeFieldAbsentDefaultsEmpty(t *testing.T) {
 	path := writeToml(t, dir, `
 app = "testapp"
 [checks.no-scope]
+description = "Checks no-scope"
+subject = "quality"
 tags = ["release"]
 severity = "error"
 fast = true
@@ -2844,6 +2856,8 @@ func TestLoadChecksToml_ScopeFieldWrongType(t *testing.T) {
 	path := writeToml(t, dir, `
 app = "testapp"
 [checks.bad-scope]
+description = "Checks bad-scope"
+subject = "quality"
 tags = ["release"]
 severity = "error"
 fast = true
@@ -2866,6 +2880,8 @@ func TestLoadChecksToml_UnknownFieldStillRejectedWithScope(t *testing.T) {
 	path := writeToml(t, dir, `
 app = "testapp"
 [checks.foo]
+description = "Checks foo"
+subject = "quality"
 tags = ["a"]
 severity = "error"
 fast = true
@@ -3094,7 +3110,7 @@ func TestRunChecks_NonMintedOutcome_Panics(t *testing.T) {
 			t.Fatalf("unexpected panic: %v", r)
 		}
 	}()
-	runChecks(defs, []string{"check-a"}, &testCheckContext{root: emptyProjectRoot}, false, false)
+	runChecks(defs, []string{"check-a"}, &testCheckContext{root: emptyProjectRoot}, nil, false)
 }
 
 // checkAborted is a panic value with an Error() method, standing in for a
@@ -3119,7 +3135,7 @@ func TestRunChecks_PanickingImpl_FailsOnlyItself(t *testing.T) {
 		},
 	}
 	results, _, exitCode := runChecks(defs, []string{"check-a", "check-b"},
-		&testCheckContext{root: emptyProjectRoot}, false, false)
+		&testCheckContext{root: emptyProjectRoot}, nil, false)
 
 	if exitCode != 1 {
 		t.Fatalf("expected exit code 1, got %d", exitCode)
@@ -3159,7 +3175,7 @@ func TestRunChecks_PanickingImpl_CascadeSkipsDependents(t *testing.T) {
 		},
 	}
 	results, _, exitCode := runChecks(defs, []string{"check-a", "check-b"},
-		&testCheckContext{root: emptyProjectRoot}, false, false)
+		&testCheckContext{root: emptyProjectRoot}, nil, false)
 
 	if exitCode != 1 {
 		t.Fatalf("expected exit code 1, got %d", exitCode)
@@ -3170,7 +3186,7 @@ func TestRunChecks_PanickingImpl_CascadeSkipsDependents(t *testing.T) {
 }
 
 func TestRunChecks_PanickingWarnCheck_StillFails(t *testing.T) {
-	// --ignore-warnings forgives warn RESULTS, never a broken check.
+	// A warn check's findings are warnings; a broken check still fails.
 	defs := map[string]*checkDef{
 		"check-a": {
 			name: "check-a", tags: []string{"fast"}, severity: "warn", fast: true, pure: true,
@@ -3179,7 +3195,7 @@ func TestRunChecks_PanickingWarnCheck_StillFails(t *testing.T) {
 		},
 	}
 	results, _, exitCode := runChecks(defs, []string{"check-a"},
-		&testCheckContext{root: emptyProjectRoot}, true, false)
+		&testCheckContext{root: emptyProjectRoot}, nil, false)
 
 	if exitCode != 1 {
 		t.Fatalf("expected exit code 1, got %d", exitCode)
@@ -3252,7 +3268,7 @@ func TestRunChecks_ErrorCheckOnlyWarns_NoCascade(t *testing.T) {
 			impl: func(ctx CheckContext) CheckOutcome { bRan = true; return passOutcome("ok") },
 		},
 	}
-	results, _, exitCode := runChecks(defs, []string{"check-a", "check-b"}, &testCheckContext{root: emptyProjectRoot}, false, false)
+	results, _, exitCode := runChecks(defs, []string{"check-a", "check-b"}, &testCheckContext{root: emptyProjectRoot}, nil, false)
 	if !bRan {
 		t.Fatal("dependent must run when dependency only warned")
 	}
@@ -3295,6 +3311,8 @@ const partitionToml = `
 app = "testapp"
 
 [checks.pure-a]
+description = "Checks pure-a"
+subject = "quality"
 tags = ["p"]
 severity = "error"
 fast = true
@@ -3303,6 +3321,8 @@ needs_network = false
 depends_on = []
 
 [checks.net-b]
+description = "Checks net-b"
+subject = "quality"
 tags = ["p"]
 severity = "error"
 fast = true
@@ -3311,6 +3331,8 @@ needs_network = true
 depends_on = []
 
 [checks.impure-c]
+description = "Checks impure-c"
+subject = "quality"
 tags = ["p"]
 severity = "error"
 fast = true
@@ -3319,6 +3341,8 @@ needs_network = false
 depends_on = []
 
 [checks.dep-on-impure]
+description = "Checks dep-on-impure"
+subject = "quality"
 tags = ["p"]
 severity = "error"
 fast = true
@@ -3327,6 +3351,8 @@ needs_network = false
 depends_on = ["impure-c"]
 
 [checks.dep-on-pure]
+description = "Checks dep-on-pure"
+subject = "quality"
 tags = ["p"]
 severity = "error"
 fast = true
