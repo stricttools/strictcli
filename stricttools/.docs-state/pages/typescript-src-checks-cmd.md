@@ -1,6 +1,6 @@
 +++
 title = "typescript/src/checks/cmd"
-description = "The auto-registered `check` command and its result formatters, dispatching the list, help, no-match and run modes; --dry-run runs the pure checks only."
+description = "The auto-registered `check` and `failing-checks` commands and their result formatters, dispatching the list, help, no-match, and run modes."
 generated = true
 nav_group = "API Reference"
 nav_order = 3
