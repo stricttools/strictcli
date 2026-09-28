@@ -982,6 +982,39 @@
             "type": "string"
           },
           "description": "Per-parameter defaults written into the generated Python handler's signature, as {parameter name: literal string default}. The ONLY way a case can spell the re-sentinelization the handler-parameter check refuses (contract §12.12, §23.3) -- a handler bound to an optional flag whose parameter is written `target=\"\"`. Python-only by construction: Go and TypeScript handlers receive one kwargs map / one args object, so there is no per-parameter default to write, which is why cases using this key declare targets: [\"python\"]."
+        },
+        "requires": {
+          "type": "array",
+          "description": "Declared runtime requirements the command references (WithRequires / requires= / requires:). Each is declared once per name for the whole app; its load is scripted: available or not, and the reason it is not.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "help",
+              "install",
+              "available"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "help": {
+                "type": "string"
+              },
+              "install": {
+                "type": "string"
+              },
+              "available": {
+                "type": "boolean",
+                "description": "Whether the requirement's load succeeds."
+              },
+              "reason": {
+                "type": "string",
+                "description": "The load's error text when it is not available."
+              }
+            }
+          }
         }
       },
       "if": {

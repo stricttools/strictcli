@@ -38,6 +38,7 @@ import {
 	flagSet,
 	implies,
 	mutatingPassthrough,
+	requirement,
 	memberChoiceFlag,
 	outcome,
 	provided,
@@ -1121,6 +1122,9 @@ function registerCommand(cmdDef, target, globalFlags) {
 		if ("grants" in cmdDef) {
 			spec.grants = cmdDef.grants;
 		}
+		if ("requires" in cmdDef) {
+			spec.requires = cmdDef.requires.map(harnessRequirement);
+		}
 		// `consequential` is NOT mandatory (§8.1): absence means "not
 		// consequential", so it is spliced only when the case declares it.
 		if (cmdDef.consequential === true) {
@@ -1182,6 +1186,9 @@ function registerCommand(cmdDef, target, globalFlags) {
 	}
 	if ("grants" in cmdDef) {
 		spec.grants = cmdDef.grants;
+	}
+	if ("requires" in cmdDef) {
+		spec.requires = cmdDef.requires.map(harnessRequirement);
 	}
 	if (cmdDef.consequential === true) {
 		spec.consequential = true;
@@ -1685,3 +1692,32 @@ main().catch((e) => {
 	process.stderr.write(`error: ${e instanceof Error ? e.message : e}\n`);
 	process.exit(1);
 });
+
+/**
+ * The requirement a case declares, whose load the case scripts: available or
+ * not, and why not. An app declares a requirement once, and every command
+ * naming it references that one value, so each is kept by name (on the
+ * function itself: the app is built before this file's own bindings below the
+ * build are initialized).
+ */
+function harnessRequirement(rd) {
+	harnessRequirement.known ??= new Map();
+	const harnessRequirements = harnessRequirement.known;
+	const known = harnessRequirements.get(rd.name);
+	if (known !== undefined) {
+		return known;
+	}
+	const req = requirement({
+		name: rd.name,
+		help: rd.help ?? "",
+		install: rd.install ?? "",
+		load: () => {
+			if (rd.available !== true) {
+				throw new Error(rd.reason ?? "");
+			}
+			return "loaded";
+		},
+	});
+	harnessRequirements.set(rd.name, req);
+	return req;
+}

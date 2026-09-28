@@ -1299,6 +1299,14 @@ func buildCmdOptions(cmdDef map[string]interface{}) []strictcli.CmdOption {
 		}
 		opts = append(opts, strictcli.WithGrants(grants...))
 	}
+	// Declared runtime requirements whose load the case scripts.
+	if v, ok := cmdDef["requires"]; ok {
+		var reqs []strictcli.AnyRequirement
+		for _, item := range v.([]interface{}) {
+			reqs = append(reqs, harnessRequirement(item.(map[string]interface{})))
+		}
+		opts = append(opts, strictcli.WithRequires(reqs...))
+	}
 	if v, ok := cmdDef["forwarding"]; ok {
 		opts = append(opts, strictcli.WithForwarding(
 			v.(map[string]interface{})["reason"].(string),
@@ -2284,4 +2292,30 @@ func populateGroup(groupDef map[string]interface{}, group *strictcli.Group, glob
 			buildSubGroup(g.(map[string]interface{}), group, globalFlags, app)
 		}
 	}
+}
+
+// harnessRequirements holds each declared runtime requirement by name: an app
+// declares a requirement once, and every command naming it references that
+// one value.
+var harnessRequirements = map[string]*strictcli.Requirement[string]{}
+
+// harnessRequirement builds the requirement a case declares, whose load the
+// case scripts: available or not, and why not.
+func harnessRequirement(rd map[string]interface{}) *strictcli.Requirement[string] {
+	name, _ := rd["name"].(string)
+	if r, ok := harnessRequirements[name]; ok {
+		return r
+	}
+	help, _ := rd["help"].(string)
+	install, _ := rd["install"].(string)
+	available, _ := rd["available"].(bool)
+	reason, _ := rd["reason"].(string)
+	r := strictcli.NewRequirement(name, help, install, func() (string, error) {
+		if !available {
+			return "", errors.New(reason)
+		}
+		return "loaded", nil
+	})
+	harnessRequirements[name] = r
+	return r
 }

@@ -853,6 +853,14 @@ def _emit_classification(cmd_def: dict, indent: str) -> list[str]:
         lines.append(
             f"{indent}forwarding=strictcli.Forwarding(reason={reason!r}),"
         )
+    if cmd_def.get("requires"):
+        exprs = [
+            f"_mk_requirement({r['name']!r}, {r.get('help', '')!r}, "
+            f"{r.get('install', '')!r}, {bool(r.get('available', False))!r}, "
+            f"{r.get('reason', '')!r})"
+            for r in cmd_def["requires"]
+        ]
+        lines.append(f"{indent}requires=[{', '.join(exprs)}],")
     return lines
 
 
@@ -1485,6 +1493,19 @@ def generate(app_def: dict) -> str:
     # The payload renderer every harness builds from a case's template
     # (§14.4's amendment): each {key} becomes the payload's top-level member
     # of that name, a string verbatim and an integer in decimal.
+    # A declared runtime requirement whose load the case scripts: available
+    # or not, and why not. Declared once per name, as an app declares one.
+    lines.append("_REQUIREMENTS = {}")
+    lines.append("def _mk_requirement(name, help, install, available, reason):")
+    lines.append("    if name not in _REQUIREMENTS:")
+    lines.append("        def _load():")
+    lines.append("            if not available:")
+    lines.append("                raise OSError(reason)")
+    lines.append("            return 'loaded'")
+    lines.append("        _REQUIREMENTS[name] = strictcli.Requirement(")
+    lines.append("            name=name, help=help, install=install, load=_load)")
+    lines.append("    return _REQUIREMENTS[name]")
+    lines.append("")
     lines.append("def _mk_renderer(template):")
     lines.append("    def _render(payload):")
     lines.append("        text = template")
