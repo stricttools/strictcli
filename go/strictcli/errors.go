@@ -2286,3 +2286,43 @@ func errVersionInGroup(fix string) string {
 func errVersionArgs(token string) string {
 	return fmt.Sprintf("version takes no arguments, got '%s'", token)
 }
+
+// ---------------------------------------------------------------------------
+// requirements.go — declared runtime requirements
+// ---------------------------------------------------------------------------
+
+func errRequirementNameInvalid(name string) string {
+	return fmt.Sprintf("requirement name %q %s", name, kebabNameClause)
+}
+
+func errRequirementHelpInvalid(name string) string {
+	return fmt.Sprintf("requirement %q: help must be one non-empty line", name)
+}
+
+func errRequirementInstallInvalid(name string) string {
+	return fmt.Sprintf("requirement %q: install must be one non-empty line saying how to install it", name)
+}
+
+func errRequirementLoadMissing(name string) string {
+	return fmt.Sprintf("requirement %q: load must be a function returning the loaded value or an error", name)
+}
+
+func errRequirementDeclaredTwice(cmd, name string) string {
+	return fmt.Sprintf("command %q: requirement %q is referenced twice", cmd, name)
+}
+
+func errRequirementNameReused(name string) string {
+	return fmt.Sprintf("requirement %q is declared by two different values; declare it once and reference that value from every command that needs it", name)
+}
+
+func errNeedUndeclared(cmd, name string) string {
+	return fmt.Sprintf("command '%s' did not declare requirement '%s'; add it to the command's requirements", cmd, name)
+}
+
+// ---------------------------------------------------------------------------
+// requirements.go — a requirement that is not available (parse-time)
+// ---------------------------------------------------------------------------
+
+func errRequirementUnavailable(path, name, help, reason, install string) string {
+	return fmt.Sprintf("command '%s' needs %s (%s), which is not available: %s; install it: %s", path, name, help, reason, install)
+}

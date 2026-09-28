@@ -959,7 +959,8 @@ const pythonMinimalDump = `{
       "interactive": false,
       "config_fields": [],
       "grants": [],
-      "forwarding": null
+      "forwarding": null,
+      "requires": []
     },
     "group": {
       "commands": {},

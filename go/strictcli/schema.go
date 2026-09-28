@@ -481,6 +481,11 @@ func serializeCommand(cmd *Command) *schemaObject {
 	if cmd.Forwarding != nil {
 		m.set("forwarding", newSchemaObject().set("reason", cmd.Forwarding.Reason))
 	}
+	// requires: what the command needs at run time, in declaration order;
+	// omitted when it needs nothing.
+	if len(cmd.requires) > 0 {
+		m.set("requires", serializeRequires(cmd.requires))
+	}
 	return m
 }
 
@@ -620,7 +625,8 @@ func buildSchemaDefaults() *schemaObject {
 			set("interactive", false).
 			set("config_fields", []interface{}{}).
 			set("grants", []interface{}{}).
-			set("forwarding", nil)).
+			set("forwarding", nil).
+			set("requires", []interface{}{})).
 		set("group", newSchemaObject().
 			set("commands", newSchemaObject()).
 			set("groups", newSchemaObject()).

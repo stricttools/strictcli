@@ -331,7 +331,10 @@ type Command struct {
 	// an OwnsStdout command. The help document does not publish it.
 	PayloadRenderer func(payload interface{}) string
 	Grants          []Grant
-	Forwarding      *Forwarding
+	// requires is what the command needs at run time (WithRequires), loaded
+	// before its handler runs on every door.
+	requires   []AnyRequirement
+	Forwarding *Forwarding
 	// updateOf is the command's update declaration (contract §27.2): the
 	// resource it changes, the write mode, and the names of the declarations
 	// that identify the instance and the ones that carry what changes. nil on
@@ -528,6 +531,9 @@ type App struct {
 	// confirmIO overrides the stdin side of the confirm protocol. Test-only
 	// surface; see SetConfirmIO. nil means the real stdin.
 	confirmIO *ConfirmIO
+	// requirements maps each runtime requirement name to the one value
+	// declaring it, so a second value under the same name is refused.
+	requirements map[string]AnyRequirement
 }
 
 // SetExitHook registers a function to run immediately before Run's terminal
@@ -2511,6 +2517,7 @@ func (a *App) Command(name, help string, handler func(ctx *Context, kwargs map[s
 	cmd := buildAndValidateCommand(name, help, handler, a.EnvPrefix, a.globalFlags, nil, opts)
 	a.checkCmdFieldCollisions(cmd)
 	a.validateCmdInfraMarkers(cmd)
+	a.registerRequirements(cmd)
 	a.commands[name] = cmd
 	a.cmdOrder = append(a.cmdOrder, name)
 }
@@ -2524,6 +2531,7 @@ func (a *App) Command(name, help string, handler func(ctx *Context, kwargs map[s
 func (a *App) Passthrough(name, help string, handler PassthroughHandler, opts ...CmdOption) {
 	cmd := buildAndValidateCommand(name, help, nil, a.EnvPrefix, a.globalFlags, nil,
 		append([]CmdOption{WithPassthrough(handler)}, opts...))
+	a.registerRequirements(cmd)
 	a.commands[name] = cmd
 	a.cmdOrder = append(a.cmdOrder, name)
 }
@@ -2629,6 +2637,7 @@ func (g *Group) Command(name, help string, handler func(ctx *Context, kwargs map
 	if g.app != nil {
 		g.app.checkCmdFieldCollisions(cmd)
 		g.app.validateCmdInfraMarkers(cmd)
+		g.app.registerRequirements(cmd)
 	}
 	g.Commands[name] = cmd
 	g.order = append(g.order, name)
@@ -2797,6 +2806,7 @@ func (a *App) dispatchCLI(pr parseResult, reserved reservedFlags, stdout, stderr
 		guard:      guard,
 		signals:    sig,
 	}, func() int {
+		loadRequirements(ctx, pr.cmd, pr.cmdPath)
 		if pr.cmd.Passthrough {
 			return pr.cmd.PassthroughHandler(ctx, pr.cmd.Name, pr.passthroughArgs, pr.globalKwargs)
 		}
@@ -4235,6 +4245,7 @@ func buildAndValidateCommand(name, help string, handler func(ctx *Context, kwarg
 	for _, opt := range opts {
 		opt(cmd)
 	}
+	validateRequires(name, cmd.requires)
 
 	// Classification is MANDATORY and nothing is inferred. Passthrough commands
 	// are classified the same way, through the same scheme, so this runs before

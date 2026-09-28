@@ -160,6 +160,7 @@ func (a *App) invoke(commandPath string, kwargs map[string]interface{}, opts ...
 			a.armEffects(cmd, commandPath, false, nil))
 		ctx.bindCommand(cmd)
 		code, truncErr, early := a.invokeSealed(ctx, func() int {
+			loadRequirements(ctx, cmd, commandPath)
 			return cmd.PassthroughHandler(ctx, cmd.Name, args, globalKwargs)
 		})
 		if truncErr != "" {
@@ -404,6 +405,7 @@ func (a *App) invoke(commandPath string, kwargs map[string]interface{}, opts ...
 
 	// Call the handler under the runtime seal.
 	code, truncErr, early := a.invokeSealed(ctx, func() int {
+		loadRequirements(ctx, cmd, commandPath)
 		return cmd.Handler(ctx, validatedKwargs).code
 	})
 	if truncErr != "" {

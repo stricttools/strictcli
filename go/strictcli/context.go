@@ -51,6 +51,10 @@ type Context struct {
 	// and Document is usable only on a command that owns stdout.
 	ownsStdout bool
 	renderer   func(payload interface{}) string
+	// The command's declared runtime requirements and the values they loaded
+	// before the handler ran; Need reads them.
+	declaredRequirements []AnyRequirement
+	loadedRequirements   map[string]interface{}
 
 	// output is the envelope's `output` member (§19.2's box): what Out wrote
 	// in machine mode plus every captured child's stdout (§19.11), in arrival

@@ -248,6 +248,7 @@ func formatCommandHelp(app *App, cmd *Command, prefix string) string {
 
 	// Passthrough commands: minimal help (no flags/args sections)
 	if cmd.Passthrough {
+		lines = append(lines, formatRequirementsSection(cmd.requires)...)
 		return strings.Join(lines, "\n")
 	}
 
@@ -357,6 +358,9 @@ func formatCommandHelp(app *App, cmd *Command, prefix string) string {
 			lines = append(lines, specs[i]+strings.Repeat(" ", padding)+cmd.constraintHelpSentence(&cmd.constraints[i]))
 		}
 	}
+
+	// What the command needs at run time, before the global flags.
+	lines = append(lines, formatRequirementsSection(cmd.requires)...)
 
 	// Global flags section
 	if len(app.globalFlags) > 0 {
