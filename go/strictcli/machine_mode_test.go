@@ -282,13 +282,18 @@ func TestEnvelopeOnAParseErrorAfterTheFlag(t *testing.T) {
 	}
 }
 
-func TestHelpBeatsMachineMode(t *testing.T) {
+// The --help flag is text only: under --json it is refused, naming the help
+// command that prints the machine form, and that command works.
+func TestHelpFlagUnderMachineModeIsRefused(t *testing.T) {
 	r := plainApp().Test([]string{"--json", "run", "--help"})
-	if r.ExitCode != 0 {
-		t.Fatalf("exit=%d, want 0", r.ExitCode)
+	if r.ExitCode != 1 {
+		t.Fatalf("exit=%d, want 1", r.ExitCode)
 	}
-	if strings.Contains(r.Stdout, "interface_version") {
-		t.Fatalf("help emits no envelope; stdout=%q", r.Stdout)
+	if !strings.HasPrefix(r.Stderr, "error: "+errHelpTextOnly("myapp help run --json")+"\n") {
+		t.Fatalf("stderr=%q", r.Stderr)
+	}
+	if r := plainApp().Test([]string{"help", "run", "--json"}); r.ExitCode != 0 {
+		t.Fatalf("the named fix fails: exit=%d stderr=%q", r.ExitCode, r.Stderr)
 	}
 }
 

@@ -1325,27 +1325,6 @@ func TestForwardingIsEmittedInTheSchema(t *testing.T) {
 
 // --- framework-blessed cache writes (§9.2) ----------------------------------
 
-func TestSchemaDumpRecordsACacheWrite(t *testing.T) {
-	dir := t.TempDir()
-	cwd, _ := os.Getwd()
-	if err := os.Chdir(dir); err != nil {
-		t.Fatal(err)
-	}
-	defer os.Chdir(cwd)
-	if err := os.WriteFile("go.mod", []byte("module example.com/x\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	app := effectsApp(EffectReadOnly, func(ctx *Context) Outcome { return Exit(0) })
-	if r := app.Test([]string{"--dump-schema"}); r.ExitCode != 0 {
-		t.Fatalf("exit=%d stderr=%q", r.ExitCode, r.Stderr)
-	}
-	log := app.EffectLog()
-	if len(log) != 1 || log[0]["kind"] != CacheWrite || log[0]["verb"] != "cache" ||
-		log[0]["recorded"] != false {
-		t.Fatalf("expected one recorded:false cache write, got %#v", log)
-	}
-}
-
 func TestCacheWritesAreNeverInTheWouldDoLog(t *testing.T) {
 	app := effectsApp(EffectMutating, func(ctx *Context) Outcome {
 		ctx.Effects().Mkdir("d")

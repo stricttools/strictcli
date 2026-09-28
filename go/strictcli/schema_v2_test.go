@@ -19,18 +19,16 @@ func schemaTestApp(t *testing.T, opts ...AppOption) *App {
 	return NewApp("testapp", "1.0.0", "A test app", opts...)
 }
 
-// dumpText writes the schema and returns the file's exact bytes.
+// dumpText returns the exact bytes `help --json` prints for the whole app,
+// with project_id -- the one line that names each language's own program --
+// read as "testproject", so the fixtures below compare with the siblings'.
 func dumpText(t *testing.T, app *App) string {
 	t.Helper()
-	path, err := writeSchema(app)
-	if err != nil {
-		t.Fatalf("writeSchema error: %v", err)
+	r := app.Test([]string{"help", "--json"})
+	if r.ExitCode != 0 {
+		t.Fatalf("help --json: exit %d: %s", r.ExitCode, r.Stderr)
 	}
-	data, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatalf("reading the dump: %v", err)
-	}
-	return string(data)
+	return strings.Replace(r.Stdout, `"project_id": "github.com/stricttools/strictcli/go",`, `"project_id": "testproject",`, 1)
 }
 
 func dumpJSON(t *testing.T, app *App) map[string]interface{} {
@@ -50,7 +48,6 @@ func noop(ctx *Context, args map[string]interface{}) Outcome { return Exit(0) }
 // assertion, because they are one encoding.
 func TestTheWholeDocumentByteForByte(t *testing.T) {
 	app := schemaTestApp(t)
-	os.WriteFile("go.mod", []byte("module testproject\n"), 0o644)
 	app.Command("greet", "Greet — with ünicode & <html> and a/slash", noop,
 		WithEffect(EffectReadOnly),
 		WithFlags(FloatFlag("ratio", "The ratio", Default(1e-7))))
@@ -892,7 +889,6 @@ func TestTheToolSchemaCarriesAnArrayEnumInsideItems(t *testing.T) {
 // pins is the `defaults` block -- the largest fixed region of every dump.
 func TestTheDefaultsBlockMatchesTheSiblingImplementationsBytes(t *testing.T) {
 	app := schemaTestApp(t)
-	os.WriteFile("go.mod", []byte("module testproject\n"), 0o644)
 	app.Command("noop", "Does nothing", noop, WithEffect(EffectReadOnly))
 	got := dumpText(t, app)
 	want := pythonMinimalDump
@@ -1011,7 +1007,6 @@ func TestARichDeclarationMatchesTheSiblingImplementationsBytes(t *testing.T) {
 		WithInfraRoot("MYAPP_HOME", "~/.myapp"),
 		WithHandshakeEnv("MYAPP_PARENT", "set by the invoking process"),
 	)
-	os.WriteFile("go.mod", []byte("module testproject\n"), 0o644)
 	app.Command("deploy", "Deploy it", noop,
 		WithEffect(EffectMutating), WithConsequential(), WithTags("release"),
 		WithGrants(Grant{Name: "write", Reason: "writes the release", Kind: "file_write"}),

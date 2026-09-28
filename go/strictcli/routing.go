@@ -69,6 +69,15 @@ func (a *App) resolveCommand(rest []string) routeResult {
 			}
 		}
 
+		// help and version are framework commands at the root only; their names
+		// are reserved at every level, so inside a group they point at the root.
+		if len(path) > 0 && token == helpCommandName {
+			return routeResult{err: errHelpInGroup(a.helpLine(path...)), path: path, rest: rest}
+		}
+		if len(path) > 0 && token == versionCommandName {
+			return routeResult{err: errVersionInGroup(a.Name + " " + versionCommandName), path: path, rest: rest}
+		}
+
 		// Unknown command — include path in error message
 		if len(path) > 0 {
 			prefix := strings.Join(append([]string{a.Name}, path...), " ")

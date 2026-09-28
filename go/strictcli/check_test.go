@@ -1822,16 +1822,12 @@ func TestDumpSchema_WithChecks(t *testing.T) {
 		return Exit(0)
 	}, WithEffect(EffectReadOnly))
 
-	r := app.Test([]string{"--dump-schema"})
+	r := app.Test([]string{"help", "--json"})
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit code 0, got %d; stderr=%q", r.ExitCode, r.Stderr)
 	}
 
-	schemaPath := filepath.Join(".strictcli", "schema.json")
-	data, err := os.ReadFile(schemaPath)
-	if err != nil {
-		t.Fatalf("failed to read schema.json: %v", err)
-	}
+	data := []byte(r.Stdout)
 
 	var schema map[string]interface{}
 	if err := json.Unmarshal(data, &schema); err != nil {
@@ -1915,16 +1911,12 @@ func TestDumpSchema_WithoutChecks(t *testing.T) {
 		return Exit(0)
 	}, WithEffect(EffectReadOnly))
 
-	r := app.Test([]string{"--dump-schema"})
+	r := app.Test([]string{"help", "--json"})
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit code 0, got %d; stderr=%q", r.ExitCode, r.Stderr)
 	}
 
-	schemaPath := filepath.Join(".strictcli", "schema.json")
-	data, err := os.ReadFile(schemaPath)
-	if err != nil {
-		t.Fatalf("failed to read schema.json: %v", err)
-	}
+	data := []byte(r.Stdout)
 
 	var schema map[string]interface{}
 	if err := json.Unmarshal(data, &schema); err != nil {

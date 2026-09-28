@@ -1102,7 +1102,7 @@ func TestGroupUseHint(t *testing.T) {
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d", r.ExitCode)
 	}
-	if !strings.Contains(r.Stdout, "Use 'myapp config <command> --help' for more information.") {
+	if !strings.Contains(r.Stdout, "Use 'myapp help config <command>' for more information.") {
 		t.Fatalf("stdout should contain use hint, got %q", r.Stdout)
 	}
 }
@@ -1301,7 +1301,7 @@ func TestUseHintInAppHelp(t *testing.T) {
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d", r.ExitCode)
 	}
-	if !strings.Contains(r.Stdout, "Use 'myapp <command> --help' for more information.") {
+	if !strings.Contains(r.Stdout, "Use 'myapp help <command>' for more information.") {
 		t.Fatalf("stdout should contain use hint, got %q", r.Stdout)
 	}
 }
@@ -2368,7 +2368,7 @@ func TestDeepNestingHelpAtEachLevel(t *testing.T) {
 	if !strings.Contains(r.Stdout, "nch dns zone -- manage DNS zones") {
 		t.Fatalf("dns zone help header should have full path, got %q", r.Stdout)
 	}
-	if !strings.Contains(r.Stdout, "Use 'nch dns zone <command> --help'") {
+	if !strings.Contains(r.Stdout, "Use 'nch help dns zone <command>'") {
 		t.Fatalf("dns zone help hint should have full path, got %q", r.Stdout)
 	}
 
@@ -3009,29 +3009,8 @@ func chdirTemp(t *testing.T) string {
 	return tmpDir
 }
 
-func TestDumpSchemaWritesFile(t *testing.T) {
-	tmpDir := chdirTemp(t)
-	app := NewApp("testapp", "1.0.0", "A test app")
-	app.Command("greet", "Say hello", func(ctx *Context, args map[string]interface{}) Outcome { return Exit(0) }, WithEffect(EffectReadOnly))
-
-	r := app.Test([]string{"--dump-schema"})
-	if r.ExitCode != 0 {
-		t.Fatalf("expected exit 0, got %d: stderr=%q", r.ExitCode, r.Stderr)
-	}
-
-	schemaPath := filepath.Join(tmpDir, ".strictcli", "schema.json")
-	if _, err := os.Stat(schemaPath); os.IsNotExist(err) {
-		t.Fatalf("schema file not created at %s", schemaPath)
-	}
-
-	// stdout should contain the path
-	if !strings.Contains(r.Stdout, schemaPath) {
-		t.Fatalf("stdout should contain schema path %q, got %q", schemaPath, r.Stdout)
-	}
-}
-
 func TestDumpSchemaContents(t *testing.T) {
-	tmpDir := chdirTemp(t)
+	chdirTemp(t)
 	app := NewApp("myapp", "2.3.4", "My great app")
 	app.Command("deploy", "Deploy the app", func(ctx *Context, args map[string]interface{}) Outcome { return Exit(0) },
 		WithFlags(
@@ -3043,16 +3022,12 @@ func TestDumpSchemaContents(t *testing.T) {
 		), WithEffect(EffectReadOnly),
 	)
 
-	r := app.Test([]string{"--dump-schema"})
+	r := app.Test([]string{"help", "--json"})
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d: stderr=%q", r.ExitCode, r.Stderr)
 	}
 
-	schemaPath := filepath.Join(tmpDir, ".strictcli", "schema.json")
-	data, err := os.ReadFile(schemaPath)
-	if err != nil {
-		t.Fatal(err)
-	}
+	data := []byte(r.Stdout)
 	var schema map[string]interface{}
 	if err := json.Unmarshal(data, &schema); err != nil {
 		t.Fatalf("invalid JSON: %v", err)
@@ -3182,7 +3157,7 @@ func TestDumpSchemaContents(t *testing.T) {
 }
 
 func TestDumpSchemaGroups(t *testing.T) {
-	tmpDir := chdirTemp(t)
+	chdirTemp(t)
 	app := NewApp("testapp", "1.0.0", "A test app")
 	dns := app.Group("dns", "DNS management")
 	dns.Command("list", "List DNS records", func(ctx *Context, args map[string]interface{}) Outcome { return Exit(0) }, WithEffect(EffectReadOnly))
@@ -3192,16 +3167,12 @@ func TestDumpSchemaGroups(t *testing.T) {
 	zone := dns.Group("zone", "Zone management")
 	zone.Command("list", "List zones", func(ctx *Context, args map[string]interface{}) Outcome { return Exit(0) }, WithEffect(EffectReadOnly))
 
-	r := app.Test([]string{"--dump-schema"})
+	r := app.Test([]string{"help", "--json"})
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d: stderr=%q", r.ExitCode, r.Stderr)
 	}
 
-	schemaPath := filepath.Join(tmpDir, ".strictcli", "schema.json")
-	data, err := os.ReadFile(schemaPath)
-	if err != nil {
-		t.Fatal(err)
-	}
+	data := []byte(r.Stdout)
 	var schema map[string]interface{}
 	if err := json.Unmarshal(data, &schema); err != nil {
 		t.Fatalf("invalid JSON: %v", err)
@@ -3266,22 +3237,18 @@ func TestDumpSchemaGroups(t *testing.T) {
 }
 
 func TestDumpSchemaGlobalFlags(t *testing.T) {
-	tmpDir := chdirTemp(t)
+	chdirTemp(t)
 	app := NewApp("testapp", "1.0.0", "A test app")
 	app.GlobalFlag(BoolFlag("loud", "Loud output", Short("V"), Default(false)))
 	app.GlobalFlag(StringFlag("output", "Output format", Default("text"), Choices(Ch("text", ""), Ch("json", ""))))
 	app.Command("noop", "Does nothing", func(ctx *Context, args map[string]interface{}) Outcome { return Exit(0) }, WithEffect(EffectReadOnly))
 
-	r := app.Test([]string{"--dump-schema"})
+	r := app.Test([]string{"help", "--json"})
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d: stderr=%q", r.ExitCode, r.Stderr)
 	}
 
-	schemaPath := filepath.Join(tmpDir, ".strictcli", "schema.json")
-	data, err := os.ReadFile(schemaPath)
-	if err != nil {
-		t.Fatal(err)
-	}
+	data := []byte(r.Stdout)
 	var schema map[string]interface{}
 	if err := json.Unmarshal(data, &schema); err != nil {
 		t.Fatalf("invalid JSON: %v", err)
@@ -3330,7 +3297,7 @@ func TestDumpSchemaGlobalFlags(t *testing.T) {
 }
 
 func TestDumpSchemaDeprecated(t *testing.T) {
-	tmpDir := chdirTemp(t)
+	chdirTemp(t)
 	app := NewApp("testapp", "1.0.0", "A test app")
 	app.Command("new-cmd", "The new command", func(ctx *Context, args map[string]interface{}) Outcome { return Exit(0) }, WithEffect(EffectReadOnly))
 	app.Deprecated("old-cmd", "Use 'new-cmd' instead")
@@ -3340,16 +3307,12 @@ func TestDumpSchemaDeprecated(t *testing.T) {
 	dns.Command("list", "List records", func(ctx *Context, args map[string]interface{}) Outcome { return Exit(0) }, WithEffect(EffectReadOnly))
 	dns.Deprecated("old-list", "Use 'list' instead")
 
-	r := app.Test([]string{"--dump-schema"})
+	r := app.Test([]string{"help", "--json"})
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d: stderr=%q", r.ExitCode, r.Stderr)
 	}
 
-	schemaPath := filepath.Join(tmpDir, ".strictcli", "schema.json")
-	data, err := os.ReadFile(schemaPath)
-	if err != nil {
-		t.Fatal(err)
-	}
+	data := []byte(r.Stdout)
 	var schema map[string]interface{}
 	if err := json.Unmarshal(data, &schema); err != nil {
 		t.Fatalf("invalid JSON: %v", err)
@@ -3377,195 +3340,6 @@ func TestDumpSchemaDeprecated(t *testing.T) {
 	}
 	if grpMsg != "Use 'list' instead" {
 		t.Fatalf("expected message \"Use 'list' instead\", got %v", grpMsg)
-	}
-}
-
-func TestDumpSchemaCreatesDir(t *testing.T) {
-	tmpDir := chdirTemp(t)
-	schemaDir := filepath.Join(tmpDir, ".strictcli")
-	// Ensure dir does not exist
-	if _, err := os.Stat(schemaDir); !os.IsNotExist(err) {
-		t.Fatal(".strictcli dir should not exist yet")
-	}
-
-	app := NewApp("testapp", "1.0.0", "A test app")
-	app.Command("noop", "Does nothing", func(ctx *Context, args map[string]interface{}) Outcome { return Exit(0) }, WithEffect(EffectReadOnly))
-
-	r := app.Test([]string{"--dump-schema"})
-	if r.ExitCode != 0 {
-		t.Fatalf("expected exit 0, got %d: stderr=%q", r.ExitCode, r.Stderr)
-	}
-
-	info, err := os.Stat(schemaDir)
-	if err != nil {
-		t.Fatalf(".strictcli dir was not created: %v", err)
-	}
-	if !info.IsDir() {
-		t.Fatal(".strictcli should be a directory")
-	}
-
-	schemaFile := filepath.Join(schemaDir, "schema.json")
-	if _, err := os.Stat(schemaFile); os.IsNotExist(err) {
-		t.Fatal("schema.json was not created")
-	}
-}
-
-func TestDumpSchemaProjectId(t *testing.T) {
-	tmpDir := chdirTemp(t)
-	app := NewApp("myapp", "1.0.0", "A test app")
-	app.Command("noop", "Does nothing", func(ctx *Context, args map[string]interface{}) Outcome { return Exit(0) }, WithEffect(EffectReadOnly))
-
-	r := app.Test([]string{"--dump-schema"})
-	if r.ExitCode != 0 {
-		t.Fatalf("expected exit 0, got %d: stderr=%q", r.ExitCode, r.Stderr)
-	}
-
-	schemaPath := filepath.Join(tmpDir, ".strictcli", "schema.json")
-	data, err := os.ReadFile(schemaPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	var schema map[string]interface{}
-	if err := json.Unmarshal(data, &schema); err != nil {
-		t.Fatalf("invalid JSON: %v", err)
-	}
-
-	projectID, ok := schema["project_id"]
-	if !ok {
-		t.Fatal("expected 'project_id' key in schema")
-	}
-	if projectID != "example.com/testproject" {
-		t.Fatalf("expected project_id 'example.com/testproject', got %v", projectID)
-	}
-}
-
-func TestDumpSchemaProjectIdCustomModule(t *testing.T) {
-	tmpDir := t.TempDir()
-	origDir, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte("module github.com/user/mytools\n"), 0644)
-	if err := os.Chdir(tmpDir); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { os.Chdir(origDir) })
-
-	app := NewApp("myapp", "1.0.0", "A test app")
-	app.Command("noop", "Does nothing", func(ctx *Context, args map[string]interface{}) Outcome { return Exit(0) }, WithEffect(EffectReadOnly))
-
-	r := app.Test([]string{"--dump-schema"})
-	if r.ExitCode != 0 {
-		t.Fatalf("expected exit 0, got %d: stderr=%q", r.ExitCode, r.Stderr)
-	}
-
-	schemaPath := filepath.Join(tmpDir, ".strictcli", "schema.json")
-	data, err := os.ReadFile(schemaPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	var schema map[string]interface{}
-	if err := json.Unmarshal(data, &schema); err != nil {
-		t.Fatalf("invalid JSON: %v", err)
-	}
-
-	if schema["project_id"] != "github.com/user/mytools" {
-		t.Fatalf("expected project_id 'github.com/user/mytools', got %v", schema["project_id"])
-	}
-}
-
-func TestDumpSchemaProjectIdNoGoMod(t *testing.T) {
-	tmpDir := t.TempDir()
-	origDir, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	// No go.mod in tmpDir
-	if err := os.Chdir(tmpDir); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { os.Chdir(origDir) })
-
-	app := NewApp("myapp", "1.0.0", "A test app")
-	app.Command("noop", "Does nothing", func(ctx *Context, args map[string]interface{}) Outcome { return Exit(0) }, WithEffect(EffectReadOnly))
-
-	r := app.Test([]string{"--dump-schema"})
-	if r.ExitCode == 0 {
-		t.Fatal("expected non-zero exit code when go.mod is missing")
-	}
-	if !strings.Contains(r.Stderr, "project_id") {
-		t.Fatalf("expected stderr to mention 'project_id', got %q", r.Stderr)
-	}
-}
-
-// --- Schema project_id mismatch tests ---
-
-func TestDumpSchemaProjectIdMismatch(t *testing.T) {
-	tmpDir := chdirTemp(t)
-	// Write an existing schema with a different project_id
-	schemaDir := filepath.Join(tmpDir, ".strictcli")
-	os.MkdirAll(schemaDir, 0o755)
-	os.WriteFile(filepath.Join(schemaDir, "schema.json"),
-		[]byte(`{"project_id": "other-project"}`), 0644)
-
-	app := NewApp("testapp", "1.0.0", "A test app")
-	app.Command("noop", "Does nothing", func(ctx *Context, args map[string]interface{}) Outcome { return Exit(0) }, WithEffect(EffectReadOnly))
-
-	r := app.Test([]string{"--dump-schema"})
-	if r.ExitCode == 0 {
-		t.Fatal("expected non-zero exit code on project_id mismatch")
-	}
-	if !strings.Contains(r.Stderr, "Schema mismatch") {
-		t.Fatalf("expected 'Schema mismatch' in stderr, got %q", r.Stderr)
-	}
-	if !strings.Contains(r.Stderr, "other-project") {
-		t.Fatalf("expected 'other-project' in stderr, got %q", r.Stderr)
-	}
-}
-
-func TestDumpSchemaProjectIdMatch(t *testing.T) {
-	tmpDir := chdirTemp(t)
-	// Write an existing schema with the same project_id
-	schemaDir := filepath.Join(tmpDir, ".strictcli")
-	os.MkdirAll(schemaDir, 0o755)
-	os.WriteFile(filepath.Join(schemaDir, "schema.json"),
-		[]byte(`{"project_id": "example.com/testproject"}`), 0644)
-
-	app := NewApp("testapp", "1.0.0", "A test app")
-	app.Command("noop", "Does nothing", func(ctx *Context, args map[string]interface{}) Outcome { return Exit(0) }, WithEffect(EffectReadOnly))
-
-	r := app.Test([]string{"--dump-schema"})
-	if r.ExitCode != 0 {
-		t.Fatalf("expected exit 0, got %d: stderr=%q", r.ExitCode, r.Stderr)
-	}
-}
-
-func TestDumpSchemaProjectIdMissingFile(t *testing.T) {
-	chdirTemp(t)
-	// No existing schema file
-	app := NewApp("testapp", "1.0.0", "A test app")
-	app.Command("noop", "Does nothing", func(ctx *Context, args map[string]interface{}) Outcome { return Exit(0) }, WithEffect(EffectReadOnly))
-
-	r := app.Test([]string{"--dump-schema"})
-	if r.ExitCode != 0 {
-		t.Fatalf("expected exit 0, got %d: stderr=%q", r.ExitCode, r.Stderr)
-	}
-}
-
-func TestDumpSchemaProjectIdCorruptFile(t *testing.T) {
-	tmpDir := chdirTemp(t)
-	// Write corrupt JSON
-	schemaDir := filepath.Join(tmpDir, ".strictcli")
-	os.MkdirAll(schemaDir, 0o755)
-	os.WriteFile(filepath.Join(schemaDir, "schema.json"),
-		[]byte("not valid json {{{"), 0644)
-
-	app := NewApp("testapp", "1.0.0", "A test app")
-	app.Command("noop", "Does nothing", func(ctx *Context, args map[string]interface{}) Outcome { return Exit(0) }, WithEffect(EffectReadOnly))
-
-	r := app.Test([]string{"--dump-schema"})
-	if r.ExitCode != 0 {
-		t.Fatalf("expected exit 0, got %d: stderr=%q", r.ExitCode, r.Stderr)
 	}
 }
 
@@ -8569,14 +8343,11 @@ func TestDumpSchemaDictEqualsFileMinusProjectID(t *testing.T) {
 		WithFlags(BoolFlag("force-deploy", "Force deploy", Default(false))), WithEffect(EffectReadOnly),
 	)
 
-	r := app.Test([]string{"--dump-schema"})
+	r := app.Test([]string{"help", "--json"})
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d: stderr=%q", r.ExitCode, r.Stderr)
 	}
-	data, err := os.ReadFile(filepath.Join(tmpDir, ".strictcli", "schema.json"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	data := []byte(r.Stdout)
 	var written map[string]interface{}
 	if err := json.Unmarshal(data, &written); err != nil {
 		t.Fatal(err)

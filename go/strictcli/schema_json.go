@@ -50,6 +50,21 @@ func (o *schemaObject) get(key string) interface{} {
 	return o.vals[key]
 }
 
+// delete removes a key; removing an absent key does nothing. The help
+// document's slices prune the command tree with it.
+func (o *schemaObject) delete(key string) {
+	if _, seen := o.vals[key]; !seen {
+		return
+	}
+	delete(o.vals, key)
+	for i, k := range o.keys {
+		if k == key {
+			o.keys = append(o.keys[:i], o.keys[i+1:]...)
+			return
+		}
+	}
+}
+
 // insertAfter places a new key immediately after an existing one. project_id is
 // the only key that needs it: it is added by the file-writer path and sits
 // immediately after `defaults`, so removing it leaves the CWD-free core

@@ -198,6 +198,10 @@ type Flag struct {
 	presenceBits    uint8
 	hasUnique       bool
 	hasConflictMode bool
+	// helpFull points at the full declaration of a selector that a one-flag
+	// help page pruned to the choices it shows, so the selector's presence part
+	// still renders the whole declared default.
+	helpFull *Flag
 }
 
 // Arg represents a positional argument.
@@ -324,7 +328,7 @@ type Command struct {
 	// payload (contract §19.10): in human mode the exit step prints what it
 	// returns for the supplied payload, never hidden by --quiet; in machine
 	// mode it is never called. It requires a PayloadSchema and is refused on
-	// an OwnsStdout command. --dump-schema does not publish it.
+	// an OwnsStdout command. The help document does not publish it.
 	PayloadRenderer func(payload interface{}) string
 	Grants          []Grant
 	Forwarding      *Forwarding
@@ -467,9 +471,6 @@ type App struct {
 	infraRootOrder   []string          // env var names in declaration order
 	infraRootFromEnv map[string]bool   // env var -> value came from the env var (vs default)
 	configPathRef    *InfraRootPath    // set by WithConfigPathRelativeToRoot
-	schemaPath       string            // set by WithSchemaPath
-	schemaPathRef    *InfraRootPath    // set by WithSchemaPathRelativeToRoot
-	schemaOutPath    string            // resolved absolute --dump-schema target
 	// lintMainModule reports the running program's main module path for the
 	// --lint-framework-use identity check; nil means the build information.
 	lintMainModule func() (string, bool)
@@ -668,27 +669,6 @@ func WithConfigPathRelativeToRoot(envVar string, parts ...string) AppOption {
 	return func(a *App) {
 		ref := RelativeToRoot(envVar, parts...)
 		a.configPathRef = &ref
-	}
-}
-
-// WithSchemaPath declares where --dump-schema writes. The path may be absolute
-// or relative to the App's construction-time working directory. Undeclared, the
-// framework's own location applies: ".strictcli/schema.json" ANCHORED at the
-// construction-time working directory, so a chdir between construction and
-// dispatch cannot redirect the write into the caller's cwd.
-func WithSchemaPath(path string) AppOption {
-	return func(a *App) {
-		a.schemaPath = path
-	}
-}
-
-// WithSchemaPathRelativeToRoot declares the --dump-schema target as a location
-// relative to a declared infrastructure root. The marker is resolved eagerly at
-// construction, exactly as WithConfigPathRelativeToRoot is.
-func WithSchemaPathRelativeToRoot(envVar string, parts ...string) AppOption {
-	return func(a *App) {
-		ref := RelativeToRoot(envVar, parts...)
-		a.schemaPathRef = &ref
 	}
 }
 
@@ -2115,26 +2095,6 @@ func NewApp(name, version, help string, opts ...AppOption) *App {
 		}
 		a.configPathOverride = resolved
 	}
-	// Resolve the --dump-schema target once, at construction: a declared
-	// marker through its root, a declared relative path and the framework's own
-	// default against the construction-time cwd.
-	if a.schemaPathRef != nil {
-		resolved, err := a.resolveInfraPath(*a.schemaPathRef)
-		if err != nil {
-			panic(err.Error())
-		}
-		a.schemaPath = resolved
-	}
-	schemaTarget := a.schemaPath
-	if schemaTarget == "" {
-		schemaTarget = filepath.Join(".strictcli", "schema.json")
-	}
-	if abs, err := filepath.Abs(schemaTarget); err == nil {
-		a.schemaOutPath = abs
-	} else {
-		a.schemaOutPath = schemaTarget
-	}
-
 	// Default config format to "json" if not set
 	if a.configFormat == "" {
 		a.configFormat = "json"
@@ -2772,13 +2732,10 @@ func (a *App) Run() {
 		fmt.Println(pr.versionText)
 		os.Exit(0)
 	}
-	if pr.dumpSchema {
-		path, err := writeSchema(a)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "error: %s\n", err)
-			os.Exit(1)
-		}
-		fmt.Println(path)
+	if pr.frameworkDoc != "" {
+		fmt.Fprint(os.Stdout, pr.frameworkDoc)
+		command := pr.frameworkCommand
+		a.emitEnvelope(nil, os.Stderr, &command, 0, a.lastDryRun, nil, nil)
 		os.Exit(0)
 	}
 	if pr.lintFrameworkUse {
@@ -3283,12 +3240,11 @@ func (a *App) Test(argv []string) Result {
 	if pr.versionText != "" {
 		return Result{Stdout: pr.versionText + "\n", ExitCode: 0}
 	}
-	if pr.dumpSchema {
-		path, err := writeSchema(a)
-		if err != nil {
-			return Result{Stderr: fmt.Sprintf("error: %s\n", err), ExitCode: 1}
-		}
-		return Result{Stdout: path + "\n", ExitCode: 0}
+	if pr.frameworkDoc != "" {
+		var stderr bytes.Buffer
+		command := pr.frameworkCommand
+		a.emitEnvelope(nil, &stderr, &command, 0, a.lastDryRun, nil, nil)
+		return Result{Stdout: pr.frameworkDoc, Stderr: stderr.String(), ExitCode: 0}
 	}
 	if pr.lintFrameworkUse {
 		var stdout, stderr strings.Builder
@@ -3371,13 +3327,18 @@ func (a *App) Test(argv []string) Result {
 
 // parseResult holds the output of doParse.
 type parseResult struct {
-	cmd              *Command
-	cmdPath          string // dot-separated command path (e.g. "infra.deploy")
-	kwargs           map[string]interface{}
-	globalKwargs     map[string]interface{}
-	sources          map[string]string // flag param name -> source label
-	passthroughArgs  []string
-	helpText         string
+	cmd             *Command
+	cmdPath         string // dot-separated command path (e.g. "infra.deploy")
+	kwargs          map[string]interface{}
+	globalKwargs    map[string]interface{}
+	sources         map[string]string // flag param name -> source label
+	passthroughArgs []string
+	helpText        string
+	// frameworkDoc is the machine form of the help or version command: the
+	// document printed on stdout under --json, while the --json document goes
+	// to stderr as it does for a command that owns stdout (§19.6).
+	frameworkDoc     string
+	frameworkCommand string
 	versionText      string
 	parseErr         string
 	commandPrefix    string
@@ -3495,6 +3456,14 @@ func (a *App) preScanReservedFlags(argv []string) preScanResult {
 		if tok == "--mcp" {
 			result.serveMCP = true
 			return result
+		}
+
+		// --help and --version (and their shorts) are answered after the
+		// scan; stepping over them keeps a quartet token that follows them in
+		// view, so `app --help --json` is refused rather than misrouted.
+		if tok == "--help" || tok == "-h" || tok == "--version" || tok == "-v" {
+			i++
+			continue
 		}
 
 		// --hermetic (boolean, no value)
@@ -3697,7 +3666,7 @@ func (a *App) doParse(argv []string) parseResult {
 	a.lastJSON = preScan.reserved.json
 
 	if preScan.dumpSchema {
-		return parseResult{dumpSchema: true}
+		return parseResult{parseErr: errDumpSchemaRemoved(a.Name + " " + helpCommandName + " --json")}
 	}
 	if preScan.lintFrameworkUse {
 		return parseResult{lintFrameworkUse: true}
@@ -3746,12 +3715,25 @@ func (a *App) doParse(argv []string) parseResult {
 		rest = rest[1:]
 	}
 
-	// After extracting globals, check for help/version again
+	// After extracting globals, check for help/version again. Both flags are
+	// text only: under --json the refusal names the command that prints the
+	// machine form.
 	if len(rest) == 0 || (len(rest) == 1 && (rest[0] == "--help" || rest[0] == "-h")) {
+		if a.lastJSON {
+			return parseResult{parseErr: errHelpTextOnly(a.Name + " " + helpCommandName + " --json")}
+		}
 		return parseResult{helpText: formatAppHelp(a)}
 	}
 	if len(rest) == 1 && (rest[0] == "--version" || rest[0] == "-v") {
+		if a.lastJSON {
+			return parseResult{parseErr: errVersionTextOnly(a.Name + " " + versionCommandName + " --json")}
+		}
 		return parseResult{versionText: formatVersion(a)}
+	}
+
+	// The framework's own commands, help and version, as the first word.
+	if pr, ok := a.dispatchFrameworkCommand(rest); ok {
+		return pr
 	}
 
 	// Route through the group/command tree
@@ -3764,6 +3746,9 @@ func (a *App) doParse(argv []string) parseResult {
 
 	// Handle help at group level
 	if route.helpAtGroup {
+		if a.lastJSON {
+			return parseResult{parseErr: errHelpTextOnly(a.helpLine(append(append([]string{}, route.path...), "--json")...))}
+		}
 		return parseResult{helpText: formatGroupHelp(a, route.lastGroup, route.path)}
 	}
 
@@ -3780,6 +3765,9 @@ func (a *App) doParse(argv []string) parseResult {
 		prefix := ""
 		if len(path) > 0 {
 			prefix = strings.Join(path, " ") + " "
+		}
+		if a.lastJSON {
+			return parseResult{parseErr: errHelpTextOnly(a.helpLine(append(append([]string{}, path...), cmd.Name, "--json")...))}
 		}
 		return parseResult{helpText: formatCommandHelp(a, cmd, prefix)}
 	}

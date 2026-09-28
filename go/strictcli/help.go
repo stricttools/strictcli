@@ -10,54 +10,68 @@ func formatVersion(app *App) string {
 }
 
 func formatAppHelp(app *App) string {
+	return formatAppHelpDepth(app, 1)
+}
+
+// helpTreeRow is one line of a Commands or Groups section: a path relative to
+// the page's own node, and its help.
+type helpTreeRow struct {
+	path string
+	help string
+}
+
+// collectHelpTree lists the visible commands and groups within depth levels
+// below one node, depth-first in declaration order: the node's own commands,
+// then each group followed by what it holds. Level 1 is the node's own
+// children, which is all --help lists.
+func collectHelpTree(cmdOrder []string, cmds map[string]*Command, groupOrder []string, groups map[string]*Group,
+	prefix string, level, depth int, commandsOut, groupsOut *[]helpTreeRow) {
+	for _, name := range cmdOrder {
+		if cmd := cmds[name]; !cmd.Hidden {
+			*commandsOut = append(*commandsOut, helpTreeRow{prefix + name, cmd.Help})
+		}
+	}
+	for _, name := range groupOrder {
+		grp := groups[name]
+		if grp.Hidden {
+			continue
+		}
+		*groupsOut = append(*groupsOut, helpTreeRow{prefix + name, grp.Help})
+		if level < depth {
+			collectHelpTree(grp.order, grp.Commands, grp.groupOrder, grp.Groups, prefix+name+" ", level+1, depth, commandsOut, groupsOut)
+		}
+	}
+}
+
+// helpTreeSection renders one titled section of rows, aligned on its own
+// column, or nothing when there are no rows.
+func helpTreeSection(title string, rows []helpTreeRow) []string {
+	if len(rows) == 0 {
+		return nil
+	}
+	lines := []string{"", title}
+	maxLen := 0
+	for _, r := range rows {
+		if len(r.path) > maxLen {
+			maxLen = len(r.path)
+		}
+	}
+	for _, r := range rows {
+		lines = append(lines, fmt.Sprintf("  %s%s%s", r.path, strings.Repeat(" ", maxLen-len(r.path)+4), r.help))
+	}
+	return lines
+}
+
+// formatAppHelpDepth is the app's help page listing depth levels of its
+// command tree; depth 1 is the page --help shows.
+func formatAppHelpDepth(app *App, depth int) string {
 	var lines []string
 	lines = append(lines, fmt.Sprintf("%s v%s -- %s", app.Name, app.Version, app.Help))
 
-	// Filter hidden commands
-	var visibleCmds []string
-	for _, name := range app.cmdOrder {
-		if !app.commands[name].Hidden {
-			visibleCmds = append(visibleCmds, name)
-		}
-	}
-	if len(visibleCmds) > 0 {
-		lines = append(lines, "")
-		lines = append(lines, "Commands:")
-		maxLen := 0
-		for _, name := range visibleCmds {
-			if len(name) > maxLen {
-				maxLen = len(name)
-			}
-		}
-		for _, name := range visibleCmds {
-			cmd := app.commands[name]
-			padding := maxLen - len(name) + 4
-			lines = append(lines, fmt.Sprintf("  %s%s%s", name, strings.Repeat(" ", padding), cmd.Help))
-		}
-	}
-
-	// Filter hidden groups
-	var visibleGroups []string
-	for _, name := range app.groupOrder {
-		if !app.groups[name].Hidden {
-			visibleGroups = append(visibleGroups, name)
-		}
-	}
-	if len(visibleGroups) > 0 {
-		lines = append(lines, "")
-		lines = append(lines, "Groups:")
-		maxLen := 0
-		for _, name := range visibleGroups {
-			if len(name) > maxLen {
-				maxLen = len(name)
-			}
-		}
-		for _, name := range visibleGroups {
-			grp := app.groups[name]
-			padding := maxLen - len(name) + 4
-			lines = append(lines, fmt.Sprintf("  %s%s%s", name, strings.Repeat(" ", padding), grp.Help))
-		}
-	}
+	var cmdRows, groupRows []helpTreeRow
+	collectHelpTree(app.cmdOrder, app.commands, app.groupOrder, app.groups, "", 1, depth, &cmdRows, &groupRows)
+	lines = append(lines, helpTreeSection("Commands:", cmdRows)...)
+	lines = append(lines, helpTreeSection("Groups:", groupRows)...)
 
 	if len(app.deprecated) > 0 {
 		lines = append(lines, "")
@@ -141,61 +155,25 @@ func formatAppHelp(app *App) string {
 	}
 
 	lines = append(lines, "")
-	lines = append(lines, fmt.Sprintf("Use '%s <command> --help' for more information.", app.Name))
+	lines = append(lines, fmt.Sprintf("Use '%s help <command>' for more information.", app.Name))
 
 	return strings.Join(lines, "\n")
 }
 
 func formatGroupHelp(app *App, group *Group, path []string) string {
+	return formatGroupHelpDepth(app, group, path, 1)
+}
+
+// formatGroupHelpDepth is a group's help page listing depth levels below it.
+func formatGroupHelpDepth(app *App, group *Group, path []string, depth int) string {
 	var lines []string
 	fullPath := strings.Join(path, " ")
 	lines = append(lines, fmt.Sprintf("%s %s -- %s", app.Name, fullPath, group.Help))
 
-	// Filter hidden commands
-	var visibleCmds []string
-	for _, name := range group.order {
-		if !group.Commands[name].Hidden {
-			visibleCmds = append(visibleCmds, name)
-		}
-	}
-	if len(visibleCmds) > 0 {
-		lines = append(lines, "")
-		lines = append(lines, "Commands:")
-		maxLen := 0
-		for _, name := range visibleCmds {
-			if len(name) > maxLen {
-				maxLen = len(name)
-			}
-		}
-		for _, name := range visibleCmds {
-			cmd := group.Commands[name]
-			padding := maxLen - len(name) + 4
-			lines = append(lines, fmt.Sprintf("  %s%s%s", name, strings.Repeat(" ", padding), cmd.Help))
-		}
-	}
-
-	// Filter hidden groups
-	var visibleGroups []string
-	for _, name := range group.groupOrder {
-		if !group.Groups[name].Hidden {
-			visibleGroups = append(visibleGroups, name)
-		}
-	}
-	if len(visibleGroups) > 0 {
-		lines = append(lines, "")
-		lines = append(lines, "Groups:")
-		maxLen := 0
-		for _, name := range visibleGroups {
-			if len(name) > maxLen {
-				maxLen = len(name)
-			}
-		}
-		for _, name := range visibleGroups {
-			sub := group.Groups[name]
-			padding := maxLen - len(name) + 4
-			lines = append(lines, fmt.Sprintf("  %s%s%s", name, strings.Repeat(" ", padding), sub.Help))
-		}
-	}
+	var cmdRows, groupRows []helpTreeRow
+	collectHelpTree(group.order, group.Commands, group.groupOrder, group.Groups, "", 1, depth, &cmdRows, &groupRows)
+	lines = append(lines, helpTreeSection("Commands:", cmdRows)...)
+	lines = append(lines, helpTreeSection("Groups:", groupRows)...)
 
 	if len(group.deprecated) > 0 {
 		lines = append(lines, "")
@@ -213,7 +191,7 @@ func formatGroupHelp(app *App, group *Group, path []string) string {
 	}
 
 	lines = append(lines, "")
-	lines = append(lines, fmt.Sprintf("Use '%s %s <command> --help' for more information.", app.Name, fullPath))
+	lines = append(lines, fmt.Sprintf("Use '%s help %s <command>' for more information.", app.Name, fullPath))
 
 	return strings.Join(lines, "\n")
 }
@@ -234,9 +212,34 @@ func formatDryRunSection(cmd *Command) []string {
 	}
 }
 
+// fmtCommandHeader is the first line of a command's help page.
+func fmtCommandHeader(app *App, cmd *Command, prefix string) string {
+	return fmt.Sprintf("%s %s%s -- %s", app.Name, prefix, cmd.Name, cmd.Help)
+}
+
+// renderFlagEntries renders a flag block's entries on one alignment column.
+func renderFlagEntries(entries []flagHelpEntry) []string {
+	var lines []string
+	maxSpec := 0
+	for _, e := range entries {
+		if len(e.spec) > maxSpec {
+			maxSpec = len(e.spec)
+		}
+	}
+	for _, e := range entries {
+		if e.right == "" {
+			lines = append(lines, "  "+e.spec)
+			continue
+		}
+		padding := maxSpec - len(e.spec) + 4
+		lines = append(lines, fmt.Sprintf("  %s%s%s", e.spec, strings.Repeat(" ", padding), e.right))
+	}
+	return lines
+}
+
 func formatCommandHelp(app *App, cmd *Command, prefix string) string {
 	var lines []string
-	lines = append(lines, fmt.Sprintf("%s %s%s -- %s", app.Name, prefix, cmd.Name, cmd.Help))
+	lines = append(lines, fmtCommandHeader(app, cmd, prefix))
 
 	// Rendered before the passthrough early-return: a passthrough command can
 	// declare the refusal too, and its help is the only place the reason would
@@ -322,23 +325,9 @@ func formatCommandHelp(app *App, cmd *Command, prefix string) string {
 	// (contract §24.10). The mutex section is gone with MutexGroup: a
 	// member-spelled selector renders inline, in declaration order.
 	if len(cmd.flags) > 0 {
-		entries := collectFlagHelpEntries(cmd.flags, 0)
 		lines = append(lines, "")
 		lines = append(lines, "Flags:")
-		maxSpec := 0
-		for _, e := range entries {
-			if len(e.spec) > maxSpec {
-				maxSpec = len(e.spec)
-			}
-		}
-		for _, e := range entries {
-			if e.right == "" {
-				lines = append(lines, "  "+e.spec)
-				continue
-			}
-			padding := maxSpec - len(e.spec) + 4
-			lines = append(lines, fmt.Sprintf("  %s%s%s", e.spec, strings.Repeat(" ", padding), e.right))
-		}
+		lines = append(lines, renderFlagEntries(collectFlagHelpEntries(cmd.flags, 0))...)
 	}
 
 	// The `Constraints:` section (contract §26.10), after the last of the
@@ -505,6 +494,9 @@ func buildMemberSpec(ch *ChoiceDecl) string {
 // for the same reason the dumped flat map omits it -- there is no value to
 // render, and completeness is what a required one is guaranteed by.
 func formatSelectorDefaultForHelp(sel *Flag) string {
+	if sel.helpFull != nil {
+		sel = sel.helpFull
+	}
 	name, ok := sel.Default.(string)
 	if !ok {
 		return formatDefaultValue(sel.Default)

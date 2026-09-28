@@ -61,77 +61,25 @@ func TestSchemaMarkerDefault_CommandAndGlobalFlag(t *testing.T) {
 	}
 }
 
-// --- Declared --dump-schema location ---
+// --- The help document is printed, never written ---
 
-// The schema dump writes where the App declared, not where the caller stands.
-
-func TestDumpSchemaDeclaredRelativePath(t *testing.T) {
-	tmpDir := chdirTemp(t)
-	app := NewApp("testapp", "1.0.0", "A test app",
-		WithSchemaPath(filepath.Join("build", "cli-schema.json")))
-	app.Command("greet", "Say hello", func(ctx *Context, args map[string]interface{}) Outcome {
-		return Exit(0)
-	}, WithEffect(EffectReadOnly))
-
-	r := app.Test([]string{"--dump-schema"})
-	if r.ExitCode != 0 {
-		t.Fatalf("expected exit 0, got %d: stderr=%q", r.ExitCode, r.Stderr)
-	}
-	want := filepath.Join(tmpDir, "build", "cli-schema.json")
-	if _, err := os.Stat(want); err != nil {
-		t.Fatalf("schema not written to the declared path: %v", err)
-	}
-	if !strings.Contains(r.Stdout, want) {
-		t.Fatalf("stdout = %q, want the declared path", r.Stdout)
-	}
-	if _, err := os.Stat(filepath.Join(tmpDir, ".strictcli")); err == nil {
-		t.Fatalf("the framework's default location was written too")
-	}
-}
-
-func TestDumpSchemaDeclaredRelativeToRoot(t *testing.T) {
-	tmpDir := chdirTemp(t)
-	root := filepath.Join(tmpDir, "root")
-	t.Setenv("TESTAPP_HOME", root)
-	app := NewApp("testapp", "1.0.0", "A test app",
-		WithInfraRoot("TESTAPP_HOME", root),
-		WithSchemaPathRelativeToRoot("TESTAPP_HOME", "schema.json"))
-	app.Command("greet", "Say hello", func(ctx *Context, args map[string]interface{}) Outcome {
-		return Exit(0)
-	}, WithEffect(EffectReadOnly))
-
-	if r := app.Test([]string{"--dump-schema"}); r.ExitCode != 0 {
-		t.Fatalf("expected exit 0, got %d: stderr=%q", r.ExitCode, r.Stderr)
-	}
-	if _, err := os.Stat(filepath.Join(root, "schema.json")); err != nil {
-		t.Fatalf("schema not written under the declared root: %v", err)
-	}
-}
-
-func TestDumpSchemaDefaultIsAnchoredAtConstruction(t *testing.T) {
+// `help --json` prints the document on stdout and writes no file anywhere:
+// the committed schema file is whatever its project redirects it into.
+func TestHelpDocumentWritesNoFile(t *testing.T) {
 	tmpDir := chdirTemp(t)
 	app := NewApp("testapp", "1.0.0", "A test app")
 	app.Command("greet", "Say hello", func(ctx *Context, args map[string]interface{}) Outcome {
 		return Exit(0)
 	}, WithEffect(EffectReadOnly))
 
-	elsewhere := t.TempDir()
-	// project_id is read from the cwd at dump time -- a separate cwd
-	// dependency this test is not about, so both directories carry a go.mod.
-	if err := os.WriteFile(filepath.Join(elsewhere, "go.mod"),
-		[]byte("module example.com/testproject\n"), 0644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Chdir(elsewhere); err != nil {
-		t.Fatal(err)
-	}
-	if r := app.Test([]string{"--dump-schema"}); r.ExitCode != 0 {
+	r := app.Test([]string{"help", "--json"})
+	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d: stderr=%q", r.ExitCode, r.Stderr)
 	}
-	if _, err := os.Stat(filepath.Join(tmpDir, ".strictcli", "schema.json")); err != nil {
-		t.Fatalf("schema not written at the construction anchor: %v", err)
+	if !strings.HasPrefix(r.Stdout, "{\n  \"schema_version\": 2,") {
+		t.Fatalf("stdout = %q, want the help document", r.Stdout)
 	}
-	if _, err := os.Stat(filepath.Join(elsewhere, ".strictcli")); err == nil {
-		t.Fatalf("schema followed the caller's cwd")
+	if _, err := os.Stat(filepath.Join(tmpDir, ".strictcli")); err == nil {
+		t.Fatalf("help --json wrote a file")
 	}
 }

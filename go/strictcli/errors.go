@@ -1232,16 +1232,10 @@ func errChecksNotEnabled() error {
 // schema.go
 // ---------------------------------------------------------------------------
 
-func errCannotDetermineProjectIDNoGoMod() error {
-	return fmt.Errorf("Cannot determine project_id: go.mod not found")
-}
-
-func errCannotDetermineProjectIDReadError(err error) error {
-	return fmt.Errorf("Cannot determine project_id: error reading go.mod: %w", err)
-}
-
-func errCannotDetermineProjectIDNoModule() error {
-	return fmt.Errorf("Cannot determine project_id: no module directive in go.mod")
+// errProjectIDUndetermined refuses a help document whose project_id the
+// program's build information cannot supply. reason is each language's own.
+func errProjectIDUndetermined(reason string) error {
+	return fmt.Errorf("cannot determine project_id: %s", reason)
 }
 
 // errSchemaValueUnserializable names a value the canonical writer cannot
@@ -1249,13 +1243,6 @@ func errCannotDetermineProjectIDNoModule() error {
 // schema holds comes from a declaration surface whose types are closed.
 func errSchemaValueUnserializable(v interface{}) error {
 	return fmt.Errorf("schema value of unserializable type: %T", v)
-}
-
-func errSchemaMismatch(existingID string, newID string) error {
-	return fmt.Errorf(
-		"Schema mismatch: existing schema belongs to project '%s', not '%s'. Run from the correct project directory.",
-		existingID, newID,
-	)
 }
 
 // ---------------------------------------------------------------------------
@@ -2217,4 +2204,85 @@ func errFlagShortInvalid(name, short string) string {
 // level of the command tree. kind is "command", "group" or "deprecated command".
 func errFrameworkCommandName(kind, name string) string {
 	return fmt.Sprintf("%s name %q is reserved: help and version are framework commands at every level of the command tree", kind, name)
+}
+
+// ---------------------------------------------------------------------------
+// help_command.go — the help and version commands (parse-time)
+// ---------------------------------------------------------------------------
+
+// errHelpTextOnly refuses --json on a help page reached through --help (or
+// through no command at all), naming the help command that prints the
+// machine form. fix is the full command line, e.g. "myapp help run --json".
+func errHelpTextOnly(fix string) string {
+	return fmt.Sprintf("help pages are text; for the machine form use '%s'", fix)
+}
+
+func errVersionTextOnly(fix string) string {
+	return fmt.Sprintf("the version line is text; for the machine form use '%s'", fix)
+}
+
+func errDumpSchemaRemoved(fix string) string {
+	return fmt.Sprintf("--dump-schema is not supported; the app's help document is printed by '%s'", fix)
+}
+
+const errHelpDepthMissing = "help: --depth requires a value"
+
+func errHelpDepthValue(value string) string {
+	return fmt.Sprintf("help: --depth: invalid value '%s': must be an integer of at least 1", value)
+}
+
+func errHelpDepthOnCommand(path string) string {
+	return fmt.Sprintf("help: --depth lists the command tree below the app or a group; '%s' is a command", path)
+}
+
+func errHelpUnknownOption(token, app string) string {
+	return fmt.Sprintf("help: unknown option '%s': help's only option is --depth <int>, and a flag is addressed after its command: '%s help <command> %s'", token, app, token)
+}
+
+func errHelpOptionAfterAddress(token, fix string) string {
+	return fmt.Sprintf("help: %s is help's own option and goes before the address: '%s'", token, fix)
+}
+
+func errHelpFlagOnGroup(token, fix string) string {
+	return fmt.Sprintf("help: '%s' names a flag, and a flag is addressed after its command: '%s'", token, fix)
+}
+
+func errHelpWordAfterCommand(word, path string) string {
+	return fmt.Sprintf("help: '%s' follows the command '%s'; only one of its flags may follow a command (--<flag>)", word, path)
+}
+
+func errHelpAfterFlag(token string) string {
+	return fmt.Sprintf("help: '%s' follows the flag address; an address ends at one flag", token)
+}
+
+func errHelpShortAddress(token, fix string) string {
+	return fmt.Sprintf("help: '%s' is a short form; address the flag by its long name: '%s'", token, fix)
+}
+
+func errHelpFlagWithValue(token, fix string) string {
+	return fmt.Sprintf("help: '%s' carries a value; a flag address is the flag alone: '%s'", token, fix)
+}
+
+func errHelpNegatedFlag(token, fix string) string {
+	return fmt.Sprintf("help: '%s' is another spelling of a declared flag; address the declaration: '%s'", token, fix)
+}
+
+func errHelpUnknownFlag(path, token, flags string) string {
+	return fmt.Sprintf("command '%s' has no flag '%s'; its flags: %s", path, token, flags)
+}
+
+func errHelpUnknownFlagNoFlags(path, token string) string {
+	return fmt.Sprintf("command '%s' has no flag '%s' and declares no flags", path, token)
+}
+
+func errHelpInGroup(fix string) string {
+	return fmt.Sprintf("'help' is a framework command at the root: use '%s'", fix)
+}
+
+func errVersionInGroup(fix string) string {
+	return fmt.Sprintf("'version' is a framework command at the root: use '%s'", fix)
+}
+
+func errVersionArgs(token string) string {
+	return fmt.Sprintf("version takes no arguments, got '%s'", token)
 }

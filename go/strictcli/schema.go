@@ -1,12 +1,8 @@
 package strictcli
 
 import (
-	"bufio"
-	"encoding/json"
-	"os"
-	"path/filepath"
+	"runtime/debug"
 	"sort"
-	"strings"
 )
 
 // The dumped schema, version 2 (effects contract §25).
@@ -641,25 +637,16 @@ func buildSchemaDefaults() *schemaObject {
 			set("connections", []interface{}{}))
 }
 
-// readProjectID reads the module path from go.mod in the current working directory.
-func readProjectID() (string, error) {
-	f, err := os.Open("go.mod")
-	if err != nil {
-		return "", errCannotDetermineProjectIDNoGoMod()
+// buildInfoProjectID is the project_id of the help document: the main module
+// path the program was built from, read from its own build information, so an
+// installed binary names its project wherever it runs. A program built from a
+// single file outside a module carries no module path and is refused.
+func buildInfoProjectID() (string, error) {
+	info, ok := debug.ReadBuildInfo()
+	if !ok || info.Main.Path == "" || info.Main.Path == "command-line-arguments" {
+		return "", errProjectIDUndetermined("the program's build information names no main module (it was built from a file outside a Go module)")
 	}
-	defer f.Close()
-
-	scanner := bufio.NewScanner(f)
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if strings.HasPrefix(line, "module ") {
-			return strings.TrimSpace(strings.TrimPrefix(line, "module ")), nil
-		}
-	}
-	if err := scanner.Err(); err != nil {
-		return "", errCannotDetermineProjectIDReadError(err)
-	}
-	return "", errCannotDetermineProjectIDNoModule()
+	return info.Main.Path, nil
 }
 
 // dumpSchemaObject builds the full ordered schema document, excluding
@@ -915,10 +902,10 @@ func dumpSchemaCore(app *App) map[string]interface{} {
 }
 
 // dumpSchemaOrdered produces the full ordered document including project_id
-// (reads the CWD). project_id sits immediately after `defaults`, so removing it
-// leaves the CWD-free core byte-identical.
+// (from the build information). project_id sits immediately after `defaults`,
+// so removing it leaves the rest of the document byte-identical.
 func dumpSchemaOrdered(app *App) (*schemaObject, error) {
-	projectID, err := readProjectID()
+	projectID, err := buildInfoProjectID()
 	if err != nil {
 		return nil, err
 	}
@@ -938,81 +925,11 @@ func dumpSchema(app *App) (map[string]interface{}, error) {
 
 // DumpSchemaDict returns the app's full schema as a map, excluding project_id.
 //
-// This is the public, CWD-free accessor for the schema. Unlike the
-// --dump-schema flag (which writes the app's declared schema location and derives
-// project_id from go.mod in the current working directory), this method reads
-// only the in-memory App and performs no filesystem or CWD access, and cannot
-// fail. The returned map is equivalent to the written schema file with the
-// project_id field removed.
+// This is the public accessor for the help document of the whole app. Unlike
+// `<app> help --json` (which adds project_id from the program's build
+// information), this method reads only the in-memory App and cannot fail. The
+// returned map is equivalent to that document with the project_id field
+// removed.
 func (a *App) DumpSchemaDict() map[string]interface{} {
 	return dumpSchemaCore(a)
-}
-
-// checkSchemaProjectID verifies that an existing schema file belongs to the
-// same project. Returns an error on mismatch. Silently passes on: missing
-// file, unreadable file, JSON without project_id field, or matching project_id.
-func checkSchemaProjectID(filePath string, newProjectID string) error {
-	raw, err := os.ReadFile(filePath)
-	if err != nil {
-		return nil
-	}
-	var existing map[string]interface{}
-	if err := json.Unmarshal(raw, &existing); err != nil {
-		return nil
-	}
-	existingID, ok := existing["project_id"]
-	if !ok {
-		return nil
-	}
-	existingIDStr, ok := existingID.(string)
-	if !ok {
-		return nil
-	}
-	if existingIDStr != newProjectID {
-		return errSchemaMismatch(existingIDStr, newProjectID)
-	}
-	return nil
-}
-
-// writeSchema writes the schema to the app's declared location and returns the
-// path. The location is decided once, at construction (WithSchemaPath /
-// WithSchemaPathRelativeToRoot, or the framework's ".strictcli/schema.json"
-// anchored at the construction-time cwd) -- never at the caller's working
-// directory at dump time.
-//
-// The bytes are the canon's (§25.8), not encoding/json's: a repository whose
-// schema file is written sometimes by this implementation and sometimes by
-// another must see a diff exactly when something changed.
-func writeSchema(app *App) (string, error) {
-	schema, err := dumpSchemaOrdered(app)
-	if err != nil {
-		return "", err
-	}
-	text, err := canonicalJSON(schema)
-	if err != nil {
-		return "", err
-	}
-	filePath := app.schemaOutPath
-	if dirPath := filepath.Dir(filePath); dirPath != "" {
-		if err := os.MkdirAll(dirPath, 0o755); err != nil {
-			return "", err
-		}
-	}
-	newProjectID, _ := schema.get("project_id").(string)
-	if err := checkSchemaProjectID(filePath, newProjectID); err != nil {
-		return "", err
-	}
-	// Exactly one trailing newline at end of file.
-	if err := os.WriteFile(filePath, []byte(text+"\n"), 0o644); err != nil {
-		return "", err
-	}
-	// Framework-blessed CACHE_WRITE: recorded in the structured effect log,
-	// never in the would-do log, and performed even in dry mode.
-	app.recordCacheWrite(filePath)
-	// Return absolute path for output
-	absPath, err := filepath.Abs(filePath)
-	if err != nil {
-		return filePath, nil
-	}
-	return absPath, nil
 }

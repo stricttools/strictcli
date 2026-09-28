@@ -45,8 +45,8 @@ const (
 )
 
 // Effect kinds. CacheWrite has NO public method: it is minted only by
-// framework-internal code (schema dump, test-coverage shards and manifest) and
-// is unreachable from application code.
+// framework-internal code (the test-coverage shards and manifest) and is
+// unreachable from application code.
 const (
 	ProcMutate = "proc_mutate"
 	ProcSpawn  = "proc_spawn"
@@ -1643,8 +1643,8 @@ func (a *App) beginDispatch() {
 
 // recordCacheWrite records a framework-blessed CACHE_WRITE.
 //
-// The closed list of sites is exactly three: the schema dump, the test-coverage
-// shards, and the test-coverage manifest. CACHE_WRITEs have no public method,
+// The closed list of sites: the test-coverage shards and the test-coverage
+// manifest. CACHE_WRITEs have no public method,
 // never appear in the would-do log, never trip read-only enforcement, and
 // EXECUTE even in dry mode -- which is why they always carry recorded: false.
 func (a *App) recordCacheWrite(path string) {
