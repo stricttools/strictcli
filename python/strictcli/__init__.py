@@ -14,6 +14,8 @@ __all__ = [
     "InvokeError",
     # The early exit (contract §19.9)
     "exit_now", "ExitError",
+    # Declared runtime requirements
+    "Requirement",
     # The scoped-selector construct (contract §24)
     "Choice", "choice", "choice_flag", "sub_flag", "sub_choice_flag",
     "member_value", "provided",
