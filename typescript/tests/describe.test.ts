@@ -321,6 +321,7 @@ const typeWitness: Record<TypeName, unknown> = {
 	CheckProblem: witnessType<api.CheckProblem>(),
 	CheckSeverity: witnessType<api.CheckSeverity>(),
 	CheckStatus: witnessType<api.CheckStatus>(),
+	CheckValue: witnessType<api.CheckValue>(),
 	AtLeastOne: witnessType<api.AtLeastOne>(),
 	AllOrNone: witnessType<api.AllOrNone>(),
 	CommandDef:

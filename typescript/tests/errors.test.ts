@@ -131,7 +131,11 @@ import { ParseError, RegistrationError } from "../src/errors.js";
 // refusals, and finding messages, the unparsable-source refusal among them.
 // Unwaited children net +1: the run outcome naming a child the exit step
 // killed.
-const EXPECTED_TEMPLATE_COUNT = 428;
+// Check metadata, check values, and named hooks net +16: the description and
+// subject refusals, the seven hook-declaration refusals, the three refused
+// resolver values, the three hook-selection refusals, and the resolver's
+// must-be-callable guard.
+const EXPECTED_TEMPLATE_COUNT = 444;
 
 function templateFunctions(): [string, (...args: never[]) => unknown][] {
 	// Widen to unknown first: the module also exports the two error classes,

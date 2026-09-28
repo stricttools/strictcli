@@ -12,13 +12,19 @@
 import {
 	errCheckDependencyCycle,
 	errCheckOutcomeNotMinted,
+	errCheckValueAboveSeverity,
+	errCheckValueInvalid,
+	errCheckValueSourceEmpty,
 } from "../errors.js";
 import {
 	type CheckContext,
 	type CheckDef,
 	CheckOutcome,
 	CheckRunResult,
+	type CheckValue,
+	mintAsWarnings,
 	mintCheckAbort,
+	mintOff,
 	mintSkip,
 } from "./framework.js";
 import { matchTagExpr } from "./tagdsl.js";
@@ -232,6 +238,55 @@ export function checkIsPure(def: CheckDef): boolean {
 	return def.pure && !def.needsNetwork;
 }
 
+/** One check's effective value and where it came from. */
+export interface ResolvedCheckValue {
+	readonly value: "error" | "warn" | "off";
+	readonly source: string;
+}
+
+/**
+ * The source shown for a check the resolver assigns no value: it runs at its
+ * registered severity.
+ */
+const CHECK_VALUE_DEFAULT_SOURCE = "default";
+
+/**
+ * Resolves each named check's effective value and source. A check the
+ * resolver assigns no value (undefined), and every check when no resolver is
+ * set, runs at its registered severity with the source "default". Throws
+ * naming the first check whose resolved value is not a check value, carries no
+ * source, or would raise the check above its registered severity.
+ */
+export function resolveCheckValues(
+	defs: ReadonlyMap<string, CheckDef>,
+	names: Iterable<string>,
+	resolver: ((name: string) => CheckValue | undefined) | undefined,
+): Map<string, ResolvedCheckValue> {
+	const values = new Map<string, ResolvedCheckValue>();
+	for (const name of names) {
+		const severity = (defs.get(name) as CheckDef).severity;
+		const resolved = resolver === undefined ? undefined : resolver(name);
+		if (resolved === undefined) {
+			values.set(name, { value: severity, source: CHECK_VALUE_DEFAULT_SOURCE });
+			continue;
+		}
+		const value = resolved.value as string;
+		if (value !== "error" && value !== "warn" && value !== "off") {
+			throw new Error(errCheckValueInvalid(name, String(value)));
+		}
+		if (typeof resolved.source !== "string" || resolved.source.trim() === "") {
+			throw new Error(errCheckValueSourceEmpty(name, value));
+		}
+		if (value === "error" && severity === "warn") {
+			throw new Error(
+				errCheckValueAboveSeverity(name, value, resolved.source, severity),
+			);
+		}
+		values.set(name, { value, source: resolved.source });
+	}
+	return values;
+}
+
 export interface RunChecksOutput {
 	readonly results: CheckRunResult[];
 	/**
@@ -240,7 +295,7 @@ export interface RunChecksOutput {
 	 * code -- a consumer renders them as e.g. "would run: <name> (impure)".
 	 */
 	readonly impureListed: string[];
-	/** 0 if all executed checks pass (or all warn with ignoreWarnings), else 1. */
+	/** 0 if every executed check passes or skips, else 1 (a warning counts). */
 	readonly exitCode: number;
 }
 
@@ -252,6 +307,12 @@ export interface RunChecksOutput {
  * checks physically cannot cascade because WarnReporter lacks error-minting.
  * An explicit SKIP from an impl is NOT a failure -- dependents still run.
  *
+ * `values` maps a check name to its resolved value (see resolveCheckValues);
+ * a check absent from it runs as registered. A check resolved "off" does not
+ * run: it gets an OFF row, cascades nothing, and leaves the exit code alone.
+ * A check resolved "warn" runs and has its failures reported as warnings, so
+ * it never blocks its dependents.
+ *
  * Purity partition (pureOnly): only pure, non-network checks execute; every
  * other selected check is listed (not run, no exit-code contribution). A
  * check also joins the listing when any dependency was listed -- an
@@ -262,7 +323,7 @@ export async function runOrderedChecks(
 	defs: ReadonlyMap<string, CheckDef>,
 	order: readonly string[],
 	ctx: CheckContext,
-	ignoreWarnings: boolean,
+	values: ReadonlyMap<string, ResolvedCheckValue>,
 	pureOnly: boolean,
 ): Promise<RunChecksOutput> {
 	const results: CheckRunResult[] = [];
@@ -273,6 +334,15 @@ export async function runOrderedChecks(
 
 	for (const name of order) {
 		const def = defs.get(name) as CheckDef;
+		const resolved = values.get(name);
+		const value = resolved?.value ?? def.severity;
+
+		// A check its resolved value turned off never runs, whatever its
+		// dependencies did: it is shown as off, with where that came from.
+		if (resolved !== undefined && resolved.value === "off") {
+			results.push(new CheckRunResult(name, mintOff(resolved.source), 0));
+			continue;
+		}
 
 		// Cascade: skip when any dependency failed.
 		const failedDep = def.dependsOn.find((dep) => failedChecks.has(dep));
@@ -315,15 +385,21 @@ export async function runOrderedChecks(
 		if (!(outcome instanceof CheckOutcome)) {
 			throw new Error(errCheckOutcomeNotMinted(name));
 		}
+		// A check resolved to warn reports its failures as warnings. (A broken
+		// check, contained above, fails whatever its value: resolving it to
+		// warn lowers what its findings mean, not what an abort means.)
+		if (value === "warn") {
+			outcome = mintAsWarnings(outcome);
+		}
 		const result = new CheckRunResult(name, outcome, durationMs);
 		results.push(result);
 
 		if (result.gated()) {
 			failedChecks.add(name);
 			exitCode = 1;
-		} else if (result.warned() && !ignoreWarnings) {
+		} else if (result.warned()) {
 			// Warn satisfies the dependency (no cascade), but still makes the
-			// run exit non-zero unless warnings are ignored.
+			// run exit non-zero.
 			exitCode = 1;
 		}
 		// pass / skip: not a failure, no cascade, no exit code change.

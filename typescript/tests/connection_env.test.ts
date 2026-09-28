@@ -260,6 +260,8 @@ function connCheckApp() {
 		connectionEnv: { DATABASE_URL: "conn" },
 		checksEmbed: `app = "myapp"
 [checks.db-reachable]
+description = "Checks db-reachable"
+subject = "quality"
 tags = ["db"]
 severity = "error"
 fast = true

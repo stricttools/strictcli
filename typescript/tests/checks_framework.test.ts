@@ -45,7 +45,7 @@ function assertEmbedThrows(toml: string, message: string): void {
 
 test("checks.toml: missing app field", () => {
 	assertEmbedThrows(
-		`[checks.lint]\n${VALID_CHECK_BODY}`,
+		`[checks.lint]\ndescription = "Checks lint"\nsubject = "quality"\n${VALID_CHECK_BODY}`,
 		'checks.toml: missing required top-level key "app"',
 	);
 });
@@ -63,7 +63,7 @@ test("checks.toml: app must be a non-empty string", () => {
 
 test("checks.toml: app name mismatch", () => {
 	assertEmbedThrows(
-		`app = "wrong"\n[checks.lint]\n${VALID_CHECK_BODY}`,
+		`app = "wrong"\n[checks.lint]\ndescription = "Checks lint"\nsubject = "quality"\n${VALID_CHECK_BODY}`,
 		'checks.toml: app "wrong" does not match app name "testapp"',
 	);
 });
@@ -84,7 +84,7 @@ test("checks.toml: checks must be a table", () => {
 
 test("checks.toml: invalid check name", () => {
 	assertEmbedThrows(
-		`app = "testapp"\n[checks.Bad]\n${VALID_CHECK_BODY}`,
+		`app = "testapp"\n[checks.Bad]\ndescription = "Checks Bad"\nsubject = "quality"\n${VALID_CHECK_BODY}`,
 		'checks.toml: invalid check name "Bad" (must match [a-z][a-z0-9-]*)',
 	);
 });
@@ -98,7 +98,7 @@ test("checks.toml: check must be a table", () => {
 
 test("checks.toml: unknown field", () => {
 	assertEmbedThrows(
-		`app = "testapp"\n[checks.lint]\n${VALID_CHECK_BODY}bogus = 1\n`,
+		`app = "testapp"\n[checks.lint]\ndescription = "Checks lint"\nsubject = "quality"\n${VALID_CHECK_BODY}bogus = 1\n`,
 		'checks.toml: check "lint": unknown field "bogus"',
 	);
 });
@@ -107,58 +107,58 @@ test("checks.toml: missing required field, sorted-first when several missing", (
 	// Only tags present: Python reports the alphabetically-first missing
 	// required field (depends_on), not declaration order.
 	assertEmbedThrows(
-		'app = "testapp"\n[checks.lint]\ntags = []\n',
+		'app = "testapp"\n[checks.lint]\ndescription = "Checks lint"\nsubject = "quality"\ntags = []\n',
 		'checks.toml: check "lint": missing required field "depends_on"',
 	);
 });
 
 test("checks.toml: tags must be a list of non-empty strings", () => {
 	assertEmbedThrows(
-		'app = "testapp"\n[checks.lint]\ntags = "release"\nseverity = "error"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n',
+		'app = "testapp"\n[checks.lint]\ndescription = "Checks lint"\nsubject = "quality"\ntags = "release"\nseverity = "error"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n',
 		'checks.toml: check "lint": "tags" must be a list of strings',
 	);
 	assertEmbedThrows(
-		'app = "testapp"\n[checks.lint]\ntags = [" "]\nseverity = "error"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n',
+		'app = "testapp"\n[checks.lint]\ndescription = "Checks lint"\nsubject = "quality"\ntags = [" "]\nseverity = "error"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n',
 		'checks.toml: check "lint": "tags" entries must be non-empty strings',
 	);
 });
 
 test("checks.toml: severity must be error or warn", () => {
 	assertEmbedThrows(
-		'app = "testapp"\n[checks.lint]\ntags = []\nseverity = "fatal"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n',
+		'app = "testapp"\n[checks.lint]\ndescription = "Checks lint"\nsubject = "quality"\ntags = []\nseverity = "fatal"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n',
 		'checks.toml: check "lint": "severity" must be "error" or "warn", got "fatal"',
 	);
 });
 
 test("checks.toml: bool fields must be booleans (Python type names)", () => {
 	assertEmbedThrows(
-		'app = "testapp"\n[checks.lint]\ntags = []\nseverity = "error"\nfast = 1\npure = true\nneeds_network = false\ndepends_on = []\n',
+		'app = "testapp"\n[checks.lint]\ndescription = "Checks lint"\nsubject = "quality"\ntags = []\nseverity = "error"\nfast = 1\npure = true\nneeds_network = false\ndepends_on = []\n',
 		'checks.toml: check "lint": "fast" must be a boolean, got int',
 	);
 	assertEmbedThrows(
-		'app = "testapp"\n[checks.lint]\ntags = []\nseverity = "error"\nfast = true\npure = "yes"\nneeds_network = false\ndepends_on = []\n',
+		'app = "testapp"\n[checks.lint]\ndescription = "Checks lint"\nsubject = "quality"\ntags = []\nseverity = "error"\nfast = true\npure = "yes"\nneeds_network = false\ndepends_on = []\n',
 		'checks.toml: check "lint": "pure" must be a boolean, got str',
 	);
 });
 
 test("checks.toml: depends_on validation", () => {
 	assertEmbedThrows(
-		'app = "testapp"\n[checks.lint]\ntags = []\nseverity = "error"\nfast = true\npure = true\nneeds_network = false\ndepends_on = "x"\n',
+		'app = "testapp"\n[checks.lint]\ndescription = "Checks lint"\nsubject = "quality"\ntags = []\nseverity = "error"\nfast = true\npure = true\nneeds_network = false\ndepends_on = "x"\n',
 		'checks.toml: check "lint": "depends_on" must be a list of strings',
 	);
 	assertEmbedThrows(
-		'app = "testapp"\n[checks.lint]\ntags = []\nseverity = "error"\nfast = true\npure = true\nneeds_network = false\ndepends_on = [1]\n',
+		'app = "testapp"\n[checks.lint]\ndescription = "Checks lint"\nsubject = "quality"\ntags = []\nseverity = "error"\nfast = true\npure = true\nneeds_network = false\ndepends_on = [1]\n',
 		'checks.toml: check "lint": "depends_on" entries must be strings',
 	);
 	assertEmbedThrows(
-		'app = "testapp"\n[checks.lint]\ntags = []\nseverity = "error"\nfast = true\npure = true\nneeds_network = false\ndepends_on = ["ghost"]\n',
+		'app = "testapp"\n[checks.lint]\ndescription = "Checks lint"\nsubject = "quality"\ntags = []\nseverity = "error"\nfast = true\npure = true\nneeds_network = false\ndepends_on = ["ghost"]\n',
 		'checks.toml: check "lint": depends_on references unknown check "ghost"',
 	);
 });
 
 test("checks.toml: scope must be a string (parse-only field)", () => {
 	assertEmbedThrows(
-		`app = "testapp"\n[checks.lint]\n${VALID_CHECK_BODY}scope = 5\n`,
+		`app = "testapp"\n[checks.lint]\ndescription = "Checks lint"\nsubject = "quality"\n${VALID_CHECK_BODY}scope = 5\n`,
 		'checks.toml: check "lint": "scope" must be a string, got int',
 	);
 });
@@ -181,7 +181,7 @@ test("checks.toml: app-only file is valid; scope is carried on defs", () => {
 	assert.deepEqual(order, []);
 
 	const parsed = parseChecksToml(
-		`app = "t"\n[checks.lint]\n${VALID_CHECK_BODY}scope = "changelog"\n`,
+		`app = "t"\n[checks.lint]\ndescription = "Checks lint"\nsubject = "quality"\n${VALID_CHECK_BODY}scope = "changelog"\n`,
 	);
 	const def = parsed.defs.get("lint");
 	assert.ok(def);
@@ -226,7 +226,10 @@ test("checksPath must exist", () => {
 test("checksPath loads a checks.toml file from disk", async () => {
 	const dir = tempDir("strictcli-checks-");
 	const path = join(dir, "checks.toml");
-	writeFileSync(path, `app = "t"\n[checks.lint]\n${VALID_CHECK_BODY}`);
+	writeFileSync(
+		path,
+		`app = "t"\n[checks.lint]\ndescription = "Checks lint"\nsubject = "quality"\n${VALID_CHECK_BODY}`,
+	);
 	const app = createApp({
 		name: "t",
 		version: "1",
@@ -349,7 +352,7 @@ test("errorCheck: checks not enabled", () => {
 
 test("errorCheck: not declared in checks.toml", () => {
 	const app = appWithEmbed(
-		`app = "testapp"\n[checks.lint]\n${VALID_CHECK_BODY}`,
+		`app = "testapp"\n[checks.lint]\ndescription = "Checks lint"\nsubject = "quality"\n${VALID_CHECK_BODY}`,
 	);
 	assert.throws(() => app.errorCheck("nope", (_c, r) => r.passed("ok")), {
 		message: 'cannot register check "nope": not declared in checks.toml',
@@ -358,7 +361,7 @@ test("errorCheck: not declared in checks.toml", () => {
 
 test("errorCheck: duplicate registration", () => {
 	const app = appWithEmbed(
-		`app = "testapp"\n[checks.lint]\n${VALID_CHECK_BODY}`,
+		`app = "testapp"\n[checks.lint]\ndescription = "Checks lint"\nsubject = "quality"\n${VALID_CHECK_BODY}`,
 	);
 	app.errorCheck("lint", (_c, r) => r.passed("ok"));
 	assert.throws(() => app.errorCheck("lint", (_c, r) => r.passed("ok")), {
@@ -368,14 +371,16 @@ test("errorCheck: duplicate registration", () => {
 
 test("registration severity cross-check, both directions", () => {
 	const warnToml =
-		'app = "testapp"\n[checks.w]\ntags = []\nseverity = "warn"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n';
+		'app = "testapp"\n[checks.w]\ndescription = "Checks w"\nsubject = "quality"\ntags = []\nseverity = "warn"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n';
 	const app = appWithEmbed(warnToml);
 	assert.throws(() => app.errorCheck("w", (_c, r) => r.passed("ok")), {
 		message:
 			'check "w": declared severity "warn" in checks.toml but registered via app.errorCheck; use app.warnCheck',
 	});
 
-	const app2 = appWithEmbed(`app = "testapp"\n[checks.e]\n${VALID_CHECK_BODY}`);
+	const app2 = appWithEmbed(
+		`app = "testapp"\n[checks.e]\ndescription = "Checks e"\nsubject = "quality"\n${VALID_CHECK_BODY}`,
+	);
 	assert.throws(() => app2.warnCheck("e", (_c, r) => r.passed("ok")), {
 		message:
 			'check "e": declared severity "error" in checks.toml but registered via app.warnCheck; use app.errorCheck',
@@ -383,8 +388,10 @@ test("registration severity cross-check, both directions", () => {
 });
 
 test("declared-but-unregistered checks block dispatch (any argv)", async () => {
-	const toml = `app = "testapp"\n[checks.lint]\n${VALID_CHECK_BODY}
+	const toml = `app = "testapp"\n[checks.lint]\ndescription = "Checks lint"\nsubject = "quality"\n${VALID_CHECK_BODY}
 [checks.format]
+description = "Checks format"
+subject = "quality"
 tags = ["dev"]
 severity = "warn"
 fast = true

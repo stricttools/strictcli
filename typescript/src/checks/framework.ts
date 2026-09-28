@@ -22,12 +22,21 @@ import {
 	errChecksTomlDependsOnEntriesMustBeStrings,
 	errChecksTomlDependsOnMustBeStrings,
 	errChecksTomlDependsOnUnknown,
+	errChecksTomlDescriptionInvalid,
+	errChecksTomlHookMissingTag,
+	errChecksTomlHookMustBeTable,
+	errChecksTomlHooksMustBeTable,
+	errChecksTomlHookTagExpr,
+	errChecksTomlHookTagInvalid,
+	errChecksTomlHookUnknownField,
 	errChecksTomlInvalidCheckName,
+	errChecksTomlInvalidHookName,
 	errChecksTomlMissingApp,
 	errChecksTomlMissingField,
 	errChecksTomlParse,
 	errChecksTomlScopeMustBeString,
 	errChecksTomlSeverityInvalid,
+	errChecksTomlSubjectInvalid,
 	errChecksTomlTagsEntriesMustBeStrings,
 	errChecksTomlTagsMustBeStrings,
 	errChecksTomlUnknownField,
@@ -45,6 +54,7 @@ import {
 } from "../errors.js";
 import { parseTomlConfig, TomlLoadFailure } from "../toml.js";
 import type { CheckSpec } from "./provider.js";
+import { matchTagExpr } from "./tagdsl.js";
 
 // --- Public contract types ---
 
@@ -53,8 +63,22 @@ export interface CheckContext {
 	readonly projectRoot: string;
 }
 
-/** Check severity level: "error" causes hard failures, "warn" is non-fatal unless --ignore-warnings is absent. */
+/** Check severity level: "error" causes hard failures, "warn" is non-blocking. */
 export type CheckSeverity = "error" | "warn";
+
+/**
+ * The value an app's check value resolver assigns one check
+ * (app.setCheckValueResolver). `value` is "error" (run as registered), "warn"
+ * (run, and report its failures as warnings, never blocking), or "off" (do
+ * not run; the check is shown as off, with its source). `source` says where
+ * the value came from -- for example an options entry id and the file holding
+ * it -- and is shown beside the value. A value may lower a check's registered
+ * severity, never raise it.
+ */
+export interface CheckValue {
+	readonly value: "error" | "warn" | "off";
+	readonly source: string;
+}
 
 /** A single minted finding: text plus severity ("error" or "warn"). */
 export interface CheckProblem {
@@ -74,7 +98,7 @@ const MINT_TOKEN = Symbol("strictcli.checks.mint");
  * pass the module-private mint token. Direct construction throws.
  */
 export class CheckOutcome {
-	readonly kind: "passed" | "skipped" | "found";
+	readonly kind: "passed" | "skipped" | "found" | "off";
 	readonly message: string;
 	readonly problems: readonly CheckProblem[];
 	/**
@@ -87,7 +111,7 @@ export class CheckOutcome {
 
 	constructor(
 		token: symbol,
-		kind: "passed" | "skipped" | "found",
+		kind: "passed" | "skipped" | "found" | "off",
 		message: string,
 		problems: readonly CheckProblem[],
 		notes: readonly string[],
@@ -105,6 +129,32 @@ export class CheckOutcome {
 /** Runner-internal mint for cascade-skip outcomes (not part of the public API). */
 export function mintSkip(message: string): CheckOutcome {
 	return new CheckOutcome(MINT_TOKEN, "skipped", message, [], []);
+}
+
+/**
+ * Runner-internal mint for a check its resolved value turned off: it did not
+ * run, and the row says so and where the value came from.
+ */
+export function mintOff(source: string): CheckOutcome {
+	return new CheckOutcome(MINT_TOKEN, "off", `off: ${source}`, [], []);
+}
+
+/**
+ * Runner-internal re-mint for a check resolved to "warn": every error-severity
+ * problem is reported as a warning, so the outcome derives WARN (never FAIL)
+ * and blocks nothing. Other outcomes are returned as-is.
+ */
+export function mintAsWarnings(o: CheckOutcome): CheckOutcome {
+	if (o.kind !== "found") {
+		return o;
+	}
+	return new CheckOutcome(
+		MINT_TOKEN,
+		"found",
+		o.message,
+		o.problems.map((p) => ({ severity: "warn" as const, text: p.text })),
+		o.notes,
+	);
 }
 
 /**
@@ -179,7 +229,8 @@ export function orderedProblems(o: CheckOutcome): readonly CheckProblem[] {
 /**
  * Maps a minted CheckOutcome to a display/verdict label. found + any
  * error-severity problem => "fail"; found + only warns => "warn";
- * passed => "pass"; skipped => "skip".
+ * passed => "pass"; skipped => "skip"; off (the check's resolved value
+ * turned it off) => "off".
  */
 export function deriveStatus(o: CheckOutcome): CheckStatus {
 	switch (o.kind) {
@@ -187,6 +238,8 @@ export function deriveStatus(o: CheckOutcome): CheckStatus {
 			return "pass";
 		case "skipped":
 			return "skip";
+		case "off":
+			return "off";
 		case "found":
 			return o.problems.some((p) => p.severity === "error") ? "fail" : "warn";
 		default:
@@ -196,8 +249,8 @@ export function deriveStatus(o: CheckOutcome): CheckStatus {
 	}
 }
 
-/** Derived check verdict label: "pass", "fail", "warn", or "skip". */
-export type CheckStatus = "pass" | "fail" | "warn" | "skip";
+/** Derived check verdict label: "pass", "fail", "warn", "skip", or "off". */
+export type CheckStatus = "pass" | "fail" | "warn" | "skip" | "off";
 
 // --- Reporters ---
 
@@ -314,7 +367,7 @@ export class CheckRunResult {
 		readonly durationMs: number = 0,
 	) {}
 
-	/** Derived label: "pass", "fail", "warn", or "skip". */
+	/** Derived label: "pass", "fail", "warn", "skip", or "off". */
 	get status(): CheckStatus {
 		return deriveStatus(this.outcome);
 	}
@@ -360,6 +413,12 @@ export interface CheckDef {
 	readonly dependsOn: readonly string[];
 	/** Optional, defaults to "". Parse-only: carried but never consulted at run time. */
 	readonly scope: string;
+	/**
+	 * The two metadata fields every checks.toml declaration carries; empty on
+	 * provider-sourced checks, which have no TOML.
+	 */
+	readonly description: string;
+	readonly subject: string;
 	impl: CheckImpl | undefined;
 	implForm: CheckSeverity | "";
 }
@@ -369,6 +428,10 @@ export interface ChecksState {
 	enabled: boolean;
 	readonly defs: Map<string, CheckDef>;
 	contextFactory: (() => CheckContext) | undefined;
+	/** The per-check value resolver (app.setCheckValueResolver). */
+	valueResolver: ((name: string) => CheckValue | undefined) | undefined;
+	/** The named hook selections checks.toml declares: name -> tag expression. */
+	hooks: ReadonlyMap<string, string>;
 	// Check-provider hook state. Providers populate the registry lazily at
 	// the first registry read (materialization), memoized per cwd.
 	readonly providers: Array<() => readonly CheckSpec[] | undefined>;
@@ -381,6 +444,8 @@ export function newChecksState(): ChecksState {
 		enabled: false,
 		defs: new Map(),
 		contextFactory: undefined,
+		valueResolver: undefined,
+		hooks: new Map(),
 		providers: [],
 		providerSourcedNames: new Set(),
 		providerMaterializedCwd: undefined,
@@ -471,24 +536,81 @@ const KNOWN_CHECK_FIELDS: ReadonlySet<string> = new Set([
 	"pure",
 	"needs_network",
 	"depends_on",
+	"description",
+	"subject",
 	"scope",
 ]);
 
 /** Required fields, checked for presence in sorted order (Python parity). */
 const REQUIRED_CHECK_FIELDS: readonly string[] = [
 	"depends_on",
+	"description",
 	"fast",
 	"needs_network",
 	"pure",
 	"severity",
+	"subject",
 	"tags",
 ];
+
+/**
+ * A check's options subject: the subject file its option belongs in, named in
+ * the options model's value-name grammar. "manifest" names the options
+ * directory's own manifest and is refused separately.
+ */
+const CHECK_SUBJECT_RE = /^[a-z0-9-]+$/;
 
 export interface ParsedChecksToml {
 	readonly appName: string;
 	readonly defs: Map<string, CheckDef>;
 	/** Check names in [checks] declaration order. */
 	readonly order: readonly string[];
+	/** The declared hooks: hook name -> tag expression, sorted by name. */
+	readonly hooks: ReadonlyMap<string, string>;
+}
+
+/**
+ * Validates the [hooks.<name>] tables: each names one check selection (a tag
+ * expression) that --hook <name> runs.
+ */
+function parseCheckHooks(raw: unknown): Map<string, string> {
+	if (!isTomlTable(raw)) {
+		throw new RegistrationError(errChecksTomlHooksMustBeTable());
+	}
+	const hooks = new Map<string, string>();
+	for (const name of Object.keys(raw).sort()) {
+		if (!CHECK_IDENTIFIER_RE.test(name)) {
+			throw new RegistrationError(errChecksTomlInvalidHookName(name));
+		}
+		const fields = raw[name];
+		if (!isTomlTable(fields)) {
+			throw new RegistrationError(errChecksTomlHookMustBeTable(name));
+		}
+		const unknown = Object.keys(fields)
+			.filter((f) => f !== "tag")
+			.sort();
+		if (unknown.length > 0) {
+			throw new RegistrationError(
+				errChecksTomlHookUnknownField(name, unknown[0] as string),
+			);
+		}
+		if (!Object.hasOwn(fields, "tag")) {
+			throw new RegistrationError(errChecksTomlHookMissingTag(name));
+		}
+		const tag = fields.tag;
+		if (typeof tag !== "string" || tag.trim() === "") {
+			throw new RegistrationError(errChecksTomlHookTagInvalid(name));
+		}
+		try {
+			matchTagExpr(tag, new Set());
+		} catch (e) {
+			throw new RegistrationError(
+				errChecksTomlHookTagExpr(name, (e as Error).message),
+			);
+		}
+		hooks.set(name, tag);
+	}
+	return hooks;
 }
 
 /** A TOML table value: a plain decoded object (not an array/date/scalar). */
@@ -554,9 +676,9 @@ export function parseChecksToml(text: string): ParsedChecksToml {
 		throw e;
 	}
 
-	// Only "app" and [checks] are allowed at the top level.
+	// Only "app", [checks] and [hooks] are allowed at the top level.
 	for (const key of Object.keys(parsed)) {
-		if (key !== "app" && key !== "checks") {
+		if (key !== "app" && key !== "checks" && key !== "hooks") {
 			throw new RegistrationError(errChecksTomlUnknownTopLevelKey(key));
 		}
 	}
@@ -571,9 +693,13 @@ export function parseChecksToml(text: string): ParsedChecksToml {
 	}
 	const appName = appRaw;
 
+	const hooks = Object.hasOwn(parsed, "hooks")
+		? parseCheckHooks(parsed.hooks)
+		: new Map<string, string>();
+
 	// A file with just app = "x" is valid -- the [checks] section is optional.
 	if (!Object.hasOwn(parsed, "checks")) {
-		return { appName, defs: new Map(), order: [] };
+		return { appName, defs: new Map(), order: [], hooks };
 	}
 	const checksRaw = parsed.checks;
 	if (!isTomlTable(checksRaw)) {
@@ -659,6 +785,26 @@ export function parseChecksToml(text: string): ParsedChecksToml {
 			dependsOn.push(dep);
 		}
 
+		// description: one line of prose.
+		const description = fields.description;
+		if (
+			typeof description !== "string" ||
+			description.trim() === "" ||
+			/[\n\r]/.test(description)
+		) {
+			throw new RegistrationError(errChecksTomlDescriptionInvalid(name));
+		}
+
+		// subject: the options subject file the check's option belongs in.
+		const subject = fields.subject;
+		if (
+			typeof subject !== "string" ||
+			!CHECK_SUBJECT_RE.test(subject) ||
+			subject === "manifest"
+		) {
+			throw new RegistrationError(errChecksTomlSubjectInvalid(name));
+		}
+
 		// scope: optional string, defaults to "" (parse-only field).
 		let scope = "";
 		if (Object.hasOwn(fields, "scope")) {
@@ -680,6 +826,8 @@ export function parseChecksToml(text: string): ParsedChecksToml {
 			needsNetwork: bools.needs_network as boolean,
 			dependsOn,
 			scope,
+			description,
+			subject,
 			impl: undefined,
 			implForm: "",
 		});
@@ -696,5 +844,5 @@ export function parseChecksToml(text: string): ParsedChecksToml {
 		}
 	}
 
-	return { appName, defs, order };
+	return { appName, defs, order, hooks };
 }

@@ -34,6 +34,8 @@ const CTX: CheckContext = { projectRoot: EMPTY_PROJECT_ROOT };
 function mirrorApp(): App {
 	const toml = `app = "testapp"
 [checks.lint]
+description = "Checks lint"
+subject = "quality"
 tags = ["release"]
 severity = "error"
 fast = true
@@ -42,6 +44,8 @@ needs_network = false
 depends_on = []
 
 [checks.format]
+description = "Checks format"
+subject = "quality"
 tags = ["dev", "quality"]
 severity = "warn"
 fast = true
@@ -50,6 +54,8 @@ needs_network = false
 depends_on = []
 
 [checks.compile]
+description = "Checks compile"
+subject = "quality"
 tags = ["release"]
 severity = "error"
 fast = false
@@ -58,6 +64,8 @@ needs_network = false
 depends_on = []
 
 [checks.deploy-gate]
+description = "Checks deploy-gate"
+subject = "quality"
 tags = ["release"]
 severity = "error"
 fast = true
@@ -100,11 +108,11 @@ test("check --list: aligned human table sorted by name", async () => {
 	assert.equal(result.exitCode, 0);
 	assert.equal(
 		result.stdout,
-		"NAME          TAGS           SEVERITY\n" +
-			"compile       release        error\n" +
-			"deploy-gate   release        error\n" +
-			"format        dev, quality   warn\n" +
-			"lint          release        error\n",
+		"NAME          TAGS           SEVERITY   VALUE   SOURCE\n" +
+			"compile       release        error      error   default\n" +
+			"deploy-gate   release        error      error   default\n" +
+			"format        dev, quality   warn       warn    default\n" +
+			"lint          release        error      error   default\n",
 	);
 });
 
@@ -113,10 +121,10 @@ test("check --list --json: compact entries, scope only when non-empty", async ()
 	assert.equal(result.exitCode, 0);
 	assert.equal(
 		envelopePayloadText(result.stdout),
-		'[{"name":"compile","tags":["release"],"severity":"error"},' +
-			'{"name":"deploy-gate","tags":["release"],"severity":"error","scope":"changelog"},' +
-			'{"name":"format","tags":["dev","quality"],"severity":"warn"},' +
-			'{"name":"lint","tags":["release"],"severity":"error"}]\n',
+		'[{"name":"compile","tags":["release"],"severity":"error","value":"error","source":"default"},' +
+			'{"name":"deploy-gate","tags":["release"],"severity":"error","value":"error","source":"default","scope":"changelog"},' +
+			'{"name":"format","tags":["dev","quality"],"severity":"warn","value":"warn","source":"default"},' +
+			'{"name":"lint","tags":["release"],"severity":"error","value":"error","source":"default"}]\n',
 	);
 });
 
@@ -200,9 +208,9 @@ test("check with non-matching filter prints the no-match message", async () => {
 	assert.equal(result.stdout, "No checks matched the given filters.\n");
 });
 
-test("check --ignore-warnings: warn-only run exits 0, WARN still shown", async () => {
+test("check: a warn-only run exits 1 and --ignore-warnings is refused", async () => {
 	const toml =
-		'app = "t"\n[checks.lint]\ntags = ["x"]\nseverity = "error"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n';
+		'app = "t"\n[checks.lint]\ndescription = "Checks lint"\nsubject = "quality"\ntags = ["x"]\nseverity = "error"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n';
 	const app = createApp({
 		name: "t",
 		version: "1",
@@ -217,9 +225,9 @@ test("check --ignore-warnings: warn-only run exits 0, WARN still shown", async (
 	const strict = await app.test(["check", "--all"]);
 	assert.equal(strict.exitCode, 1);
 	assert.match(strict.stdout, /WARN/);
-	const lenient = await app.test(["check", "--all", "--ignore-warnings"]);
-	assert.equal(lenient.exitCode, 0);
-	assert.match(lenient.stdout, /WARN/);
+	const refused = await app.test(["check", "--all", "--ignore-warnings"]);
+	assert.equal(refused.exitCode, 1);
+	assert.match(refused.stderr, /--ignore-warnings/);
 });
 
 test("check with no flags shows the command help (Python branch order)", async () => {
@@ -227,11 +235,11 @@ test("check with no flags shows the command help (Python branch order)", async (
 		"testapp check -- Run project checks registered via the check framework and report results\n" +
 		"\n" +
 		"Flags:\n" +
-		"  --all, --no-all                            Run every registered check regardless of tag or name filters [default: false]\n" +
-		"  --tag <str>                                Tag DSL expression to select checks (e.g. 'changelog & !quality') [default: ]\n" +
-		"  --name <str>                               Glob pattern to filter checks by name (e.g. 'hash-*', '*coverage*') [default: ]\n" +
-		"  --list, --no-list                          List all registered checks with their tags and exit without running [default: false]\n" +
-		"  --ignore-warnings, --no-ignore-warnings    Treat warn-severity results as passing so they do not cause nonzero exit [default: false]\n";
+		"  --all, --no-all      Run every registered check regardless of tag or name filters [default: false]\n" +
+		"  --tag <str>          Tag DSL expression to select checks (e.g. 'changelog & !quality') [default: ]\n" +
+		"  --name <str>         Glob pattern to filter checks by name (e.g. 'hash-*', '*coverage*') [default: ]\n" +
+		"  --hook <str>         Run the checks a hook declared in checks.toml selects (no hooks are declared) [default: ]\n" +
+		"  --list, --no-list    List all registered checks with their tags and values and exit without running [default: false]\n";
 	const bare = await mirrorApp().test(["check"]);
 	assert.equal(bare.exitCode, 0);
 	assert.equal(bare.stdout, expectedHelp);
@@ -288,6 +296,8 @@ test("check --dry-run: a selected pure check really runs", async () => {
 test("dry-run purity annotations: pure=false and needs_network=true are impure", async () => {
 	const toml = `app = "t"
 [checks.deploy]
+description = "Checks deploy"
+subject = "quality"
 tags = ["release"]
 severity = "error"
 fast = false
@@ -296,6 +306,8 @@ needs_network = false
 depends_on = []
 
 [checks.fetch]
+description = "Checks fetch"
+subject = "quality"
 tags = ["release"]
 severity = "error"
 fast = true
@@ -323,6 +335,8 @@ depends_on = []
 test("check --dry-run: a pure check that fails makes the rehearsal fail", async () => {
 	const toml = `app = "t"
 [checks.lint]
+description = "Checks lint"
+subject = "quality"
 tags = ["release"]
 severity = "error"
 fast = true
@@ -331,6 +345,8 @@ needs_network = false
 depends_on = []
 
 [checks.deploy]
+description = "Checks deploy"
+subject = "quality"
 tags = ["release"]
 severity = "error"
 fast = false
@@ -363,7 +379,7 @@ depends_on = []
 
 test("check run without a context factory is a stderr error, exit 1", async () => {
 	const toml =
-		'app = "t"\n[checks.a]\ntags = ["x"]\nseverity = "error"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n';
+		'app = "t"\n[checks.a]\ndescription = "Checks a"\nsubject = "quality"\ntags = ["x"]\nseverity = "error"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n';
 	const app = createApp({
 		name: "t",
 		version: "1",
@@ -417,7 +433,7 @@ test("check command appears in app help when checks are enabled", async () => {
 
 test("scoped checks run normally (scope is parse-only, matching Go)", async () => {
 	const toml =
-		'app = "t"\n[checks.scoped-check]\ntags = ["release"]\nseverity = "error"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\nscope = "changelog"\n';
+		'app = "t"\n[checks.scoped-check]\ndescription = "Checks scoped-check"\nsubject = "quality"\ntags = ["release"]\nseverity = "error"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\nscope = "changelog"\n';
 	const app = createApp({
 		name: "t",
 		version: "1",
@@ -436,7 +452,7 @@ test("scoped checks run normally (scope is parse-only, matching Go)", async () =
 
 test("a global flag colliding with a check flag is dropped from the command", async () => {
 	const toml =
-		'app = "g"\n[checks.a]\ntags = ["x"]\nseverity = "error"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n';
+		'app = "g"\n[checks.a]\ndescription = "Checks a"\nsubject = "quality"\ntags = ["x"]\nseverity = "error"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n';
 	const app = createApp({
 		name: "g",
 		version: "1",

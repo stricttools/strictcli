@@ -128,6 +128,8 @@ interface CheckDefView {
 	readonly pure: boolean;
 	readonly needsNetwork: boolean;
 	readonly dependsOn: readonly string[];
+	readonly description: string;
+	readonly subject: string;
 	readonly scope: string;
 }
 
@@ -862,6 +864,8 @@ export function dumpSchemaCore(app: AppImpl): Record<string, unknown> {
 				pure: def.pure,
 				needs_network: def.needsNetwork,
 				depends_on: [...def.dependsOn],
+				description: def.description,
+				subject: def.subject,
 			};
 			if (def.scope !== "") {
 				entry.scope = def.scope;

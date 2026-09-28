@@ -1,8 +1,9 @@
 /**
- * The auto-registered `check` command plus the human-readable and JSON result
- * formatters, dispatching the list, help, no-match and run modes -- where a
- * run under --dry-run is the same run restricted to the purity partition,
- * followed by the would-run plan for what it did not execute.
+ * The auto-registered `check` and `failing-checks` commands plus the
+ * human-readable and JSON result formatters, dispatching the list, help,
+ * no-match and run modes -- where a run under --dry-run is the same run
+ * restricted to the purity partition, followed by the would-run plan for what
+ * it did not execute.
  *
  * Parity sources: go/strictcli/check_cmd.go and check_public.go (formatters)
  * with Python _register_check_command / _check_list_mode /
@@ -21,6 +22,11 @@ import {
 	markFrameworkHandler,
 } from "../app.js";
 import { type Context, contextIsHermetic } from "../context.js";
+import {
+	errCheckHookCombined,
+	errCheckHookNoneDeclared,
+	errCheckHookUnknown,
+} from "../errors.js";
 import { type AnyFlag, flag } from "../factories.js";
 import { formatCommandHelp } from "../help.js";
 import { t } from "../types.js";
@@ -37,7 +43,9 @@ import { materializeCheckProviders } from "./provider.js";
 import {
 	checkIsPure,
 	filterChecks,
+	type ResolvedCheckValue,
 	resolveCheckOrder,
+	resolveCheckValues,
 	runOrderedChecks,
 } from "./runner.js";
 
@@ -66,13 +74,56 @@ export function enableChecks(app: AppImpl): void {
  * arrays of objects. Framework-owned literal, byte-identical across the three
  * implementations.
  */
+// Keys in sorted order: Go publishes a payload-schema literal with its keys
+// sorted (a Go map holds no order), so writing this framework-owned literal in
+// that order keeps a checks-enabled app's schema dump byte-identical across the
+// three implementations.
 const CHECK_PAYLOAD_SCHEMA: Readonly<Record<string, unknown>> = {
-	type: "array",
 	items: { type: "object" },
+	type: "array",
 };
 
-/** Registers the auto-generated `check` command (called from enableChecks). */
+/** The two check commands' one-line help texts. */
+const CHECK_COMMAND_HELP =
+	"Run project checks registered via the check framework and report results";
+const FAILING_CHECKS_COMMAND_HELP =
+	"Run project checks and report only error-level failures, exiting nonzero when any exist";
+
+/**
+ * The --hook flag's help: what it does plus every declared hook and the tag
+ * expression it selects, sorted by hook name.
+ */
+function checkHookFlagHelp(hooks: ReadonlyMap<string, string>): string {
+	if (hooks.size === 0) {
+		return "Run the checks a hook declared in checks.toml selects (no hooks are declared)";
+	}
+	const declared = [...hooks.keys()]
+		.sort()
+		.map((n) => `${n} (tag '${hooks.get(n) as string}')`)
+		.join(", ");
+	return `Run the checks a hook declared in checks.toml selects: ${declared}`;
+}
+
+/**
+ * Registers the auto-generated `check` and `failing-checks` commands (called
+ * from enableChecks).
+ */
 function registerCheckCommand(app: AppImpl): void {
+	registerOneCheckCommand(app, "check", false);
+	registerOneCheckCommand(app, "failing-checks", true);
+}
+
+/**
+ * Registers one of the two check commands. `check` is the full report and
+ * exits nonzero on any failure or warning; `failing-checks` runs the same
+ * selection and reports only the error-level failures, exiting nonzero
+ * exactly when one exists.
+ */
+function registerOneCheckCommand(
+	app: AppImpl,
+	commandName: string,
+	failingOnly: boolean,
+): void {
 	const candidates: AnyFlag[] = [
 		flag("all", t.bool, {
 			help: "Run every registered check regardless of tag or name filters",
@@ -89,13 +140,13 @@ function registerCheckCommand(app: AppImpl): void {
 			presence: "default",
 			default: "",
 		}),
-		flag("list", t.bool, {
-			help: "List all registered checks with their tags and exit without running",
+		flag("hook", t.str, {
+			help: checkHookFlagHelp(app.checks.hooks),
 			presence: "default",
-			default: false,
+			default: "",
 		}),
-		flag("ignore-warnings", t.bool, {
-			help: "Treat warn-severity results as passing so they do not cause nonzero exit",
+		flag("list", t.bool, {
+			help: "List all registered checks with their tags and values and exit without running",
 			presence: "default",
 			default: false,
 		}),
@@ -121,13 +172,19 @@ function registerCheckCommand(app: AppImpl): void {
 	// the moment it is created: the marker on the carrier is only honored for
 	// handlers strictcli itself minted.
 	const handler = markFrameworkHandler((args: unknown, ctx: Context) =>
-		checkHandler(app, args as Record<string, unknown>, ctx),
+		checkHandler(
+			app,
+			commandName,
+			failingOnly,
+			args as Record<string, unknown>,
+			ctx,
+		),
 	);
-	// `check` classifies as read_only: its coverage-shard writes are
-	// CACHE_WRITEs, which never trip read-only enforcement.
+	// Both check commands classify as read_only: their coverage-shard writes
+	// are CACHE_WRITEs, which never trip read-only enforcement.
 	app.command(
-		defineFrameworkCommand("check", "read_only", {
-			help: "Run project checks registered via the check framework and report results",
+		defineFrameworkCommand(commandName, "read_only", {
+			help: failingOnly ? FAILING_CHECKS_COMMAND_HELP : CHECK_COMMAND_HELP,
 			flags,
 			payloadSchema: CHECK_PAYLOAD_SCHEMA,
 			handler: handler as never,
@@ -174,6 +231,8 @@ function wrapCheckContext(
 
 async function checkHandler(
 	app: AppImpl,
+	commandName: string,
+	failingOnly: boolean,
 	kwargs: Record<string, unknown>,
 	ctx: Context,
 ): Promise<number> {
@@ -183,25 +242,58 @@ async function checkHandler(
 
 	const runAll = kwargs.all === true;
 	const listMode = kwargs.list === true;
-	const ignoreWarnings = kwargs.ignore_warnings === true;
 	// Framework-delivered, not command flags (all three names are reserved).
 	const verbose = ctx.verbose;
 	const dryRun = ctx.dryRun;
 	// Treat empty strings as "not provided".
 	const tagRaw = typeof kwargs.tag === "string" ? kwargs.tag : "";
 	const nameRaw = typeof kwargs.name === "string" ? kwargs.name : "";
-	const tagExpr = tagRaw !== "" ? tagRaw : undefined;
+	const hook = typeof kwargs.hook === "string" ? kwargs.hook : "";
+	let tagExpr = tagRaw !== "" ? tagRaw : undefined;
 	const nameGlob = nameRaw !== "" ? nameRaw : undefined;
 
 	if (listMode) {
-		checkListMode(app.checks, ctx);
+		let values: Map<string, ResolvedCheckValue>;
+		try {
+			values = resolveCheckValues(
+				app.checks.defs,
+				sortedCheckNames(app.checks),
+				app.checks.valueResolver,
+			);
+		} catch (e) {
+			ctx.error((e as Error).message);
+			return 1;
+		}
+		checkListMode(app.checks, values, ctx);
 		return 0;
+	}
+
+	// A named hook stands for its declared selection, and is the whole
+	// selection: it combines with no other selection flag.
+	if (hook !== "") {
+		if (runAll || tagExpr !== undefined || nameGlob !== undefined) {
+			ctx.error(errCheckHookCombined());
+			return 1;
+		}
+		const expr = app.checks.hooks.get(hook);
+		if (expr === undefined) {
+			ctx.error(
+				app.checks.hooks.size > 0
+					? errCheckHookUnknown(
+							hook,
+							[...app.checks.hooks.keys()].sort().join(", "),
+						)
+					: errCheckHookNoneDeclared(hook),
+			);
+			return 1;
+		}
+		tagExpr = expr;
 	}
 
 	const hasFilter = runAll || tagExpr !== undefined || nameGlob !== undefined;
 	if (!hasFilter) {
-		// No flags: show help for the check command.
-		const cmd = app.commands.get("check");
+		// No flags: show help for this command.
+		const cmd = app.commands.get(commandName);
 		if (cmd !== undefined) {
 			ctx.info(formatCommandHelp(app, cmd, ""));
 		}
@@ -235,14 +327,35 @@ async function checkHandler(
 		);
 		return 1;
 	}
+	// Every selected check's value is resolved before any check runs, so a
+	// value the resolver may not return stops the run up front.
+	let values: Map<string, ResolvedCheckValue>;
+	try {
+		values = resolveCheckValues(
+			app.checks.defs,
+			order,
+			app.checks.valueResolver,
+		);
+	} catch (e) {
+		ctx.error((e as Error).message);
+		return 1;
+	}
 	const context = wrapCheckContext(app, app.checks.contextFactory(), ctx);
-	const { results, impureListed, exitCode } = await runOrderedChecks(
+	const run = await runOrderedChecks(
 		app.checks.defs,
 		order,
 		context,
-		ignoreWarnings,
+		values,
 		dryRun,
 	);
+	let results = run.results;
+	let exitCode = run.exitCode;
+	if (failingOnly) {
+		// Only the error-level failures, after the resolver: a check resolved
+		// to warn reported its failures as warnings, so it is not among them.
+		results = results.filter((r) => r.gated());
+		exitCode = results.length > 0 ? 1 : 0;
+	}
 
 	// The payload is supplied unconditionally and is NOT routed through
 	// ctx.info: the call is mode-independent (contract §19.4) and machine
@@ -255,7 +368,7 @@ async function checkHandler(
 		ctx.info(output);
 	}
 	if (dryRun) {
-		checkDryRunPlan(app.checks.defs, impureListed, order, ctx);
+		checkDryRunPlan(app.checks.defs, run.impureListed, order, ctx);
 	}
 	return exitCode;
 }
@@ -264,18 +377,29 @@ async function checkHandler(
  * The --list mode. The payload is supplied unconditionally (contract §19.4)
  * and the human table goes through the context writer, so machine mode
  * carries it as one diagnostic instead of a second stdout document (§19.1).
+ * Each check shows its effective value (after the check value resolver) and
+ * where that value came from.
  */
-function checkListMode(state: ChecksState, ctx: Context): void {
+function checkListMode(
+	state: ChecksState,
+	values: ReadonlyMap<string, ResolvedCheckValue>,
+	ctx: Context,
+): void {
 	const names = sortedCheckNames(state);
 	const sortedDefs = names.map((n) => state.defs.get(n) as CheckDef);
 
-	const items = sortedDefs.map((def) => ({
-		name: def.name,
-		tags: def.tags,
-		severity: def.severity,
-		// Scope is emitted only when non-empty (omitempty parity).
-		...(def.scope !== "" ? { scope: def.scope } : {}),
-	}));
+	const items = sortedDefs.map((def) => {
+		const v = values.get(def.name) as ResolvedCheckValue;
+		return {
+			name: def.name,
+			tags: def.tags,
+			severity: def.severity,
+			value: v.value,
+			source: v.source,
+			// Scope is emitted only when non-empty (omitempty parity).
+			...(def.scope !== "" ? { scope: def.scope } : {}),
+		};
+	});
 	ctx.payload(items);
 
 	if (sortedDefs.length === 0) {
@@ -289,13 +413,18 @@ function checkListMode(state: ChecksState, ctx: Context): void {
 		nameWidth = Math.max(nameWidth, def.name.length);
 		tagsWidth = Math.max(tagsWidth, def.tags.join(", ").length);
 	}
+	const sevWidth = "SEVERITY".length;
+	const valueWidth = "VALUE".length;
 	const lines = [
-		`${"NAME".padEnd(nameWidth)}   ${"TAGS".padEnd(tagsWidth)}   SEVERITY`,
+		`${"NAME".padEnd(nameWidth)}   ${"TAGS".padEnd(tagsWidth)}   ` +
+			`${"SEVERITY".padEnd(sevWidth)}   ${"VALUE".padEnd(valueWidth)}   SOURCE`,
 	];
 	for (const def of sortedDefs) {
 		const tagsStr = def.tags.join(", ");
+		const v = values.get(def.name) as ResolvedCheckValue;
 		lines.push(
-			`${def.name.padEnd(nameWidth)}   ${tagsStr.padEnd(tagsWidth)}   ${def.severity}`,
+			`${def.name.padEnd(nameWidth)}   ${tagsStr.padEnd(tagsWidth)}   ` +
+				`${def.severity.padEnd(sevWidth)}   ${v.value.padEnd(valueWidth)}   ${v.source}`,
 		);
 	}
 	ctx.info(lines.join("\n"));
@@ -339,6 +468,7 @@ const STATUS_LABELS: Readonly<Record<CheckStatus, string>> = {
 	fail: "FAIL",
 	warn: "WARN",
 	skip: "SKIP",
+	off: "OFF",
 };
 
 /**
@@ -369,12 +499,13 @@ export function formatCheckResults(
 		fail: 0,
 		warn: 0,
 		skip: 0,
+		off: 0,
 	};
 
 	for (const r of results) {
 		const status = r.status;
 		counts[status]++;
-		let row = `${STATUS_LABELS[status]}  ${r.name.padEnd(nameWidth)}    ${r.message}`;
+		let row = `${STATUS_LABELS[status].padEnd(4)}  ${r.name.padEnd(nameWidth)}    ${r.message}`;
 		if (verbose) {
 			row += ` (${r.durationMs}ms)`;
 		}
@@ -396,10 +527,15 @@ export function formatCheckResults(
 
 	if (verbose) {
 		lines.push("");
-		lines.push(
+		let summary =
 			`${counts.pass} passed / ${counts.fail} failed / ` +
-				`${counts.warn} warned / ${counts.skip} skipped`,
-		);
+			`${counts.warn} warned / ${counts.skip} skipped`;
+		// A check turned off by its resolved value is counted only when there
+		// is one, so a run without the resolver reads as it always has.
+		if (counts.off > 0) {
+			summary += ` / ${counts.off} off`;
+		}
+		lines.push(summary);
 	}
 
 	return lines.join("\n");

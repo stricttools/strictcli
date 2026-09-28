@@ -228,8 +228,43 @@ const EXPECTED_JSON = `{
           "default": ""
         },
         {
+          "name": "hook",
+          "help": "Run the checks a hook declared in checks.toml selects (no hooks are declared)",
+          "value_schema": {
+            "type": "string"
+          },
+          "presence": "default",
+          "default": ""
+        },
+        {
           "name": "list",
-          "help": "List all registered checks with their tags and exit without running",
+          "help": "List all registered checks with their tags and values and exit without running",
+          "value_schema": {
+            "type": "boolean"
+          },
+          "presence": "default",
+          "default": false,
+          "negatable": true
+        }
+      ],
+      "forwarding": {
+        "reason": "framework-internal: absorbs app-defined global flag values"
+      }
+    },
+    "failing-checks": {
+      "name": "failing-checks",
+      "help": "Run project checks and report only error-level failures, exiting nonzero when any exist",
+      "effect": "read_only",
+      "payload_schema": {
+        "type": "array",
+        "items": {
+          "type": "object"
+        }
+      },
+      "flags": [
+        {
+          "name": "all",
+          "help": "Run every registered check regardless of tag or name filters",
           "value_schema": {
             "type": "boolean"
           },
@@ -238,8 +273,35 @@ const EXPECTED_JSON = `{
           "negatable": true
         },
         {
-          "name": "ignore-warnings",
-          "help": "Treat warn-severity results as passing so they do not cause nonzero exit",
+          "name": "tag",
+          "help": "Tag DSL expression to select checks (e.g. 'changelog & !quality')",
+          "value_schema": {
+            "type": "string"
+          },
+          "presence": "default",
+          "default": ""
+        },
+        {
+          "name": "name",
+          "help": "Glob pattern to filter checks by name (e.g. 'hash-*', '*coverage*')",
+          "value_schema": {
+            "type": "string"
+          },
+          "presence": "default",
+          "default": ""
+        },
+        {
+          "name": "hook",
+          "help": "Run the checks a hook declared in checks.toml selects (no hooks are declared)",
+          "value_schema": {
+            "type": "string"
+          },
+          "presence": "default",
+          "default": ""
+        },
+        {
+          "name": "list",
+          "help": "List all registered checks with their tags and values and exit without running",
           "value_schema": {
             "type": "boolean"
           },
@@ -917,6 +979,8 @@ const EXPECTED_JSON = `{
       "depends_on": [
         "lint-clean"
       ],
+      "description": "Checks db-ping",
+      "subject": "quality",
       "scope": "db"
     },
     "lint-clean": {
@@ -927,7 +991,9 @@ const EXPECTED_JSON = `{
       "fast": true,
       "pure": true,
       "needs_network": false,
-      "depends_on": []
+      "depends_on": [],
+      "description": "Checks lint-clean",
+      "subject": "quality"
     }
   },
   "config_fields": {
@@ -981,6 +1047,8 @@ const EXPECTED_JSON = `{
 const CHECKS_TOML = `app = "richapp"
 
 [checks.lint-clean]
+description = "Checks lint-clean"
+subject = "quality"
 tags = ["quality"]
 severity = "error"
 fast = true
@@ -989,6 +1057,8 @@ needs_network = false
 depends_on = []
 
 [checks.db-ping]
+description = "Checks db-ping"
+subject = "quality"
 tags = ["infra"]
 severity = "warn"
 fast = false

@@ -228,9 +228,10 @@ export function testCoverageProvider(app: AppImpl): () => CheckSpec[] {
 				}
 
 				// Compare against the command surface (exclude the
-				// framework-injected check command -- it is not a user command).
+				// framework-injected check commands -- they are not user commands).
 				const allCommands = collectAllCommandPaths(app);
 				allCommands.delete("check");
+				allCommands.delete("failing-checks");
 				const uncovered = [...allCommands]
 					.filter((cmd) => !covered.has(cmd))
 					.sort();

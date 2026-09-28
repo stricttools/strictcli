@@ -1632,6 +1632,45 @@ export function errChecksTomlDependsOnUnknown(
 	return `checks.toml: check ${q(name)}: depends_on references unknown check ${q(dep)}`;
 }
 
+export function errChecksTomlDescriptionInvalid(name: string): string {
+	return `checks.toml: check ${q(name)}: "description" must be a non-empty single-line string`;
+}
+
+export function errChecksTomlSubjectInvalid(name: string): string {
+	return `checks.toml: check ${q(name)}: "subject" must be lowercase letters, digits, and hyphens, and not "manifest"`;
+}
+
+export function errChecksTomlHooksMustBeTable(): string {
+	return "checks.toml: [hooks] must be a table";
+}
+
+export function errChecksTomlInvalidHookName(name: string): string {
+	return `checks.toml: invalid hook name ${q(name)} (must match [a-z][a-z0-9-]*)`;
+}
+
+export function errChecksTomlHookMustBeTable(name: string): string {
+	return `checks.toml: hook ${q(name)} must be a table`;
+}
+
+export function errChecksTomlHookUnknownField(
+	name: string,
+	field: string,
+): string {
+	return `checks.toml: hook ${q(name)}: unknown field ${q(field)}`;
+}
+
+export function errChecksTomlHookMissingTag(name: string): string {
+	return `checks.toml: hook ${q(name)}: missing required field "tag"`;
+}
+
+export function errChecksTomlHookTagInvalid(name: string): string {
+	return `checks.toml: hook ${q(name)}: "tag" must be a non-empty string`;
+}
+
+export function errChecksTomlHookTagExpr(name: string, errStr: string): string {
+	return `checks.toml: hook ${q(name)}: ${errStr}`;
+}
+
 // ---------------------------------------------------------------------------
 // check_runner.go
 // ---------------------------------------------------------------------------
@@ -1654,6 +1693,50 @@ export function errCheckOutcomeNotMinted(name: string): string {
 
 export function errInvalidGlobPattern(pattern: string, errStr: string): string {
 	return `invalid glob pattern ${q(pattern)}: ${errStr}`;
+}
+
+// ---------------------------------------------------------------------------
+// check_values.go, check_cmd.go — check values and hook selections (parse-time)
+//
+// The check commands report these through the error writer: a value the app's
+// check value resolver may not return, and a --hook the invocation cannot use.
+// ---------------------------------------------------------------------------
+
+export function errCheckValueInvalid(name: string, value: string): string {
+	return `check ${q(name)}: the check value resolver returned ${q(value)}; a check value is one of error, warn, off`;
+}
+
+export function errCheckValueSourceEmpty(name: string, value: string): string {
+	return `check ${q(name)}: the check value resolver returned ${q(value)} with an empty source; name where the value came from`;
+}
+
+export function errCheckValueAboveSeverity(
+	name: string,
+	value: string,
+	source: string,
+	severity: string,
+): string {
+	return `check ${q(name)}: the check value resolver returned ${q(value)} (from ${source}) for a check registered as ${q(severity)}; a check value may lower a check's severity, never raise it`;
+}
+
+export function errCheckHookCombined(): string {
+	return "--hook cannot be combined with --all, --tag, or --name";
+}
+
+export function errCheckHookUnknown(hook: string, declared: string): string {
+	return `unknown hook ${q(hook)}; declared hooks: ${declared}`;
+}
+
+export function errCheckHookNoneDeclared(hook: string): string {
+	return `unknown hook ${q(hook)}; checks.toml declares no hooks`;
+}
+
+// ---------------------------------------------------------------------------
+// checks/app.ts — the check value resolver's registration guard (Python-wording)
+// ---------------------------------------------------------------------------
+
+export function errCheckValueResolverMustBeCallable(): string {
+	return "check value resolver must be callable";
 }
 
 // ---------------------------------------------------------------------------

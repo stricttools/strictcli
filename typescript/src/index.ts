@@ -24,6 +24,7 @@ export type {
 	CheckProblem,
 	CheckSeverity,
 	CheckStatus,
+	CheckValue,
 } from "./checks/framework.js";
 export {
 	CheckRunResult,

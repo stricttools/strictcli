@@ -591,10 +591,9 @@ test("breadth: a single-token allowlist prefix warns", async () => {
 test("breadth: the verdict is a warning, not an error", async () => {
 	const app = breadthApp([["git"]]);
 	const r = await app.test([
-		"check",
+		"failing-checks",
 		"--name",
 		"observe-allowlist-breadth",
-		"--ignore-warnings",
 	]);
 	assert.equal(r.exitCode, 0, r.stdout);
 });
@@ -686,10 +685,9 @@ test("grant agreement: a net_mutate grant warns too", async () => {
 
 test("grant agreement: the verdict is a warning, not an error", async () => {
 	const r = await grantApp("proc_mutate", false).test([
-		"check",
+		"failing-checks",
 		"--name",
 		"consequential-grant-agreement",
-		"--ignore-warnings",
 	]);
 	assert.equal(r.exitCode, 0, r.stdout);
 });

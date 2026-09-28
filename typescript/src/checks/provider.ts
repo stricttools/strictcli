@@ -235,6 +235,10 @@ export function materializeCheckProviders(state: ChecksState): void {
 				needsNetwork: spec.needsNetwork,
 				dependsOn: spec.dependsOn,
 				scope: spec.scope,
+				// Provider-sourced checks have no TOML declaration, so no
+				// description or subject.
+				description: "",
+				subject: "",
 				impl: spec.impl,
 				implForm: spec.implForm,
 			});

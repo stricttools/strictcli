@@ -138,7 +138,7 @@ test("duplicate provider check name is a hard error", async () => {
 
 test("provider name colliding with a TOML-declared check is a hard error", async () => {
 	const toml =
-		'app = "t"\n[checks.lint]\ntags = ["x"]\nseverity = "error"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n';
+		'app = "t"\n[checks.lint]\ndescription = "Checks lint"\nsubject = "quality"\ntags = ["x"]\nseverity = "error"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n';
 	const app = createApp({
 		name: "t",
 		version: "1",

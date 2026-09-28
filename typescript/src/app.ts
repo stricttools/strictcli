@@ -26,6 +26,7 @@ import {
 	type CheckOutcome,
 	type CheckRunResult,
 	type ChecksState,
+	type CheckValue,
 	ErrorReporter,
 	newChecksState,
 	parseChecksToml,
@@ -41,6 +42,7 @@ import {
 import {
 	filterChecks,
 	resolveCheckOrder,
+	resolveCheckValues,
 	runOrderedChecks,
 } from "./checks/runner.js";
 import {
@@ -86,6 +88,7 @@ import {
 	errChecksNotEnabled,
 	errChecksPathNotExist,
 	errChecksTomlAppMismatch,
+	errCheckValueResolverMustBeCallable,
 	errCommandCollidesWithGroup,
 	errCommandConfigFieldsUnknownField,
 	errCommandEffectInvalid,
@@ -321,6 +324,23 @@ export interface App {
 	/** Sets the factory that builds the CheckContext handed to check impls. */
 	setCheckContext(factory: () => CheckContext): void;
 	/**
+	 * Sets the resolver that assigns each check its value. The resolver is
+	 * called with a check name and returns a CheckValue -- "error", "warn" or
+	 * "off" plus the source that value came from -- or undefined to leave the
+	 * check at its registered severity (shown with the source "default"). The
+	 * check command, the failing-checks command and runChecks apply it: "off"
+	 * does not run the check, "warn" reports its failures as warnings,
+	 * "error" runs it as registered. A value may lower a check's registered
+	 * severity, never raise it; a warn-registered check resolved to "error" is
+	 * refused when the checks are selected, as is a value outside the three
+	 * or an empty source. depends_on is unaffected: a dependency still runs
+	 * first, and a dependency resolved to "warn" cannot fail, so it blocks
+	 * nothing.
+	 */
+	setCheckValueResolver(
+		resolver: (name: string) => CheckValue | undefined,
+	): void;
+	/**
 	 * Registers a provider that supplies check specs at materialization time
 	 * (lazy, memoized per cwd). Registering a provider enables the check
 	 * system, so a TOML-less app gains a working `check` command.
@@ -334,9 +354,12 @@ export interface App {
 	resetCheckProviderCache(): void;
 	/**
 	 * Runs checks programmatically with filtering and dependency resolution.
-	 * Returns the executed results, the ordered names left unexecuted by the
-	 * purity partition (empty unless pureOnly), and the exit code (0 for all
-	 * pass, or all warn with ignoreWarnings; 1 otherwise).
+	 * Returns the executed results (plus an "off" result for every selected
+	 * check the check value resolver turned off), the ordered names left
+	 * unexecuted by the purity partition (empty unless pureOnly), and the exit
+	 * code (0 when every executed check passes or skips; 1 otherwise, a
+	 * warning included). The error-level failures alone are the results whose
+	 * gated() is true. A value the resolver may not return is thrown.
 	 */
 	runChecks(
 		context: CheckContext,
@@ -413,7 +436,6 @@ export interface RunChecksOptions {
 	readonly tagExpr?: string;
 	readonly nameGlob?: string;
 	readonly runAll?: boolean;
-	readonly ignoreWarnings?: boolean;
 	/**
 	 * Purity partition: only checks that are declared pure AND do not need
 	 * network access execute; every other selected check is returned in
@@ -1067,10 +1089,11 @@ export class AppImpl implements App {
 
 	/** Parses checks TOML text, verifies the app name, and enables checks. */
 	private loadChecks(text: string): void {
-		const { appName, defs, order } = parseChecksToml(text);
+		const { appName, defs, order, hooks } = parseChecksToml(text);
 		if (appName !== this.name) {
 			throw new RegistrationError(errChecksTomlAppMismatch(appName, this.name));
 		}
+		this.checks.hooks = hooks;
 		enableChecks(this);
 		for (const name of order) {
 			addCheckDef(this.checks, defs.get(name) as CheckDef);
@@ -1141,6 +1164,15 @@ export class AppImpl implements App {
 		this.checks.contextFactory = factory;
 	}
 
+	setCheckValueResolver(
+		resolver: (name: string) => CheckValue | undefined,
+	): void {
+		if (typeof resolver !== "function") {
+			throw new RegistrationError(errCheckValueResolverMustBeCallable());
+		}
+		this.checks.valueResolver = resolver;
+	}
+
 	registerCheckProvider(
 		provider: () => readonly CheckSpec[] | undefined,
 	): void {
@@ -1180,11 +1212,16 @@ export class AppImpl implements App {
 			return { results: [], impureListed: [], exitCode: 0 };
 		}
 		const order = resolveCheckOrder(this.checks.defs, selected);
+		const values = resolveCheckValues(
+			this.checks.defs,
+			order,
+			this.checks.valueResolver,
+		);
 		return runOrderedChecks(
 			this.checks.defs,
 			order,
 			context,
-			opts.ignoreWarnings ?? false,
+			values,
 			opts.pureOnly ?? false,
 		);
 	}
