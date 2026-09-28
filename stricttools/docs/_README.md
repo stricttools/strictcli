@@ -145,16 +145,17 @@ app.run(process.argv.slice(2));
 ## Features
 
 - Commands and command groups (recursive nesting to arbitrary depth)
+- The naming rule -- every command, group, long flag, choice, constraint, tag, check, hook, grant, update resource and requirement name is lowercase kebab-case of at least two characters, and a short form is one letter (`-F`, `-m`); a violation is refused where it is declared
 - Deprecated commands -- register retired commands that print a message and exit 1, shown in help under a `Deprecated:` section
 - Flags: string, boolean (with `--no-` negation), integer, float (NaN/Inf rejected)
-- Short flag aliases (`-o` for `--output`)
+- Short flag aliases (`-o` for `--output`, one ASCII letter, uppercase allowed)
 - Positional arguments -- the same three-way presence declaration as flags (required, optional, or a default), plus variadic collection
 - The presence declaration -- `presence="required"` / `presence="optional"` / `default=<value>` (Python), `Required()` / `Optional()` / `Default(v)` (Go), `{presence:"required"}` / `{presence:"optional"}` / `{presence:"default", default: v}` (TypeScript); an optional declaration delivers `None`/`nil`/`undefined` as a present key, and optional bools are a real tri-state
 - `ctx.provided(name)` / `ctx.Provided(name)` -- whether the invocation caused a value, rather than the declaration
 - Environment variable binding with prefix enforcement
 - Flag tags -- reusable bundles of flags shared across commands
 - Choice flags -- elect exactly one of a flag's declared choices, each choice owning a scope of flags legal only while it is elected, spelled as a token (`--via email`) or as the choices' own flags (`--profile work` / `--all-profiles`); the handler receives one tagged record consumed exhaustively, and recursion is unlimited
-- Constraints -- four named rules over a command's own flags and args: at-least-one, all-or-none, requires, and implies (auto-set a bool flag when another is provided; explicit contradictions are parse errors). A member is a reference by name to a flag, a positional arg, or another named constraint, nested to unlimited depth, carrying a declared election selector (`present` / `true` / `non_empty`) that says when it counts; every constraint renders in `--help`, publishes its members in `--dump-schema`, and projects into MCP tool schemas with any remainder stated in the tool description
+- Constraints -- four named rules over a command's own flags and args: at-least-one, all-or-none, requires, and implies (auto-set a bool flag when another is provided; explicit contradictions are parse errors). A member is a reference by name to a flag, a positional arg, or another named constraint, nested to unlimited depth, carrying a declared election selector (`present` / `true` / `non_empty`) that says when it counts; every constraint renders in `--help`, publishes its members in the help document, and projects into MCP tool schemas with any remainder stated in the tool description
 - Update commands -- a command declares what it changes (`update_of=UpdateOf(...)` / `WithUpdateOf(...)` / `updateOf: {...}`): the resource, a mandatory sparse-or-full-replace write mode, the flags and args that identify the instance, and the properties that carry the changes. Absence means untouched, so no flag or arg on a `mutating` command may declare a value default; the framework enforces at least one property per invocation, renders the write set on every surface a run reports through (one line in the would-do log, a `writes` member on the machine envelope), and a `nullable` property mints `--unset-<prop>` answered by `ctx.unset(name)`
 - Global flags (parsed before and after the command token)
 - Passthrough commands -- delegate unparsed args to another tool
@@ -162,7 +163,9 @@ app.run(process.argv.slice(2));
 - Choices -- restrict flag values to an allowed set, one value-plus-optional-help record per entry, rendered as a block once any entry carries help
 - Custom validation functions per flag
 - Auto-generated help at every level (app, group, command)
-- Built-in `--version` / `-v` support
+- The framework's own `help` and `version` commands, reserved at every level of the command tree: `tool help compile` prints what `tool compile --help` prints, `tool help compile --device` prints one flag's help, `tool help --depth 2` lists the command tree two levels deep, and `tool version` prints what `--version` / `-v` prints
+- `help --json` -- the help document: the app's full structure at `schema_version: 2` (or the part an address selects), with a real JSON Schema fragment on every flag and arg entry and one canonical encoding so the three implementations' documents byte-compare; a committed `.strictcli/schema.json` is `tool help --json` redirected into the file. `--help` and `--version` stay text only, and `--dump-schema` is refused naming `help --json`
+- Declared runtime requirements -- a command states what it needs at run time (a system library, an executable) by referencing a requirement declared once; the framework loads it before the handler runs, a missing one ends the command naming what to install, and `help` lists it
 - Auto-version detection from package metadata (Python only)
 - Config file support (JSON or TOML) -- reads `~/.config/{name}/config.json` (or `.toml`), auto-registers `config show/set/path/edit/init` subcommands, where `config set <key> --value <v>` writes under a required selector over a value, a clear and a reset to the declared default. Precedence: CLI > env > config > default.
 - Mandatory effect classification -- every command declares `read_only` or `mutating` (`effect=` in Python, `WithEffect(...)` in Go, the twin factories `defineReadOnlyCommand` / `defineMutatingCommand` in TypeScript)
@@ -176,7 +179,6 @@ app.run(process.argv.slice(2));
 - Programmatic invocation -- `app.call()` / `app.Call()` runs a command in-process with typed kwargs, bypassing CLI parsing; failures surface as `InvokeError`
 - Check system -- first-class check/validation framework with a TOML manifest (every check declares a one-line description and its options subject), tag DSL, named hook selections, DAG-ordered execution, per-check values an app resolves (error, warn, or off), and a `failing-checks` command that reports only error-level failures
 - MCP server mode -- expose commands as tools over the Model Context Protocol (protocol `2026-07-28`, with the handshake era retained), where a consequential tool asks for confirmation before it runs
-- `--dump-schema` -- auto-injected flag that writes `.strictcli/schema.json` at `schema_version: 2` describing the full CLI structure, with a real JSON Schema fragment on every flag and arg entry and one canonical encoding so the three implementations' dumps byte-compare
 - `--help` / `-h` recognized anywhere in argv
 - In-process testing via `app.test()` / `app.Test()`
 

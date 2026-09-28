@@ -176,7 +176,7 @@ constraint nothing to decide. Constraints reference root-scope flags and args
 only: naming a flag declared inside a choice's scope is a registration error,
 because the scope already IS the constraint, and the reserved quartet is not
 declarable so it can never appear in one. Every constraint renders in `--help`
-under a `Constraints:` section, is published in `--dump-schema`, and is
+under a `Constraints:` section, is published in the help document, and is
 projected into MCP tool schemas (`anyOf` / `dependentRequired`) with anything a
 JSON Schema keyword cannot carry stated in the tool description instead.
 
@@ -216,8 +216,19 @@ context as `ctx.dryRun`, `ctx.approveConsequential`, `ctx.quiet` and
 - **First-class check system** — TOML-declared checks with double-entry
   registration, tag DSL selection, DAG-ordered execution.
 - **MCP server integration** — expose commands as Model Context Protocol tools.
-- **Schema dump** — every app answers `--dump-schema` with a machine-readable
-  JSON description of its full structure, at `schema_version: 2`. Every flag and
+- **Help, version, and the help document** — every app has the framework's
+  `help` and `version` commands, reserved at every level of the command tree:
+  `help <command> --<flag>` prints one flag's help, `help --depth 2` the command
+  tree, and `help --json` a machine-readable JSON description of the app's full
+  structure, at `schema_version: 2` (a committed `.strictcli/schema.json` is that
+  output redirected into the file).
+- **Names** — command, group, flag, choice, constraint, tag, check, hook, grant,
+  update resource, and requirement names are lowercase kebab-case of at least
+  two characters, and a short form is one letter, uppercase allowed.
+- **Runtime requirements** — `requirement({ name, help, install, load })`
+  declares what a command needs at run time once; commands reference it with
+  `requires: [...]`, the framework loads it before the handler (a missing one
+  ends the command naming what to install), and `ctx.need(r)` returns it. Every flag and
   arg entry carries a `value_schema`: a real JSON Schema fragment from a closed
   subset of `type`, `items`, `additionalProperties` and `enum`, using JSON
   Schema's own type names. Arity is part of the value's shape, so a `t.list(...)`
@@ -238,7 +249,7 @@ context as `ctx.dryRun`, `ctx.approveConsequential`, `ctx.quiet` and
   reference by name to a flag, a positional arg or another named constraint,
   nested to unlimited depth, with a declared election selector saying when it
   counts. Constraints render in `--help`, publish their members in
-  `--dump-schema`, and project into MCP tool schemas with any remainder stated
+  the help document, and project into MCP tool schemas with any remainder stated
   in the tool description.
 - **Update commands** — `updateOf: { resource, writeMode, identity, properties }`
   declares what a command changes: which flags and args name the instance, which
@@ -250,7 +261,7 @@ context as `ctx.dryRun`, `ctx.approveConsequential`, `ctx.quiet` and
   value default. The framework enforces at least one property per invocation,
   renders the write set on every surface a run reports through (one line in the
   would-do log, a `writes` member on the machine envelope), and publishes the
-  declaration in `--dump-schema` and in MCP tool schemas. A property declaring
+  declaration in the help document and in MCP tool schemas. A property declaring
   `nullable: true` mints `--unset-<prop>`, answered by `ctx.unset(name)`.
 - **Groups, passthrough commands, deprecation notices** — the complete strictcli
   surface.

@@ -524,9 +524,19 @@ skips the prompt because nothing is being performed. A non-interactive stdin
 without either flag is a hard error rather than a hang. Declaring
 `consequential=True` on a read-only command raises `ValueError`.
 
-### Schema dump
+### Help, version, and the help document
 
-`--dump-schema` is auto-injected on every app. Writes `.strictcli/schema.json` at `schema_version: 2` describing the full CLI structure (commands, flags, args, groups, checks). Every command entry carries its `effect`; `consequential`, `dry_run_supported` and `dry_run_unsupported_reason` are emitted only when declared.
+`help` and `version` are framework commands on every app, reserved at every level of the command tree. `mytool help deploy` prints what `mytool deploy --help` prints, `mytool help deploy --target` prints that one flag's lines, `mytool help --depth 2` lists the command tree two levels deep, and `mytool version` prints what `--version` prints. `--help` and `--version` stay text only.
+
+`mytool help --json` prints the help document: the full CLI structure (commands, flags, args, groups, checks) at `schema_version: 2`, with `project_id` naming the project that holds the module that constructed the App. A committed `.strictcli/schema.json` is that output redirected into the file; `--dump-schema` is refused naming `help --json`. Every command entry carries its `effect`; `consequential`, `dry_run_supported` and `dry_run_unsupported_reason` are emitted only when declared.
+
+### Names
+
+Command, group, flag, choice, constraint, tag, check, hook, grant, update resource, and requirement names are lowercase kebab-case of at least two characters, and a short form is one letter, uppercase allowed (`short="F"`). A name that breaks the rule is refused where it is declared.
+
+### Runtime requirements
+
+A requirement is declared once -- `strictcli.Requirement(name=, help=, install=, load=)` -- and referenced by every command that needs it through `requires=[...]`. The framework loads it before the handler runs, on every door and in dry mode; a missing one ends the command with exit 1, naming what is missing and how to install it. The handler reads the loaded value with `ctx.need(requirement)`.
 
 Every flag and arg entry carries a `value_schema`: a real JSON Schema fragment from a closed subset of `type`, `items`, `additionalProperties` and `enum`, using JSON Schema's own type names. Arity is part of the value's shape, so a repeatable scalar flag and a `list[T]` flag publish the identical array fragment. A choice flag carries no fragment -- its value is a variant the subset cannot express -- and publishes its nested `choices` and scopes instead, each scoped entry a full flag entry, with `elect_by` marking the spelling. A value flag's `choices=` splits in two: the values as an `enum` inside the fragment, and the value-plus-help records beside it under `choices`. Keys are emitted in a declared order at every depth and the document is written in one canonical encoding, so a schema file written by this implementation and one written by the Go or TypeScript implementation for the same declaration are byte-identical.
 

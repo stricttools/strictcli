@@ -331,7 +331,7 @@ No member may declare `Required()`: a member the invocation must always supply
 leaves the constraint nothing to decide. Constraints reference root-scope
 declarations only -- naming a flag inside a choice scope is a registration
 error, because the scope already IS the constraint. Every constraint renders in
-`--help` under a `Constraints:` section, is published in `--dump-schema`, and is
+`--help` under a `Constraints:` section, is published in the help document, and is
 projected into MCP tool schemas (`anyOf` / `dependentRequired`) with anything a
 keyword cannot carry stated in the tool description.
 
@@ -552,9 +552,19 @@ skips the prompt because nothing is being performed. A non-interactive stdin
 without either flag is a hard error rather than a hang. Declaring
 `WithConsequential()` on a read-only command panics.
 
-### Schema dump
+### Help, version, and the help document
 
-`--dump-schema` is auto-injected on every app. Writes `.strictcli/schema.json` describing the full CLI structure (commands, flags, args, groups, checks) at `schema_version: 2`. Every command entry carries its `effect`; `consequential`, `dry_run_supported` and `dry_run_unsupported_reason` are emitted only when declared.
+`help` and `version` are framework commands on every app, reserved at every level of the command tree. `mytool help deploy` prints what `mytool deploy --help` prints, `mytool help deploy --target` prints that one flag's lines, `mytool help --depth 2` lists the command tree two levels deep, and `mytool version` prints what `--version` prints. `--help` and `--version` stay text only.
+
+`mytool help --json` prints the help document: the full CLI structure (commands, flags, args, groups, checks) at `schema_version: 2`, with `project_id` taken from the program's build information (its main module path). A committed `.strictcli/schema.json` is that output redirected into the file; `--dump-schema` is refused naming `help --json`. Every command entry carries its `effect`; `consequential`, `dry_run_supported` and `dry_run_unsupported_reason` are emitted only when declared.
+
+### Names
+
+Command, group, flag, choice, constraint, tag, check, hook, grant, update resource, and requirement names are lowercase kebab-case of at least two characters, and a short form is one letter, uppercase allowed (`Short("F")`). A name that breaks the rule is refused where it is declared.
+
+### Runtime requirements
+
+A requirement is declared once -- `strictcli.NewRequirement(name, help, install, load)` -- and referenced by every command that needs it through `strictcli.WithRequires(...)`. The framework loads it before the handler runs, on every door and in dry mode; a missing one ends the command with exit 1, naming what is missing and how to install it. The handler reads the loaded value with `strictcli.Need(ctx, requirement)`.
 
 Every flag and arg entry carries a `value_schema`: a real JSON Schema fragment from a closed subset of `type`, `items`, `additionalProperties` and `enum`, using JSON Schema's own type names. Arity is part of the value's shape, so a repeatable scalar flag and a `ListFlag` publish the identical array fragment. A choice flag carries no fragment -- its value is a variant the subset cannot express -- and publishes its nested `choices` and scopes instead, each scoped entry a full flag entry, with `elect_by` marking the spelling. A value flag's `Choices(...)` splits in two: the values as an `enum` inside the fragment, and the value-plus-help records beside it under `choices`.
 

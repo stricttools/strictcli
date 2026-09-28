@@ -28,7 +28,7 @@ implementations:
 | `conformance-go` | All JSON test cases pass against the Go implementation |
 | `conformance-typescript` | All JSON test cases pass against the TypeScript implementation |
 | `conformance-parity` | N-way output comparison: for every case that runs on multiple targets, stdout and stderr must be byte-identical (after normalization) |
-| `schema-parity` | A rich app definition exercising all features produces **byte-identical** `--dump-schema` output from all three implementations |
+| `schema-parity` | A rich app definition exercising all features produces a **byte-identical** help document (`help --json`, apart from the `project_id` line that names each target's own program) from all three implementations |
 | `schema-fragments` | Every `value_schema` in every target's dump is a valid document of the closed four-keyword subset, every entry that must carry one does, and a choice flag carries none |
 | `float-fuzz` | The strictcli canonical float format (SCF) produces byte-identical strings for a fixed set of double-precision bit patterns across all three implementations |
 | `schema-freshness` | The committed `.strictcli/schema.json` for the conformance tool itself matches its current in-memory schema |
@@ -45,7 +45,7 @@ check, and any divergence in these areas blocks a release:
 - **Exit codes.** Every case asserts a specific exit code, and parity mode verifies all targets agree.
 - **Flag parsing.** Type coercion (str, bool, int, float), default resolution, env var resolution (including `1|true|yes` / `0|false|no` for booleans), config file loading, choice-flag election and scope enforcement, constraint enforcement (at-least-one, all-or-none, requires, implies, including nesting and the `present` / `true` / `non_empty` election selectors), and negatable booleans (`--no-flag`).
 - **Float formatting.** The SCF canonical form is byte-shared: a fixed seed of double-precision bit patterns is formatted identically by all three implementations, verified by `check_float_fuzz.py` and the committed vectors in `conformance/float_vectors.json`.
-- **Schema output.** `--dump-schema` produces **byte-identical** JSON at `schema_version: 2` describing the full CLI structure. Since v2 the comparison is byte equality rather than a structural one -- the normalization layer that used to reconcile three serializers is deleted, and one canonical encoding (declared key order at every depth, SCF floats, JSON-mandated escaping only, exactly one trailing newline) is what makes that possible. `check_schema_fragments.py` additionally validates every `value_schema` in every dump against the closed four-keyword subset.
+- **Schema output.** `help --json` produces **byte-identical** JSON (apart from the `project_id` line) at `schema_version: 2` describing the full CLI structure. Since v2 the comparison is byte equality rather than a structural one -- the normalization layer that used to reconcile three serializers is deleted, and one canonical encoding (declared key order at every depth, SCF floats, JSON-mandated escaping only, exactly one trailing newline) is what makes that possible. `check_schema_fragments.py` additionally validates every `value_schema` in every dump against the closed four-keyword subset.
 - **Provenance labels.** Source labels (`cli`, `env`, `config`, `default`, `implied`, `infra`) are identical strings across implementations.
 - **Config subsystem.** `config show`, `config set`, `config path`, `config edit`, `config init` produce identical output and behavior.
 - **Check system.** Tag DSL evaluation, DAG-ordered execution, dependency pull-in, cascade skips, and result formatting all behave identically.
@@ -68,7 +68,7 @@ including exit code, stdout content, and stderr content:
 - `env`: optional environment variables to set
 - `stdin`: optional text piped to the app's stdin. Absent means `/dev/null`, which is what keeps every other case independent of the operator's terminal (a pipe carrying this text is not a TTY either). Used by the `--mcp` cases, whose JSON-RPC lines arrive on stdin.
 - `protocol_script`: an alternative to `stdin` for exchanges whose next request depends on the previous reply (see below). The two are mutually exclusive.
-- `expect`: assertions on exit code, stdout, and stderr (exact match, substring, regex, negation), plus structural assertions on the effect log (`effects_equals`) and on an emitted `--dump-schema` document (`schema_command_keys`, `schema_command_absent_keys`)
+- `expect`: assertions on exit code, stdout, and stderr (exact match, substring, regex, negation), plus structural assertions on the effect log (`effects_equals`) and on a printed help document (`schema_command_keys`, `schema_command_absent_keys`, `schema_bytes_equal`)
 - `targets`: restricts which implementations run the case (see [Target restrictions](#target-restrictions))
 - `acknowledged_divergence`: declares intentionally language-specific output (see [Acknowledged divergence](#acknowledged-divergence))
 
@@ -203,7 +203,7 @@ consistency:
 
 - `check_api_surface.py` introspects Python classes, parses Go source via an AST dumper (`conformance/describe_go/`), and runs the TypeScript `describe` self-dump to verify every API field exists in all implementations and in the conformance schema.
 - `check_error_parity.py` extracts error message patterns from all three implementations, normalizes them to a common signature form, and verifies symmetric coverage.
-- `check_schema_parity.py` runs `--dump-schema` against all targets with a rich app definition and byte-compares the resulting files.
+- `check_schema_parity.py` runs `help --json` against all targets with a rich app definition and byte-compares the resulting documents, `project_id` line removed.
 - `check_schema_fragments.py` reads all three dumps and validates every `value_schema` at every depth -- flag entries, arg entries, global flags, config fields, and every scoped entry inside a choice flag -- against the closed four-keyword subset, asserting the choice flag's absent fragment rather than tolerating it.
 - `check_float_fuzz.py` formats a fixed set of double-precision bit patterns through all three formatters and asserts byte-for-byte agreement.
 - `generate_pairwise.py` uses allpairspy to generate combinatorial test cases covering all 2-way flag feature combinations.
@@ -320,8 +320,8 @@ Key fields in `expect`:
 | `config_file_contains` / `config_file_not_contains` | Substring(s) that must (or must not) appear in the seeded config file after the run. Reads the `config_content` / `config_content_late` temp file. |
 | `config_file_matches` | Regex pattern(s) matched via `re.search` against the seeded config file after the run. Useful for asserting key ordering. |
 | `effects_equals` | Deep-equality assertion against the structured effect log the run produced (effects contract §14.1). Compared in order over the parsed JSON arrays; absent optional keys and explicit-null keys are equivalent, and `recorded` is required on every record. |
-| `schema_command_keys` | Per-command key assertions against the `.strictcli/schema.json` a `--dump-schema` run emitted. Maps a dotted command path (groups then command, e.g. `release.run`) to the keys that entry must carry, with their exact values. Requires `--dump-schema` in the case argv. |
-| `schema_command_absent_keys` | The mirror of `schema_command_keys`: maps a dotted command path to keys that must NOT appear on that entry. Pins the emit-when-declared contract, where a key omitted by one implementation and emitted with a default by another is a silent divergence. Requires `--dump-schema` in the case argv. |
+| `schema_command_keys` | Per-command key assertions against the help document a `help --json` run printed. Maps a dotted command path (groups then command, e.g. `release.run`) to the keys that entry must carry, with their exact values. Requires `help ... --json` in the case argv. |
+| `schema_command_absent_keys` | The mirror of `schema_command_keys`: maps a dotted command path to keys that must NOT appear on that entry. Pins the emit-when-declared contract, where a key omitted by one implementation and emitted with a default by another is a silent divergence. Requires `help ... --json` in the case argv. |
 
 ### 3. Use handler_prints for output
 

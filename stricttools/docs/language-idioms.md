@@ -392,11 +392,11 @@ Python handlers name their parameters, so Python -- alone of the three -- can
 check the boundary where a declaration is received:
 
 ```python
-@app.command("c", help="h", effect="read_only")
+@app.command("deploy", help="h", effect="read_only")
 @strictcli.flag("target", type=str, presence="optional", help="h")
-def c(ctx, target=""):
+def deploy(ctx, target=""):
     ...
-# ValueError: command "c": handler parameter 'target' is bound to optional flag
+# ValueError: command "deploy": handler parameter 'target' is bound to optional flag
 # '--target' and must default to None
 ```
 
@@ -404,7 +404,7 @@ A written `target=""` re-introduces at the handler boundary exactly the sentinel
 the presence declaration just removed -- an empty string standing in for "not
 supplied", which destroys `""` as a real value. The check reads narrowly: it
 fires only when the parameter **has** a default and that default is not `None`.
-A bare `def c(ctx, target)` is legal, because the framework passes every declared
+A bare `def deploy(ctx, target)` is legal, because the framework passes every declared
 value as a keyword argument on every dispatch, so the parameter receives the
 framework's `None` and no second value competes with it.
 
@@ -457,7 +457,7 @@ Flags:
   --loud, --no-loud    Shout it [default: false]
 ```
 
-**Schema fields.** `--dump-schema` emits `presence` on every flag and arg entry
+**Schema fields.** The help document (`help --json`) emits `presence` on every flag and arg entry
 in every implementation, which is what stopped schema parity from passing by
 erasure -- the dumped schema previously said nothing at all about which flags
 had to be supplied.

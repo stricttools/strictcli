@@ -468,8 +468,8 @@ error: --format: value 'xml' retired: use 'json' (XML output was dropped)
 ```
 
 A retired value is not a choice: help never lists it, and the `value_schema`
-enum `--dump-schema` publishes -- together with the MCP tool schema derived
-from it -- carries the live values only. `--dump-schema` publishes the
+enum the help document publishes -- together with the MCP tool schema derived
+from it -- carries the live values only. The help document publishes the
 declaration separately, as a `retired_choices` map from spelling to message,
 sorted ascending by key and omitted when nothing is retired.
 
@@ -1034,7 +1034,7 @@ never engages a member, never satisfies a `requires`, and never fires an
 `implies` trigger. That includes a `relativeToRoot` default with the `infra`
 source label: it is still the declaration deciding. Every constraint renders in
 `--help` under a `Constraints:` section, publishes its members in
-`--dump-schema`, and projects into MCP tool schemas (`anyOf` /
+the help document, and projects into MCP tool schemas (`anyOf` /
 `dependentRequired`) with anything a JSON Schema keyword cannot carry stated in
 the tool description instead.
 
@@ -1219,7 +1219,7 @@ dns.deprecate(deprecated("dump", "use 'list' instead"));
 
 Flags declared on the app apply to all commands and can appear before or after
 the command name on the CLI. Global flag names cannot collide with reserved
-framework names like `help`, `version`, `dump-schema`, `mcp`, `config`, or
+framework names like `help`, `version`, `mcp`, `config`, or
 `hermetic`. Global flag values are merged into each handler's `args` object.
 
 ```typescript
@@ -1367,7 +1367,7 @@ Three guardrails apply at registration time:
 - A `dryRunUnsupportedReason` without `dryRunSupported: false` throws -- there is nothing to explain while dry run is supported.
 
 The reason also appears in the command's help under a `Dry run:` section, and in
-`--dump-schema` output as the pair `dry_run_supported` / `dry_run_unsupported_reason`.
+the help document as the pair `dry_run_supported` / `dry_run_unsupported_reason`.
 Both keys are emitted only when declared, so a schema entry without them means
 dry run is supported. `--help` always beats the refusal.
 
@@ -1458,30 +1458,80 @@ a caller can see the requirement before it calls. There is no bypass flag:
 `consequential: true` on `defineReadOnlyCommand` throws at registration time --
 a command that changes nothing has nothing to confirm.
 
-## Schema Dump
+## Help, Version, and the Help Document
 
-Every strictcli app has a built-in `--dump-schema` reserved flag. Running it
-writes a JSON file describing the full CLI structure to
-`.strictcli/schema.json` and prints the absolute path to stdout. The schema
-includes all commands, flags, args, groups, constraints, and config field
-declarations.
+Every strictcli app has two framework commands, `help` and `version`. Their names
+are reserved at every level of the command tree, so no command, group, or
+deprecated command anywhere in an app may take either.
 
 ```bash
-mytool --dump-schema
+mytool help                      # what mytool --help prints
+mytool help dns zone             # a group's page
+mytool help deploy               # what mytool deploy --help prints
+mytool help deploy --target      # one flag's lines of that page
+mytool help --depth 2            # the command tree, two levels deep
+mytool version                   # what mytool --version prints
 ```
 
-The location is declared, never discovered: `schemaPath: "build/cli-schema.json"`
-or `schemaPath: relativeToRoot("MYTOOL_HOME", "schema.json")` in `createApp`.
-With neither, the framework writes `.strictcli/schema.json` anchored at the
-working directory the app was CONSTRUCTED in, so a later `chdir` cannot move the
-file.
+A flag is addressed as it is typed, after its command; help's own option
+`--depth` goes before the address. `--help` and `--version` stay text only:
+with `--json` they are refused naming the command that prints the machine form.
 
-Programmatically, use `app.dumpSchemaDict()` to get the schema as an object without writing to disk.
+`mytool help --json` prints the help document: every command, flag, arg, group,
+constraint, and config field declaration at `schema_version: 2`, in one canonical
+encoding that the TypeScript, Python, and Go implementations produce byte for
+byte. An address prunes it to one group, command, or flag. `project_id` is the
+`name` of the nearest `package.json` above the program's entry script. A
+committed schema file is the output redirected into it:
 
-```typescript
-const schema = app.dumpSchemaDict();
-console.log(JSON.stringify(schema, null, 2));
+```bash
+mytool help --json > .strictcli/schema.json
 ```
+
+`app.dumpSchemaDict()` returns the same document without `project_id`, in-process.
+
+## Names
+
+Command, group, flag, choice, constraint, tag, check, hook, grant, update
+resource, and requirement names are lowercase kebab-case of at least two
+characters: `deploy`, `dns-zone`, `dry-run-report`. A short form is one letter,
+and uppercase is allowed: `short: "F"`. `flag("m", ...)` or a command named
+`Deploy` is refused where it is declared.
+
+## Runtime Requirements
+
+A command that needs something at run time -- a system library loaded when it
+runs, an executable -- references a requirement declared once, and every command
+that needs it references the same value:
+
+```ts
+const vulkanLoader = requirement({
+    name: "vulkan-loader",
+    help: "the Vulkan loader library",
+    install: "sudo dnf install vulkan-loader",
+    load: () => openVulkanLoader(),
+});
+
+app.command(
+    defineReadOnlyCommand("render", {
+        help: "Render a frame",
+        requires: [vulkanLoader],
+        handler: (_args, ctx) => render(ctx.need(vulkanLoader)),
+    }),
+);
+```
+
+Before the handler runs, on every door and in dry mode too, strictcli loads the
+command's requirements; `load` returns the loaded value or throws saying why it
+is not available. A missing one ends the command with exit 1:
+
+```
+error: command 'render' needs vulkan-loader (the Vulkan loader library), which is not available: libvulkan.so.1: cannot open shared object file; install it: sudo dnf install vulkan-loader
+```
+
+Commands that do not reference it never load it. `--help` lists a command's
+requirements under `Requirements:`, and the help document publishes them as
+`requires`.
 
 ## Testing
 
@@ -1759,7 +1809,7 @@ deploy infra logs --service api
 deploy exec -- ls -la
 deploy --version
 deploy --help
-deploy --dump-schema
+deploy help --json
 ```
 
 ## Reserved Global Flags
@@ -1770,7 +1820,8 @@ of these names produces a registration-time error:
 
 - `--help` / `-h` -- show help for the app, group, or command
 - `--version` / `-v` -- print the app version
-- `--dump-schema` -- write `.strictcli/schema.json` and print the path
+- `help [--depth <int>] [<address>]` -- the help of the app, a group, a command, or one flag; with `--json`, the help document
+- `version` -- the app's name and version, as `--version` prints it
 - `--hermetic` -- skip env var and config file resolution (values come only from CLI tokens and defaults)
 - `--config <path>` -- use a specific config file (when config is enabled)
 - `--mcp` -- start an MCP JSON-RPC 2.0 server on stdin/stdout

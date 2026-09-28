@@ -91,8 +91,8 @@ enough to interrupt someone for?", which is what
 `mutating` command does not prompt unless it also declares itself
 `consequential`.
 
-Classification is a property of the command, so it is emitted in `--dump-schema`
-output on every command entry and can be asserted against by check gates.
+Classification is a property of the command, so it is emitted in the help
+document (`help --json`) on every command entry and can be asserted against by check gates.
 Deprecated commands are exempt: they have no handler, execute nothing, and
 passing `effect=` to `app.deprecate()` is a registration-time error.
 
@@ -346,8 +346,8 @@ error: --format: value 'xml' retired: use 'json' (XML output was dropped)
 ```
 
 A retired value is not a choice: help never lists it, and the `value_schema`
-enum `--dump-schema` publishes -- together with the MCP tool schema derived
-from it -- carries the live values only. `--dump-schema` publishes the
+enum the help document publishes -- together with the MCP tool schema derived
+from it -- carries the live values only. The help document publishes the
 declaration separately, as a `retired_choices` map from spelling to message,
 sorted ascending by key and omitted when nothing is retired.
 
@@ -613,7 +613,7 @@ Only one variadic argument is allowed, and it must be the last. You can also use
 Global flags are available to all commands and can appear before or after the
 command name in argv. Pass them via the `flags` parameter on `App`. Global flag
 names cannot collide with reserved framework names like `help`, `version`,
-`dump-schema`, `mcp`, `config`, or `hermetic`, nor with the reserved quartet:
+`mcp`, `config`, or `hermetic`, nor with the reserved quartet:
 
 ```python
 app = strictcli.App(
@@ -637,7 +637,7 @@ def deploy(ctx, color, log_level):
 
 Usage: `mytool --no-color deploy` or `mytool deploy --no-color` (global flags can appear before or after the command).
 
-Reserved global flag names that cannot be used: `help`, `h`, `version`, `v`, `dump-schema`, `mcp`, `config`, `hermetic`, plus the reserved quartet `dry-run`, `approve-consequential`, `quiet`, `verbose`, plus `json`, which selects machine mode. The name `yes` is banned outright -- the confirmation skip is `--approve-consequential`.
+Reserved global flag names that cannot be used: `help`, `h`, `version`, `v`, `dump-schema` (refused naming `help --json`), `mcp`, `config`, `hermetic`, plus the reserved quartet `dry-run`, `approve-consequential`, `quiet`, `verbose`, plus `json`, which selects machine mode. The name `yes` is banned outright -- the confirmation skip is `--approve-consequential`.
 
 ## Command Groups
 
@@ -789,7 +789,7 @@ Three guardrails apply at registration time:
 - A `dry_run_unsupported_reason` without `dry_run_supported=False` is an error -- there is nothing to explain while dry run is supported.
 
 The reason also appears in the command's help under a `Dry run:` section, and in
-`--dump-schema` output as the pair `dry_run_supported` / `dry_run_unsupported_reason`.
+the help document as the pair `dry_run_supported` / `dry_run_unsupported_reason`.
 Both keys are emitted only when declared, so a schema entry without them means
 dry run is supported. `--help` always beats the refusal: asking what a command
 does is never answered with a refusal to preview it.
@@ -1216,7 +1216,7 @@ Engagement reads presence through the same predicate `ctx.provided` uses -- a
 flag counts as provided when the invocation caused its value. A declared default
 never engages a member, never satisfies a `Requires`, and never fires an
 `Implies` trigger. Every constraint renders in `--help` under a `Constraints:`
-section, publishes its members in `--dump-schema`, and projects into MCP tool
+section, publishes its members in the help document, and projects into MCP tool
 schemas (`anyOf` / `dependentRequired`) with anything a JSON Schema keyword
 cannot carry stated in the tool description instead.
 
@@ -1453,26 +1453,76 @@ handling, which is the declared one.
 
 `--hermetic` is a reserved global flag on every app. It skips config file loading and env var resolution entirely. Values come only from CLI tokens, declared defaults, and infrastructure roots.
 
-## Schema Dump
+## Help, Version, and the Help Document
 
-Every strictcli app automatically supports `--dump-schema`, a reserved flag
-that writes a JSON file describing the full CLI structure to
-`.strictcli/schema.json` and prints the absolute path to stdout. The schema
-includes all commands, flags, args, groups, constraints, and config field
-declarations:
+Every strictcli app has two framework commands, `help` and `version`. Their names
+are reserved at every level of the command tree, so no command, group, or
+deprecated command anywhere in an app may take either.
 
 ```
-$ mytool --dump-schema
-.strictcli/schema.json
+$ mytool help                      # what mytool --help prints
+$ mytool help dns zone             # a group's page
+$ mytool help deploy               # what mytool deploy --help prints
+$ mytool help deploy --target      # one flag's lines of that page
+$ mytool help --depth 2            # the command tree, two levels deep
+$ mytool version                   # what mytool --version prints
 ```
 
-The schema includes all commands, flags, args, groups, and their metadata. It is used by tools like rlsbl to keep documentation in sync with the CLI surface.
+A flag is addressed as it is typed, after its command; help's own option
+`--depth` goes before the address. `--help` and `--version` stay text only:
+with `--json` they are refused naming the command that prints the machine form.
 
-The location is declared, never discovered: `App(schema_path="build/cli-schema.json")`,
-or `App(schema_path=strictcli.RelativeToRoot("MYTOOL_HOME", "schema.json"))` for a
-location under a declared infrastructure root. With neither, the framework writes
-`.strictcli/schema.json` anchored at the working directory the app was
-CONSTRUCTED in, so a later `chdir` cannot move the file.
+`mytool help --json` prints the help document: every command, flag, arg, group,
+constraint, and config field declaration at `schema_version: 2`, in one canonical
+encoding that the Python, Go, and TypeScript implementations produce byte for
+byte. An address prunes it to one group, command, or flag. `project_id` names the
+project holding the module that constructed the App: the installed distribution
+that records it, or, in a checkout, the nearest `pyproject.toml`'s
+`[project] name`. A committed schema file is the output redirected into it:
+
+```
+$ mytool help --json > .strictcli/schema.json
+```
+
+`app.dump_schema_dict()` returns the same document without `project_id`, in-process.
+
+## Names
+
+Command, group, flag, choice, constraint, tag, check, hook, grant, update
+resource, and requirement names are lowercase kebab-case of at least two
+characters: `deploy`, `dns-zone`, `dry-run-report`. A short form is one letter,
+and uppercase is allowed: `short="F"`. `@strictcli.flag("m", ...)` or a command
+named `Deploy` is refused where it is declared.
+
+## Runtime Requirements
+
+A command that needs something at run time -- a system library loaded when it
+runs, an executable -- references a requirement declared once, and every command
+that needs it references the same value:
+
+```python
+vulkan_loader = strictcli.Requirement(
+    name="vulkan-loader", help="the Vulkan loader library",
+    install="sudo dnf install vulkan-loader", load=vk.open_loader,
+)
+
+@app.command("render", help="Render a frame", effect="read_only", requires=[vulkan_loader])
+def render(ctx):
+    loader = ctx.need(vulkan_loader)
+    ...
+```
+
+Before the handler runs, on every door and in dry mode too, strictcli loads the
+command's requirements; `load` returns the loaded value or raises saying why it
+is not available. A missing one ends the command with exit 1:
+
+```
+error: command 'render' needs vulkan-loader (the Vulkan loader library), which is not available: libvulkan.so.1: cannot open shared object file; install it: sudo dnf install vulkan-loader
+```
+
+Commands that do not reference it never load it. `--help` lists a command's
+requirements under `Requirements:`, and the help document publishes them as
+`requires`.
 
 ## Testing
 
@@ -1671,5 +1721,5 @@ $ deploy-tool service restart --name api --approve-consequential
 Restarting api (timeout: 30s)
 
 $ deploy-tool config show
-$ deploy-tool --dump-schema
+$ deploy-tool help --json > .strictcli/schema.json
 ```

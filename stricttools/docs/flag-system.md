@@ -593,7 +593,7 @@ named one never reaches the handler. There is no closed set arriving at a
 consumption site, so there is nothing for `match` / `Match` / `switch` to be
 exhaustive over.
 
-`--dump-schema` publishes the declaration as a `retired_choices` object on the
+The help document (`help --json`) publishes the declaration as a `retired_choices` object on the
 flag or arg entry, mapping each retired spelling to its message, sorted
 ascending by key (the treatment a group's `deprecated` map gets) and omitted
 entirely when nothing is retired:
@@ -844,7 +844,7 @@ Flags can be declared at the app level, making them available to all commands
 in the application. Global flags are parsed before the command token during the
 global flag parsing stage, and their values are passed to every handler alongside
 the command's own flags. Global flag names cannot collide with reserved framework
-names like `help`, `version`, `dump-schema`, `mcp`, `config`, or `hermetic`, nor
+names like `help`, `version`, `mcp`, `config`, or `hermetic`, nor
 with the reserved quartet `dry-run`, `approve-consequential`, `quiet`, `verbose`,
 nor with `json`, which selects machine mode.
 
@@ -1509,7 +1509,7 @@ convention: the command names the resource, states which flags and args identify
 the instance, which flags carry the changes, and whether the write is sparse or a
 full replace. The framework then refuses an invocation that supplies no property,
 renders the resulting **write set** on every surface a run reports through, and
-publishes the declaration in `--dump-schema` and in MCP tool schemas.
+publishes the declaration in the help document and in MCP tool schemas.
 
 ### A mutating command may not default a value
 
@@ -1558,7 +1558,7 @@ An update command carries one record, in the same registration-level family
 
 | Fact | What it says |
 |---|---|
-| `resource` | the **name** of the thing being updated -- mandatory, matching `[a-z][a-z0-9-]*` |
+| `resource` | the **name** of the thing being updated -- mandatory, lowercase kebab-case of at least two characters |
 | `write_mode` | `"sparse"` or `"full_replace"` -- mandatory, no default |
 | `identity` | the flags and args that name **which** instance -- possibly empty |
 | `properties` | the flags that name **what changes** -- at least one |
