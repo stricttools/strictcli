@@ -4549,7 +4549,13 @@ def _check_command_tree_name(kind: str, name: object) -> None:
             f"framework commands at every level of the command tree"
         )
     if not _is_kebab_name(name):
-        raise ValueError(f'{kind} name "{name}" {_KEBAB_NAME_CLAUSE}')
+        if kind == "group":
+            raise ValueError(f'group name "{name}" {_KEBAB_NAME_CLAUSE}')
+        if kind == "deprecated command":
+            raise ValueError(
+                f'deprecated command name "{name}" {_KEBAB_NAME_CLAUSE}'
+            )
+        raise ValueError(f'command name "{name}" {_KEBAB_NAME_CLAUSE}')
 
 
 def _is_short_form(short: object) -> bool:
