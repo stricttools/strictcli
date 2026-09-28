@@ -468,7 +468,7 @@ class TestSchemaDefaults:
                 "owns_stdout": False, "passthrough": False, "flags": [],
                 "flag_sets": [], "args": [], "tags": [], "constraints": [],
                 "hidden": False, "interactive": False, "config_fields": [],
-                "grants": [], "forwarding": None,
+                "grants": [], "forwarding": None, "requires": [],
             },
             "group": {
                 "commands": {}, "groups": {}, "deprecated": {}, "tags": [],

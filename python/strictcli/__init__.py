@@ -624,6 +624,114 @@ class _DocumentWriter:
         """Nothing to do: every write is already on stdout."""
 
 
+# ---------------------------------------------------------------------------
+# Declared runtime requirements
+#
+# A program declares what a command needs at run time -- a system library
+# loaded when the command runs, an executable, a device -- ONCE, as a
+# Requirement, and every command that needs it references that value
+# (``requires=[...]``). Before the handler runs, on every door (``run()``,
+# ``test()``, ``call()`` and the MCP server) and in dry mode too, the framework
+# loads each of the command's requirements; a missing one ends the command with
+# exit 1 and one error naming what is missing and how to install it. The
+# handler reads a loaded value through ``ctx.need(requirement)``.
+# ---------------------------------------------------------------------------
+
+
+def _msg_requirement_unavailable(
+    path: str, name: str, help: str, reason: str, install: str,  # noqa: A002
+) -> str:
+    return (
+        f"command '{path}' needs {name} ({help}), which is not available: "
+        f"{reason}; install it: {install}"
+    )
+
+
+def _msg_need_undeclared(cmd: str, name: str) -> str:
+    return (
+        f"command '{cmd}' did not declare requirement '{name}'; add it to the "
+        f"command's requirements"
+    )
+
+
+def _is_one_line(value: object) -> bool:
+    return (
+        isinstance(value, str) and bool(value.strip())
+        and "\n" not in value and "\r" not in value
+    )
+
+
+@dataclass(frozen=True, eq=False)
+class Requirement:
+    """One runtime requirement: a name (the naming rule), one line saying what
+    it is, one line saying how to install it, and ``load``, which returns the
+    loaded value or raises an exception saying why it is not available."""
+
+    name: str
+    help: str
+    install: str
+    load: "Callable[[], object]"
+
+    def __post_init__(self) -> None:
+        if not _is_kebab_name(self.name):
+            raise ValueError(f'requirement name "{self.name}" {_KEBAB_NAME_CLAUSE}')
+        if not _is_one_line(self.help):
+            raise ValueError(
+                f'requirement "{self.name}": help must be one non-empty line'
+            )
+        if not _is_one_line(self.install):
+            raise ValueError(
+                f'requirement "{self.name}": install must be one non-empty line '
+                f"saying how to install it"
+            )
+        if not callable(self.load):
+            raise ValueError(
+                f'requirement "{self.name}": load must be a function returning '
+                f"the loaded value or an error"
+            )
+
+
+def _validate_requires(cmd_name: str, requires: object) -> tuple:
+    """A command's requirements, refusing one referenced twice."""
+    seen: set[str] = set()
+    for req in requires or ():
+        if req.name in seen:
+            raise ValueError(
+                f'command "{cmd_name}": requirement "{req.name}" is referenced twice'
+            )
+        seen.add(req.name)
+    return tuple(requires or ())
+
+
+def _register_requirements(ref: dict, requires: tuple) -> None:
+    """Refuse a second requirement value under a name the app already knows:
+    a requirement is declared once and referenced everywhere."""
+    for req in requires:
+        known = ref.get(req.name)
+        if known is not None and known is not req:
+            raise ValueError(
+                f'requirement "{req.name}" is declared by two different values; '
+                f"declare it once and reference that value from every command "
+                f"that needs it"
+            )
+        ref[req.name] = req
+
+
+def _load_requirements(ctx: "Context", cmd: "Command", cmd_path: str) -> None:
+    """Load a command's requirements in declaration order before its handler
+    runs, ending the command early at the first one that is not available."""
+    loaded: dict = {}
+    for req in cmd.requires:
+        try:
+            loaded[req.name] = req.load()
+        except Exception as e:  # noqa: BLE001 - any failure is "not available"
+            exit_now(1, _msg_requirement_unavailable(
+                cmd_path, req.name, req.help, str(e), req.install,
+            ))
+    ctx._loaded_requirements = loaded
+    ctx._declared_requirements = cmd.requires
+
+
 class Context:
     """Structured output context for command handlers.
 
@@ -724,6 +832,17 @@ class Context:
         ends, so work the handler handed it to knows it is released.
         """
         return self._canceled
+
+    def need(self, requirement: Requirement) -> object:
+        """The value a requirement the command declared loaded before the
+        handler ran. Asking for one the command did not declare is a hard
+        error."""
+        for declared in getattr(self, "_declared_requirements", ()):
+            if declared is requirement:
+                return self._loaded_requirements[requirement.name]
+        raise RuntimeError(
+            _msg_need_undeclared(self._command_name, requirement.name)
+        )
 
     def payload(self, value: object) -> None:
         """Supply this dispatch's machine payload (contract §19.4).
@@ -9309,6 +9428,8 @@ class Command:
     config_fields: tuple[str, ...] = ()
     grants: tuple[Grant, ...] = ()
     forwarding: Forwarding | None = None
+    # What the command needs at run time, loaded before its handler runs.
+    requires: tuple[Requirement, ...] = ()
     # Private marker, set ONLY by strictcli's own registration paths. It is not
     # reachable from any public factory, option or keyword, and is not emitted
     # in the schema.
@@ -9359,6 +9480,7 @@ class Group:
     _accumulated_tags: frozenset[str] = frozenset()
     hidden: bool = False
     _config_fields_ref: dict[str, ConfigField] = field(default_factory=dict)
+    _requirements_ref: dict = field(default_factory=dict)
     _infra_root_names: frozenset[str] = frozenset()
     _connection_env_names: frozenset[str] = frozenset()
 
@@ -9387,6 +9509,7 @@ class Group:
                      _accumulated_tags=self._accumulated_tags | own_tags,
                      hidden=hidden,
                      _config_fields_ref=self._config_fields_ref,
+                     _requirements_ref=self._requirements_ref,
                      _infra_root_names=self._infra_root_names,
                      _connection_env_names=self._connection_env_names)
         self._groups[name] = grp
@@ -9439,6 +9562,7 @@ class Group:
         passthrough: Passthrough | None = None,
         grants: list[Grant] | None = None,
         forwarding: Forwarding | None = None,
+        requires: list[Requirement] | None = None,
         tags: set[str] | None = None,
         hidden: bool = False,
         interactive: bool = False,
@@ -9468,12 +9592,14 @@ class Group:
                 passthrough=passthrough,
                 grants=grants,
                 forwarding=forwarding,
+                requires=requires,
                 tags=tags,
                 inherited_tags=self._accumulated_tags,
                 hidden=hidden,
                 interactive=interactive,
                 config_fields=config_fields,
                 config_fields_ref=self._config_fields_ref,
+                requirements_ref=self._requirements_ref,
                 infra_root_names=self._infra_root_names,
                 connection_env_names=self._connection_env_names,
                 handler_localns=handler_localns,
@@ -10367,6 +10493,8 @@ class App:
 
         # Config field declarations
         self._config_fields: dict[str, ConfigField] = {}
+        # Each runtime requirement name -> the one value declaring it.
+        self._requirements: dict[str, Requirement] = {}
         self._framework_fields: dict[str, ConfigField] = {}
 
         # Config parse error (for config show to pick up)
@@ -11424,6 +11552,7 @@ class App:
         passthrough: Passthrough | None = None,
         grants: list[Grant] | None = None,
         forwarding: Forwarding | None = None,
+        requires: list[Requirement] | None = None,
         tags: set[str] | None = None,
         hidden: bool = False,
         interactive: bool = False,
@@ -11453,12 +11582,14 @@ class App:
                 passthrough=passthrough,
                 grants=grants,
                 forwarding=forwarding,
+                requires=requires,
                 tags=tags,
                 inherited_tags=None,
                 hidden=hidden,
                 interactive=interactive,
                 config_fields=config_fields,
                 config_fields_ref=self._config_fields,
+                requirements_ref=self._requirements,
                 infra_root_names=self._infra_root_names,
                 connection_env_names=self._connection_env_names,
                 handler_localns=handler_localns,
@@ -11478,6 +11609,7 @@ class App:
                      _accumulated_tags=own_tags,
                      hidden=hidden,
                      _config_fields_ref=self._config_fields,
+                     _requirements_ref=self._requirements,
                      _infra_root_names=self._infra_root_names,
                      _connection_env_names=self._connection_env_names)
         self._groups[name] = grp
@@ -13317,6 +13449,7 @@ class App:
         span.start()
         try:
             try:
+                _load_requirements(ctx, cmd, cmd_path)
                 if cmd.passthrough is not None:
                     handler_return = cmd.passthrough.handler(
                         ctx, cmd.name, data, self._last_global_values,
@@ -13673,6 +13806,7 @@ class App:
             )
             killed: list[str] = []
             try:
+                _load_requirements(ctx, cmd, command_path)
                 result = cmd.passthrough.handler(
                     ctx, cmd.name, raw_args, global_values,
                 )
@@ -13855,6 +13989,7 @@ class App:
         )
         killed: list[str] = []
         try:
+            _load_requirements(ctx, cmd, command_path)
             result = cmd.handler(ctx, **final_kwargs)
         except _EarlyExit as early:
             # The in-process door: the handler ran and ended with a failure,
@@ -17008,6 +17143,7 @@ def _build_and_validate_command(
     passthrough: Passthrough | None = None,
     grants: list[Grant] | None = None,
     forwarding: Forwarding | None = None,
+    requires: list[Requirement] | None = None,
     framework_internal: bool = False,
     extra_flags: list[Flag] | None = None,
     tags: set[str] | None = None,
@@ -17016,6 +17152,7 @@ def _build_and_validate_command(
     interactive: bool = False,
     config_fields: list[str] | None = None,
     config_fields_ref: dict[str, ConfigField] | None = None,
+    requirements_ref: dict | None = None,
     infra_root_names: frozenset[str] | None = None,
     connection_env_names: frozenset[str] | None = None,
     handler_localns: dict | None = None,
@@ -17027,8 +17164,14 @@ def _build_and_validate_command(
     built here, so classification, signature validation and flag validation are
     unbypassable.
     """
+    # The name first, as every implementation reports it: the naming rule and
+    # the framework-command reservation.
+    _check_command_tree_name("command", name)
     if not help or not help.strip():
         raise ValueError(f'command "{name}": missing help text')
+    resolved_requires = _validate_requires(name, requires)
+    if requirements_ref is not None:
+        _register_requirements(requirements_ref, resolved_requires)
 
     # Classification is mandatory and has no default.
     if effect is None:
@@ -17129,6 +17272,7 @@ def _build_and_validate_command(
             config_fields=resolved_config_fields,
             grants=resolved_grants,
             forwarding=forwarding,
+            requires=resolved_requires,
             _framework_internal=framework_internal,
         )
 
@@ -17466,6 +17610,7 @@ def _build_and_validate_command(
         config_fields=resolved_config_fields,
         grants=resolved_grants,
         forwarding=forwarding,
+        requires=resolved_requires,
         _framework_internal=framework_internal,
     )
 
@@ -17989,6 +18134,20 @@ def _format_constraints_section(cmd: Command) -> list[str]:
     return lines
 
 
+def _format_requirements_section(cmd: Command) -> list[str]:
+    """The `Requirements:` section of command help, or nothing."""
+    if not cmd.requires:
+        return []
+    width = max(len(r.name) for r in cmd.requires)
+    lines = ["", "Requirements:"]
+    for r in cmd.requires:
+        lines.append(
+            f"  {r.name}{' ' * (width - len(r.name) + 4)}{r.help}; install it: "
+            f"{r.install}"
+        )
+    return lines
+
+
 def _format_command_help(app: App, cmd: Command, prefix: str = "") -> str:
     """Format command-level help shown when the user runs 'myapp cmd --help'."""
     lines: list[str] = [f"{app.name} {prefix}{cmd.name} -- {cmd.help}"]
@@ -18000,6 +18159,7 @@ def _format_command_help(app: App, cmd: Command, prefix: str = "") -> str:
 
     # Passthrough commands show only the header line (no flags/args section)
     if cmd.passthrough is not None:
+        lines.extend(_format_requirements_section(cmd))
         return "\n".join(lines)
 
     if cmd.args:
@@ -18056,6 +18216,8 @@ def _format_command_help(app: App, cmd: Command, prefix: str = "") -> str:
             )
 
     lines.extend(_format_constraints_section(cmd))
+    # What the command needs at run time, before the global flags.
+    lines.extend(_format_requirements_section(cmd))
 
     # Global flags
     if app._global_flags:
@@ -19682,6 +19844,13 @@ def _serialize_command(cmd: Command) -> dict:
         ]
     if cmd.forwarding is not None:
         d["forwarding"] = {"reason": cmd.forwarding.reason}
+    # requires: what the command needs at run time, in declaration order;
+    # omitted when it needs nothing.
+    if cmd.requires:
+        d["requires"] = [
+            {"name": r.name, "help": r.help, "install": r.install}
+            for r in cmd.requires
+        ]
     return d
 
 
@@ -19791,6 +19960,7 @@ def _build_schema_defaults() -> dict:
             "config_fields": [],
             "grants": [],
             "forwarding": None,
+            "requires": [],
         },
         "group": {
             "commands": {},
