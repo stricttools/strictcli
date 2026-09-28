@@ -1279,6 +1279,11 @@
         },
         {
           "level": 3,
+          "text": "`CheckValue`",
+          "anchor": "checkvalue"
+        },
+        {
+          "level": 3,
           "text": "`ConfigField`",
           "anchor": "configfield"
         },
@@ -2144,6 +2149,16 @@
         },
         {
           "level": 3,
+          "text": "`App.SetCheckValueResolver`",
+          "anchor": "appsetcheckvalueresolver"
+        },
+        {
+          "level": 3,
+          "text": "`stringError.Error`",
+          "anchor": "stringerrorerror"
+        },
+        {
+          "level": 3,
           "text": "`App.ConfigField`",
           "anchor": "appconfigfield"
         },
@@ -2286,6 +2301,16 @@
           "level": 3,
           "text": "`Spawned.Wait`",
           "anchor": "spawnedwait"
+        },
+        {
+          "level": 3,
+          "text": "`Spawned.Signal`",
+          "anchor": "spawnedsignal"
+        },
+        {
+          "level": 3,
+          "text": "`Spawned.Kill`",
+          "anchor": "spawnedkill"
         },
         {
           "level": 3,
@@ -3451,8 +3476,33 @@
         },
         {
           "level": 3,
+          "text": "`_SpawnedChild`",
+          "anchor": "_spawnedchild"
+        },
+        {
+          "level": 4,
+          "text": "`reap`",
+          "anchor": "reap"
+        },
+        {
+          "level": 4,
+          "text": "`settle`",
+          "anchor": "settle"
+        },
+        {
+          "level": 3,
           "text": "`Spawned`",
           "anchor": "spawned"
+        },
+        {
+          "level": 4,
+          "text": "`send_signal`",
+          "anchor": "send_signal"
+        },
+        {
+          "level": 4,
+          "text": "`kill`",
+          "anchor": "kill"
         },
         {
           "level": 4,
@@ -3633,6 +3683,11 @@
           "level": 3,
           "text": "`_msg_canceled_by_signal`",
           "anchor": "_msg_canceled_by_signal"
+        },
+        {
+          "level": 3,
+          "text": "`_msg_child_killed_at_exit`",
+          "anchor": "_msg_child_killed_at_exit"
         },
         {
           "level": 3,
@@ -3863,6 +3918,11 @@
           "level": 4,
           "text": "`spawn`",
           "anchor": "spawn"
+        },
+        {
+          "level": 4,
+          "text": "`_settle_children`",
+          "anchor": "_settle_children"
         },
         {
           "level": 4,
@@ -4216,8 +4276,23 @@
         },
         {
           "level": 3,
+          "text": "`_parse_check_hooks`",
+          "anchor": "_parse_check_hooks"
+        },
+        {
+          "level": 3,
+          "text": "`_parse_checks_toml_full`",
+          "anchor": "_parse_checks_toml_full"
+        },
+        {
+          "level": 3,
           "text": "`_load_checks_toml`",
           "anchor": "_load_checks_toml"
+        },
+        {
+          "level": 3,
+          "text": "`_load_checks_toml_full`",
+          "anchor": "_load_checks_toml_full"
         },
         {
           "level": 3,
@@ -4896,6 +4971,11 @@
         },
         {
           "level": 3,
+          "text": "`_check_hook_flag_help`",
+          "anchor": "_check_hook_flag_help"
+        },
+        {
+          "level": 3,
           "text": "`_raise_handler_param_optional_flag_default`",
           "anchor": "_raise_handler_param_optional_flag_default"
         },
@@ -4996,6 +5076,16 @@
         },
         {
           "level": 3,
+          "text": "`_mint_off`",
+          "anchor": "_mint_off"
+        },
+        {
+          "level": 3,
+          "text": "`_mint_as_warnings`",
+          "anchor": "_mint_as_warnings"
+        },
+        {
+          "level": 3,
           "text": "`_check_abort_text`",
           "anchor": "_check_abort_text"
         },
@@ -5093,6 +5183,16 @@
           "level": 4,
           "text": "`warned`",
           "anchor": "warned"
+        },
+        {
+          "level": 3,
+          "text": "`CheckValue`",
+          "anchor": "checkvalue"
+        },
+        {
+          "level": 3,
+          "text": "`_resolve_check_values`",
+          "anchor": "_resolve_check_values"
         },
         {
           "level": 3,
@@ -5266,6 +5366,11 @@
         },
         {
           "level": 4,
+          "text": "`set_check_value_resolver`",
+          "anchor": "set_check_value_resolver"
+        },
+        {
+          "level": 4,
           "text": "`set_scope_adapter`",
           "anchor": "set_scope_adapter"
         },
@@ -5303,6 +5408,11 @@
           "level": 4,
           "text": "`_register_check_command`",
           "anchor": "_register_check_command"
+        },
+        {
+          "level": 4,
+          "text": "`_register_one_check_command`",
+          "anchor": "_register_one_check_command"
         },
         {
           "level": 4,
@@ -6900,6 +7010,11 @@
         },
         {
           "level": 3,
+          "text": "`CheckValue`",
+          "anchor": "checkvalue"
+        },
+        {
+          "level": 3,
           "text": "`CheckProblem`",
           "anchor": "checkproblem"
         },
@@ -6912,6 +7027,16 @@
           "level": 3,
           "text": "`mintSkip`",
           "anchor": "mintskip"
+        },
+        {
+          "level": 3,
+          "text": "`mintOff`",
+          "anchor": "mintoff"
+        },
+        {
+          "level": 3,
+          "text": "`mintAsWarnings`",
+          "anchor": "mintaswarnings"
         },
         {
           "level": 3,
@@ -7096,6 +7221,16 @@
           "level": 3,
           "text": "`checkIsPure`",
           "anchor": "checkispure"
+        },
+        {
+          "level": 3,
+          "text": "`ResolvedCheckValue`",
+          "anchor": "resolvedcheckvalue"
+        },
+        {
+          "level": 3,
+          "text": "`resolveCheckValues`",
+          "anchor": "resolvecheckvalues"
         },
         {
           "level": 3,
@@ -7645,6 +7780,11 @@
           "level": 3,
           "text": "`Spawned`",
           "anchor": "spawned"
+        },
+        {
+          "level": 3,
+          "text": "`ChildOutput`",
+          "anchor": "childoutput"
         },
         {
           "level": 3,
@@ -9006,6 +9146,51 @@
         },
         {
           "level": 3,
+          "text": "`errChecksTomlDescriptionInvalid`",
+          "anchor": "errcheckstomldescriptioninvalid"
+        },
+        {
+          "level": 3,
+          "text": "`errChecksTomlSubjectInvalid`",
+          "anchor": "errcheckstomlsubjectinvalid"
+        },
+        {
+          "level": 3,
+          "text": "`errChecksTomlHooksMustBeTable`",
+          "anchor": "errcheckstomlhooksmustbetable"
+        },
+        {
+          "level": 3,
+          "text": "`errChecksTomlInvalidHookName`",
+          "anchor": "errcheckstomlinvalidhookname"
+        },
+        {
+          "level": 3,
+          "text": "`errChecksTomlHookMustBeTable`",
+          "anchor": "errcheckstomlhookmustbetable"
+        },
+        {
+          "level": 3,
+          "text": "`errChecksTomlHookUnknownField`",
+          "anchor": "errcheckstomlhookunknownfield"
+        },
+        {
+          "level": 3,
+          "text": "`errChecksTomlHookMissingTag`",
+          "anchor": "errcheckstomlhookmissingtag"
+        },
+        {
+          "level": 3,
+          "text": "`errChecksTomlHookTagInvalid`",
+          "anchor": "errcheckstomlhooktaginvalid"
+        },
+        {
+          "level": 3,
+          "text": "`errChecksTomlHookTagExpr`",
+          "anchor": "errcheckstomlhooktagexpr"
+        },
+        {
+          "level": 3,
           "text": "`errCheckDependencyCycleInvolving`",
           "anchor": "errcheckdependencycycleinvolving"
         },
@@ -9028,6 +9213,41 @@
           "level": 3,
           "text": "`errInvalidGlobPattern`",
           "anchor": "errinvalidglobpattern"
+        },
+        {
+          "level": 3,
+          "text": "`errCheckValueInvalid`",
+          "anchor": "errcheckvalueinvalid"
+        },
+        {
+          "level": 3,
+          "text": "`errCheckValueSourceEmpty`",
+          "anchor": "errcheckvaluesourceempty"
+        },
+        {
+          "level": 3,
+          "text": "`errCheckValueAboveSeverity`",
+          "anchor": "errcheckvalueaboveseverity"
+        },
+        {
+          "level": 3,
+          "text": "`errCheckHookCombined`",
+          "anchor": "errcheckhookcombined"
+        },
+        {
+          "level": 3,
+          "text": "`errCheckHookUnknown`",
+          "anchor": "errcheckhookunknown"
+        },
+        {
+          "level": 3,
+          "text": "`errCheckHookNoneDeclared`",
+          "anchor": "errcheckhooknonedeclared"
+        },
+        {
+          "level": 3,
+          "text": "`errCheckValueResolverMustBeCallable`",
+          "anchor": "errcheckvalueresolvermustbecallable"
         },
         {
           "level": 3,
@@ -9991,6 +10211,11 @@
         },
         {
           "level": 3,
+          "text": "`errChildKilledAtExit`",
+          "anchor": "errchildkilledatexit"
+        },
+        {
+          "level": 3,
           "text": "`errEarlyExitToolResult`",
           "anchor": "errearlyexittoolresult"
         },
@@ -10013,6 +10238,11 @@
           "level": 3,
           "text": "`errLintFrameworkUseManifestMismatch`",
           "anchor": "errlintframeworkusemanifestmismatch"
+        },
+        {
+          "level": 3,
+          "text": "`errLintFrameworkUseUnparsable`",
+          "anchor": "errlintframeworkuseunparsable"
         },
         {
           "level": 3,
@@ -11731,8 +11961,18 @@
         },
         {
           "level": 3,
+          "text": "`LexicalError`",
+          "anchor": "lexicalerror"
+        },
+        {
+          "level": 3,
           "text": "`tokenize`",
           "anchor": "tokenize"
+        },
+        {
+          "level": 3,
+          "text": "`tokenizeChecked`",
+          "anchor": "tokenizechecked"
         },
         {
           "level": 3,
@@ -12172,10 +12412,31 @@
     }
   ],
   "posts": [],
-  "last_gen": "2026-09-26T19:45:51.294797+00:00",
+  "last_gen": "2026-09-28T15:48:38.913282+00:00",
   "theme": "minimal",
   "vocabulary": {
-    "accepted": [],
+    "accepted": [
+      {
+        "word": "goroutine",
+        "aliases": []
+      },
+      {
+        "word": "rethrow",
+        "aliases": []
+      },
+      {
+        "word": "rlsbl",
+        "aliases": []
+      },
+      {
+        "word": "SCF",
+        "aliases": []
+      },
+      {
+        "word": "unprefixed",
+        "aliases": []
+      }
+    ],
     "rejected": []
   }
 }

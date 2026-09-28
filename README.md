@@ -50,7 +50,7 @@ Most CLI frameworks infer behavior from type hints, function signatures, or nami
 - **A choice is a declaration scope.** "Exactly one of these" is a choice flag, not a constraint over independent flags: each choice owns the flags that exist only while it is elected, and a flag supplied outside its elected scope is a parse error naming both sides. There is no at-most-one construct anywhere.
 - **Handler signature validation.** Parameter names must match declared flags and args exactly.
 - **Registration-time errors.** Misconfigurations fail loud and early, not at parse time.
-- **Minimal dependencies.** Each implementation uses its language's standard library plus TOML support: Python depends on [tomlkit](https://pypi.org/project/tomlkit/), Go depends on [go-toml-edit](https://github.com/smm-h/go-toml-edit), TypeScript depends on [smol-toml](https://www.npmjs.com/package/smol-toml) and [toml-eslint-parser](https://www.npmjs.com/package/toml-eslint-parser).
+- **Minimal dependencies.** Each implementation uses its language's standard library plus TOML support: Python depends on [tomlkit](https://pypi.org/project/tomlkit/), Go depends on [go-toml-edit](https://github.com/stricttools/go-toml-edit), TypeScript depends on [smol-toml](https://www.npmjs.com/package/smol-toml) and [toml-eslint-parser](https://www.npmjs.com/package/toml-eslint-parser).
 
 ## Quick taste
 
@@ -173,7 +173,7 @@ app.run(process.argv.slice(2));
 - Infrastructure env vars -- declared location roots (resolved at construction, usable in defaults via `RelativeToRoot`), handshake vars (cross-tool protocol signals, read live), and connection vars (behavioral URLs like a database DSN: read live, no default, and hermetic-suppressed so `--hermetic` resolves them absent; flags bind to a declared connection env, and checks can read it via the check context)
 - Value provenance -- every resolved flag reports its source (`cli`/`env`/`config`/`default`/`implied`/`infra`) via the handler context
 - Programmatic invocation -- `app.call()` / `app.Call()` runs a command in-process with typed kwargs, bypassing CLI parsing; failures surface as `InvokeError`
-- Check system -- first-class check/validation framework with a TOML manifest, tag DSL, and DAG-ordered execution
+- Check system -- first-class check/validation framework with a TOML manifest (every check declares a one-line description and its options subject), tag DSL, named hook selections, DAG-ordered execution, per-check values an app resolves (error, warn, or off), and a `failing-checks` command that reports only error-level failures
 - MCP server mode -- expose commands as tools over the Model Context Protocol (protocol `2026-07-28`, with the handshake era retained), where a consequential tool asks for confirmation before it runs
 - `--dump-schema` -- auto-injected flag that writes `.strictcli/schema.json` at `schema_version: 2` describing the full CLI structure, with a real JSON Schema fragment on every flag and arg entry and one canonical encoding so the three implementations' dumps byte-compare
 - `--help` / `-h` recognized anywhere in argv
@@ -201,7 +201,7 @@ strictcli/
   conformance/     Cross-language conformance tests
 ```
 
-Each sub-project has its own version, changelog, and release cycle, managed by [rlsbl](https://github.com/smm-h/rlsbl).
+Each sub-project has its own version, changelog, and release cycle, managed by [rlsbl](https://github.com/stricttools/rlsbl).
 
 ## License
 
