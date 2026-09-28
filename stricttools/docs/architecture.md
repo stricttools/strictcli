@@ -958,7 +958,7 @@ implementations. No implementation sorts them at serialization time.
 | command entry | `name`, `help`, `effect`, `consequential`, `dry_run_supported`, `dry_run_unsupported_reason`, `update_of`, `write_mode`, `payload_schema`, `owns_stdout`, `passthrough`, `flags`, `flag_sets`, `args`, `tags`, `constraints`, `hidden`, `interactive`, `config_fields`, `grants`, `forwarding` |
 | group entry | `name`, `help`, `commands`, `groups`, `deprecated`, `tags`, `hidden` |
 | config-field entry | `value_schema`, `help`, `required`, `default`, `bound_commands` |
-| check entry | `tags`, `severity`, `fast`, `pure`, `needs_network`, `depends_on`, `scope` |
+| check entry | `tags`, `severity`, `fast`, `pure`, `needs_network`, `depends_on`, `description`, `subject`, `scope` |
 | grant entry | `name`, `reason`, `kind` |
 | infra block | `roots`, `handshakes`, `connections` |
 
@@ -1008,8 +1008,8 @@ Keys with **no** baseline are absent from the block on purpose, and the list is
 exactly the set of always-emitted facts: `name`, `help`, `version`,
 `schema_version`, `project_id`, `effect`, `presence`, `value_schema` on every
 entry that has one, a choice object's `name` and `help`, a choice record's
-`value`, a config field's `help` and `required`, and a check's six mandatory
-fields.
+`value`, a config field's `help` and `required`, and a check's mandatory
+fields (every field of its checks.toml declaration except `scope`).
 
 `presence` is always emitted on every flag and arg entry, so there is no baseline
 to omit against; its value is `"required"`, `"optional"` or `"default"`, and a

@@ -182,8 +182,8 @@ Restrictions exist wherever a mis-declaration is expressible in one language and
 not another -- the bad-return hard error, which Go's `Outcome` type makes
 unrepresentable; the per-language registration guards whose sentence carries that
 language's own spelling; an aborted-dispatch envelope case written twice, once
-for Go and once for the other two. Of the 1437 cases, Go runs 1312, Python runs
-1319 and TypeScript runs 1321.
+for Go and once for the other two. Each target runs every case that is not
+restricted to other targets.
 
 ### Differential argv fuzzing
 
@@ -350,6 +350,6 @@ If the new case has output that is legitimately language-specific, add an `ackno
 ## Architecture notes
 
 - The conformance suite is a `dev_node` in the monorepo's `workspace.toml`. It has no changelog, no JSONL entries, and cannot be released independently. It covers 3 target implementations with 12 automated checks.
-- CI (`ci-router.yml`) runs the conformance checks on every push touching `conformance/**`, `python/**`, `go/**`, or `typescript/**`. A full conformance run exercises all 1437 test cases across all 3 targets (1312 on Go, 1319 on Python and 1321 on TypeScript, the difference being the target-restricted cases).
+- CI (`ci-router.yml`) runs the conformance checks on every push touching `conformance/**`, `python/**`, `go/**`, or `typescript/**`. A full conformance run exercises every test case on every target the case is not restricted away from.
 - The conformance tool itself is built with strictcli (dogfooding the check system). Its checks are declared in `conformance/conformance_tool/.strictcli/checks.toml`.
 - Adding a new target to the suite is a data-entry task: register a new `Target` descriptor in `run.py` (one `_register_target(...)` call) and add corresponding entries in `check_api_surface.py`, `check_error_parity.py`, `check_schema_parity.py`, and `check_schema_fragments.py`. The orchestration, comparison, and reporting logic is fully target-agnostic.

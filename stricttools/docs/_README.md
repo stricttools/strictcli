@@ -174,7 +174,7 @@ app.run(process.argv.slice(2));
 - Infrastructure env vars -- declared location roots (resolved at construction, usable in defaults via `RelativeToRoot`), handshake vars (cross-tool protocol signals, read live), and connection vars (behavioral URLs like a database DSN: read live, no default, and hermetic-suppressed so `--hermetic` resolves them absent; flags bind to a declared connection env, and checks can read it via the check context)
 - Value provenance -- every resolved flag reports its source (`cli`/`env`/`config`/`default`/`implied`/`infra`) via the handler context
 - Programmatic invocation -- `app.call()` / `app.Call()` runs a command in-process with typed kwargs, bypassing CLI parsing; failures surface as `InvokeError`
-- Check system -- first-class check/validation framework with a TOML manifest, tag DSL, and DAG-ordered execution
+- Check system -- first-class check/validation framework with a TOML manifest (every check declares a one-line description and its options subject), tag DSL, named hook selections, DAG-ordered execution, per-check values an app resolves (error, warn, or off), and a `failing-checks` command that reports only error-level failures
 - MCP server mode -- expose commands as tools over the Model Context Protocol (protocol `2026-07-28`, with the handshake era retained), where a consequential tool asks for confirmation before it runs
 - `--dump-schema` -- auto-injected flag that writes `.strictcli/schema.json` at `schema_version: 2` describing the full CLI structure, with a real JSON Schema fragment on every flag and arg entry and one canonical encoding so the three implementations' dumps byte-compare
 - `--help` / `-h` recognized anywhere in argv
