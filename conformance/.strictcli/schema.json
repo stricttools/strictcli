@@ -90,10 +90,10 @@
       "help": "Run project checks registered via the check framework and report results",
       "effect": "read_only",
       "payload_schema": {
-        "type": "array",
         "items": {
           "type": "object"
-        }
+        },
+        "type": "array"
       },
       "flags": [
         {
@@ -125,8 +125,43 @@
           "default": ""
         },
         {
+          "name": "hook",
+          "help": "Run the checks a hook declared in checks.toml selects (no hooks are declared)",
+          "value_schema": {
+            "type": "string"
+          },
+          "presence": "default",
+          "default": ""
+        },
+        {
           "name": "list",
-          "help": "List all registered checks with their tags and exit without running",
+          "help": "List all registered checks with their tags and values and exit without running",
+          "value_schema": {
+            "type": "boolean"
+          },
+          "presence": "default",
+          "default": false,
+          "negatable": true
+        }
+      ],
+      "forwarding": {
+        "reason": "framework-internal: absorbs app-defined global flag values"
+      }
+    },
+    "failing-checks": {
+      "name": "failing-checks",
+      "help": "Run project checks and report only error-level failures, exiting nonzero when any exist",
+      "effect": "read_only",
+      "payload_schema": {
+        "items": {
+          "type": "object"
+        },
+        "type": "array"
+      },
+      "flags": [
+        {
+          "name": "all",
+          "help": "Run every registered check regardless of tag or name filters",
           "value_schema": {
             "type": "boolean"
           },
@@ -135,8 +170,35 @@
           "negatable": true
         },
         {
-          "name": "ignore-warnings",
-          "help": "Treat warn-severity results as passing so they do not cause nonzero exit",
+          "name": "tag",
+          "help": "Tag DSL expression to select checks (e.g. 'changelog & !quality')",
+          "value_schema": {
+            "type": "string"
+          },
+          "presence": "default",
+          "default": ""
+        },
+        {
+          "name": "name",
+          "help": "Glob pattern to filter checks by name (e.g. 'hash-*', '*coverage*')",
+          "value_schema": {
+            "type": "string"
+          },
+          "presence": "default",
+          "default": ""
+        },
+        {
+          "name": "hook",
+          "help": "Run the checks a hook declared in checks.toml selects (no hooks are declared)",
+          "value_schema": {
+            "type": "string"
+          },
+          "presence": "default",
+          "default": ""
+        },
+        {
+          "name": "list",
+          "help": "List all registered checks with their tags and values and exit without running",
           "value_schema": {
             "type": "boolean"
           },
@@ -161,7 +223,9 @@
       "fast": true,
       "pure": true,
       "needs_network": false,
-      "depends_on": []
+      "depends_on": [],
+      "description": "Every public API field exists in all three implementations and in the conformance schema",
+      "subject": "parity"
     },
     "conformance-go": {
       "tags": [
@@ -173,7 +237,9 @@
       "fast": false,
       "pure": false,
       "needs_network": false,
-      "depends_on": []
+      "depends_on": [],
+      "description": "Every JSON conformance case passes against the Go implementation",
+      "subject": "conformance"
     },
     "conformance-meta": {
       "tags": [
@@ -185,7 +251,9 @@
       "fast": true,
       "pure": true,
       "needs_network": false,
-      "depends_on": []
+      "depends_on": [],
+      "description": "The suite's own meta-tests pin its extraction and registry surfaces and the lockfile pin",
+      "subject": "meta"
     },
     "conformance-parity": {
       "tags": [
@@ -201,7 +269,9 @@
         "conformance-python",
         "conformance-go",
         "conformance-typescript"
-      ]
+      ],
+      "description": "Cases run on several targets produce byte-identical stdout and stderr",
+      "subject": "parity"
     },
     "conformance-python": {
       "tags": [
@@ -213,7 +283,9 @@
       "fast": false,
       "pure": false,
       "needs_network": false,
-      "depends_on": []
+      "depends_on": [],
+      "description": "Every JSON conformance case passes against the Python implementation",
+      "subject": "conformance"
     },
     "conformance-typescript": {
       "tags": [
@@ -225,7 +297,9 @@
       "fast": false,
       "pure": false,
       "needs_network": false,
-      "depends_on": []
+      "depends_on": [],
+      "description": "Every JSON conformance case passes against the TypeScript implementation",
+      "subject": "conformance"
     },
     "error-parity": {
       "tags": [
@@ -237,7 +311,9 @@
       "fast": true,
       "pure": true,
       "needs_network": false,
-      "depends_on": []
+      "depends_on": [],
+      "description": "The three error catalogs produce identical messages for identical inputs",
+      "subject": "parity"
     },
     "float-fuzz": {
       "tags": [
@@ -249,7 +325,9 @@
       "fast": false,
       "pure": false,
       "needs_network": false,
-      "depends_on": []
+      "depends_on": [],
+      "description": "The canonical float format produces byte-identical strings in all three implementations",
+      "subject": "parity"
     },
     "schema-fragments": {
       "tags": [
@@ -261,7 +339,9 @@
       "fast": false,
       "pure": false,
       "needs_network": false,
-      "depends_on": []
+      "depends_on": [],
+      "description": "Every value_schema in every target's dump is a valid document of the closed subset",
+      "subject": "schema"
     },
     "schema-freshness": {
       "tags": [
@@ -272,7 +352,9 @@
       "fast": true,
       "pure": true,
       "needs_network": false,
-      "depends_on": []
+      "depends_on": [],
+      "description": "The committed schema.json of the conformance tool matches its in-memory schema",
+      "subject": "schema"
     },
     "schema-parity": {
       "tags": [
@@ -284,7 +366,9 @@
       "fast": false,
       "pure": false,
       "needs_network": false,
-      "depends_on": []
+      "depends_on": [],
+      "description": "A rich app produces byte-identical --dump-schema output from all three implementations",
+      "subject": "parity"
     },
     "trace-sweeps": {
       "tags": [
@@ -296,7 +380,9 @@
       "fast": false,
       "pure": false,
       "needs_network": false,
-      "depends_on": []
+      "depends_on": [],
+      "description": "The process trace store leaves stdout, stderr, and the exit code untouched",
+      "subject": "trace"
     }
   }
 }

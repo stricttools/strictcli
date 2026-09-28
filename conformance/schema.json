@@ -367,6 +367,26 @@
           },
           "description": "Check stub definitions for code generation."
         },
+        "check_values": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "type": "string"
+              },
+              "source": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "value",
+              "source"
+            ],
+            "additionalProperties": false
+          },
+          "description": "The app's check value resolver, as a table: a check named here resolves to this value and source; a check absent from it resolves to no value (its registered severity). The value is not restricted, so a case can hand the framework a value it must refuse."
+        },
         "providers": {
           "type": "array",
           "items": {

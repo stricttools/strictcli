@@ -1668,6 +1668,18 @@ def generate(app_def: dict) -> str:
             lines.append(f"    app.register_check_provider(_provider_{pi})")
             lines.append("")
 
+    # The check value resolver, as a table: a check absent from it resolves
+    # to None (its registered severity).
+    if "check_values" in app_def:
+        lines.append(f"    _check_values = {app_def['check_values']!r}")
+        lines.append("    def _resolve_check_value(name):")
+        lines.append("        entry = _check_values.get(name)")
+        lines.append("        if entry is None:")
+        lines.append("            return None")
+        lines.append("        return strictcli.CheckValue(value=entry['value'], source=entry['source'])")
+        lines.append("    app.set_check_value_resolver(_resolve_check_value)")
+        lines.append("")
+
     if has_checks:
         lines.append("    class _CheckCtx:")
         lines.append("        project_root = pathlib.Path('.')")

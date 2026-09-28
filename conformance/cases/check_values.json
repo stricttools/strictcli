@@ -1,0 +1,1861 @@
+[
+  {
+    "name": "check values: a check missing its description is refused",
+    "app": {
+      "name": "testapp",
+      "version": "1.0.0",
+      "help": "test",
+      "commands": [],
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\nsubject = \"quality\"\ntags = [\"a\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n",
+      "checks": [
+        {
+          "name": "lint",
+          "mint": "passed",
+          "message": "lint ok"
+        }
+      ]
+    },
+    "argv": [
+      "check",
+      "--all"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_contains": "checks.toml: check \"lint\": missing required field \"description\""
+    }
+  },
+  {
+    "name": "check values: a check missing its subject is refused",
+    "app": {
+      "name": "testapp",
+      "version": "1.0.0",
+      "help": "test",
+      "commands": [],
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ndescription = \"Runs the linter\"\ntags = [\"a\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n",
+      "checks": [
+        {
+          "name": "lint",
+          "mint": "passed",
+          "message": "lint ok"
+        }
+      ]
+    },
+    "argv": [
+      "check",
+      "--all"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_contains": "checks.toml: check \"lint\": missing required field \"subject\""
+    }
+  },
+  {
+    "name": "check values: a check with both declared runs",
+    "app": {
+      "name": "testapp",
+      "version": "1.0.0",
+      "help": "test",
+      "commands": [],
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ndescription = \"Runs the linter\"\nsubject = \"quality\"\ntags = [\"a\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n",
+      "checks": [
+        {
+          "name": "lint",
+          "mint": "passed",
+          "message": "lint ok"
+        }
+      ]
+    },
+    "argv": [
+      "check",
+      "--name",
+      "lint"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "PASS  lint    lint ok\n"
+    }
+  },
+  {
+    "name": "check values: a multi-line description is refused",
+    "app": {
+      "name": "testapp",
+      "version": "1.0.0",
+      "help": "test",
+      "commands": [],
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ndescription = \"two\\nlines\"\nsubject = \"quality\"\ntags = [\"a\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n",
+      "checks": [
+        {
+          "name": "lint",
+          "mint": "passed",
+          "message": "lint ok"
+        }
+      ]
+    },
+    "argv": [
+      "check",
+      "--all"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_contains": "checks.toml: check \"lint\": \"description\" must be a non-empty single-line string"
+    }
+  },
+  {
+    "name": "check values: an empty description is refused",
+    "app": {
+      "name": "testapp",
+      "version": "1.0.0",
+      "help": "test",
+      "commands": [],
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ndescription = \"  \"\nsubject = \"quality\"\ntags = [\"a\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n",
+      "checks": [
+        {
+          "name": "lint",
+          "mint": "passed",
+          "message": "lint ok"
+        }
+      ]
+    },
+    "argv": [
+      "check",
+      "--all"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_contains": "checks.toml: check \"lint\": \"description\" must be a non-empty single-line string"
+    }
+  },
+  {
+    "name": "check values: the subject \"Quality\" is refused",
+    "app": {
+      "name": "testapp",
+      "version": "1.0.0",
+      "help": "test",
+      "commands": [],
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ndescription = \"Runs the linter\"\nsubject = \"Quality\"\ntags = [\"a\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n",
+      "checks": [
+        {
+          "name": "lint",
+          "mint": "passed",
+          "message": "lint ok"
+        }
+      ]
+    },
+    "argv": [
+      "check",
+      "--all"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_contains": "checks.toml: check \"lint\": \"subject\" must be lowercase letters, digits, and hyphens, and not \"manifest\""
+    }
+  },
+  {
+    "name": "check values: the subject \"manifest\" is refused",
+    "app": {
+      "name": "testapp",
+      "version": "1.0.0",
+      "help": "test",
+      "commands": [],
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ndescription = \"Runs the linter\"\nsubject = \"manifest\"\ntags = [\"a\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n",
+      "checks": [
+        {
+          "name": "lint",
+          "mint": "passed",
+          "message": "lint ok"
+        }
+      ]
+    },
+    "argv": [
+      "check",
+      "--all"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_contains": "checks.toml: check \"lint\": \"subject\" must be lowercase letters, digits, and hyphens, and not \"manifest\""
+    }
+  },
+  {
+    "name": "check values: the subject \"code quality\" is refused",
+    "app": {
+      "name": "testapp",
+      "version": "1.0.0",
+      "help": "test",
+      "commands": [],
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ndescription = \"Runs the linter\"\nsubject = \"code quality\"\ntags = [\"a\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n",
+      "checks": [
+        {
+          "name": "lint",
+          "mint": "passed",
+          "message": "lint ok"
+        }
+      ]
+    },
+    "argv": [
+      "check",
+      "--all"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_contains": "checks.toml: check \"lint\": \"subject\" must be lowercase letters, digits, and hyphens, and not \"manifest\""
+    }
+  },
+  {
+    "name": "check values: a subject of letters, digits, and hyphens is accepted",
+    "app": {
+      "name": "testapp",
+      "version": "1.0.0",
+      "help": "test",
+      "commands": [],
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ndescription = \"Runs the linter\"\nsubject = \"code-quality-2\"\ntags = [\"a\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n",
+      "checks": [
+        {
+          "name": "lint",
+          "mint": "passed",
+          "message": "lint ok"
+        }
+      ]
+    },
+    "argv": [
+      "check",
+      "--name",
+      "lint"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "PASS  lint    lint ok\n"
+    }
+  },
+  {
+    "name": "check values: a hook runs the selection it declares",
+    "app": {
+      "name": "testapp",
+      "version": "1.0.0",
+      "help": "test",
+      "commands": [],
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ndescription = \"Checks lint\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.fmt]\ndescription = \"Checks fmt\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"warn\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.docs]\ndescription = \"Checks docs\"\nsubject = \"quality\"\ntags = [\"preflight\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.bench]\ndescription = \"Checks bench\"\nsubject = \"quality\"\ntags = [\"preflight\", \"slow\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[hooks.pre-push]\ntag = \"prepush\"\n\n[hooks.pre-release]\ntag = \"preflight & !slow\"\n",
+      "checks": [
+        {
+          "name": "lint",
+          "mint": "passed",
+          "message": "lint ok"
+        },
+        {
+          "name": "fmt",
+          "mint": "passed",
+          "message": "fmt ok"
+        },
+        {
+          "name": "docs",
+          "mint": "passed",
+          "message": "docs ok"
+        },
+        {
+          "name": "bench",
+          "mint": "passed",
+          "message": "bench ok"
+        }
+      ]
+    },
+    "argv": [
+      "check",
+      "--hook",
+      "pre-push"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "PASS  fmt     fmt ok\nPASS  lint    lint ok\n"
+    }
+  },
+  {
+    "name": "check values: a hook's tag expression keeps negation",
+    "app": {
+      "name": "testapp",
+      "version": "1.0.0",
+      "help": "test",
+      "commands": [],
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ndescription = \"Checks lint\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.fmt]\ndescription = \"Checks fmt\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"warn\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.docs]\ndescription = \"Checks docs\"\nsubject = \"quality\"\ntags = [\"preflight\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.bench]\ndescription = \"Checks bench\"\nsubject = \"quality\"\ntags = [\"preflight\", \"slow\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[hooks.pre-push]\ntag = \"prepush\"\n\n[hooks.pre-release]\ntag = \"preflight & !slow\"\n",
+      "checks": [
+        {
+          "name": "lint",
+          "mint": "passed",
+          "message": "lint ok"
+        },
+        {
+          "name": "fmt",
+          "mint": "passed",
+          "message": "fmt ok"
+        },
+        {
+          "name": "docs",
+          "mint": "passed",
+          "message": "docs ok"
+        },
+        {
+          "name": "bench",
+          "mint": "passed",
+          "message": "bench ok"
+        }
+      ]
+    },
+    "argv": [
+      "check",
+      "--hook",
+      "pre-release"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "PASS  docs    docs ok\n"
+    }
+  },
+  {
+    "name": "check values: a manual tag expression keeps negation",
+    "app": {
+      "name": "testapp",
+      "version": "1.0.0",
+      "help": "test",
+      "commands": [],
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ndescription = \"Checks lint\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.fmt]\ndescription = \"Checks fmt\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"warn\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.docs]\ndescription = \"Checks docs\"\nsubject = \"quality\"\ntags = [\"preflight\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.bench]\ndescription = \"Checks bench\"\nsubject = \"quality\"\ntags = [\"preflight\", \"slow\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[hooks.pre-push]\ntag = \"prepush\"\n\n[hooks.pre-release]\ntag = \"preflight & !slow\"\n",
+      "checks": [
+        {
+          "name": "lint",
+          "mint": "passed",
+          "message": "lint ok"
+        },
+        {
+          "name": "fmt",
+          "mint": "passed",
+          "message": "fmt ok"
+        },
+        {
+          "name": "docs",
+          "mint": "passed",
+          "message": "docs ok"
+        },
+        {
+          "name": "bench",
+          "mint": "passed",
+          "message": "bench ok"
+        }
+      ]
+    },
+    "argv": [
+      "check",
+      "--tag",
+      "!prepush & !slow & !effects"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "PASS  docs    docs ok\n"
+    }
+  },
+  {
+    "name": "check values: failing-checks takes a hook",
+    "app": {
+      "name": "testapp",
+      "version": "1.0.0",
+      "help": "test",
+      "commands": [],
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ndescription = \"Checks lint\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.fmt]\ndescription = \"Checks fmt\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"warn\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.docs]\ndescription = \"Checks docs\"\nsubject = \"quality\"\ntags = [\"preflight\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.bench]\ndescription = \"Checks bench\"\nsubject = \"quality\"\ntags = [\"preflight\", \"slow\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[hooks.pre-push]\ntag = \"prepush\"\n\n[hooks.pre-release]\ntag = \"preflight & !slow\"\n",
+      "checks": [
+        {
+          "name": "lint",
+          "mint": "found",
+          "message": "lint broken",
+          "problems": [
+            {
+              "severity": "error",
+              "text": "bad line"
+            }
+          ]
+        },
+        {
+          "name": "fmt",
+          "mint": "passed",
+          "message": "fmt ok"
+        },
+        {
+          "name": "docs",
+          "mint": "passed",
+          "message": "docs ok"
+        },
+        {
+          "name": "bench",
+          "mint": "passed",
+          "message": "bench ok"
+        }
+      ]
+    },
+    "argv": [
+      "failing-checks",
+      "--hook",
+      "pre-push"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "FAIL  lint    lint broken\n        [error] bad line\n"
+    }
+  },
+  {
+    "name": "check values: an unknown hook is refused, naming the declared ones",
+    "app": {
+      "name": "testapp",
+      "version": "1.0.0",
+      "help": "test",
+      "commands": [],
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ndescription = \"Checks lint\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.fmt]\ndescription = \"Checks fmt\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"warn\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.docs]\ndescription = \"Checks docs\"\nsubject = \"quality\"\ntags = [\"preflight\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.bench]\ndescription = \"Checks bench\"\nsubject = \"quality\"\ntags = [\"preflight\", \"slow\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[hooks.pre-push]\ntag = \"prepush\"\n\n[hooks.pre-release]\ntag = \"preflight & !slow\"\n",
+      "checks": [
+        {
+          "name": "lint",
+          "mint": "passed",
+          "message": "lint ok"
+        },
+        {
+          "name": "fmt",
+          "mint": "passed",
+          "message": "fmt ok"
+        },
+        {
+          "name": "docs",
+          "mint": "passed",
+          "message": "docs ok"
+        },
+        {
+          "name": "bench",
+          "mint": "passed",
+          "message": "bench ok"
+        }
+      ]
+    },
+    "argv": [
+      "check",
+      "--hook",
+      "pre-pusj"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: unknown hook \"pre-pusj\"; declared hooks: pre-push, pre-release\n"
+    }
+  },
+  {
+    "name": "check values: an unknown hook is refused when none are declared",
+    "app": {
+      "name": "testapp",
+      "version": "1.0.0",
+      "help": "test",
+      "commands": [],
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ndescription = \"Checks lint\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n",
+      "checks": [
+        {
+          "name": "lint",
+          "mint": "passed",
+          "message": "lint ok"
+        }
+      ]
+    },
+    "argv": [
+      "failing-checks",
+      "--hook",
+      "pre-push"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: unknown hook \"pre-push\"; checks.toml declares no hooks\n"
+    }
+  },
+  {
+    "name": "check values: declaring the hook clears the refusal",
+    "app": {
+      "name": "testapp",
+      "version": "1.0.0",
+      "help": "test",
+      "commands": [],
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ndescription = \"Checks lint\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[hooks.pre-push]\ntag = \"prepush\"\n",
+      "checks": [
+        {
+          "name": "lint",
+          "mint": "passed",
+          "message": "lint ok"
+        }
+      ]
+    },
+    "argv": [
+      "failing-checks",
+      "--hook",
+      "pre-push"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": ""
+    }
+  },
+  {
+    "name": "check values: --hook with --tag is refused",
+    "app": {
+      "name": "testapp",
+      "version": "1.0.0",
+      "help": "test",
+      "commands": [],
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ndescription = \"Checks lint\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.fmt]\ndescription = \"Checks fmt\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"warn\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.docs]\ndescription = \"Checks docs\"\nsubject = \"quality\"\ntags = [\"preflight\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.bench]\ndescription = \"Checks bench\"\nsubject = \"quality\"\ntags = [\"preflight\", \"slow\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[hooks.pre-push]\ntag = \"prepush\"\n\n[hooks.pre-release]\ntag = \"preflight & !slow\"\n",
+      "checks": [
+        {
+          "name": "lint",
+          "mint": "passed",
+          "message": "lint ok"
+        },
+        {
+          "name": "fmt",
+          "mint": "passed",
+          "message": "fmt ok"
+        },
+        {
+          "name": "docs",
+          "mint": "passed",
+          "message": "docs ok"
+        },
+        {
+          "name": "bench",
+          "mint": "passed",
+          "message": "bench ok"
+        }
+      ]
+    },
+    "argv": [
+      "check",
+      "--hook",
+      "pre-push",
+      "--tag",
+      "prepush"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: --hook cannot be combined with --all, --tag, or --name\n"
+    }
+  },
+  {
+    "name": "check values: --hook with --name is refused",
+    "app": {
+      "name": "testapp",
+      "version": "1.0.0",
+      "help": "test",
+      "commands": [],
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ndescription = \"Checks lint\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.fmt]\ndescription = \"Checks fmt\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"warn\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.docs]\ndescription = \"Checks docs\"\nsubject = \"quality\"\ntags = [\"preflight\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.bench]\ndescription = \"Checks bench\"\nsubject = \"quality\"\ntags = [\"preflight\", \"slow\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[hooks.pre-push]\ntag = \"prepush\"\n\n[hooks.pre-release]\ntag = \"preflight & !slow\"\n",
+      "checks": [
+        {
+          "name": "lint",
+          "mint": "passed",
+          "message": "lint ok"
+        },
+        {
+          "name": "fmt",
+          "mint": "passed",
+          "message": "fmt ok"
+        },
+        {
+          "name": "docs",
+          "mint": "passed",
+          "message": "docs ok"
+        },
+        {
+          "name": "bench",
+          "mint": "passed",
+          "message": "bench ok"
+        }
+      ]
+    },
+    "argv": [
+      "check",
+      "--hook",
+      "pre-push",
+      "--name",
+      "lint"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: --hook cannot be combined with --all, --tag, or --name\n"
+    }
+  },
+  {
+    "name": "check values: --hook with --all is refused",
+    "app": {
+      "name": "testapp",
+      "version": "1.0.0",
+      "help": "test",
+      "commands": [],
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ndescription = \"Checks lint\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.fmt]\ndescription = \"Checks fmt\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"warn\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.docs]\ndescription = \"Checks docs\"\nsubject = \"quality\"\ntags = [\"preflight\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.bench]\ndescription = \"Checks bench\"\nsubject = \"quality\"\ntags = [\"preflight\", \"slow\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[hooks.pre-push]\ntag = \"prepush\"\n\n[hooks.pre-release]\ntag = \"preflight & !slow\"\n",
+      "checks": [
+        {
+          "name": "lint",
+          "mint": "passed",
+          "message": "lint ok"
+        },
+        {
+          "name": "fmt",
+          "mint": "passed",
+          "message": "fmt ok"
+        },
+        {
+          "name": "docs",
+          "mint": "passed",
+          "message": "docs ok"
+        },
+        {
+          "name": "bench",
+          "mint": "passed",
+          "message": "bench ok"
+        }
+      ]
+    },
+    "argv": [
+      "check",
+      "--hook",
+      "pre-push",
+      "--all"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: --hook cannot be combined with --all, --tag, or --name\n"
+    }
+  },
+  {
+    "name": "check values: check help lists the declared hooks",
+    "app": {
+      "name": "testapp",
+      "version": "1.0.0",
+      "help": "test",
+      "commands": [],
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ndescription = \"Checks lint\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.fmt]\ndescription = \"Checks fmt\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"warn\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.docs]\ndescription = \"Checks docs\"\nsubject = \"quality\"\ntags = [\"preflight\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.bench]\ndescription = \"Checks bench\"\nsubject = \"quality\"\ntags = [\"preflight\", \"slow\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[hooks.pre-push]\ntag = \"prepush\"\n\n[hooks.pre-release]\ntag = \"preflight & !slow\"\n",
+      "checks": [
+        {
+          "name": "lint",
+          "mint": "passed",
+          "message": "lint ok"
+        },
+        {
+          "name": "fmt",
+          "mint": "passed",
+          "message": "fmt ok"
+        },
+        {
+          "name": "docs",
+          "mint": "passed",
+          "message": "docs ok"
+        },
+        {
+          "name": "bench",
+          "mint": "passed",
+          "message": "bench ok"
+        }
+      ]
+    },
+    "argv": [
+      "check",
+      "--help"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "testapp check -- Run project checks registered via the check framework and report results\n\nFlags:\n  --all, --no-all      Run every registered check regardless of tag or name filters [default: false]\n  --tag <str>          Tag DSL expression to select checks (e.g. 'changelog & !quality') [default: ]\n  --name <str>         Glob pattern to filter checks by name (e.g. 'hash-*', '*coverage*') [default: ]\n  --hook <str>         Run the checks a hook declared in checks.toml selects: pre-push (tag 'prepush'), pre-release (tag 'preflight & !slow') [default: ]\n  --list, --no-list    List all registered checks with their tags and values and exit without running [default: false]\n"
+    }
+  },
+  {
+    "name": "check values: failing-checks with no flags shows its help",
+    "app": {
+      "name": "testapp",
+      "version": "1.0.0",
+      "help": "test",
+      "commands": [],
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ndescription = \"Checks lint\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.fmt]\ndescription = \"Checks fmt\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"warn\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.docs]\ndescription = \"Checks docs\"\nsubject = \"quality\"\ntags = [\"preflight\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.bench]\ndescription = \"Checks bench\"\nsubject = \"quality\"\ntags = [\"preflight\", \"slow\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[hooks.pre-push]\ntag = \"prepush\"\n\n[hooks.pre-release]\ntag = \"preflight & !slow\"\n",
+      "checks": [
+        {
+          "name": "lint",
+          "mint": "passed",
+          "message": "lint ok"
+        },
+        {
+          "name": "fmt",
+          "mint": "passed",
+          "message": "fmt ok"
+        },
+        {
+          "name": "docs",
+          "mint": "passed",
+          "message": "docs ok"
+        },
+        {
+          "name": "bench",
+          "mint": "passed",
+          "message": "bench ok"
+        }
+      ]
+    },
+    "argv": [
+      "failing-checks"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "testapp failing-checks -- Run project checks and report only error-level failures, exiting nonzero when any exist\n\nFlags:\n  --all, --no-all      Run every registered check regardless of tag or name filters [default: false]\n  --tag <str>          Tag DSL expression to select checks (e.g. 'changelog & !quality') [default: ]\n  --name <str>         Glob pattern to filter checks by name (e.g. 'hash-*', '*coverage*') [default: ]\n  --hook <str>         Run the checks a hook declared in checks.toml selects: pre-push (tag 'prepush'), pre-release (tag 'preflight & !slow') [default: ]\n  --list, --no-list    List all registered checks with their tags and values and exit without running [default: false]\n"
+    }
+  },
+  {
+    "name": "check values: help says when no hooks are declared",
+    "app": {
+      "name": "testapp",
+      "version": "1.0.0",
+      "help": "test",
+      "commands": [],
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ndescription = \"Checks lint\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n",
+      "checks": [
+        {
+          "name": "lint",
+          "mint": "passed",
+          "message": "lint ok"
+        }
+      ]
+    },
+    "argv": [
+      "check",
+      "--help"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_contains": "Run the checks a hook declared in checks.toml selects (no hooks are declared) [default: ]"
+    }
+  },
+  {
+    "name": "check values: an invalid hook name is refused",
+    "app": {
+      "name": "testapp",
+      "version": "1.0.0",
+      "help": "test",
+      "commands": [],
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ndescription = \"Checks lint\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[hooks.Pre-Push]\ntag = \"prepush\"\n",
+      "checks": [
+        {
+          "name": "lint",
+          "mint": "passed",
+          "message": "lint ok"
+        }
+      ]
+    },
+    "argv": [
+      "check",
+      "--all"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_contains": "checks.toml: invalid hook name \"Pre-Push\" (must match [a-z][a-z0-9-]*)"
+    }
+  },
+  {
+    "name": "check values: a hook that is not a table is refused",
+    "app": {
+      "name": "testapp",
+      "version": "1.0.0",
+      "help": "test",
+      "commands": [],
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ndescription = \"Checks lint\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[hooks]\npre-push = \"prepush\"\n",
+      "checks": [
+        {
+          "name": "lint",
+          "mint": "passed",
+          "message": "lint ok"
+        }
+      ]
+    },
+    "argv": [
+      "check",
+      "--all"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_contains": "checks.toml: hook \"pre-push\" must be a table"
+    }
+  },
+  {
+    "name": "check values: a hook with an unknown field is refused",
+    "app": {
+      "name": "testapp",
+      "version": "1.0.0",
+      "help": "test",
+      "commands": [],
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ndescription = \"Checks lint\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[hooks.pre-push]\ntag = \"prepush\"\nname = \"lint\"\n",
+      "checks": [
+        {
+          "name": "lint",
+          "mint": "passed",
+          "message": "lint ok"
+        }
+      ]
+    },
+    "argv": [
+      "check",
+      "--all"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_contains": "checks.toml: hook \"pre-push\": unknown field \"name\""
+    }
+  },
+  {
+    "name": "check values: a hook without a tag is refused",
+    "app": {
+      "name": "testapp",
+      "version": "1.0.0",
+      "help": "test",
+      "commands": [],
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ndescription = \"Checks lint\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[hooks.pre-push]\n",
+      "checks": [
+        {
+          "name": "lint",
+          "mint": "passed",
+          "message": "lint ok"
+        }
+      ]
+    },
+    "argv": [
+      "check",
+      "--all"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_contains": "checks.toml: hook \"pre-push\": missing required field \"tag\""
+    }
+  },
+  {
+    "name": "check values: a hook with an empty tag is refused",
+    "app": {
+      "name": "testapp",
+      "version": "1.0.0",
+      "help": "test",
+      "commands": [],
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ndescription = \"Checks lint\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[hooks.pre-push]\ntag = \"\"\n",
+      "checks": [
+        {
+          "name": "lint",
+          "mint": "passed",
+          "message": "lint ok"
+        }
+      ]
+    },
+    "argv": [
+      "check",
+      "--all"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_contains": "checks.toml: hook \"pre-push\": \"tag\" must be a non-empty string"
+    }
+  },
+  {
+    "name": "check values: a hook whose tag expression does not parse is refused",
+    "app": {
+      "name": "testapp",
+      "version": "1.0.0",
+      "help": "test",
+      "commands": [],
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ndescription = \"Checks lint\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[hooks.pre-push]\ntag = \"prepush &\"\n",
+      "checks": [
+        {
+          "name": "lint",
+          "mint": "passed",
+          "message": "lint ok"
+        }
+      ]
+    },
+    "argv": [
+      "check",
+      "--all"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_contains": "checks.toml: hook \"pre-push\": tag expression: unexpected end of expression at position 9"
+    }
+  },
+  {
+    "name": "check values: a [hooks] key that is not a table is refused",
+    "app": {
+      "name": "testapp",
+      "version": "1.0.0",
+      "help": "test",
+      "commands": [],
+      "checks_toml": "app = \"testapp\"\nhooks = 3\n[checks.lint]\ndescription = \"Checks lint\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n",
+      "checks": [
+        {
+          "name": "lint",
+          "mint": "passed",
+          "message": "lint ok"
+        }
+      ]
+    },
+    "argv": [
+      "check",
+      "--all"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_contains": "checks.toml: [hooks] must be a table"
+    }
+  },
+  {
+    "name": "check values: off does not run the check and shows it with its source",
+    "app": {
+      "name": "testapp",
+      "version": "1.0.0",
+      "help": "test",
+      "commands": [],
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ndescription = \"Checks lint\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.fmt]\ndescription = \"Checks fmt\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"warn\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.docs]\ndescription = \"Checks docs\"\nsubject = \"quality\"\ntags = [\"preflight\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.bench]\ndescription = \"Checks bench\"\nsubject = \"quality\"\ntags = [\"preflight\", \"slow\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[hooks.pre-push]\ntag = \"prepush\"\n\n[hooks.pre-release]\ntag = \"preflight & !slow\"\n",
+      "checks": [
+        {
+          "name": "lint",
+          "mint": "found",
+          "message": "lint broken",
+          "problems": [
+            {
+              "severity": "error",
+              "text": "bad"
+            }
+          ]
+        },
+        {
+          "name": "fmt",
+          "mint": "passed",
+          "message": "fmt ok"
+        },
+        {
+          "name": "docs",
+          "mint": "passed",
+          "message": "docs ok"
+        },
+        {
+          "name": "bench",
+          "mint": "passed",
+          "message": "bench ok"
+        }
+      ],
+      "check_values": {
+        "lint": {
+          "value": "off",
+          "source": "demo:lint in options/quality.toml"
+        }
+      }
+    },
+    "argv": [
+      "check",
+      "--hook",
+      "pre-push"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "PASS  fmt     fmt ok\nOFF   lint    off: demo:lint in options/quality.toml\n"
+    }
+  },
+  {
+    "name": "check values: off is an off status in the payload",
+    "app": {
+      "name": "testapp",
+      "version": "1.0.0",
+      "help": "test",
+      "commands": [],
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ndescription = \"Checks lint\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.fmt]\ndescription = \"Checks fmt\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"warn\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.docs]\ndescription = \"Checks docs\"\nsubject = \"quality\"\ntags = [\"preflight\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.bench]\ndescription = \"Checks bench\"\nsubject = \"quality\"\ntags = [\"preflight\", \"slow\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[hooks.pre-push]\ntag = \"prepush\"\n\n[hooks.pre-release]\ntag = \"preflight & !slow\"\n",
+      "checks": [
+        {
+          "name": "lint",
+          "mint": "passed",
+          "message": "lint ok"
+        },
+        {
+          "name": "fmt",
+          "mint": "passed",
+          "message": "fmt ok"
+        },
+        {
+          "name": "docs",
+          "mint": "passed",
+          "message": "docs ok"
+        },
+        {
+          "name": "bench",
+          "mint": "passed",
+          "message": "bench ok"
+        }
+      ],
+      "check_values": {
+        "lint": {
+          "value": "off",
+          "source": "demo:lint in options/quality.toml"
+        }
+      }
+    },
+    "argv": [
+      "check",
+      "--name",
+      "lint",
+      "--json"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_contains": [
+        "\"status\":\"off\"",
+        "\"message\":\"off: demo:lint in options/quality.toml\""
+      ]
+    }
+  },
+  {
+    "name": "check values: warn reports a failing check's problems as warnings",
+    "app": {
+      "name": "testapp",
+      "version": "1.0.0",
+      "help": "test",
+      "commands": [],
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ndescription = \"Checks lint\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.fmt]\ndescription = \"Checks fmt\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"warn\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.docs]\ndescription = \"Checks docs\"\nsubject = \"quality\"\ntags = [\"preflight\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.bench]\ndescription = \"Checks bench\"\nsubject = \"quality\"\ntags = [\"preflight\", \"slow\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[hooks.pre-push]\ntag = \"prepush\"\n\n[hooks.pre-release]\ntag = \"preflight & !slow\"\n",
+      "checks": [
+        {
+          "name": "lint",
+          "mint": "found",
+          "message": "2 problems",
+          "problems": [
+            {
+              "severity": "error",
+              "text": "bad a"
+            },
+            {
+              "severity": "error",
+              "text": "bad b"
+            }
+          ]
+        },
+        {
+          "name": "fmt",
+          "mint": "passed",
+          "message": "fmt ok"
+        },
+        {
+          "name": "docs",
+          "mint": "passed",
+          "message": "docs ok"
+        },
+        {
+          "name": "bench",
+          "mint": "passed",
+          "message": "bench ok"
+        }
+      ],
+      "check_values": {
+        "lint": {
+          "value": "warn",
+          "source": "demo:lint in options/quality.toml"
+        }
+      }
+    },
+    "argv": [
+      "check",
+      "--name",
+      "lint"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "WARN  lint    2 problems\n        [warn] bad a\n        [warn] bad b\n"
+    }
+  },
+  {
+    "name": "check values: failing-checks passes a check resolved to warn",
+    "app": {
+      "name": "testapp",
+      "version": "1.0.0",
+      "help": "test",
+      "commands": [],
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ndescription = \"Checks lint\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.fmt]\ndescription = \"Checks fmt\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"warn\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.docs]\ndescription = \"Checks docs\"\nsubject = \"quality\"\ntags = [\"preflight\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.bench]\ndescription = \"Checks bench\"\nsubject = \"quality\"\ntags = [\"preflight\", \"slow\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[hooks.pre-push]\ntag = \"prepush\"\n\n[hooks.pre-release]\ntag = \"preflight & !slow\"\n",
+      "checks": [
+        {
+          "name": "lint",
+          "mint": "found",
+          "message": "2 problems",
+          "problems": [
+            {
+              "severity": "error",
+              "text": "bad a"
+            },
+            {
+              "severity": "error",
+              "text": "bad b"
+            }
+          ]
+        },
+        {
+          "name": "fmt",
+          "mint": "passed",
+          "message": "fmt ok"
+        },
+        {
+          "name": "docs",
+          "mint": "passed",
+          "message": "docs ok"
+        },
+        {
+          "name": "bench",
+          "mint": "passed",
+          "message": "bench ok"
+        }
+      ],
+      "check_values": {
+        "lint": {
+          "value": "warn",
+          "source": "demo:lint in options/quality.toml"
+        }
+      }
+    },
+    "argv": [
+      "failing-checks",
+      "--name",
+      "lint"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": ""
+    }
+  },
+  {
+    "name": "check values: error runs a check as registered",
+    "app": {
+      "name": "testapp",
+      "version": "1.0.0",
+      "help": "test",
+      "commands": [],
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ndescription = \"Checks lint\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.fmt]\ndescription = \"Checks fmt\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"warn\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.docs]\ndescription = \"Checks docs\"\nsubject = \"quality\"\ntags = [\"preflight\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.bench]\ndescription = \"Checks bench\"\nsubject = \"quality\"\ntags = [\"preflight\", \"slow\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[hooks.pre-push]\ntag = \"prepush\"\n\n[hooks.pre-release]\ntag = \"preflight & !slow\"\n",
+      "checks": [
+        {
+          "name": "lint",
+          "mint": "found",
+          "message": "broken",
+          "problems": [
+            {
+              "severity": "error",
+              "text": "bad"
+            }
+          ]
+        },
+        {
+          "name": "fmt",
+          "mint": "passed",
+          "message": "fmt ok"
+        },
+        {
+          "name": "docs",
+          "mint": "passed",
+          "message": "docs ok"
+        },
+        {
+          "name": "bench",
+          "mint": "passed",
+          "message": "bench ok"
+        }
+      ],
+      "check_values": {
+        "lint": {
+          "value": "error",
+          "source": "demo:lint in options/quality.toml"
+        }
+      }
+    },
+    "argv": [
+      "failing-checks",
+      "--name",
+      "lint"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "FAIL  lint    broken\n        [error] bad\n"
+    }
+  },
+  {
+    "name": "check values: a value above the registered severity is refused",
+    "app": {
+      "name": "testapp",
+      "version": "1.0.0",
+      "help": "test",
+      "commands": [],
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ndescription = \"Checks lint\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.fmt]\ndescription = \"Checks fmt\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"warn\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.docs]\ndescription = \"Checks docs\"\nsubject = \"quality\"\ntags = [\"preflight\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.bench]\ndescription = \"Checks bench\"\nsubject = \"quality\"\ntags = [\"preflight\", \"slow\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[hooks.pre-push]\ntag = \"prepush\"\n\n[hooks.pre-release]\ntag = \"preflight & !slow\"\n",
+      "checks": [
+        {
+          "name": "lint",
+          "mint": "passed",
+          "message": "lint ok"
+        },
+        {
+          "name": "fmt",
+          "mint": "passed",
+          "message": "fmt ok"
+        },
+        {
+          "name": "docs",
+          "mint": "passed",
+          "message": "docs ok"
+        },
+        {
+          "name": "bench",
+          "mint": "passed",
+          "message": "bench ok"
+        }
+      ],
+      "check_values": {
+        "fmt": {
+          "value": "error",
+          "source": "demo:fmt in options/quality.toml"
+        }
+      }
+    },
+    "argv": [
+      "check",
+      "--name",
+      "fmt"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: check \"fmt\": the check value resolver returned \"error\" (from demo:fmt in options/quality.toml) for a check registered as \"warn\"; a check value may lower a check's severity, never raise it\n"
+    }
+  },
+  {
+    "name": "check values: lowering the value to the registered severity clears the refusal",
+    "app": {
+      "name": "testapp",
+      "version": "1.0.0",
+      "help": "test",
+      "commands": [],
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ndescription = \"Checks lint\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.fmt]\ndescription = \"Checks fmt\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"warn\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.docs]\ndescription = \"Checks docs\"\nsubject = \"quality\"\ntags = [\"preflight\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.bench]\ndescription = \"Checks bench\"\nsubject = \"quality\"\ntags = [\"preflight\", \"slow\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[hooks.pre-push]\ntag = \"prepush\"\n\n[hooks.pre-release]\ntag = \"preflight & !slow\"\n",
+      "checks": [
+        {
+          "name": "lint",
+          "mint": "passed",
+          "message": "lint ok"
+        },
+        {
+          "name": "fmt",
+          "mint": "passed",
+          "message": "fmt ok"
+        },
+        {
+          "name": "docs",
+          "mint": "passed",
+          "message": "docs ok"
+        },
+        {
+          "name": "bench",
+          "mint": "passed",
+          "message": "bench ok"
+        }
+      ],
+      "check_values": {
+        "fmt": {
+          "value": "warn",
+          "source": "demo:fmt in options/quality.toml"
+        }
+      }
+    },
+    "argv": [
+      "check",
+      "--name",
+      "fmt"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "PASS  fmt    fmt ok\n"
+    }
+  },
+  {
+    "name": "check values: a value outside error, warn, and off is refused",
+    "app": {
+      "name": "testapp",
+      "version": "1.0.0",
+      "help": "test",
+      "commands": [],
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ndescription = \"Checks lint\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.fmt]\ndescription = \"Checks fmt\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"warn\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.docs]\ndescription = \"Checks docs\"\nsubject = \"quality\"\ntags = [\"preflight\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.bench]\ndescription = \"Checks bench\"\nsubject = \"quality\"\ntags = [\"preflight\", \"slow\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[hooks.pre-push]\ntag = \"prepush\"\n\n[hooks.pre-release]\ntag = \"preflight & !slow\"\n",
+      "checks": [
+        {
+          "name": "lint",
+          "mint": "passed",
+          "message": "lint ok"
+        },
+        {
+          "name": "fmt",
+          "mint": "passed",
+          "message": "fmt ok"
+        },
+        {
+          "name": "docs",
+          "mint": "passed",
+          "message": "docs ok"
+        },
+        {
+          "name": "bench",
+          "mint": "passed",
+          "message": "bench ok"
+        }
+      ],
+      "check_values": {
+        "lint": {
+          "value": "on",
+          "source": "demo:lint in options/quality.toml"
+        }
+      }
+    },
+    "argv": [
+      "check",
+      "--list"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: check \"lint\": the check value resolver returned \"on\"; a check value is one of error, warn, off\n"
+    }
+  },
+  {
+    "name": "check values: a value with an empty source is refused",
+    "app": {
+      "name": "testapp",
+      "version": "1.0.0",
+      "help": "test",
+      "commands": [],
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ndescription = \"Checks lint\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.fmt]\ndescription = \"Checks fmt\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"warn\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.docs]\ndescription = \"Checks docs\"\nsubject = \"quality\"\ntags = [\"preflight\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.bench]\ndescription = \"Checks bench\"\nsubject = \"quality\"\ntags = [\"preflight\", \"slow\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[hooks.pre-push]\ntag = \"prepush\"\n\n[hooks.pre-release]\ntag = \"preflight & !slow\"\n",
+      "checks": [
+        {
+          "name": "lint",
+          "mint": "passed",
+          "message": "lint ok"
+        },
+        {
+          "name": "fmt",
+          "mint": "passed",
+          "message": "fmt ok"
+        },
+        {
+          "name": "docs",
+          "mint": "passed",
+          "message": "docs ok"
+        },
+        {
+          "name": "bench",
+          "mint": "passed",
+          "message": "bench ok"
+        }
+      ],
+      "check_values": {
+        "lint": {
+          "value": "off",
+          "source": ""
+        }
+      }
+    },
+    "argv": [
+      "failing-checks",
+      "--all"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: check \"lint\": the check value resolver returned \"off\" with an empty source; name where the value came from\n"
+    }
+  },
+  {
+    "name": "check values: a dependency resolved to warn does not block its dependent",
+    "app": {
+      "name": "testapp",
+      "version": "1.0.0",
+      "help": "test",
+      "commands": [],
+      "checks_toml": "app = \"testapp\"\n[checks.base]\ndescription = \"Checks base\"\nsubject = \"quality\"\ntags = [\"t\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.top]\ndescription = \"Checks top\"\nsubject = \"quality\"\ntags = [\"t\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = [\"base\"]\n\n",
+      "checks": [
+        {
+          "name": "base",
+          "mint": "found",
+          "message": "base broken",
+          "problems": [
+            {
+              "severity": "error",
+              "text": "x"
+            }
+          ]
+        },
+        {
+          "name": "top",
+          "mint": "passed",
+          "message": "top ok"
+        }
+      ],
+      "check_values": {
+        "base": {
+          "value": "warn",
+          "source": "demo:base"
+        }
+      }
+    },
+    "argv": [
+      "check",
+      "--name",
+      "top"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "WARN  base    base broken\n        [warn] x\nPASS  top     top ok\n"
+    }
+  },
+  {
+    "name": "check values: a failing error dependency still blocks its dependent",
+    "app": {
+      "name": "testapp",
+      "version": "1.0.0",
+      "help": "test",
+      "commands": [],
+      "checks_toml": "app = \"testapp\"\n[checks.base]\ndescription = \"Checks base\"\nsubject = \"quality\"\ntags = [\"t\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.top]\ndescription = \"Checks top\"\nsubject = \"quality\"\ntags = [\"t\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = [\"base\"]\n\n",
+      "checks": [
+        {
+          "name": "base",
+          "mint": "found",
+          "message": "base broken",
+          "problems": [
+            {
+              "severity": "error",
+              "text": "x"
+            }
+          ]
+        },
+        {
+          "name": "top",
+          "mint": "passed",
+          "message": "top ok"
+        }
+      ]
+    },
+    "argv": [
+      "check",
+      "--name",
+      "top"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "FAIL  base    base broken\n        [error] x\nSKIP  top     skipped: dependency \"base\" failed\n"
+    }
+  },
+  {
+    "name": "check values: a dependency resolved to off does not block its dependent",
+    "app": {
+      "name": "testapp",
+      "version": "1.0.0",
+      "help": "test",
+      "commands": [],
+      "checks_toml": "app = \"testapp\"\n[checks.base]\ndescription = \"Checks base\"\nsubject = \"quality\"\ntags = [\"t\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.top]\ndescription = \"Checks top\"\nsubject = \"quality\"\ntags = [\"t\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = [\"base\"]\n\n",
+      "checks": [
+        {
+          "name": "base",
+          "mint": "found",
+          "message": "base broken",
+          "problems": [
+            {
+              "severity": "error",
+              "text": "x"
+            }
+          ]
+        },
+        {
+          "name": "top",
+          "mint": "passed",
+          "message": "top ok"
+        }
+      ],
+      "check_values": {
+        "base": {
+          "value": "off",
+          "source": "demo:base"
+        }
+      }
+    },
+    "argv": [
+      "check",
+      "--name",
+      "top"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "OFF   base    off: demo:base\nPASS  top     top ok\n"
+    }
+  },
+  {
+    "name": "check values: the verbose summary counts off checks",
+    "app": {
+      "name": "testapp",
+      "version": "1.0.0",
+      "help": "test",
+      "commands": [],
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ndescription = \"Checks lint\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.fmt]\ndescription = \"Checks fmt\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"warn\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.docs]\ndescription = \"Checks docs\"\nsubject = \"quality\"\ntags = [\"preflight\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.bench]\ndescription = \"Checks bench\"\nsubject = \"quality\"\ntags = [\"preflight\", \"slow\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[hooks.pre-push]\ntag = \"prepush\"\n\n[hooks.pre-release]\ntag = \"preflight & !slow\"\n",
+      "checks": [
+        {
+          "name": "lint",
+          "mint": "passed",
+          "message": "lint ok"
+        },
+        {
+          "name": "fmt",
+          "mint": "passed",
+          "message": "fmt ok"
+        },
+        {
+          "name": "docs",
+          "mint": "passed",
+          "message": "docs ok"
+        },
+        {
+          "name": "bench",
+          "mint": "passed",
+          "message": "bench ok"
+        }
+      ],
+      "check_values": {
+        "lint": {
+          "value": "off",
+          "source": "demo:lint in options/quality.toml"
+        }
+      }
+    },
+    "argv": [
+      "--verbose",
+      "check",
+      "--hook",
+      "pre-push"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_contains": "1 passed / 0 failed / 0 warned / 0 skipped / 1 off"
+    }
+  },
+  {
+    "name": "check values: list shows each check's value and source",
+    "app": {
+      "name": "testapp",
+      "version": "1.0.0",
+      "help": "test",
+      "commands": [],
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ndescription = \"Checks lint\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.fmt]\ndescription = \"Checks fmt\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"warn\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.docs]\ndescription = \"Checks docs\"\nsubject = \"quality\"\ntags = [\"preflight\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.bench]\ndescription = \"Checks bench\"\nsubject = \"quality\"\ntags = [\"preflight\", \"slow\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[hooks.pre-push]\ntag = \"prepush\"\n\n[hooks.pre-release]\ntag = \"preflight & !slow\"\n",
+      "checks": [
+        {
+          "name": "lint",
+          "mint": "passed",
+          "message": "lint ok"
+        },
+        {
+          "name": "fmt",
+          "mint": "passed",
+          "message": "fmt ok"
+        },
+        {
+          "name": "docs",
+          "mint": "passed",
+          "message": "docs ok"
+        },
+        {
+          "name": "bench",
+          "mint": "passed",
+          "message": "bench ok"
+        }
+      ],
+      "check_values": {
+        "lint": {
+          "value": "off",
+          "source": "demo:lint in options/quality.toml"
+        },
+        "docs": {
+          "value": "warn",
+          "source": "demo:docs in options/docs.toml"
+        }
+      }
+    },
+    "argv": [
+      "check",
+      "--list"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "NAME                            TAGS               SEVERITY   VALUE   SOURCE\nbench                           preflight, slow    error      error   default\nconsequential-grant-agreement   effects, quality   warn       warn    default\ndocs                            preflight          error      warn    demo:docs in options/docs.toml\neffects-bypass                  effects, quality   error      error   default\nfmt                             prepush            warn       warn    default\nlint                            prepush            error      off     demo:lint in options/quality.toml\nobserve-allowlist-breadth       effects, quality   warn       warn    default\n"
+    }
+  },
+  {
+    "name": "check values: list without a resolver shows the registered severity from default",
+    "app": {
+      "name": "testapp",
+      "version": "1.0.0",
+      "help": "test",
+      "commands": [],
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ndescription = \"Checks lint\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n",
+      "checks": [
+        {
+          "name": "lint",
+          "mint": "passed",
+          "message": "lint ok"
+        }
+      ]
+    },
+    "argv": [
+      "failing-checks",
+      "--list",
+      "--json"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_contains": "{\"name\":\"lint\",\"tags\":[\"prepush\"],\"severity\":\"error\",\"value\":\"error\",\"source\":\"default\"}"
+    }
+  },
+  {
+    "name": "check values: failing-checks prints only error-level failures",
+    "app": {
+      "name": "testapp",
+      "version": "1.0.0",
+      "help": "test",
+      "commands": [],
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ndescription = \"Checks lint\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.fmt]\ndescription = \"Checks fmt\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"warn\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.docs]\ndescription = \"Checks docs\"\nsubject = \"quality\"\ntags = [\"preflight\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.bench]\ndescription = \"Checks bench\"\nsubject = \"quality\"\ntags = [\"preflight\", \"slow\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[hooks.pre-push]\ntag = \"prepush\"\n\n[hooks.pre-release]\ntag = \"preflight & !slow\"\n",
+      "checks": [
+        {
+          "name": "lint",
+          "mint": "found",
+          "message": "lint broken",
+          "problems": [
+            {
+              "severity": "error",
+              "text": "bad"
+            }
+          ]
+        },
+        {
+          "name": "fmt",
+          "mint": "found",
+          "message": "fmt drift",
+          "problems": [
+            {
+              "severity": "warn",
+              "text": "drift"
+            }
+          ]
+        },
+        {
+          "name": "docs",
+          "mint": "passed",
+          "message": "docs ok"
+        },
+        {
+          "name": "bench",
+          "mint": "passed",
+          "message": "bench ok"
+        }
+      ]
+    },
+    "argv": [
+      "failing-checks",
+      "--all"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "FAIL  lint    lint broken\n        [error] bad\n"
+    }
+  },
+  {
+    "name": "check values: failing-checks exits zero on warnings alone",
+    "app": {
+      "name": "testapp",
+      "version": "1.0.0",
+      "help": "test",
+      "commands": [],
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ndescription = \"Checks lint\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.fmt]\ndescription = \"Checks fmt\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"warn\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.docs]\ndescription = \"Checks docs\"\nsubject = \"quality\"\ntags = [\"preflight\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.bench]\ndescription = \"Checks bench\"\nsubject = \"quality\"\ntags = [\"preflight\", \"slow\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[hooks.pre-push]\ntag = \"prepush\"\n\n[hooks.pre-release]\ntag = \"preflight & !slow\"\n",
+      "checks": [
+        {
+          "name": "lint",
+          "mint": "passed",
+          "message": "lint ok"
+        },
+        {
+          "name": "fmt",
+          "mint": "found",
+          "message": "fmt drift",
+          "problems": [
+            {
+              "severity": "warn",
+              "text": "drift"
+            }
+          ]
+        },
+        {
+          "name": "docs",
+          "mint": "passed",
+          "message": "docs ok"
+        },
+        {
+          "name": "bench",
+          "mint": "passed",
+          "message": "bench ok"
+        }
+      ]
+    },
+    "argv": [
+      "failing-checks",
+      "--all"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": ""
+    }
+  },
+  {
+    "name": "check values: check exits nonzero on warnings alone",
+    "app": {
+      "name": "testapp",
+      "version": "1.0.0",
+      "help": "test",
+      "commands": [],
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ndescription = \"Checks lint\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.fmt]\ndescription = \"Checks fmt\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"warn\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.docs]\ndescription = \"Checks docs\"\nsubject = \"quality\"\ntags = [\"preflight\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.bench]\ndescription = \"Checks bench\"\nsubject = \"quality\"\ntags = [\"preflight\", \"slow\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[hooks.pre-push]\ntag = \"prepush\"\n\n[hooks.pre-release]\ntag = \"preflight & !slow\"\n",
+      "checks": [
+        {
+          "name": "lint",
+          "mint": "passed",
+          "message": "lint ok"
+        },
+        {
+          "name": "fmt",
+          "mint": "found",
+          "message": "fmt drift",
+          "problems": [
+            {
+              "severity": "warn",
+              "text": "drift"
+            }
+          ]
+        },
+        {
+          "name": "docs",
+          "mint": "passed",
+          "message": "docs ok"
+        },
+        {
+          "name": "bench",
+          "mint": "passed",
+          "message": "bench ok"
+        }
+      ]
+    },
+    "argv": [
+      "check",
+      "--name",
+      "fmt"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "WARN  fmt    fmt drift\n        [warn] drift\n"
+    }
+  },
+  {
+    "name": "check values: check refuses --ignore-warnings",
+    "app": {
+      "name": "testapp",
+      "version": "1.0.0",
+      "help": "test",
+      "commands": [],
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ndescription = \"Checks lint\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.fmt]\ndescription = \"Checks fmt\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"warn\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.docs]\ndescription = \"Checks docs\"\nsubject = \"quality\"\ntags = [\"preflight\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.bench]\ndescription = \"Checks bench\"\nsubject = \"quality\"\ntags = [\"preflight\", \"slow\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[hooks.pre-push]\ntag = \"prepush\"\n\n[hooks.pre-release]\ntag = \"preflight & !slow\"\n",
+      "checks": [
+        {
+          "name": "lint",
+          "mint": "passed",
+          "message": "lint ok"
+        },
+        {
+          "name": "fmt",
+          "mint": "passed",
+          "message": "fmt ok"
+        },
+        {
+          "name": "docs",
+          "mint": "passed",
+          "message": "docs ok"
+        },
+        {
+          "name": "bench",
+          "mint": "passed",
+          "message": "bench ok"
+        }
+      ]
+    },
+    "argv": [
+      "check",
+      "--all",
+      "--ignore-warnings"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: unknown flag '--ignore-warnings'\ntry 'testapp check --help'\n"
+    }
+  },
+  {
+    "name": "check values: the app help lists failing-checks",
+    "app": {
+      "name": "testapp",
+      "version": "1.0.0",
+      "help": "test",
+      "commands": [],
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ndescription = \"Checks lint\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.fmt]\ndescription = \"Checks fmt\"\nsubject = \"quality\"\ntags = [\"prepush\"]\nseverity = \"warn\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.docs]\ndescription = \"Checks docs\"\nsubject = \"quality\"\ntags = [\"preflight\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.bench]\ndescription = \"Checks bench\"\nsubject = \"quality\"\ntags = [\"preflight\", \"slow\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[hooks.pre-push]\ntag = \"prepush\"\n\n[hooks.pre-release]\ntag = \"preflight & !slow\"\n",
+      "checks": [
+        {
+          "name": "lint",
+          "mint": "passed",
+          "message": "lint ok"
+        },
+        {
+          "name": "fmt",
+          "mint": "passed",
+          "message": "fmt ok"
+        },
+        {
+          "name": "docs",
+          "mint": "passed",
+          "message": "docs ok"
+        },
+        {
+          "name": "bench",
+          "mint": "passed",
+          "message": "bench ok"
+        }
+      ]
+    },
+    "argv": [
+      "--help"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_contains": "  failing-checks    Run project checks and report only error-level failures, exiting nonzero when any exist"
+    }
+  },
+  {
+    "name": "check values: the schema dump carries description and subject",
+    "app": {
+      "name": "testapp",
+      "version": "1.0.0",
+      "help": "test",
+      "commands": [],
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ndescription = \"Runs the linter\"\nsubject = \"quality\"\ntags = [\"a\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n",
+      "checks": [
+        {
+          "name": "lint",
+          "mint": "passed",
+          "message": "lint ok"
+        }
+      ]
+    },
+    "argv": [
+      "--dump-schema"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "schema_bytes_equal": "{\n  \"schema_version\": 2,\n  \"defaults\": {\n    \"schema_version\": 2,\n    \"app\": {\n      \"env_prefix\": null,\n      \"config\": false,\n      \"config_format\": \"json\",\n      \"config_path\": null,\n      \"config_conflict_mode\": \"cli-wins\",\n      \"proc_observe_allowlist\": [],\n      \"global_flags\": [],\n      \"commands\": {},\n      \"groups\": {},\n      \"deprecated\": {},\n      \"tag_contracts\": {},\n      \"checks\": {},\n      \"config_fields\": {},\n      \"infra\": {}\n    },\n    \"flag\": {\n      \"short\": null,\n      \"env\": null,\n      \"env_separator\": null,\n      \"prefixed\": true,\n      \"choices\": null,\n      \"elect_by\": null,\n      \"unique\": false,\n      \"conflict_mode\": null,\n      \"negatable\": null,\n      \"nullable\": false\n    },\n    \"arg\": {\n      \"variadic\": false,\n      \"choices\": null\n    },\n    \"choice\": {\n      \"flags\": []\n    },\n    \"choice_record\": {\n      \"help\": null\n    },\n    \"command\": {\n      \"consequential\": false,\n      \"dry_run_supported\": true,\n      \"dry_run_unsupported_reason\": null,\n      \"update_of\": null,\n      \"write_mode\": null,\n      \"payload_schema\": null,\n      \"owns_stdout\": false,\n      \"passthrough\": false,\n      \"flags\": [],\n      \"flag_sets\": [],\n      \"args\": [],\n      \"tags\": [],\n      \"constraints\": [],\n      \"hidden\": false,\n      \"interactive\": false,\n      \"config_fields\": [],\n      \"grants\": [],\n      \"forwarding\": null\n    },\n    \"group\": {\n      \"commands\": {},\n      \"groups\": {},\n      \"deprecated\": {},\n      \"tags\": [],\n      \"hidden\": false\n    },\n    \"config_field\": {\n      \"default\": null,\n      \"bound_commands\": []\n    },\n    \"check\": {\n      \"scope\": null\n    },\n    \"infra\": {\n      \"roots\": [],\n      \"handshakes\": [],\n      \"connections\": []\n    }\n  },\n  \"project_id\": \"testapp\",\n  \"name\": \"testapp\",\n  \"version\": \"1.0.0\",\n  \"help\": \"test\",\n  \"commands\": {\n    \"check\": {\n      \"name\": \"check\",\n      \"help\": \"Run project checks registered via the check framework and report results\",\n      \"effect\": \"read_only\",\n      \"payload_schema\": {\n        \"items\": {\n          \"type\": \"object\"\n        },\n        \"type\": \"array\"\n      },\n      \"flags\": [\n        {\n          \"name\": \"all\",\n          \"help\": \"Run every registered check regardless of tag or name filters\",\n          \"value_schema\": {\n            \"type\": \"boolean\"\n          },\n          \"presence\": \"default\",\n          \"default\": false,\n          \"negatable\": true\n        },\n        {\n          \"name\": \"tag\",\n          \"help\": \"Tag DSL expression to select checks (e.g. 'changelog & !quality')\",\n          \"value_schema\": {\n            \"type\": \"string\"\n          },\n          \"presence\": \"default\",\n          \"default\": \"\"\n        },\n        {\n          \"name\": \"name\",\n          \"help\": \"Glob pattern to filter checks by name (e.g. 'hash-*', '*coverage*')\",\n          \"value_schema\": {\n            \"type\": \"string\"\n          },\n          \"presence\": \"default\",\n          \"default\": \"\"\n        },\n        {\n          \"name\": \"hook\",\n          \"help\": \"Run the checks a hook declared in checks.toml selects (no hooks are declared)\",\n          \"value_schema\": {\n            \"type\": \"string\"\n          },\n          \"presence\": \"default\",\n          \"default\": \"\"\n        },\n        {\n          \"name\": \"list\",\n          \"help\": \"List all registered checks with their tags and values and exit without running\",\n          \"value_schema\": {\n            \"type\": \"boolean\"\n          },\n          \"presence\": \"default\",\n          \"default\": false,\n          \"negatable\": true\n        }\n      ],\n      \"forwarding\": {\n        \"reason\": \"framework-internal: absorbs app-defined global flag values\"\n      }\n    },\n    \"failing-checks\": {\n      \"name\": \"failing-checks\",\n      \"help\": \"Run project checks and report only error-level failures, exiting nonzero when any exist\",\n      \"effect\": \"read_only\",\n      \"payload_schema\": {\n        \"items\": {\n          \"type\": \"object\"\n        },\n        \"type\": \"array\"\n      },\n      \"flags\": [\n        {\n          \"name\": \"all\",\n          \"help\": \"Run every registered check regardless of tag or name filters\",\n          \"value_schema\": {\n            \"type\": \"boolean\"\n          },\n          \"presence\": \"default\",\n          \"default\": false,\n          \"negatable\": true\n        },\n        {\n          \"name\": \"tag\",\n          \"help\": \"Tag DSL expression to select checks (e.g. 'changelog & !quality')\",\n          \"value_schema\": {\n            \"type\": \"string\"\n          },\n          \"presence\": \"default\",\n          \"default\": \"\"\n        },\n        {\n          \"name\": \"name\",\n          \"help\": \"Glob pattern to filter checks by name (e.g. 'hash-*', '*coverage*')\",\n          \"value_schema\": {\n            \"type\": \"string\"\n          },\n          \"presence\": \"default\",\n          \"default\": \"\"\n        },\n        {\n          \"name\": \"hook\",\n          \"help\": \"Run the checks a hook declared in checks.toml selects (no hooks are declared)\",\n          \"value_schema\": {\n            \"type\": \"string\"\n          },\n          \"presence\": \"default\",\n          \"default\": \"\"\n        },\n        {\n          \"name\": \"list\",\n          \"help\": \"List all registered checks with their tags and values and exit without running\",\n          \"value_schema\": {\n            \"type\": \"boolean\"\n          },\n          \"presence\": \"default\",\n          \"default\": false,\n          \"negatable\": true\n        }\n      ],\n      \"forwarding\": {\n        \"reason\": \"framework-internal: absorbs app-defined global flag values\"\n      }\n    }\n  },\n  \"checks\": {\n    \"lint\": {\n      \"tags\": [\n        \"a\"\n      ],\n      \"severity\": \"error\",\n      \"fast\": true,\n      \"pure\": true,\n      \"needs_network\": false,\n      \"depends_on\": [],\n      \"description\": \"Runs the linter\",\n      \"subject\": \"quality\"\n    }\n  }\n}\n"
+    }
+  }
+]

@@ -431,7 +431,7 @@
       "version": "1.0.0",
       "help": "test",
       "commands": [],
-      "checks_toml": "app = \"testapp\"\n[checks.lint]\ntags = [\"release\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n",
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ndescription = \"Checks lint\"\nsubject = \"quality\"\ntags = [\"release\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n",
       "checks": [
         {
           "name": "lint",
@@ -605,7 +605,7 @@
       "version": "1.0.0",
       "help": "test",
       "commands": [],
-      "checks_toml": "app = \"testapp\"\n[checks.lint]\ntags = [\"release\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n",
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ndescription = \"Checks lint\"\nsubject = \"quality\"\ntags = [\"release\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n",
       "checks": [
         {
           "name": "lint",
@@ -635,7 +635,7 @@
       "version": "1.0.0",
       "help": "test",
       "commands": [],
-      "checks_toml": "app = \"testapp\"\n[checks.lint]\ntags = [\"release\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n",
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ndescription = \"Checks lint\"\nsubject = \"quality\"\ntags = [\"release\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n",
       "checks": [
         {
           "name": "lint",
@@ -662,7 +662,7 @@
       "version": "1.0.0",
       "help": "test",
       "commands": [],
-      "checks_toml": "app = \"testapp\"\n[checks.lint]\ntags = [\"release\"]\nseverity = \"error\"\nfast = true\npure = false\nneeds_network = false\ndepends_on = []\n",
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ndescription = \"Checks lint\"\nsubject = \"quality\"\ntags = [\"release\"]\nseverity = \"error\"\nfast = true\npure = false\nneeds_network = false\ndepends_on = []\n",
       "checks": [
         {
           "name": "lint",

@@ -290,6 +290,20 @@ func main() {
 		}
 	}
 
+	// The check value resolver, as a table: a check absent from it resolves to
+	// no value (its registered severity).
+	if cv, ok := appDef["check_values"].(map[string]interface{}); ok {
+		app.SetCheckValueResolver(func(name string) (strictcli.CheckValue, bool) {
+			entry, ok := cv[name].(map[string]interface{})
+			if !ok {
+				return strictcli.CheckValue{}, false
+			}
+			value, _ := entry["value"].(string)
+			source, _ := entry["source"].(string)
+			return strictcli.CheckValue{Value: value, Source: source}, true
+		})
+	}
+
 	_, hasToml := appDef["checks_toml"]
 	_, hasProviders := appDef["providers"]
 	_, hasTestCoverage := appDef["test_coverage_dir"]

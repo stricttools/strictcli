@@ -6,7 +6,7 @@
       "version": "1.0.0",
       "help": "test",
       "commands": [],
-      "checks_toml": "app = \"testapp\"\n[checks.broken]\ntags = [\"release\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.fine]\ntags = [\"release\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n",
+      "checks_toml": "app = \"testapp\"\n[checks.broken]\ndescription = \"Checks broken\"\nsubject = \"quality\"\ntags = [\"release\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.fine]\ndescription = \"Checks fine\"\nsubject = \"quality\"\ntags = [\"release\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n",
       "checks": [
         {
           "name": "broken",
@@ -36,7 +36,7 @@
       "version": "1.0.0",
       "help": "test",
       "commands": [],
-      "checks_toml": "app = \"testapp\"\n[checks.broken]\ntags = [\"release\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.fine]\ntags = [\"release\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n",
+      "checks_toml": "app = \"testapp\"\n[checks.broken]\ndescription = \"Checks broken\"\nsubject = \"quality\"\ntags = [\"release\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.fine]\ndescription = \"Checks fine\"\nsubject = \"quality\"\ntags = [\"release\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n",
       "checks": [
         {
           "name": "broken",
@@ -74,7 +74,7 @@
       "version": "1.0.0",
       "help": "test",
       "commands": [],
-      "checks_toml": "app = \"testapp\"\n[checks.broken]\ntags = [\"release\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.dependent]\ntags = [\"release\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = [\"broken\"]\n",
+      "checks_toml": "app = \"testapp\"\n[checks.broken]\ndescription = \"Checks broken\"\nsubject = \"quality\"\ntags = [\"release\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.dependent]\ndescription = \"Checks dependent\"\nsubject = \"quality\"\ntags = [\"release\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = [\"broken\"]\n",
       "checks": [
         {
           "name": "broken",
@@ -104,7 +104,7 @@
       "version": "1.0.0",
       "help": "test",
       "commands": [],
-      "checks_toml": "app = \"testapp\"\n[checks.broken]\ntags = [\"release\"]\nseverity = \"warn\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.fine]\ntags = [\"release\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n",
+      "checks_toml": "app = \"testapp\"\n[checks.broken]\ndescription = \"Checks broken\"\nsubject = \"quality\"\ntags = [\"release\"]\nseverity = \"warn\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.fine]\ndescription = \"Checks fine\"\nsubject = \"quality\"\ntags = [\"release\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n",
       "checks": [
         {
           "name": "broken",
@@ -118,14 +118,13 @@
       ]
     },
     "argv": [
-      "check",
+      "failing-checks",
       "--tag",
-      "release",
-      "--ignore-warnings"
+      "release"
     ],
     "expect": {
       "exit_code": 1,
-      "stdout_equals": "FAIL  broken    check \"broken\" aborted with CheckAborted: conformance: check aborted\n        [error] check \"broken\" aborted with CheckAborted: conformance: check aborted\nPASS  fine      all good\n"
+      "stdout_equals": "FAIL  broken    check \"broken\" aborted with CheckAborted: conformance: check aborted\n        [error] check \"broken\" aborted with CheckAborted: conformance: check aborted\n"
     }
   },
   {
@@ -135,7 +134,7 @@
       "version": "1.0.0",
       "help": "test",
       "commands": [],
-      "checks_toml": "app = \"testapp\"\n[checks.broken]\ntags = [\"release\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.fine]\ntags = [\"release\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n",
+      "checks_toml": "app = \"testapp\"\n[checks.broken]\ndescription = \"Checks broken\"\nsubject = \"quality\"\ntags = [\"release\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.fine]\ndescription = \"Checks fine\"\nsubject = \"quality\"\ntags = [\"release\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n",
       "checks": [
         {
           "name": "broken",
@@ -170,7 +169,7 @@
       "version": "1.0.0",
       "help": "test",
       "commands": [],
-      "checks_toml": "app = \"testapp\"\n[checks.broken]\ntags = [\"release\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.deploy]\ntags = [\"release\"]\nseverity = \"error\"\nfast = true\npure = false\nneeds_network = false\ndepends_on = []\n",
+      "checks_toml": "app = \"testapp\"\n[checks.broken]\ndescription = \"Checks broken\"\nsubject = \"quality\"\ntags = [\"release\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.deploy]\ndescription = \"Checks deploy\"\nsubject = \"quality\"\ntags = [\"release\"]\nseverity = \"error\"\nfast = true\npure = false\nneeds_network = false\ndepends_on = []\n",
       "checks": [
         {
           "name": "broken",

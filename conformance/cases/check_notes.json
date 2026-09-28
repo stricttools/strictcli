@@ -6,7 +6,7 @@
       "version": "1.0.0",
       "help": "Test the notes/verbose channel",
       "commands": [],
-      "checks_toml": "app = \"notesapp\"\n[checks.audit]\ntags = [\"ci\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n",
+      "checks_toml": "app = \"notesapp\"\n[checks.audit]\ndescription = \"Checks audit\"\nsubject = \"quality\"\ntags = [\"ci\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n",
       "checks": [
         {
           "name": "audit",
@@ -39,7 +39,7 @@
       "version": "1.0.0",
       "help": "Test the notes/verbose channel",
       "commands": [],
-      "checks_toml": "app = \"notesapp\"\n[checks.audit]\ntags = [\"ci\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n",
+      "checks_toml": "app = \"notesapp\"\n[checks.audit]\ndescription = \"Checks audit\"\nsubject = \"quality\"\ntags = [\"ci\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n",
       "checks": [
         {
           "name": "audit",
@@ -75,7 +75,7 @@
       "version": "1.0.0",
       "help": "Test the notes/verbose channel",
       "commands": [],
-      "checks_toml": "app = \"notesapp\"\n[checks.gate]\ntags = [\"ci\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n",
+      "checks_toml": "app = \"notesapp\"\n[checks.gate]\ndescription = \"Checks gate\"\nsubject = \"quality\"\ntags = [\"ci\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n",
       "checks": [
         {
           "name": "gate",
@@ -114,7 +114,7 @@
       "version": "1.0.0",
       "help": "Test the notes/verbose channel",
       "commands": [],
-      "checks_toml": "app = \"notesapp\"\n[checks.audit]\ntags = [\"ci\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.gate]\ntags = [\"ci\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n",
+      "checks_toml": "app = \"notesapp\"\n[checks.audit]\ndescription = \"Checks audit\"\nsubject = \"quality\"\ntags = [\"ci\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.gate]\ndescription = \"Checks gate\"\nsubject = \"quality\"\ntags = [\"ci\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n",
       "checks": [
         {
           "name": "audit",

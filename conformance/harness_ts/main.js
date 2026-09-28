@@ -1553,6 +1553,17 @@ async function main() {
 		);
 	}
 
+	// The check value resolver, as a table: a check absent from it resolves to
+	// undefined (its registered severity).
+	if ("check_values" in appDef) {
+		const table = appDef.check_values;
+		app.setCheckValueResolver((name) =>
+			Object.hasOwn(table, name)
+				? { value: table[name].value, source: table[name].source }
+				: undefined,
+		);
+	}
+
 	if (
 		"checks_toml" in appDef ||
 		"providers" in appDef ||

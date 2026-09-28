@@ -6,7 +6,7 @@
       "version": "1.0.0",
       "help": "test",
       "commands": [],
-      "checks_toml": "app = \"testapp\"\n[checks.lint]\ntags = [\"release\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n",
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ndescription = \"Checks lint\"\nsubject = \"quality\"\ntags = [\"release\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n",
       "checks": [
         {
           "name": "lint",
@@ -33,7 +33,7 @@
       "version": "1.0.0",
       "help": "test",
       "commands": [],
-      "checks_toml": "app = \"testapp\"\n[checks.deploy]\ntags = [\"release\"]\nseverity = \"error\"\nfast = true\npure = false\nneeds_network = false\ndepends_on = []\n\n",
+      "checks_toml": "app = \"testapp\"\n[checks.deploy]\ndescription = \"Checks deploy\"\nsubject = \"quality\"\ntags = [\"release\"]\nseverity = \"error\"\nfast = true\npure = false\nneeds_network = false\ndepends_on = []\n\n",
       "checks": [
         {
           "name": "deploy",
@@ -64,7 +64,7 @@
       "version": "1.0.0",
       "help": "test",
       "commands": [],
-      "checks_toml": "app = \"testapp\"\n[checks.fetch]\ntags = [\"release\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = true\ndepends_on = []\n\n",
+      "checks_toml": "app = \"testapp\"\n[checks.fetch]\ndescription = \"Checks fetch\"\nsubject = \"quality\"\ntags = [\"release\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = true\ndepends_on = []\n\n",
       "checks": [
         {
           "name": "fetch",
@@ -95,7 +95,7 @@
       "version": "1.0.0",
       "help": "test",
       "commands": [],
-      "checks_toml": "app = \"testapp\"\n[checks.build]\ntags = [\"release\"]\nseverity = \"error\"\nfast = true\npure = false\nneeds_network = false\ndepends_on = []\n\n[checks.lint]\ntags = [\"release\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = [\"build\"]\n\n",
+      "checks_toml": "app = \"testapp\"\n[checks.build]\ndescription = \"Checks build\"\nsubject = \"quality\"\ntags = [\"release\"]\nseverity = \"error\"\nfast = true\npure = false\nneeds_network = false\ndepends_on = []\n\n[checks.lint]\ndescription = \"Checks lint\"\nsubject = \"quality\"\ntags = [\"release\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = [\"build\"]\n\n",
       "checks": [
         {
           "name": "build",
@@ -131,7 +131,7 @@
       "version": "1.0.0",
       "help": "test",
       "commands": [],
-      "checks_toml": "app = \"testapp\"\n[checks.lint]\ntags = [\"release\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.deploy]\ntags = [\"release\"]\nseverity = \"error\"\nfast = true\npure = false\nneeds_network = false\ndepends_on = []\n\n",
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ndescription = \"Checks lint\"\nsubject = \"quality\"\ntags = [\"release\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n[checks.deploy]\ndescription = \"Checks deploy\"\nsubject = \"quality\"\ntags = [\"release\"]\nseverity = \"error\"\nfast = true\npure = false\nneeds_network = false\ndepends_on = []\n\n",
       "checks": [
         {
           "name": "lint",
@@ -169,7 +169,7 @@
       "version": "1.0.0",
       "help": "test",
       "commands": [],
-      "checks_toml": "app = \"testapp\"\n[checks.lint]\ntags = [\"release\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n",
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ndescription = \"Checks lint\"\nsubject = \"quality\"\ntags = [\"release\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n\n",
       "checks": [
         {
           "name": "lint",

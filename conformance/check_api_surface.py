@@ -319,6 +319,10 @@ _GLOBAL_SCHEMA_TEST_ONLY: set[str] = {
     "checks",
     "checks_toml",
     "providers",
+    # The check value resolver as a table the harness turns into a resolver
+    # function (set_check_value_resolver / SetCheckValueResolver /
+    # setCheckValueResolver), not an App field.
+    "check_values",
     "config_content",
     "config_content_late",
     "config_fields_def",
@@ -1147,7 +1151,7 @@ KNOWN_TS_PUBLIC_NAMES: set[str] = {
     "App", "AppSpec", "ArgDef", "ArgOpts", "CallOptions", "Carrier",
     "CheckContext", "CheckOutcome", "CheckProblem", "CheckSeverity",
     "ConnectionEnvReader",
-    "CheckStatus", "CommandDef",
+    "CheckStatus", "CheckValue", "CommandDef",
     # The constraint system's type-only exports (contract §26.6). `CoRequired`
     # and `Dependency` are DELETED with the noun they carried: the union is
     # named `Constraint` for the container it fills, `ConstraintMembers` is the
@@ -1279,7 +1283,11 @@ CHECK_RUNNER_TYPES: list[tuple[str, str, str, dict[str, tuple[str, str]]]] = [
         "tag_expr": ("TagExpr", "tagExpr"),
         "name_glob": ("NameGlob", "nameGlob"),
         "run_all": ("RunAll", "runAll"),
-        "ignore_warnings": ("IgnoreWarnings", "ignoreWarnings"),
+    }),
+    # The value an app's check value resolver assigns one check.
+    ("CheckValue", "CheckValue", "CheckValue", {
+        "value": ("Value", "value"),
+        "source": ("Source", "source"),
     }),
 ]
 
@@ -1289,6 +1297,7 @@ CHECK_RUNNER_APP_METHODS: list[tuple[str, str, str]] = [
     ("tag_contract", "TagContract", "tagContract"),
     ("register_check_provider", "RegisterCheckProvider", "registerCheckProvider"),
     ("reset_check_provider_cache", "ResetCheckProviderCache", "resetCheckProviderCache"),
+    ("set_check_value_resolver", "SetCheckValueResolver", "setCheckValueResolver"),
 ]
 
 # Methods on App that must exist in all implementations, beyond the check
@@ -1372,7 +1381,7 @@ def get_python_check_runner_types() -> dict[str, set[str]]:
     sys.path.insert(0, str(PROJECT_ROOT / "python"))
     import strictcli
     result: dict[str, set[str]] = {}
-    for cls in [strictcli.CheckRunResult]:
+    for cls in [strictcli.CheckRunResult, strictcli.CheckValue]:
         fields = {f.name for f in dataclasses.fields(cls)}
         result[cls.__name__] = fields
     return result

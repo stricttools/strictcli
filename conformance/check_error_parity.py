@@ -104,6 +104,14 @@ SIGNATURE_STATUS: dict[str, dict[str, str]] = {
     'check provider must be callable': {
         "go": "excluded:Go RegisterCheckProvider takes a typed func value; no callable check needed",
     },
+    # -- Check value resolver validation (Python dynamic, Go and TS static) --
+    'check value resolver must be callable': {
+        "go": "excluded:Go SetCheckValueResolver takes a typed func value; no callable check needed",
+    },
+    'check *: the check value resolver returned *, not a CheckValue or None': {
+        "go": "excluded:Go's resolver returns a typed (CheckValue, bool); no other return is representable",
+        "typescript": "excluded:TS's resolver is typed to return CheckValue | undefined; no other return is representable",
+    },
     'check provider must return a list of CheckSpec, got *': {
         "go": "excluded:Go provider return type is []CheckSpec (statically typed); no runtime check",
     },
@@ -1610,6 +1618,15 @@ _PY_PARSE_TIME_MSG_FUNCS = frozenset({
     "_msg_process_exit_outside_framework",
     "_msg_canceled_by_signal",
     "_msg_child_killed_at_exit",
+    # The check commands' own refusals: a value the app's check value resolver
+    # may not return, and a --hook the invocation cannot use. Go and
+    # TypeScript carry them in a parse-time catalog section.
+    "_msg_check_value_invalid",
+    "_msg_check_value_source_empty",
+    "_msg_check_value_above_severity",
+    "_msg_check_hook_combined",
+    "_msg_check_hook_unknown",
+    "_msg_check_hook_none_declared",
 })
 _PY_TOP_LEVEL_DEF_PAT = re.compile(r"^(?:def |class |@)", re.MULTILINE)
 _PY_RETURN_PAT = re.compile(r"^    return\s", re.MULTILINE)
