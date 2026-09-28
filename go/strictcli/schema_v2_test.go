@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -791,7 +792,20 @@ func TestTheChecksBlockIsOmittedWhenEveryCheckIsProviderSourced(t *testing.T) {
 
 // --- §12.14: the 2^53 registration guard ---
 
+// wideInt converts v to an int for a test whose values only exist where int is
+// 64 bits wide, skipping the test on targets where int is 32 bits: there no int
+// reaches 2^53 and the guard cannot fire. v passes through a variable because
+// an untyped constant beyond 2^31 does not compile as an int on those targets.
+func wideInt(t *testing.T, v int64) int {
+	t.Helper()
+	if strconv.IntSize < 64 {
+		t.Skip("int is 32 bits wide on this target")
+	}
+	return int(v)
+}
+
 func TestAnIntChoiceBeyond2To53IsRefusedOnAFlag(t *testing.T) {
+	beyond := wideInt(t, 9007199254740993)
 	defer func() {
 		got := recover()
 		want := `Flag "id": choice 9007199254740993: the number's magnitude exceeds 2^53 ` +
@@ -800,10 +814,11 @@ func TestAnIntChoiceBeyond2To53IsRefusedOnAFlag(t *testing.T) {
 			t.Fatalf("panic = %v, want %q", got, want)
 		}
 	}()
-	IntFlag("id", "an identifier", Optional(), Choices(Ch(9007199254740993, ""), Ch(1, "")))
+	IntFlag("id", "an identifier", Optional(), Choices(Ch(beyond, ""), Ch(1, "")))
 }
 
 func TestAnIntChoiceBeyond2To53IsRefusedOnAnArg(t *testing.T) {
+	beyond := wideInt(t, -9007199254740993)
 	defer func() {
 		got := recover()
 		want := `Arg "id": choice -9007199254740993: the number's magnitude exceeds 2^53 ` +
@@ -813,13 +828,13 @@ func TestAnIntChoiceBeyond2To53IsRefusedOnAnArg(t *testing.T) {
 		}
 	}()
 	NewArg("id", "an identifier", ArgType(TypeInt), ArgRequired(),
-		ArgChoices(Ch(-9007199254740993, ""), Ch(1, "")))
+		ArgChoices(Ch(beyond, ""), Ch(1, "")))
 }
 
 // Exactly 2^53 is representable, so it is not refused; float choices are
 // deliberately exempt, because the canonical float form round-trips exactly.
 func TestTheMagnitudeGuardFiresOnlyWhereInformationIsLost(t *testing.T) {
-	IntFlag("id", "an identifier", Optional(), Choices(Ch(9007199254740992, ""), Ch(-9007199254740992, "")))
+	IntFlag("id", "an identifier", Optional(), Choices(Ch(wideInt(t, 9007199254740992), ""), Ch(wideInt(t, -9007199254740992), "")))
 	FloatFlag("ratio", "a ratio", Optional(), Choices(Ch(1e300, ""), Ch(-1e300, "")))
 }
 

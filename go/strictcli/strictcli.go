@@ -875,7 +875,7 @@ func checkChoiceMagnitudes(surface, name string, values []interface{}) {
 		if !ok {
 			continue
 		}
-		if n > choiceMaxMagnitude || n < -choiceMaxMagnitude {
+		if int64(n) > choiceMaxMagnitude || int64(n) < -choiceMaxMagnitude {
 			if surface == "Arg" {
 				panic(errArgChoiceMagnitude(name, n))
 			}
@@ -887,8 +887,9 @@ func checkChoiceMagnitudes(surface, name string, values []interface{}) {
 // choiceMaxMagnitude is the largest integer a JSON reader parsing numbers as
 // IEEE-754 doubles recovers exactly. It is the payload regime's own guard at a
 // second boundary: there a value being written into the envelope, here one
-// being written into the schema file.
-const choiceMaxMagnitude = 1 << 53
+// being written into the schema file. It is an int64 because int is 32 bits
+// wide on some targets, where no int reaches it.
+const choiceMaxMagnitude int64 = 1 << 53
 
 // Choices sets the allowed values for a flag. Every entry is a record built by
 // Ch(value, help); the bare-value entry is deleted (contract §24.2).
