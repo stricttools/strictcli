@@ -40,6 +40,7 @@ import {
 	unsetFlagName,
 } from "./factories.js";
 import { formatFloatCanonical } from "./float.js";
+import { formatRequirementsSection } from "./requirements.js";
 import {
 	formatChoices,
 	formatDictForDisplay,
@@ -662,6 +663,7 @@ export function formatCommandHelp(
 
 	// Passthrough commands show only the header line.
 	if (cmd.def.kind === "passthrough") {
+		lines.push(...formatRequirementsSection(cmd.def.requires));
 		return lines.join("\n");
 	}
 	const def = cmd.def;
@@ -687,6 +689,8 @@ export function formatCommandHelp(
 	if (def.constraints.length > 0) {
 		lines.push("", "Constraints:", ...constraintBlock(def));
 	}
+	// What the command needs at run time, before the global flags.
+	lines.push(...formatRequirementsSection(def.requires));
 	if (app.globalFlags.length > 0) {
 		lines.push("", "Global flags:", ...twoColumn(flagRows(app.globalFlags)));
 	}

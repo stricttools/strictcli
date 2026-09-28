@@ -176,6 +176,7 @@ import type { HandlerArgs } from "./infer.js";
 import { type InfraRootPath, isInfraRootPath } from "./infra.js";
 import { isKebabName, isShortForm, validateCommandTreeName } from "./names.js";
 import { validatePayloadSchemaLiteral } from "./payload_schema.js";
+import { type AnyRequirement, validateRequires } from "./requirements.js";
 import type {
 	Carrier,
 	Context,
@@ -3357,6 +3358,8 @@ export interface CommandDef<
 	readonly grants: readonly Grant[];
 	/** Declared forwarding (inert in TS beyond the schema emission). */
 	readonly forwarding: Forwarding | undefined;
+	/** What the command needs at run time, loaded before its handler runs. */
+	readonly requires: readonly AnyRequirement[];
 }
 
 /** Structural supertype of every CommandDef instantiation. */
@@ -3400,6 +3403,7 @@ export interface AnyCommand {
 	readonly configFields: readonly string[];
 	readonly grants: readonly Grant[];
 	readonly forwarding: Forwarding | undefined;
+	readonly requires: readonly AnyRequirement[];
 }
 
 /**
@@ -3466,6 +3470,8 @@ export interface ReadOnlyCommandSpec<
 	readonly configFields?: readonly string[];
 	readonly grants?: readonly Grant[];
 	readonly forwarding?: Forwarding;
+	/** What the command needs at run time (declared once, referenced here). */
+	readonly requires?: readonly AnyRequirement[];
 }
 
 /** Configuration passed to defineMutatingCommand(). */
@@ -3532,6 +3538,8 @@ export interface MutatingCommandSpec<
 	readonly configFields?: readonly string[];
 	readonly grants?: readonly Grant[];
 	readonly forwarding?: Forwarding;
+	/** What the command needs at run time (declared once, referenced here). */
+	readonly requires?: readonly AnyRequirement[];
 }
 
 /** Validates a command's grant declarations at registration time. */
@@ -3843,6 +3851,7 @@ function buildCommandDef<
 		configFields: spec.configFields ?? [],
 		grants: validateGrants(name, spec.grants),
 		forwarding: validateForwarding(name, spec.forwarding),
+		requires: validateRequires(name, spec.requires),
 	};
 }
 
@@ -3943,6 +3952,7 @@ export interface PassthroughDef<N extends string, C = MutatingContext> {
 	readonly tags: readonly string[];
 	readonly hidden: boolean;
 	readonly grants: readonly Grant[];
+	readonly requires: readonly AnyRequirement[];
 }
 
 /** The options object both passthrough twins take. */
@@ -3977,6 +3987,8 @@ interface PassthroughSpec<C> {
 	readonly tags?: readonly string[];
 	readonly hidden?: boolean;
 	readonly grants?: readonly Grant[];
+	/** What the command needs at run time (declared once, referenced here). */
+	readonly requires?: readonly AnyRequirement[];
 }
 
 function buildPassthroughDef<N extends string, C>(
@@ -4021,6 +4033,7 @@ function buildPassthroughDef<N extends string, C>(
 		tags,
 		hidden: spec.hidden ?? false,
 		grants: validateGrants(name, spec.grants),
+		requires: validateRequires(name, spec.requires),
 	};
 }
 

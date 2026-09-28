@@ -149,6 +149,8 @@ export {
 	schemaObject,
 	schemaType,
 } from "./payload_schema.js";
+export type { Requirement } from "./requirements.js";
+export { requirement } from "./requirements.js";
 export type { Tool } from "./tool.js";
 export type {
 	Carrier,

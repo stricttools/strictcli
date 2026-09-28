@@ -141,7 +141,10 @@ import { ParseError, RegistrationError } from "../src/errors.js";
 // The help and version commands net +16: nineteen refusals of the commands and
 // their flags, and one project_id refusal in place of the four the schema
 // file writer had.
-const EXPECTED_TEMPLATE_COUNT = 466;
+// Declared runtime requirements net +8: the four declaration refusals, the
+// twice-referenced and reused-name refusals, the undeclared ctx.need, and the
+// unavailable requirement.
+const EXPECTED_TEMPLATE_COUNT = 474;
 
 function templateFunctions(): [string, (...args: never[]) => unknown][] {
 	// Widen to unknown first: the module also exports the two error classes,

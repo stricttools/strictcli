@@ -21,6 +21,7 @@ import {
 	errPayloadNoSchema,
 } from "./errors.js";
 import { validatePayloadValue } from "./payload_schema.js";
+import { neededValue, type Requirement } from "./requirements.js";
 import { PROVIDED_SOURCES } from "./sources.js";
 import type { UpdateState } from "./update.js";
 
@@ -234,6 +235,11 @@ interface ContextBase {
 	connectionEnvValue(
 		envVar: string,
 	): [value: string | undefined, present: boolean];
+	/**
+	 * The value a requirement the command declared loaded before the handler
+	 * ran. Asking for one the command did not declare is a hard error.
+	 */
+	need<T>(requirement: Requirement<T>): T;
 }
 
 /**
@@ -367,6 +373,10 @@ export class Context implements MutatingContext {
 	 * human mode fail a run that was never going to emit it, which §19.4's
 	 * call-unconditionally rule forbids.
 	 */
+	need<T>(requirement: Requirement<T>): T {
+		return neededValue(this, requirement, this.commandName);
+	}
+
 	payload(value: unknown): void {
 		if (this.payloadSchema === null) {
 			throw new Error(errPayloadNoSchema(this.commandName));

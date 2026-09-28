@@ -170,6 +170,11 @@ import { type McpIO, serveMcp } from "./mcp.js";
 import { isKebabName, validateCommandTreeName } from "./names.js";
 import { interpretHandlerReturn, jsonCompact } from "./outcome.js";
 import { doParse, flagParamName, formatParseErrorOutput } from "./parse.js";
+import {
+	type AnyRequirement,
+	loadRequirements,
+	registerRequirements,
+} from "./requirements.js";
 import { dumpSchemaCore } from "./schema.js";
 import { SignalWatch } from "./signals.js";
 import { asToolsForApp, jsonSchemaForApp, type Tool } from "./tool.js";
@@ -677,6 +682,7 @@ function registerCommand(
 			throw new RegistrationError(errFrameworkInternalHandlerForeign(def.name));
 		}
 	}
+	registerRequirements(app.requirements, def.requires ?? []);
 	if (def.kind === "passthrough") {
 		into.set(def.name, {
 			kind: "passthrough",
@@ -857,6 +863,8 @@ export class AppImpl implements App {
 	readonly handshakeEnvs = new Map<string, string>();
 	// Connection env vars: behavioral, hermetic-suppressed, no default.
 	readonly connectionEnvs = new Map<string, string>();
+	/** Each runtime requirement name -> the one value declaring it. */
+	readonly requirements = new Map<string, AnyRequirement>();
 	// Config subsystem state (config.ts owns the behavior).
 	readonly configEnabled: boolean;
 	/** Explicit config path override, marker-resolved at construction. */
@@ -1471,15 +1479,17 @@ export class AppImpl implements App {
 					return declined;
 				}
 				return await this.runHandler(
-					() =>
-						def.handler(
+					() => {
+						loadRequirements(ctx, def.requires, outcome.cmdPath);
+						return def.handler(
 							{
 								name: outcome.cmd.name,
 								args: outcome.args,
 								globals: outcome.globalKwargs,
 							},
 							ctx,
-						),
+						);
+					},
 					{
 						dryRun: outcome.reserved.dryRun,
 						cmdPath: outcome.cmdPath,
@@ -1547,7 +1557,10 @@ export class AppImpl implements App {
 					return declined;
 				}
 				return await this.runHandler(
-					() => def.handler(outcome.kwargs as never, ctx),
+					() => {
+						loadRequirements(ctx, def.requires, outcome.cmdPath);
+						return def.handler(outcome.kwargs as never, ctx);
+					},
 					{
 						dryRun: outcome.reserved.dryRun,
 						cmdPath: outcome.cmdPath,

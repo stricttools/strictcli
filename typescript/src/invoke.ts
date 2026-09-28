@@ -65,6 +65,7 @@ import {
 	flagParamName,
 	validateAndBuildKwargs,
 } from "./parse.js";
+import { loadRequirements } from "./requirements.js";
 import { resolveCommand } from "./routing.js";
 import {
 	applyScopedDefault,
@@ -695,7 +696,10 @@ export async function invokeApp(
 	);
 	attachUpdateState(ctx, writes, unsets);
 	return await callHandler(
-		() => def.handler(validated as never, ctx),
+		() => {
+			loadRequirements(ctx, def.requires, commandPath);
+			return def.handler(validated as never, ctx);
+		},
 		ctx,
 		effects,
 	);
@@ -770,7 +774,10 @@ async function invokePassthrough(
 		},
 	);
 	return await callHandler(
-		() => def.handler({ name: cmd.name, args, globals }, ctx),
+		() => {
+			loadRequirements(ctx, def.requires, commandPath);
+			return def.handler({ name: cmd.name, args, globals }, ctx);
+		},
 		ctx,
 		effects,
 	);

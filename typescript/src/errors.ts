@@ -3525,3 +3525,49 @@ export function errVersionInGroup(fix: string): string {
 export function errVersionArgs(token: string): string {
 	return `version takes no arguments, got '${token}'`;
 }
+
+// ---------------------------------------------------------------------------
+// requirements.go — declared runtime requirements
+// ---------------------------------------------------------------------------
+
+export function errRequirementNameInvalid(name: string): string {
+	return `requirement name ${q(name)} ${KEBAB_NAME_CLAUSE}`;
+}
+
+export function errRequirementHelpInvalid(name: string): string {
+	return `requirement ${q(name)}: help must be one non-empty line`;
+}
+
+export function errRequirementInstallInvalid(name: string): string {
+	return `requirement ${q(name)}: install must be one non-empty line saying how to install it`;
+}
+
+export function errRequirementLoadMissing(name: string): string {
+	return `requirement ${q(name)}: load must be a function returning the loaded value or an error`;
+}
+
+export function errRequirementDeclaredTwice(cmd: string, name: string): string {
+	return `command ${q(cmd)}: requirement ${q(name)} is referenced twice`;
+}
+
+export function errRequirementNameReused(name: string): string {
+	return `requirement ${q(name)} is declared by two different values; declare it once and reference that value from every command that needs it`;
+}
+
+export function errNeedUndeclared(cmd: string, name: string): string {
+	return `command '${cmd}' did not declare requirement '${name}'; add it to the command's requirements`;
+}
+
+// ---------------------------------------------------------------------------
+// requirements.go — a requirement that is not available (parse-time)
+// ---------------------------------------------------------------------------
+
+export function errRequirementUnavailable(
+	path: string,
+	name: string,
+	help: string,
+	reason: string,
+	install: string,
+): string {
+	return `command '${path}' needs ${name} (${help}), which is not available: ${reason}; install it: ${install}`;
+}

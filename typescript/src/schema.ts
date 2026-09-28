@@ -50,6 +50,7 @@ import {
 } from "./factories.js";
 import { formatFloatCanonical } from "./float.js";
 import { isInfraRootPath, serializeInfraMarker } from "./infra.js";
+import { type AnyRequirement, serializeRequires } from "./requirements.js";
 import { serializeUpdateOf } from "./update.js";
 import { formatValueForError } from "./values.js";
 
@@ -489,6 +490,7 @@ function serializeCommand(rc: RegisteredCommand): Record<string, unknown> {
 		readonly ownsStdout?: boolean;
 		readonly grants?: readonly Grant[];
 		readonly forwarding?: Forwarding;
+		readonly requires?: readonly AnyRequirement[];
 	};
 	const d: Record<string, unknown> = {
 		name: rc.name,
@@ -585,6 +587,11 @@ function serializeCommand(rc: RegisteredCommand): Record<string, unknown> {
 	}
 	if (carrier.forwarding !== undefined) {
 		d.forwarding = { reason: carrier.forwarding.reason };
+	}
+	// requires: what the command needs at run time, in declaration order;
+	// omitted when it needs nothing.
+	if (carrier.requires !== undefined && carrier.requires.length > 0) {
+		d.requires = serializeRequires(carrier.requires);
 	}
 	return d;
 }
@@ -695,6 +702,7 @@ function buildSchemaDefaults(): Record<string, unknown> {
 			config_fields: [],
 			grants: [],
 			forwarding: null,
+			requires: [],
 		},
 		group: {
 			commands: {},
