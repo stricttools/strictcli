@@ -12415,10 +12415,7 @@ class App:
         self._last_verbose = bool(pre_scan.get("verbose"))
 
         if pre_scan.get("dump_schema"):
-            raise _ParseError(
-                f"--dump-schema is not supported; the app's help document is "
-                f"printed by '{self.name} help --json'"
-            )
+            raise _ParseError(_msg_dump_schema_removed(f"{self.name} help --json"))
         if pre_scan.get("serve_mcp"):
             raise _McpRequested()
         if pre_scan.get("lint_framework_use"):
@@ -12478,16 +12475,12 @@ class App:
         # names the command that prints the machine form.
         if not remaining or remaining == ["--help"] or remaining == ["-h"]:
             if self._last_json:
-                raise _ParseError(
-                    f"help pages are text; for the machine form use "
-                    f"'{self.name} help --json'"
-                )
+                raise _ParseError(_msg_help_text_only(f"{self.name} help --json"))
             raise _HelpRequested(target=self)
         if remaining == ["--version"] or remaining == ["-v"]:
             if self._last_json:
                 raise _ParseError(
-                    f"the version line is text; for the machine form use "
-                    f"'{self.name} version --json'"
+                    _msg_version_text_only(f"{self.name} version --json")
                 )
             raise _VersionRequested()
 
@@ -12500,8 +12493,7 @@ class App:
             if self._last_json:
                 group_path = _find_group_path(self, e.target)
                 raise _ParseError(
-                    f"help pages are text; for the machine form use "
-                    f"'{self._help_line(*group_path, '--json')}'"
+                    _msg_help_text_only(self._help_line(*group_path, "--json"))
                 ) from None
             raise
         self._last_resolved_path = path
@@ -12511,8 +12503,7 @@ class App:
         if _tokens_contain_help(rest):
             if self._last_json:
                 raise _ParseError(
-                    f"help pages are text; for the machine form use "
-                    f"'{self._help_line(*path, cmd.name, '--json')}'"
+                    _msg_help_text_only(self._help_line(*path, cmd.name, "--json"))
                 )
             raise _HelpRequested(target=cmd)
 
@@ -12658,10 +12649,7 @@ class App:
                     f"'{self._help_line(*path)}'"
                 )
             if path and token == "version":
-                raise _ParseError(
-                    f"'version' is a framework command at the root: use "
-                    f"'{self.name} version'"
-                )
+                raise _ParseError(_msg_version_in_group(f"{self.name} version"))
 
             # Unknown command -- include path in error message
             if path:
@@ -13038,10 +13026,9 @@ class App:
                 continue
             if tok.startswith("-"):
                 if tok == "--depth" or tok.startswith("--depth="):
-                    raise _ParseError(
-                        f"help: --depth is help's own option and goes before the "
-                        f"address: '{self._help_line('--depth', '<int>', *req.address)}'"
-                    )
+                    raise _ParseError(_msg_help_option_after_address(
+                        "--depth", self._help_line("--depth", "<int>", *req.address),
+                    ))
                 raise _ParseError(
                     f"help: '{tok}' names a flag, and a flag is addressed after its "
                     f"command: '{self._help_line(*req.address, '<command>', tok)}'"
@@ -13084,11 +13071,9 @@ class App:
 
         def unknown() -> _ParseError:
             if not typed:
-                return _ParseError(
-                    f"command '{path}' has no flag '{tok}' and declares no flags"
-                )
+                return _ParseError(_msg_help_unknown_flag_no_flags(path, tok))
             listed = ", ".join(f"--{n}" for n in typed)
-            return _ParseError(f"command '{path}' has no flag '{tok}'; its flags: {listed}")
+            return _ParseError(_msg_help_unknown_flag(path, tok, listed))
 
         if not tok.startswith("--"):
             long = _short_owner(req.cmd.members, self._global_flags, tok[1:])
@@ -13135,8 +13120,8 @@ class App:
             if req.own or not self._last_json:
                 if self._last_json:
                     raise _ParseError(
-                        f"help pages are text; for the machine form use "
-                        f"'{prefix} --json'", command_prefix=prefix,
+                        _msg_help_text_only(f"{prefix} --json"),
+                        command_prefix=prefix,
                     )
                 raise _HelpPageRequested(_help_text(self, req))
             try:
@@ -13148,8 +13133,8 @@ class App:
         if any(tok in ("--help", "-h") for tok in remaining[1:]):
             if self._last_json:
                 raise _ParseError(
-                    f"help pages are text; for the machine form use "
-                    f"'{self.name} help --json'", command_prefix=prefix,
+                    _msg_help_text_only(f"{self.name} help --json"),
+                    command_prefix=prefix,
                 )
             raise _HelpPageRequested(_format_version_own_page(self))
         if len(remaining) > 1:
@@ -18096,6 +18081,41 @@ def _format_command_help(app: App, cmd: Command, prefix: str = "") -> str:
 # ---------------------------------------------------------------------------
 
 
+def _msg_help_text_only(fix: str) -> str:
+    return f"help pages are text; for the machine form use '{fix}'"
+
+
+def _msg_version_text_only(fix: str) -> str:
+    return f"the version line is text; for the machine form use '{fix}'"
+
+
+def _msg_dump_schema_removed(fix: str) -> str:
+    return (
+        f"--dump-schema is not supported; the app's help document is printed "
+        f"by '{fix}'"
+    )
+
+
+def _msg_help_option_after_address(token: str, fix: str) -> str:
+    return f"help: {token} is help's own option and goes before the address: '{fix}'"
+
+
+def _msg_help_unknown_flag(path: str, token: str, flags: str) -> str:
+    return f"command '{path}' has no flag '{token}'; its flags: {flags}"
+
+
+def _msg_help_unknown_flag_no_flags(path: str, token: str) -> str:
+    return f"command '{path}' has no flag '{token}' and declares no flags"
+
+
+def _msg_version_in_group(fix: str) -> str:
+    return f"'version' is a framework command at the root: use '{fix}'"
+
+
+def _msg_project_id_undetermined(reason: str) -> str:
+    return f"cannot determine project_id: {reason}"
+
+
 class _HelpPageRequested(Exception):
     """A help or version page rendered by the framework's own commands."""
 
@@ -19795,10 +19815,9 @@ def _project_id_for_file(module_file: str | None) -> str:
     ``[project] name``. A module in neither place is refused.
     """
     if not module_file:
-        raise RuntimeError(
-            "cannot determine project_id: the module that constructed the App "
-            "has no source file"
-        )
+        raise RuntimeError(_msg_project_id_undetermined(
+            "the module that constructed the App has no source file"
+        ))
     path = os.path.realpath(module_file)
     parts = Path(path).parts
     if "site-packages" in parts or "dist-packages" in parts:
@@ -19807,24 +19826,22 @@ def _project_id_for_file(module_file: str | None) -> str:
             for entry in dist.files or ():
                 if os.path.realpath(str(dist.locate_file(entry))) == path:
                     return dist.metadata["Name"]
-        raise RuntimeError(
-            f"cannot determine project_id: no installed distribution records "
-            f"'{path}'"
-        )
+        raise RuntimeError(_msg_project_id_undetermined(
+            f"no installed distribution records '{path}'"
+        ))
     for directory in Path(path).parents:
         candidate = directory / "pyproject.toml"
         if candidate.is_file():
             with open(candidate, "rb") as f:
                 name = tomllib.load(f).get("project", {}).get("name")
             if not name:
-                raise RuntimeError(
-                    f"cannot determine project_id: '{candidate}' declares no "
-                    f"[project] name"
-                )
+                raise RuntimeError(_msg_project_id_undetermined(
+                    f"'{candidate}' declares no [project] name"
+                ))
             return name
-    raise RuntimeError(
-        f"cannot determine project_id: no pyproject.toml above '{path}'"
-    )
+    raise RuntimeError(_msg_project_id_undetermined(
+        f"no pyproject.toml above '{path}'"
+    ))
 
 
 def _collect_config_field_bindings(
