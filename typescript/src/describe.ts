@@ -435,7 +435,6 @@ export const SURFACE = {
 				"name",
 				"noDefaultConfigPath",
 				"procObserveAllowlist",
-				"schemaPath",
 				"testCoverageDir",
 				"version",
 			],

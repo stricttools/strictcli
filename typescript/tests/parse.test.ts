@@ -90,12 +90,14 @@ async function run(
 	});
 	switch (outcome.kind) {
 		case "help":
-		case "dump-schema":
 		case "lint-framework-use":
 		case "mcp":
 			return done("", "", 0);
 		case "version":
+		case "page":
 			return done(outcome.text, "", 0);
+		case "framework-document":
+			return done(outcome.document, "", 0);
 		case "parse-error":
 			return done(
 				"",
@@ -2874,7 +2876,7 @@ test("prescan: --config requires a value (bare and equals forms)", async () => {
 	);
 });
 
-test("prescan: --dump-schema and --mcp intercept in the pre-command region only", async () => {
+test("prescan: --dump-schema (refused) and --mcp intercept in the pre-command region only", async () => {
 	const app = makeApp();
 	app.command(
 		defineReadOnlyCommand("cmd", {
@@ -2882,7 +2884,7 @@ test("prescan: --dump-schema and --mcp intercept in the pre-command region only"
 			handler: () => undefined,
 		}),
 	);
-	assert.equal(doParse(app, ["--dump-schema"]).kind, "dump-schema");
+	assert.equal(doParse(app, ["--dump-schema"]).kind, "parse-error");
 	assert.equal(doParse(app, ["--mcp"]).kind, "mcp");
 	// After the command token they are ordinary unknown flags.
 	const r = await run(app, ["cmd", "--dump-schema"]);

@@ -73,7 +73,7 @@ test("e2e 1: app help", async () => {
 	);
 	await expectBytes(app, [], {
 		stdout:
-			"myapp v3.0.0 -- my cool app\n\nCommands:\n  run     run something\n  test    run tests\n\nUse 'myapp <command> --help' for more information.\n",
+			"myapp v3.0.0 -- my cool app\n\nCommands:\n  run     run something\n  test    run tests\n\nUse 'myapp help <command>' for more information.\n",
 		stderr: "",
 		exitCode: 0,
 	});

@@ -11,8 +11,8 @@
  *
  * The method set is CLOSED at eight (`run`, `spawn`, `write`, `mkdir`,
  * `remove`, `rename`, `chmod`, `http`). CACHE_WRITE has no public method: it is
- * minted only by framework-internal code (schema dump, coverage shards and
- * manifest) and is unreachable from application code.
+ * minted only by framework-internal code (the coverage shards and manifest)
+ * and is unreachable from application code.
  *
  * Every effect method's declared return type is its SETTLED shape and nothing
  * else -- there is no `| Unsettled` union anywhere in the surface and no

@@ -17,8 +17,6 @@
  */
 
 import { strict as assert } from "node:assert";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
 import { test } from "node:test";
 import { deprecated } from "../src/factories.js";
 import {
@@ -1468,16 +1466,11 @@ async function withTempCwd<T>(fn: (dir: string) => Promise<T>): Promise<T> {
 
 // --- Rich-app structural equality ---
 
-test("--dump-schema writes the expected rich-app schema file", async () => {
-	await withTempCwd(async (dir) => {
-		writeFileSync("package.json", '{"name": "richapp"}\n');
-		const res = await buildRichApp().test(["--dump-schema"]);
-		assert.equal(res.stderr, "");
+test("help --json prints the expected rich-app help document", async () => {
+	await withTempCwd(async () => {
+		const res = await buildRichApp().test(["help", "--json"]);
 		assert.equal(res.exitCode, 0);
-		const schemaPath = join(dir, ".strictcli", "schema.json");
-		assert.equal(res.stdout, `${schemaPath}\n`);
-
-		const raw = readFileSync(schemaPath, "utf8");
+		const raw = res.stdout;
 		// Exact sibling formatting: 2-space indent, ": " separator, trailing \n.
 		assert.ok(raw.startsWith('{\n  "schema_version": 2,\n  "defaults": {\n'));
 		assert.ok(raw.endsWith("\n"));
@@ -1488,7 +1481,8 @@ test("--dump-schema writes the expected rich-app schema file", async () => {
 		assert.ok(raw.includes('"default": 3.14'));
 
 		const parsed = JSON.parse(raw) as Record<string, unknown>;
-		assert.equal(parsed.project_id, "richapp");
+		// The test program's entry lies in the strictcli package.
+		assert.equal(parsed.project_id, "strictcli");
 		// project_id sits immediately after defaults (Python layout).
 		assert.deepEqual(Object.keys(parsed).slice(0, 5), [
 			"schema_version",
@@ -1548,170 +1542,6 @@ test("empty-collection defaults are emitted, not omitted", () => {
 	assert.deepEqual(byName("tag").default, []);
 	assert.equal(byName("header").presence, "default");
 	assert.deepEqual(byName("header").default, {});
-});
-
-// --- Conformance case behaviors (cases/dump_schema.json) ---
-
-test("--dump-schema exits 0 and prints the absolute schema path", async () => {
-	await withTempCwd(async (dir) => {
-		writeFileSync("package.json", '{"name": "myapp"}\n');
-		const res = await buildMinimalApp().test(["--dump-schema"]);
-		assert.equal(res.exitCode, 0);
-		assert.ok(res.stdout.includes(".strictcli/schema.json"));
-		assert.ok(res.stdout.startsWith("/"));
-		assert.equal(res.stdout, `${join(dir, ".strictcli", "schema.json")}\n`);
-	});
-});
-
-// --- The declared --dump-schema location ---
-
-test("--dump-schema writes the declared relative path, not the default", async () => {
-	await withTempCwd(async (dir) => {
-		writeFileSync("package.json", '{"name": "myapp"}\n');
-		const app = createApp({
-			name: "myapp",
-			version: "1.0.0",
-			help: "test app",
-			schemaPath: join("build", "cli-schema.json"),
-		});
-		app.command(
-			defineReadOnlyCommand("greet", { help: "say hello", handler: () => 0 }),
-		);
-		const res = await app.test(["--dump-schema"]);
-		assert.equal(res.exitCode, 0);
-		const want = join(dir, "build", "cli-schema.json");
-		assert.equal(res.stdout, `${want}\n`);
-		assert.ok(existsSync(want));
-		assert.ok(!existsSync(join(dir, ".strictcli")));
-	});
-});
-
-test("--dump-schema writes a declared relativeToRoot() location", async () => {
-	await withTempCwd(async (dir) => {
-		writeFileSync("package.json", '{"name": "myapp"}\n');
-		const root = join(dir, "root");
-		const app = createApp({
-			name: "myapp",
-			version: "1.0.0",
-			help: "test app",
-			infraRoot: { MYAPP_HOME: root },
-			schemaPath: relativeToRoot("MYAPP_HOME", "schema.json"),
-		});
-		app.command(
-			defineReadOnlyCommand("greet", { help: "say hello", handler: () => 0 }),
-		);
-		assert.equal((await app.test(["--dump-schema"])).exitCode, 0);
-		assert.ok(existsSync(join(root, "schema.json")));
-	});
-});
-
-test("the default --dump-schema location is anchored at construction", async () => {
-	await withTempCwd(async (dir) => {
-		writeFileSync("package.json", '{"name": "myapp"}\n');
-		const app = buildMinimalApp();
-		const elsewhere = tempDir("strictcli-elsewhere-");
-		// project_id is read from the cwd at dump time -- a separate cwd
-		// dependency this test is not about, so both directories carry one.
-		writeFileSync(join(elsewhere, "package.json"), '{"name": "myapp"}\n');
-		const back = process.cwd();
-		process.chdir(elsewhere);
-		try {
-			assert.equal((await app.test(["--dump-schema"])).exitCode, 0);
-		} finally {
-			process.chdir(back);
-		}
-		assert.ok(existsSync(join(dir, ".strictcli", "schema.json")));
-		assert.ok(!existsSync(join(elsewhere, ".strictcli")));
-	});
-});
-
-// --- project_id-change guard on existing schema files ---
-
-test("existing schema with a different project_id blocks the dump", async () => {
-	await withTempCwd(async () => {
-		writeFileSync("package.json", '{"name": "myapp"}\n');
-		mkdirSync(".strictcli");
-		const stale = '{"project_id": "other-proj"}\n';
-		writeFileSync(join(".strictcli", "schema.json"), stale);
-		const res = await buildMinimalApp().test(["--dump-schema"]);
-		assert.equal(res.exitCode, 1);
-		assert.equal(
-			res.stderr,
-			"error: Schema mismatch: existing schema belongs to project " +
-				"'other-proj', not 'myapp'. Run from the correct project directory.\n",
-		);
-		// The guard fires before the write: the stale file is untouched.
-		assert.equal(
-			readFileSync(join(".strictcli", "schema.json"), "utf8"),
-			stale,
-		);
-	});
-});
-
-test("guard passes silently on unparseable, id-less, and matching existing schemas", async () => {
-	await withTempCwd(async () => {
-		writeFileSync("package.json", '{"name": "myapp"}\n');
-		mkdirSync(".strictcli");
-		const schemaPath = join(".strictcli", "schema.json");
-
-		// Unparseable JSON: overwritten without complaint.
-		writeFileSync(schemaPath, "not json{");
-		let res = await buildMinimalApp().test(["--dump-schema"]);
-		assert.equal(res.exitCode, 0);
-
-		// Valid JSON without project_id: overwritten without complaint.
-		writeFileSync(schemaPath, '{"name": "whatever"}\n');
-		res = await buildMinimalApp().test(["--dump-schema"]);
-		assert.equal(res.exitCode, 0);
-
-		// Matching project_id (the file just written): re-dump succeeds.
-		res = await buildMinimalApp().test(["--dump-schema"]);
-		assert.equal(res.exitCode, 0);
-		const parsed = JSON.parse(readFileSync(schemaPath, "utf8")) as {
-			project_id: string;
-		};
-		assert.equal(parsed.project_id, "myapp");
-	});
-});
-
-// --- project_id derivation errors (package.json) ---
-
-test("missing package.json is a hard error", async () => {
-	await withTempCwd(async () => {
-		const res = await buildMinimalApp().test(["--dump-schema"]);
-		assert.equal(res.exitCode, 1);
-		assert.equal(
-			res.stderr,
-			"error: Cannot determine project_id: package.json not found\n",
-		);
-	});
-});
-
-test("unparseable package.json is a read error", async () => {
-	await withTempCwd(async () => {
-		writeFileSync("package.json", "{broken");
-		const res = await buildMinimalApp().test(["--dump-schema"]);
-		assert.equal(res.exitCode, 1);
-		assert.ok(
-			res.stderr.startsWith(
-				"error: Cannot determine project_id: error reading package.json: ",
-			),
-		);
-	});
-});
-
-test("package.json without a usable name field is a hard error", async () => {
-	await withTempCwd(async () => {
-		for (const content of ["{}", '{"name": ""}', '{"name": 42}']) {
-			writeFileSync("package.json", content);
-			const res = await buildMinimalApp().test(["--dump-schema"]);
-			assert.equal(res.exitCode, 1);
-			assert.equal(
-				res.stderr,
-				"error: Cannot determine project_id: no name field in package.json\n",
-			);
-		}
-	});
 });
 
 // --- The presence key (contract §13's presence-round amendment) ---
@@ -2138,11 +1968,9 @@ test("canon: layout is two-space indent, one member per line, inline empties", (
 	);
 });
 
-test("canon: the written file ends with exactly one newline", async () => {
-	await withTempCwd(async (dir) => {
-		writeFileSync("package.json", '{"name": "canonapp"}\n');
-		await buildMinimalApp().test(["--dump-schema"]);
-		const raw = readFileSync(join(dir, ".strictcli", "schema.json"), "utf8");
+test("canon: the help document ends with exactly one newline", async () => {
+	await withTempCwd(async () => {
+		const raw = (await buildMinimalApp().test(["help", "--json"])).stdout;
 		assert.ok(raw.endsWith("}\n"));
 		assert.ok(!raw.endsWith("\n\n"));
 	});

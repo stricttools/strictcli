@@ -10,9 +10,11 @@
 import type { AppImpl, GroupImpl, RegisteredCommand } from "./app.js";
 import {
 	errCommandDeprecated,
+	errHelpInGroup,
 	errNoCommandSpecified,
 	errUnknownCommand,
 	errUnknownCommandInGroup,
+	errVersionInGroup,
 } from "./errors.js";
 
 export interface RouteResult {
@@ -83,6 +85,24 @@ export function resolveCommand(
 			};
 		}
 
+		// help and version are framework commands at the root only; their names
+		// are reserved at every level, so inside a group they point at the root.
+		if (path.length > 0 && token === "help") {
+			return {
+				err: errHelpInGroup([app.name, "help", ...path].join(" ")),
+				path,
+				rest,
+				helpAtGroup: false,
+			};
+		}
+		if (path.length > 0 && token === "version") {
+			return {
+				err: errVersionInGroup(`${app.name} version`),
+				path,
+				rest,
+				helpAtGroup: false,
+			};
+		}
 		if (path.length > 0) {
 			return {
 				err: errUnknownCommandInGroup(token, path.join(" ")),

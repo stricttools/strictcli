@@ -15,7 +15,6 @@
  */
 
 import { readFileSync, statSync } from "node:fs";
-import { join, resolve } from "node:path";
 import { format } from "node:util";
 import { enableChecks } from "./checks/cmd.js";
 import { initTestCoverage, recordCoverage } from "./checks/coverage.js";
@@ -171,7 +170,7 @@ import { type McpIO, serveMcp } from "./mcp.js";
 import { isKebabName, validateCommandTreeName } from "./names.js";
 import { interpretHandlerReturn, jsonCompact } from "./outcome.js";
 import { doParse, flagParamName, formatParseErrorOutput } from "./parse.js";
-import { dumpSchemaCore, writeSchema } from "./schema.js";
+import { dumpSchemaCore } from "./schema.js";
 import { SignalWatch } from "./signals.js";
 import { asToolsForApp, jsonSchemaForApp, type Tool } from "./tool.js";
 import type { HandlerReturn } from "./types.js";
@@ -195,15 +194,6 @@ export interface AppSpec {
 	readonly config?: boolean;
 	/** Explicit config file path; a relativeToRoot() marker resolves eagerly. */
 	readonly configPath?: string | InfraRootPath;
-	/**
-	 * Where --dump-schema writes: an absolute path, a path relative to the
-	 * App's construction-time working directory, or a relativeToRoot() marker
-	 * (resolved eagerly). Undeclared, the framework's own location applies --
-	 * ".strictcli/schema.json" ANCHORED at the construction-time working
-	 * directory, so a chdir between construction and dispatch cannot redirect
-	 * the write into the caller's cwd.
-	 */
-	readonly schemaPath?: string | InfraRootPath;
 	readonly configFormat?: "json" | "toml";
 	readonly configConflictMode?: ConflictMode;
 	readonly noDefaultConfigPath?: boolean;
@@ -369,13 +359,12 @@ export interface App {
 	/**
 	 * Returns the app's full schema as a dict, excluding project_id.
 	 *
-	 * This is the public, CWD-free accessor for the schema (Go DumpSchemaDict
-	 * / Python dump_schema_dict). Unlike --dump-schema (which writes
-	 * .strictcli/schema.json and derives project_id from package.json in the
-	 * current working directory), this method reads only the in-memory App,
-	 * performs no filesystem or CWD access, and cannot fail. The returned
-	 * dict is equivalent to the written schema file with the project_id field
-	 * removed. Integer values are bigint; float values are number.
+	 * This is the public accessor for the help document of the whole app (Go
+	 * DumpSchemaDict / Python dump_schema_dict). Unlike `<app> help --json`
+	 * (which adds project_id from the program's entry script), this method
+	 * reads only the in-memory App and cannot fail. The returned dict is that
+	 * document with the project_id field removed. Integer values are bigint;
+	 * float values are number.
 	 */
 	dumpSchemaDict(): Record<string, unknown>;
 	/**
@@ -879,8 +868,6 @@ export class AppImpl implements App {
 	 * committed source (contract §25.11).
 	 */
 	readonly configPathDeclared: string | InfraRootPath | undefined;
-	/** Absolute --dump-schema target, resolved once at construction. */
-	readonly schemaOutPath: string;
 	readonly configFormat: "json" | "toml";
 	readonly configConflictMode: ConflictMode;
 	readonly noDefaultConfigPath: boolean;
@@ -1008,20 +995,6 @@ export class AppImpl implements App {
 		} else {
 			this.configPathOverride = spec.configPath;
 		}
-		// Resolve the --dump-schema target once, at construction: a declared
-		// marker through its root, a declared relative path and the framework's
-		// own default against the construction-time cwd.
-		let schemaTarget: string;
-		if (spec.schemaPath !== undefined && isInfraRootPath(spec.schemaPath)) {
-			try {
-				schemaTarget = resolveInfraRootPath(spec.schemaPath, this.infraRoots);
-			} catch (e) {
-				throw new RegistrationError((e as Error).message);
-			}
-		} else {
-			schemaTarget = spec.schemaPath ?? join(".strictcli", "schema.json");
-		}
-		this.schemaOutPath = resolve(schemaTarget);
 		// Validate global-flag default markers now that the roots are resolved
 		// (mirroring Python __post_init__; registerCommand covers command flags).
 		for (const f of globals) {
@@ -1406,17 +1379,22 @@ export class AppImpl implements App {
 			case "version":
 				out.write(`${outcome.text}\n`);
 				return { exitCode: 0, hasPayload: false, payload: undefined };
-			case "dump-schema": {
-				let path: string;
-				try {
-					path = writeSchema(this);
-				} catch (e) {
-					err.write(`error: ${(e as Error).message}\n`);
-					return { exitCode: 1, hasPayload: false, payload: undefined };
-				}
-				out.write(`${path}\n`);
+			case "page":
+				out.write(`${outcome.text}\n`);
 				return { exitCode: 0, hasPayload: false, payload: undefined };
-			}
+			case "framework-document":
+				out.write(outcome.document);
+				this.emitEnvelope(err, {
+					command: outcome.command,
+					exitCode: 0,
+					dryRun: outcome.reserved.dryRun,
+					payload: null,
+					output: null,
+					preview: [],
+					previewError: null,
+					diagnostics: [],
+				});
+				return { exitCode: 0, hasPayload: false, payload: undefined };
 			case "lint-framework-use":
 				return {
 					exitCode: runFrameworkUseLint(out, err),
@@ -1926,9 +1904,9 @@ export class AppImpl implements App {
 	}
 
 	/**
-	 * Records a framework-blessed CACHE_WRITE. The closed list of sites is
-	 * exactly three: the schema dump, the test-coverage shards, and the
-	 * test-coverage manifest. CACHE_WRITEs have no public method, never appear
+	 * Records a framework-blessed CACHE_WRITE. The closed list of sites: the
+	 * test-coverage shards and the test-coverage manifest. CACHE_WRITEs have
+	 * no public method, never appear
 	 * in the would-do log, never trip read-only enforcement, and EXECUTE even in
 	 * dry mode -- which is why they always carry `recorded: false`.
 	 */

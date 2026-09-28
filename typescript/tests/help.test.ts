@@ -41,7 +41,7 @@ test("help: app help shows version and commands (help.json)", async () => {
 	const r = await app.test([]);
 	assert.equal(
 		r.stdout,
-		"myapp v3.0.0 -- my cool app\n\nCommands:\n  run     run something\n  test    run tests\n\nUse 'myapp <command> --help' for more information.\n",
+		"myapp v3.0.0 -- my cool app\n\nCommands:\n  run     run something\n  test    run tests\n\nUse 'myapp help <command>' for more information.\n",
 	);
 	assert.equal(r.stderr, "");
 	assert.equal(r.exitCode, 0);
@@ -155,7 +155,7 @@ test("help: app help shows groups (help.json)", async () => {
 	const r = await app.test([]);
 	assert.equal(
 		r.stdout,
-		"myapp v1.0.0 -- test app\n\nGroups:\n  config    manage configuration\n\nUse 'myapp <command> --help' for more information.\n",
+		"myapp v1.0.0 -- test app\n\nGroups:\n  config    manage configuration\n\nUse 'myapp help <command>' for more information.\n",
 	);
 });
 
@@ -494,11 +494,11 @@ test("help: 3-level nesting (nesting.json)", async () => {
 
 	assert.equal(
 		(await app.test(["dns", "--help"])).stdout,
-		"myapp dns -- manage DNS\n\nCommands:\n  status    show DNS status\n\nGroups:\n  zone    manage zones\n\nUse 'myapp dns <command> --help' for more information.\n",
+		"myapp dns -- manage DNS\n\nCommands:\n  status    show DNS status\n\nGroups:\n  zone    manage zones\n\nUse 'myapp help dns <command>' for more information.\n",
 	);
 	assert.equal(
 		(await app.test(["dns", "zone", "--help"])).stdout,
-		"myapp dns zone -- manage zones\n\nCommands:\n  list      list all zones\n  create    create a zone\n\nUse 'myapp dns zone <command> --help' for more information.\n",
+		"myapp dns zone -- manage zones\n\nCommands:\n  list      list all zones\n  create    create a zone\n\nUse 'myapp help dns zone <command>' for more information.\n",
 	);
 	assert.equal(
 		(await app.test(["dns", "zone", "create", "--help"])).stdout,
@@ -516,7 +516,7 @@ test("help: group help lists subcommands (nesting.json)", async () => {
 		defineReadOnlyCommand("set", { help: "set a config value", handler: ok }),
 	);
 	const expected =
-		"myapp config -- manage configuration\n\nCommands:\n  show    display config\n  set     set a config value\n\nUse 'myapp config <command> --help' for more information.\n";
+		"myapp config -- manage configuration\n\nCommands:\n  show    display config\n  set     set a config value\n\nUse 'myapp help config <command>' for more information.\n";
 	assert.equal((await app.test(["config", "--help"])).stdout, expected);
 	// A bare group token also renders group help.
 	assert.equal((await app.test(["config"])).stdout, expected);
@@ -540,7 +540,7 @@ test("help: passthrough command help is header-only (passthrough.json)", async (
 	);
 	assert.equal(
 		(await app.test([])).stdout,
-		"myapp v1.0.0 -- test app\n\nCommands:\n  checkout    checkout a branch\n  status      show status\n\nUse 'myapp <command> --help' for more information.\n",
+		"myapp v1.0.0 -- test app\n\nCommands:\n  checkout    checkout a branch\n  status      show status\n\nUse 'myapp help <command>' for more information.\n",
 	);
 });
 
@@ -582,7 +582,7 @@ test("help: app help shows the Deprecated section (Python-captured)", async () =
 	app.deprecate(deprecated("old-cmd", "use 'new-cmd' instead"));
 	assert.equal(
 		(await app.test([])).stdout,
-		"myapp v1.0.0 -- test app\n\nCommands:\n  new-cmd    the replacement command\n\nDeprecated:\n  old-cmd    use 'new-cmd' instead\n\nUse 'myapp <command> --help' for more information.\n",
+		"myapp v1.0.0 -- test app\n\nCommands:\n  new-cmd    the replacement command\n\nDeprecated:\n  old-cmd    use 'new-cmd' instead\n\nUse 'myapp help <command>' for more information.\n",
 	);
 });
 
@@ -603,7 +603,7 @@ test("help: app help shows Global flags without meta (Python-captured)", async (
 	app.command(defineReadOnlyCommand("cmd", { help: "a command", handler: ok }));
 	assert.equal(
 		(await app.test([])).stdout,
-		"myapp v1.0.0 -- test app\n\nCommands:\n  cmd    a command\n\nGlobal flags:\n  --chatter, -V    enable chatter output\n\nUse 'myapp <command> --help' for more information.\n",
+		"myapp v1.0.0 -- test app\n\nCommands:\n  cmd    a command\n\nGlobal flags:\n  --chatter, -V    enable chatter output\n\nUse 'myapp help <command>' for more information.\n",
 	);
 });
 
@@ -618,7 +618,7 @@ test("help: app help shows the Infrastructure section (Python-captured)", async 
 	app.command(defineReadOnlyCommand("cmd", { help: "a command", handler: ok }));
 	assert.equal(
 		(await app.test([])).stdout,
-		"myapp v1.0.0 -- test app\n\nCommands:\n  cmd    a command\n\nInfrastructure:\n  (location/handshake env vars; not suppressed by --hermetic)\n  MYAPP_ROOT            root (default: ~/.myapp)\n  MYAPP_ORCHESTRATED    set by the orchestrator\n\nUse 'myapp <command> --help' for more information.\n",
+		"myapp v1.0.0 -- test app\n\nCommands:\n  cmd    a command\n\nInfrastructure:\n  (location/handshake env vars; not suppressed by --hermetic)\n  MYAPP_ROOT            root (default: ~/.myapp)\n  MYAPP_ORCHESTRATED    set by the orchestrator\n\nUse 'myapp help <command>' for more information.\n",
 	);
 });
 

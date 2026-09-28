@@ -582,7 +582,7 @@ test("infra: app help renders the Infrastructure section (Go byte parity)", asyn
 			"  SCRATCH_HOME_X        root (default: ~/scratch)\n" +
 			"  MYAPP_ORCHESTRATED    set by the orchestrator\n" +
 			"\n" +
-			"Use 'myapp <command> --help' for more information.\n",
+			"Use 'myapp help <command>' for more information.\n",
 	);
 });
 

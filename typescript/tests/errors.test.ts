@@ -138,7 +138,10 @@ import { ParseError, RegistrationError } from "../src/errors.js";
 // The naming rule nets +6: the command, group, deprecated-command and flag
 // name refusals, the short-form refusal, and the framework-command
 // reservation.
-const EXPECTED_TEMPLATE_COUNT = 450;
+// The help and version commands net +16: nineteen refusals of the commands and
+// their flags, and one project_id refusal in place of the four the schema
+// file writer had.
+const EXPECTED_TEMPLATE_COUNT = 466;
 
 function templateFunctions(): [string, (...args: never[]) => unknown][] {
 	// Widen to unknown first: the module also exports the two error classes,
@@ -396,10 +399,6 @@ test("registration templates are byte-identical to sibling output", () => {
 	assert.equal(
 		errors.errConfigFieldNameInvalid("Bad.Name"),
 		'ConfigField name "Bad.Name" is invalid: must match [a-z][a-z0-9_]*(.[a-z][a-z0-9_]*)* (lowercase, dots for sections)',
-	);
-	assert.equal(
-		errors.errSchemaMismatch("old-proj", "new-proj"),
-		"Schema mismatch: existing schema belongs to project 'old-proj', not 'new-proj'. Run from the correct project directory.",
 	);
 });
 

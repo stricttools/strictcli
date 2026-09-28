@@ -1791,20 +1791,12 @@ export function errChecksNotEnabled(): string {
 // pyproject.toml [project].name. Each language names its own file here (the
 // parity checker excludes these as language-specific).
 
-export function errCannotDetermineProjectIDNoPackageJson(): string {
-	return "Cannot determine project_id: package.json not found";
-}
-
-export function errCannotDetermineProjectIDReadError(errStr: string): string {
-	return `Cannot determine project_id: error reading package.json: ${errStr}`;
-}
-
-export function errCannotDetermineProjectIDNoName(): string {
-	return "Cannot determine project_id: no name field in package.json";
-}
-
-export function errSchemaMismatch(existingID: string, newID: string): string {
-	return `Schema mismatch: existing schema belongs to project '${existingID}', not '${newID}'. Run from the correct project directory.`;
+/**
+ * Refuses a help document whose project_id the program's own location cannot
+ * supply. `reason` is each language's own.
+ */
+export function errProjectIDUndetermined(reason: string): string {
+	return `cannot determine project_id: ${reason}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -3443,4 +3435,93 @@ export function errFlagShortInvalid(name: string, short: string): string {
  */
 export function errFrameworkCommandName(kind: string, name: string): string {
 	return `${kind} name ${q(name)} is reserved: help and version are framework commands at every level of the command tree`;
+}
+
+// ---------------------------------------------------------------------------
+// help_command.go — the help and version commands (parse-time)
+// ---------------------------------------------------------------------------
+
+/**
+ * Refuses --json on a help page reached through --help (or through no command
+ * at all), naming the help command that prints the machine form. `fix` is the
+ * full command line, e.g. "myapp help run --json".
+ */
+export function errHelpTextOnly(fix: string): string {
+	return `help pages are text; for the machine form use '${fix}'`;
+}
+
+export function errVersionTextOnly(fix: string): string {
+	return `the version line is text; for the machine form use '${fix}'`;
+}
+
+export function errDumpSchemaRemoved(fix: string): string {
+	return `--dump-schema is not supported; the app's help document is printed by '${fix}'`;
+}
+
+export function errHelpDepthMissing(): string {
+	return "help: --depth requires a value";
+}
+
+export function errHelpDepthValue(value: string): string {
+	return `help: --depth: invalid value '${value}': must be an integer of at least 1`;
+}
+
+export function errHelpDepthOnCommand(path: string): string {
+	return `help: --depth lists the command tree below the app or a group; '${path}' is a command`;
+}
+
+export function errHelpUnknownOption(token: string, app: string): string {
+	return `help: unknown option '${token}': help's only option is --depth <int>, and a flag is addressed after its command: '${app} help <command> ${token}'`;
+}
+
+export function errHelpOptionAfterAddress(token: string, fix: string): string {
+	return `help: ${token} is help's own option and goes before the address: '${fix}'`;
+}
+
+export function errHelpFlagOnGroup(token: string, fix: string): string {
+	return `help: '${token}' names a flag, and a flag is addressed after its command: '${fix}'`;
+}
+
+export function errHelpWordAfterCommand(word: string, path: string): string {
+	return `help: '${word}' follows the command '${path}'; only one of its flags may follow a command (--<flag>)`;
+}
+
+export function errHelpAfterFlag(token: string): string {
+	return `help: '${token}' follows the flag address; an address ends at one flag`;
+}
+
+export function errHelpShortAddress(token: string, fix: string): string {
+	return `help: '${token}' is a short form; address the flag by its long name: '${fix}'`;
+}
+
+export function errHelpFlagWithValue(token: string, fix: string): string {
+	return `help: '${token}' carries a value; a flag address is the flag alone: '${fix}'`;
+}
+
+export function errHelpNegatedFlag(token: string, fix: string): string {
+	return `help: '${token}' is another spelling of a declared flag; address the declaration: '${fix}'`;
+}
+
+export function errHelpUnknownFlag(
+	path: string,
+	token: string,
+	flags: string,
+): string {
+	return `command '${path}' has no flag '${token}'; its flags: ${flags}`;
+}
+
+export function errHelpUnknownFlagNoFlags(path: string, token: string): string {
+	return `command '${path}' has no flag '${token}' and declares no flags`;
+}
+
+export function errHelpInGroup(fix: string): string {
+	return `'help' is a framework command at the root: use '${fix}'`;
+}
+
+export function errVersionInGroup(fix: string): string {
+	return `'version' is a framework command at the root: use '${fix}'`;
+}
+
+export function errVersionArgs(token: string): string {
+	return `version takes no arguments, got '${token}'`;
 }

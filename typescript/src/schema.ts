@@ -1,7 +1,7 @@
 /**
- * Schema dump (--dump-schema): builds the machine-readable schema dict and
- * writes .strictcli/schema.json describing every command, group, flag, and
- * arg, at SCHEMA VERSION 2 (contract §25).
+ * The help document (`help --json`): builds the machine-readable schema dict
+ * describing every command, group, flag, and arg, at SCHEMA VERSION 2
+ * (contract §25).
  *
  * Everything about the format is cross-language and pinned: the closed
  * four-keyword `value_schema` fragment and its key order (§25.2), arity as
@@ -12,7 +12,7 @@
  * three keyed blocks that ARE sorted (`deprecated`, `tag_contracts`, `checks`)
  * are sorted because no implementation retains a declaration order for them.
  *
- * The byte canon makes the committed file dumper-independent: a repository
+ * The byte canon makes a committed copy dumper-independent: a repository
  * whose `.strictcli/schema.json` is written sometimes by this implementation
  * and sometimes by the Python or Go one must see a diff exactly when something
  * changed. Numbers are the one place TypeScript needs its own writer -- bigint
@@ -23,22 +23,14 @@
  *
  * The one remaining TS-side delta is not a format rule: dict defaults are
  * emitted with sorted keys (the TS Map display convention). project_id comes
- * from package.json "name" (the ecosystem analog of Python's pyproject.toml
- * [project].name and Go's go.mod module path).
+ * from the "name" of the nearest package.json above the program's entry
+ * script (the analog of Go's main module path in the build information).
  */
 
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
 import type { AppImpl, GroupImpl, RegisteredCommand } from "./app.js";
 import type { ConfigFieldRt } from "./config.js";
 import { resolveConstraints } from "./constraints.js";
 import type { Effect, Forwarding, Grant } from "./effects.js";
-import {
-	errCannotDetermineProjectIDNoName,
-	errCannotDetermineProjectIDNoPackageJson,
-	errCannotDetermineProjectIDReadError,
-	errSchemaMismatch,
-} from "./errors.js";
 import {
 	type AnyArg,
 	type AnyChoice,
@@ -922,39 +914,16 @@ export function dumpSchemaCore(app: AppImpl): Record<string, unknown> {
 
 // --- project_id and the file-writer path (CWD-dependent) ---
 
-/** Reads the project name from package.json in the current working directory. */
-function readProjectId(): string {
-	let raw: string;
-	try {
-		raw = readFileSync("package.json", "utf8");
-	} catch {
-		throw new Error(errCannotDetermineProjectIDNoPackageJson());
-	}
-	let parsed: unknown;
-	try {
-		parsed = JSON.parse(raw);
-	} catch (e) {
-		throw new Error(errCannotDetermineProjectIDReadError((e as Error).message));
-	}
-	const name =
-		typeof parsed === "object" && parsed !== null
-			? (parsed as { name?: unknown }).name
-			: undefined;
-	if (typeof name !== "string" || name === "") {
-		throw new Error(errCannotDetermineProjectIDNoName());
-	}
-	return name;
-}
-
 /**
- * Produces the full schema dict including project_id (reads the CWD).
- * project_id is inserted immediately after defaults so the on-disk layout is
- * stable and byte-identical to the core dict once project_id is removed
- * (Python's _dump_schema layout).
+ * Produces the full schema dict including project_id, inserted immediately
+ * after defaults so the rest of the document is byte-identical to the core
+ * dict (Python's _dump_schema layout). The help command supplies project_id.
  */
-function dumpSchema(app: AppImpl): Record<string, unknown> {
+export function dumpSchema(
+	app: AppImpl,
+	projectId: string,
+): Record<string, unknown> {
 	const core = dumpSchemaCore(app);
-	const projectId = readProjectId();
 	const result: Record<string, unknown> = {};
 	for (const [key, value] of Object.entries(core)) {
 		result[key] = value;
@@ -963,52 +932,4 @@ function dumpSchema(app: AppImpl): Record<string, unknown> {
 		}
 	}
 	return result;
-}
-
-/**
- * Verifies that an existing schema file belongs to the same project. Throws
- * on mismatch. Silently passes on: missing file, unreadable file, JSON
- * without a project_id field, non-string project_id, or matching project_id.
- */
-function checkSchemaProjectId(filePath: string, newProjectId: string): void {
-	let raw: string;
-	try {
-		raw = readFileSync(filePath, "utf8");
-	} catch {
-		return;
-	}
-	let existing: unknown;
-	try {
-		existing = JSON.parse(raw);
-	} catch {
-		return;
-	}
-	if (typeof existing !== "object" || existing === null) {
-		return;
-	}
-	const existingId = (existing as { project_id?: unknown }).project_id;
-	if (typeof existingId !== "string") {
-		return;
-	}
-	if (existingId !== newProjectId) {
-		throw new Error(errSchemaMismatch(existingId, newProjectId));
-	}
-}
-
-/**
- * Writes the schema (2-space indent, trailing newline) to the app's declared
- * location and returns the absolute path. The location is decided once, at
- * construction (`schemaPath`, or the framework's ".strictcli/schema.json"
- * anchored at the construction-time cwd) -- never at the caller's working
- * directory at dump time.
- */
-export function writeSchema(app: AppImpl): string {
-	const schema = dumpSchema(app);
-	const filePath = app.schemaOutPath;
-	mkdirSync(dirname(filePath), { recursive: true });
-	checkSchemaProjectId(filePath, schema.project_id as string);
-	writeFileSync(filePath, `${schemaJson(schema)}\n`);
-	// A framework-blessed CACHE_WRITE (the closed list of three sites).
-	app.recordCacheWrite(resolve(filePath));
-	return resolve(filePath);
 }

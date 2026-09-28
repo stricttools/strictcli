@@ -329,10 +329,16 @@ test("a parse error after the machine flag emits an envelope", async () => {
 	assert.ok(r.stderr.includes("unknown flag '--nope'"));
 });
 
-test("help beats machine mode and emits no envelope", async () => {
+test("the --help flag under machine mode is refused naming the help command", async () => {
 	const r = await plainApp().test(["--json", "run", "--help"]);
-	assert.equal(r.exitCode, 0);
-	assert.ok(!r.stdout.includes("interface_version"));
+	assert.equal(r.exitCode, 1);
+	assert.ok(
+		r.stderr.startsWith(
+			`error: help pages are text; for the machine form use '${plainApp().name} help run --json'\n`,
+		),
+		r.stderr,
+	);
+	assert.equal((await plainApp().test(["help", "run", "--json"])).exitCode, 0);
 });
 
 test("the envelope's preview agrees with the effect log", async () => {

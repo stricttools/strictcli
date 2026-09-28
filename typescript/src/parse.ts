@@ -35,12 +35,14 @@ import {
 	errConfigValueDuplicate,
 	errConfigValueError,
 	errDryRunNotSupported,
+	errDumpSchemaRemoved,
 	errFlagRequired,
 	errFlagRequiresFlag,
 	errFlagRequiresValue,
 	errFlagSetInBothAndConfig,
 	errFlagSetInBothCliAndConfig,
 	errFlagValueError,
+	errHelpTextOnly,
 	errHermeticConfigMutuallyExclusive,
 	errHermeticWithConfigCommands,
 	errImpliesConflict,
@@ -50,6 +52,7 @@ import {
 	errUnexpectedArgument,
 	errUnknownFlag,
 	errUpdateValueAndUnset,
+	errVersionTextOnly,
 	ParseError,
 } from "./errors.js";
 import {
@@ -69,6 +72,10 @@ import {
 	schemaKind,
 	unsetFlagName,
 } from "./factories.js";
+import {
+	dispatchFrameworkCommand,
+	type FrameworkCommandResult,
+} from "./help_command.js";
 import { isInfraRootPath, resolveInfraRootPath } from "./infra.js";
 import { resolveCommand } from "./routing.js";
 import {
@@ -1735,6 +1742,18 @@ export function preScanReservedFlags(
 		if (tok === "--dump-schema") {
 			return { ...done(), dumpSchema: true };
 		}
+		// --help and --version (and their shorts) are answered after the scan;
+		// stepping over them keeps a quartet token that follows them in view,
+		// so `app --help --json` is refused rather than misrouted.
+		if (
+			tok === "--help" ||
+			tok === "-h" ||
+			tok === "--version" ||
+			tok === "-v"
+		) {
+			i++;
+			continue;
+		}
 		if (tok === "--mcp") {
 			return { ...done(), serveMcp: true };
 		}
@@ -1959,7 +1978,19 @@ export type HelpTarget =
 export type ParseOutcome =
 	| { readonly kind: "help"; readonly target: HelpTarget }
 	| { readonly kind: "version"; readonly text: string }
-	| { readonly kind: "dump-schema" }
+	/** A page the help or version command rendered. */
+	| { readonly kind: "page"; readonly text: string }
+	/**
+	 * The machine form of the help or version command: the document goes to
+	 * stdout and the --json document to stderr, as for a command that owns
+	 * stdout (§19.6).
+	 */
+	| {
+			readonly kind: "framework-document";
+			readonly document: string;
+			readonly command: string;
+			readonly reserved: ReservedFlags;
+	  }
 	| { readonly kind: "lint-framework-use" }
 	| { readonly kind: "mcp" }
 	| {
@@ -2042,8 +2073,8 @@ function parseErrorOutcome(
 
 /**
  * Parses argv (without program name) into a ParseOutcome. Exactly one variant
- * applies: help, version, dump-schema, mcp, parse-error, command, or
- * passthrough.
+ * applies: help, version, page, framework-document, lint-framework-use, mcp,
+ * parse-error, command, or passthrough.
  */
 export function doParse(
 	app: AppImpl,
@@ -2083,7 +2114,11 @@ export function doParse(
 
 	const pre = preScanReservedFlags(app, argv);
 	if (pre.dumpSchema) {
-		return { kind: "dump-schema" };
+		return {
+			kind: "parse-error",
+			message: errDumpSchemaRemoved(`${app.name} help --json`),
+			reserved: reservedFlagsOf(pre),
+		};
 	}
 	if (pre.serveMcp) {
 		return { kind: "mcp" };
@@ -2145,15 +2180,53 @@ export function doParse(
 		rest = rest.slice(1);
 	}
 
-	// After extracting globals, check for help/version again
+	// After extracting globals, check for help/version again. Both flags are
+	// text only: under --json the refusal names the command that prints the
+	// machine form.
 	if (
 		rest.length === 0 ||
 		(rest.length === 1 && (rest[0] === "--help" || rest[0] === "-h"))
 	) {
+		if (pre.json) {
+			return {
+				kind: "parse-error",
+				message: errHelpTextOnly(`${app.name} help --json`),
+				reserved: reservedFlagsOf(pre),
+			};
+		}
 		return { kind: "help", target: { level: "app" } };
 	}
 	if (rest.length === 1 && (rest[0] === "--version" || rest[0] === "-v")) {
+		if (pre.json) {
+			return {
+				kind: "parse-error",
+				message: errVersionTextOnly(`${app.name} version --json`),
+				reserved: reservedFlagsOf(pre),
+			};
+		}
 		return { kind: "version", text: `${app.name} ${app.version}` };
+	}
+
+	// The framework's own commands, help and version, as the first word.
+	let framework: FrameworkCommandResult | undefined;
+	try {
+		framework = dispatchFrameworkCommand(app, rest, pre.json);
+	} catch (e) {
+		return parseErrorOutcome(
+			e,
+			reservedFlagsOf(pre),
+			`${app.name} ${rest[0] as string}`,
+		);
+	}
+	if (framework !== undefined) {
+		return framework.kind === "page"
+			? { kind: "page", text: framework.text }
+			: {
+					kind: "framework-document",
+					document: framework.document,
+					command: framework.command,
+					reserved: reservedFlagsOf(pre),
+				};
 	}
 
 	const route = resolveCommand(app, rest);
@@ -2168,6 +2241,15 @@ export function doParse(
 		};
 	}
 	if (route.helpAtGroup) {
+		if (pre.json) {
+			return {
+				kind: "parse-error",
+				message: errHelpTextOnly(
+					[app.name, "help", ...route.path, "--json"].join(" "),
+				),
+				reserved: reservedFlagsOf(pre),
+			};
+		}
 		return {
 			kind: "help",
 			target: {
@@ -2185,6 +2267,15 @@ export function doParse(
 
 	// Command-level --help anywhere in remaining tokens (before any "--")
 	if (tokensContainHelp(cmdRest)) {
+		if (pre.json) {
+			return {
+				kind: "parse-error",
+				message: errHelpTextOnly(
+					[app.name, "help", ...path, cmd.name, "--json"].join(" "),
+				),
+				reserved: reservedFlagsOf(pre),
+			};
+		}
 		return { kind: "help", target: { level: "command", cmd, path } };
 	}
 

@@ -69,23 +69,65 @@ function commandsSection(
 	}
 }
 
-export function formatAppHelp(app: AppImpl): string {
+/**
+ * Lists the visible commands and groups within `depth` levels below one node,
+ * depth-first in declaration order: the node's own commands, then each group
+ * followed by what it holds. Level 1 is the node's own children, which is all
+ * --help lists.
+ */
+function collectHelpTree(
+	commands: ReadonlyMap<string, RegisteredCommand>,
+	groups: ReadonlyMap<string, GroupImpl>,
+	prefix: string,
+	level: number,
+	depth: number,
+	commandsOut: [string, string][],
+	groupsOut: [string, string][],
+): void {
+	for (const c of commands.values()) {
+		if (!c.hidden) {
+			commandsOut.push([prefix + c.name, c.help]);
+		}
+	}
+	for (const g of groups.values()) {
+		if (g.hidden) {
+			continue;
+		}
+		groupsOut.push([prefix + g.name, g.help]);
+		if (level < depth) {
+			collectHelpTree(
+				g.commands,
+				g.groups,
+				`${prefix}${g.name} `,
+				level + 1,
+				depth,
+				commandsOut,
+				groupsOut,
+			);
+		}
+	}
+}
+
+/**
+ * The app's help page listing `depth` levels of its command tree; depth 1 is
+ * the page --help shows.
+ */
+export function formatAppHelp(app: AppImpl, depth = 1): string {
 	const lines: string[] = [`${app.name} v${app.version} -- ${app.help}`];
 
-	commandsSection(
-		lines,
-		"Commands:",
-		[...app.commands.values()]
-			.filter((c) => !c.hidden)
-			.map((c) => [c.name, c.help] as const),
+	const commandRows: [string, string][] = [];
+	const groupRows: [string, string][] = [];
+	collectHelpTree(
+		app.commands,
+		app.groups,
+		"",
+		1,
+		depth,
+		commandRows,
+		groupRows,
 	);
-	commandsSection(
-		lines,
-		"Groups:",
-		[...app.groups.values()]
-			.filter((g) => !g.hidden)
-			.map((g) => [g.name, g.help] as const),
-	);
+	commandsSection(lines, "Commands:", commandRows);
+	commandsSection(lines, "Groups:", groupRows);
 	commandsSection(
 		lines,
 		"Deprecated:",
@@ -138,32 +180,33 @@ export function formatAppHelp(app: AppImpl): string {
 		lines.push(...twoColumn(rows));
 	}
 
-	lines.push("", `Use '${app.name} <command> --help' for more information.`);
+	lines.push("", `Use '${app.name} help <command>' for more information.`);
 	return lines.join("\n");
 }
 
+/** A group's help page listing `depth` levels below it. */
 export function formatGroupHelp(
 	app: AppImpl,
 	group: GroupImpl,
 	path: readonly string[],
+	depth = 1,
 ): string {
 	const fullPath = path.join(" ");
 	const lines: string[] = [`${app.name} ${fullPath} -- ${group.help}`];
 
-	commandsSection(
-		lines,
-		"Commands:",
-		[...group.commands.values()]
-			.filter((c) => !c.hidden)
-			.map((c) => [c.name, c.help] as const),
+	const commandRows: [string, string][] = [];
+	const groupRows: [string, string][] = [];
+	collectHelpTree(
+		group.commands,
+		group.groups,
+		"",
+		1,
+		depth,
+		commandRows,
+		groupRows,
 	);
-	commandsSection(
-		lines,
-		"Groups:",
-		[...group.groups.values()]
-			.filter((g) => !g.hidden)
-			.map((g) => [g.name, g.help] as const),
-	);
+	commandsSection(lines, "Commands:", commandRows);
+	commandsSection(lines, "Groups:", groupRows);
 	commandsSection(
 		lines,
 		"Deprecated:",
@@ -172,7 +215,7 @@ export function formatGroupHelp(
 
 	lines.push(
 		"",
-		`Use '${app.name} ${fullPath} <command> --help' for more information.`,
+		`Use '${app.name} help ${fullPath} <command>' for more information.`,
 	);
 	return lines.join("\n");
 }
@@ -425,6 +468,80 @@ function selectorBlockRows(sel: AnyChoiceFlag, depth: number): FlagBlockRow[] {
 		}
 	}
 	return rows;
+}
+
+/**
+ * The flag block's rows a one-flag help page shows: the declarations of that
+ * name, with the selector and choice lines above a scoped one, each rendered
+ * exactly as the whole page renders it.
+ */
+function declBlockRowsFor(
+	decl: AnyDecl,
+	depth: number,
+	name: string,
+): FlagBlockRow[] {
+	if (decl.kind !== "choice-flag") {
+		return decl.name === name ? declBlockRows(decl, depth) : [];
+	}
+	const member = decl.electBy === "member-flags";
+	if (!member && decl.name === name) {
+		return selectorBlockRows(decl, depth);
+	}
+	const pad = SCOPE_INDENT.repeat(depth);
+	const sub: FlagBlockRow[] = [];
+	for (const [choiceName, c] of Object.entries(decl.choices)) {
+		const choiceRow: FlagBlockRow = member
+			? {
+					left: `${pad}${SCOPE_INDENT}${buildMemberSpec(choiceName, c)}`,
+					right: `${c.help} [required]`,
+				}
+			: { left: `${pad}${SCOPE_INDENT}${choiceName}`, right: c.help };
+		if (member && choiceName === name) {
+			sub.push(choiceRow);
+			for (const inner of Object.values(c.flags)) {
+				sub.push(...declBlockRows(inner, depth + 2));
+			}
+			continue;
+		}
+		const inner = Object.values(c.flags).flatMap((d) =>
+			declBlockRowsFor(d, depth + 2, name),
+		);
+		if (inner.length > 0) {
+			sub.push(choiceRow, ...inner);
+		}
+	}
+	if (sub.length === 0) {
+		return [];
+	}
+	return [selectorBlockRows(decl, depth)[0] as FlagBlockRow, ...sub];
+}
+
+/**
+ * The one-flag help page: the command's header line, then the section holding
+ * the flag, as the command's page renders it.
+ */
+export function formatFlagHelp(
+	app: AppImpl,
+	cmd: RegisteredCommand,
+	prefix: string,
+	name: string,
+	isGlobal: boolean,
+): string {
+	const lines: string[] = [`${app.name} ${prefix}${cmd.name} -- ${cmd.help}`];
+	if (isGlobal) {
+		const f = app.globalFlags.find((g) => g.name === name);
+		if (f !== undefined) {
+			lines.push("", "Global flags:", ...twoColumn(flagRows([f])));
+		}
+		return lines.join("\n");
+	}
+	const decls = cmd.def.kind === "passthrough" ? [] : cmd.def.allDecls;
+	lines.push(
+		"",
+		"Flags:",
+		...renderBlock(decls.flatMap((d) => declBlockRowsFor(d, 0, name))),
+	);
+	return lines.join("\n");
 }
 
 /**
