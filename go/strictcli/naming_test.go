@@ -204,3 +204,7 @@ func TestNaming_FrameworkCommandNamesReserved(t *testing.T) {
 	app.Command("show-help", "x", roHandler, WithEffect(EffectReadOnly))
 	app.Group("versions", "g").Command("list", "x", roHandler, WithEffect(EffectReadOnly))
 }
+
+func TestNaming_EmptyShortIsNoShort(t *testing.T) {
+	StringFlag("device", "help text", Required(), Short(""))
+}

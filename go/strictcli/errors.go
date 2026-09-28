@@ -2183,6 +2183,10 @@ func errLintEnvironmentRead(construct string) string {
 
 const errLintExitNowInGoroutine = "strictcli.ExitNow inside a function literal started by a go statement is not recovered by the exit step; start the function with strictcli.Go"
 
+// ---------------------------------------------------------------------------
+// strictcli.go — the naming rule and the framework-command reservation
+// ---------------------------------------------------------------------------
+
 // kebabNameClause is the clause every naming-rule refusal ends in: one rule for
 // every identifier a caller types or references (commands, groups, long flags,
 // choices, constraints, tags, checks, hooks, grants, resources, requirements).

@@ -4560,11 +4560,14 @@ def _is_short_form(short: object) -> bool:
 
 
 def _check_short_form(name: str, short: object) -> None:
-    if short is not None and not _is_short_form(short):
+    """An empty short is no short, as in the other implementations."""
+    if short is not None and short != "" and not _is_short_form(short):
         raise ValueError(
             f'Flag "{name}": short form "{short}" must be one ASCII letter '
             f"(a-z or A-Z)"
         )
+
+
 _CHECK_REQUIRED_FIELDS = {
     "tags", "severity", "fast", "pure", "needs_network", "depends_on",
     "description", "subject",
@@ -7387,6 +7390,7 @@ def _build_choice_spec(
             _raise_token_choice_carries_short(sel_name, decl.name)
         if payload is not None:
             _raise_member_short_on_payload_choice(sel_name, decl.name)
+        _check_short_form(decl.name, decl.short)
     short = decl.short if payload is None else payload.short
 
     return _ChoiceSpec(

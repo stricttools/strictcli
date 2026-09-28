@@ -304,3 +304,31 @@ def test_framework_command_names_are_reserved_at_every_level(name):
     app = _app()
     _command(app, "show-help")
     _command(app.group("versions", help="g"), "list")
+
+
+@pytest.mark.parametrize("short", ["1", "ab", "é"])
+def test_a_member_choice_short_is_one_ascii_letter(short):
+    @choice("work", help="the work profile", short=short)
+    class Work:
+        pass
+
+    @choice("home", help="the home profile")
+    class Home:
+        pass
+
+    app = _app()
+    with pytest.raises(ValueError) as exc:
+
+        @app.command("run", help="run", effect="read_only")
+        @choice_flag("profile", help="which profile", presence="required",
+                     elect_by="member-flags", choices=[Work, Home])
+        def run(ctx, profile: Work | Home):
+            return 0
+
+    assert str(exc.value) == (
+        f'Flag "work": short form "{short}" must be one ASCII letter (a-z or A-Z)'
+    )
+
+
+def test_an_empty_short_is_no_short():
+    strictcli.Flag(name="device", type=str, help="h", presence="required", short="")
