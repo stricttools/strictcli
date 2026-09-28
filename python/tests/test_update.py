@@ -1075,9 +1075,7 @@ def test_a_nullable_bool_renders_all_three_spellings():
 
 
 def _dump(app, tmp_path):
-    (tmp_path / "pyproject.toml").write_text('[project]\nname = "testproject"\n')
-    app.test(["--dump-schema"])
-    return (tmp_path / ".strictcli" / "schema.json").read_text()
+    return app.test(["help", "--json"]).stdout
 
 
 def test_the_dump_publishes_the_update_pair_and_nullable(tmp_path, monkeypatch):

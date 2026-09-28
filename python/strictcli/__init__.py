@@ -962,8 +962,8 @@ class Context:
 # ---------------------------------------------------------------------------
 
 # Effect kinds. CACHE_WRITE has NO public method: it is minted only by
-# framework-internal code (schema dump, test-coverage shards and manifest) and
-# is unreachable from application code.
+# framework-internal code (the test-coverage shards and manifest) and is
+# unreachable from application code.
 PROC_MUTATE = "proc_mutate"
 PROC_SPAWN = "proc_spawn"
 FILE_WRITE = "file_write"
@@ -4829,10 +4829,6 @@ class _VersionRequested(Exception):
     """Raised when --version or -v is encountered."""
 
 
-class _DumpSchemaRequested(Exception):
-    """Raised when --dump-schema is encountered."""
-
-
 class _McpRequested(Exception):
     """Raised when --mcp is encountered."""
 
@@ -5312,7 +5308,7 @@ def _raise_arg_name_consent_reserved():
 
 # The three facts every flag and every positional arg declares about itself.
 # These are the RESOLVED values carried on Flag.presence / Arg.presence and
-# published by --dump-schema; the declaration surface is `presence="required"`,
+# published by the help document; the declaration surface is `presence="required"`,
 # `presence="optional"` and `default=<value>` (contract §23.2, §23.3).
 _PRESENCE_REQUIRED = "required"
 _PRESENCE_OPTIONAL = "optional"
@@ -9291,7 +9287,7 @@ class Command:
     owns_stdout: bool = False
     # The declared rendering of the payload (contract §19.10): human mode
     # prints it at the exit step; machine mode never calls it. Code, not
-    # data, so --dump-schema does not publish it.
+    # data, so the help document does not publish it.
     payload_renderer: "Callable[[Any], str] | None" = None
     flags: tuple[Flag, ...] = ()
     args: tuple[Arg, ...] = ()
@@ -10138,13 +10134,6 @@ class App:
     env_prefix: str | None = None
     config: bool = False
     config_path: str | None = None
-    # Where --dump-schema writes. A plain path (absolute, or relative to the
-    # App's construction-time working directory) or a RelativeToRoot marker
-    # resolved through a declared infra root. When undeclared, the framework's
-    # own location applies: ".strictcli/schema.json" ANCHORED at the
-    # construction-time working directory, so a chdir between construction and
-    # dispatch can no longer redirect the write into the caller's cwd.
-    schema_path: str | None = None
     config_format: str = "json"
     config_conflict_mode: str = "cli-wins"
     no_default_config_path: bool = False
@@ -10309,18 +10298,6 @@ class App:
         self._config_path_declared: object = self.config_path
         if isinstance(self.config_path, RelativeToRoot):
             self.config_path = _resolve_infra_root_path(self.config_path, self._infra_roots)
-        # Resolve the schema-dump location once, at construction: a declared
-        # marker through its root, a declared relative path and the framework's
-        # own default against the construction-time cwd.
-        if isinstance(self.schema_path, RelativeToRoot):
-            self.schema_path = _resolve_infra_root_path(
-                self.schema_path, self._infra_roots,
-            )
-        self._schema_out_path: str = os.path.abspath(
-            self.schema_path
-            if self.schema_path is not None
-            else os.path.join(".strictcli", "schema.json")
-        )
         # Validate global flag default markers against declared roots and
         # connection-URL bindings against declared connection envs.
         for f in self._global_flags:
@@ -10746,12 +10723,11 @@ class App:
     def dump_schema_dict(self) -> dict:
         """Return the app's full schema as a dict, excluding ``project_id``.
 
-        This is the public, CWD-free accessor for the schema. Unlike the
-        ``--dump-schema`` flag (which writes ``.strictcli/schema.json`` and
-        derives ``project_id`` from ``pyproject.toml`` in the current working
-        directory), this method reads only the in-memory ``App`` and performs
-        no filesystem or CWD access. The returned dict is byte-identical to the
-        written schema file with the ``project_id`` field removed.
+        This is the public accessor for the help document of the whole app.
+        Unlike ``<app> help --json`` (which adds ``project_id`` from where the
+        program's own code lives), this method reads only the in-memory
+        ``App``. The returned dict is that document with the ``project_id``
+        field removed.
         """
         return _dump_schema_core(self)
 
@@ -11676,8 +11652,8 @@ class App:
     def _record_cache_write(self, path: str) -> None:
         """Record a framework-blessed CACHE_WRITE.
 
-        The closed list of sites is exactly three: the schema dump, the
-        test-coverage shards, and the test-coverage manifest. CACHE_WRITEs have
+        The closed list of sites: the test-coverage shards and the
+        test-coverage manifest. CACHE_WRITEs have
         no public method, never appear in the would-do log, never trip
         read-only enforcement, and EXECUTE even in dry mode -- which is why
         they always carry ``recorded: false``.
@@ -12238,6 +12214,13 @@ class App:
                 result["dump_schema"] = True
                 return result
 
+            # --help and --version (and their shorts) are answered after the
+            # scan; stepping over them keeps a quartet token that follows them
+            # in view, so `app --help --json` is refused rather than misrouted.
+            if tok in ("--help", "-h", "--version", "-v"):
+                i += 1
+                continue
+
             # --mcp
             if tok == "--mcp":
                 result["serve_mcp"] = True
@@ -12432,7 +12415,10 @@ class App:
         self._last_verbose = bool(pre_scan.get("verbose"))
 
         if pre_scan.get("dump_schema"):
-            raise _DumpSchemaRequested()
+            raise _ParseError(
+                f"--dump-schema is not supported; the app's help document is "
+                f"printed by '{self.name} help --json'"
+            )
         if pre_scan.get("serve_mcp"):
             raise _McpRequested()
         if pre_scan.get("lint_framework_use"):
@@ -12488,15 +12474,46 @@ class App:
         if remaining and remaining[0] == "--":
             remaining = remaining[1:]
 
+        # Both help and version flags are text only: under --json the refusal
+        # names the command that prints the machine form.
         if not remaining or remaining == ["--help"] or remaining == ["-h"]:
+            if self._last_json:
+                raise _ParseError(
+                    f"help pages are text; for the machine form use "
+                    f"'{self.name} help --json'"
+                )
             raise _HelpRequested(target=self)
+        if remaining == ["--version"] or remaining == ["-v"]:
+            if self._last_json:
+                raise _ParseError(
+                    f"the version line is text; for the machine form use "
+                    f"'{self.name} version --json'"
+                )
+            raise _VersionRequested()
 
-        cmd, rest, path = self._resolve_command(remaining)
+        # The framework's own commands, help and version, as the first word.
+        self._dispatch_framework_command(remaining)
+
+        try:
+            cmd, rest, path = self._resolve_command(remaining)
+        except _HelpRequested as e:
+            if self._last_json:
+                group_path = _find_group_path(self, e.target)
+                raise _ParseError(
+                    f"help pages are text; for the machine form use "
+                    f"'{self._help_line(*group_path, '--json')}'"
+                ) from None
+            raise
         self._last_resolved_path = path
 
         # Check for command-level --help/-h anywhere in remaining tokens
         # (but not after "--" separator, which makes everything literal)
         if _tokens_contain_help(rest):
+            if self._last_json:
+                raise _ParseError(
+                    f"help pages are text; for the machine form use "
+                    f"'{self._help_line(*path, cmd.name, '--json')}'"
+                )
             raise _HelpRequested(target=cmd)
 
         # A command that declares dry_run_supported=False refuses --dry-run
@@ -12630,6 +12647,20 @@ class App:
                 dep = current_deprecated[token]
                 raise _ParseError(
                     f"command '{token}' is deprecated: {dep.message}"
+                )
+
+            # help and version are framework commands at the root only; their
+            # names are reserved at every level, so inside a group they point
+            # at the root.
+            if path and token == "help":
+                raise _ParseError(
+                    f"'help' is a framework command at the root: use "
+                    f"'{self._help_line(*path)}'"
+                )
+            if path and token == "version":
+                raise _ParseError(
+                    f"'version' is a framework command at the root: use "
+                    f"'{self.name} version'"
                 )
 
             # Unknown command -- include path in error message
@@ -12942,6 +12973,195 @@ class App:
 
         return cli_set, global_sources, remaining
 
+    def _help_line(self, *words: str) -> str:
+        return " ".join([self.name, "help", *words])
+
+    def _parse_help_command(self, args: list[str]) -> _HelpRequest:
+        """Parse the words after `help`: help's own options, then the address."""
+        req = _HelpRequest()
+        for tok in args:
+            if tok == "--":
+                break
+            if tok in ("--help", "-h"):
+                return _HelpRequest(own=True)
+        i = 0
+        while i < len(args) and args[i].startswith("-"):
+            tok = args[i]
+            if tok == "--depth":
+                if i + 1 >= len(args):
+                    raise _ParseError("help: --depth requires a value")
+                n = _parse_help_depth(args[i + 1])
+                if n is None:
+                    raise _ParseError(
+                        f"help: --depth: invalid value '{args[i + 1]}': must be an "
+                        f"integer of at least 1"
+                    )
+                req.depth = n
+                i += 2
+            elif tok.startswith("--depth="):
+                value = tok[len("--depth="):]
+                n = _parse_help_depth(value)
+                if n is None:
+                    raise _ParseError(
+                        f"help: --depth: invalid value '{value}': must be an "
+                        f"integer of at least 1"
+                    )
+                req.depth = n
+                i += 1
+            elif any(tok == f"--{g.name}" for g in self._global_flags):
+                raise _ParseError(
+                    f"help: '{tok}' names a flag, and a flag is addressed after its "
+                    f"command: '{self._help_line('<command>', tok)}'"
+                )
+            else:
+                raise _ParseError(
+                    f"help: unknown option '{tok}': help's only option is --depth "
+                    f"<int>, and a flag is addressed after its command: "
+                    f"'{self.name} help <command> {tok}'"
+                )
+        groups, commands, deprecated = self._groups, self._commands, self._deprecated
+        while i < len(args):
+            tok = args[i]
+            i += 1
+            if req.cmd is not None:
+                if req.flag:
+                    raise _ParseError(
+                        f"help: '{tok}' follows the flag address; an address ends "
+                        f"at one flag"
+                    )
+                if not tok.startswith("-"):
+                    raise _ParseError(
+                        f"help: '{tok}' follows the command '{' '.join(req.address)}'; "
+                        f"only one of its flags may follow a command (--<flag>)"
+                    )
+                self._resolve_help_flag(req, tok)
+                continue
+            if tok.startswith("-"):
+                if tok == "--depth" or tok.startswith("--depth="):
+                    raise _ParseError(
+                        f"help: --depth is help's own option and goes before the "
+                        f"address: '{self._help_line('--depth', '<int>', *req.address)}'"
+                    )
+                raise _ParseError(
+                    f"help: '{tok}' names a flag, and a flag is addressed after its "
+                    f"command: '{self._help_line(*req.address, '<command>', tok)}'"
+                )
+            if tok in groups:
+                grp = groups[tok]
+                req.group_path.append(tok)
+                req.address.append(tok)
+                req.group = grp
+                groups, commands, deprecated = grp._groups, grp.commands, grp.deprecated
+                continue
+            if tok in commands:
+                req.cmd = commands[tok]
+                req.group = None
+                req.address.append(tok)
+                continue
+            if tok in deprecated:
+                raise _ParseError(
+                    f"command '{tok}' is deprecated: {deprecated[tok].message}"
+                )
+            if req.group_path:
+                raise _ParseError(
+                    f"unknown command '{tok}' in '{' '.join(req.group_path)}'"
+                )
+            raise _ParseError(f"unknown command '{tok}'")
+        if req.cmd is not None and req.depth:
+            raise _ParseError(
+                f"help: --depth lists the command tree below the app or a group; "
+                f"'{' '.join(req.address)}' is a command"
+            )
+        return req
+
+    def _resolve_help_flag(self, req: _HelpRequest, tok: str) -> None:
+        path = " ".join(req.address)
+
+        def fix(name: str) -> str:
+            return self._help_line(*req.address, f"--{name}")
+
+        typed = _typed_flag_names(req.cmd.members) + [g.name for g in self._global_flags]
+
+        def unknown() -> _ParseError:
+            if not typed:
+                return _ParseError(
+                    f"command '{path}' has no flag '{tok}' and declares no flags"
+                )
+            listed = ", ".join(f"--{n}" for n in typed)
+            return _ParseError(f"command '{path}' has no flag '{tok}'; its flags: {listed}")
+
+        if not tok.startswith("--"):
+            long = _short_owner(req.cmd.members, self._global_flags, tok[1:])
+            if long:
+                raise _ParseError(
+                    f"help: '{tok}' is a short form; address the flag by its long "
+                    f"name: '{fix(long)}'"
+                )
+            raise unknown()
+        name = tok[2:]
+        if "=" in name:
+            base = name[:name.index("=")]
+            if base in typed:
+                raise _ParseError(
+                    f"help: '{tok}' carries a value; a flag address is the flag "
+                    f"alone: '{fix(base)}'"
+                )
+            raise unknown()
+        if name in typed:
+            req.flag = name
+            req.address.append(tok)
+            req.is_global = name not in _typed_flag_names(req.cmd.members)
+            return
+        for prefix in ("no-", _unset_flag_name("")):
+            if name.startswith(prefix) and name[len(prefix):] in typed:
+                raise _ParseError(
+                    f"help: '{tok}' is another spelling of a declared flag; address "
+                    f"the declaration: '{fix(name[len(prefix):])}'"
+                )
+        raise unknown()
+
+    def _dispatch_framework_command(self, remaining: list[str]) -> None:
+        """Handle `help` and `version` as the first command word, by raising
+        the outcome; return when ``remaining`` names neither."""
+        if not remaining or remaining[0] not in ("help", "version"):
+            return
+        if remaining[0] == "help":
+            prefix = f"{self.name} help"
+            try:
+                req = self._parse_help_command(remaining[1:])
+            except _ParseError as e:
+                e.command_prefix = prefix
+                raise
+            if req.own or not self._last_json:
+                if self._last_json:
+                    raise _ParseError(
+                        f"help pages are text; for the machine form use "
+                        f"'{prefix} --json'", command_prefix=prefix,
+                    )
+                raise _HelpPageRequested(_help_text(self, req))
+            try:
+                document = _help_document(self, req)
+            except RuntimeError as e:
+                raise _ParseError(str(e), command_prefix=prefix) from e
+            raise _FrameworkDocumentRequested(document, "help")
+        prefix = f"{self.name} version"
+        if any(tok in ("--help", "-h") for tok in remaining[1:]):
+            if self._last_json:
+                raise _ParseError(
+                    f"help pages are text; for the machine form use "
+                    f"'{self.name} help --json'", command_prefix=prefix,
+                )
+            raise _HelpPageRequested(_format_version_own_page(self))
+        if len(remaining) > 1:
+            raise _ParseError(
+                f"version takes no arguments, got '{remaining[1]}'",
+                command_prefix=prefix,
+            )
+        if not self._last_json:
+            raise _HelpPageRequested(_format_version(self))
+        document = _canonical_json({"name": self.name, "version": self.version}) + "\n"
+        raise _FrameworkDocumentRequested(document, "version")
+
     def _find_command_prefix(self, cmd: Command) -> str:
         """Find the group prefix for a command (for help formatting).
 
@@ -12981,7 +13201,7 @@ class App:
     def _dispatch(self, argv: list[str], out, err, mode: str) -> "_DispatchResult":
         """The single dispatch seam shared by ``run()`` and ``test()``.
 
-        Parses, renders the pre-dispatch outcomes (help, version, schema dump,
+        Parses, renders the pre-dispatch outcomes (help, version, the help document,
         MCP, parse errors), executes the handler and finishes through the ONE
         ordered exit step (:meth:`_finish_dispatch`), which owns the payload,
         the would-do log and the exit code on every path out of the handler.
@@ -13021,13 +13241,16 @@ class App:
         except _VersionRequested:
             print(_format_version(self), file=out)
             return _DispatchResult(0)
-        except _DumpSchemaRequested:
-            try:
-                path = _write_schema(self)
-            except RuntimeError as e:
-                print(f"error: {e}", file=err)
-                return _DispatchResult(1)
-            print(path, file=out)
+        except _HelpPageRequested as e:
+            print(e.text, file=out)
+            return _DispatchResult(0)
+        except _FrameworkDocumentRequested as e:
+            out.write(e.document)
+            self._emit_envelope(
+                err, command=e.command, exit_code=0,
+                dry_run=self._last_dry_run, payload=_MISSING,
+                preview=[], preview_error=None, diagnostics=[],
+            )
             return _DispatchResult(0)
         except _LintFrameworkUseRequested:
             return _run_framework_use_lint(self, out, err)
@@ -17353,31 +17576,49 @@ def _format_version(app: App) -> str:
     return f"{app.name} {app.version}"
 
 
-def _format_app_help(app: App) -> str:
-    """Format app-level help shown when the user runs 'myapp --help'."""
+def _collect_help_tree(
+    commands: dict, groups: dict, prefix: str, level: int, depth: int,
+    commands_out: list[tuple[str, str]], groups_out: list[tuple[str, str]],
+) -> None:
+    """List the visible commands and groups within ``depth`` levels below one
+    node, depth-first in declaration order: the node's own commands, then each
+    group followed by what it holds. Level 1 is the node's own children, which
+    is all --help lists."""
+    for name, cmd in commands.items():
+        if not cmd.hidden:
+            commands_out.append((prefix + name, cmd.help))
+    for name, grp in groups.items():
+        if grp.hidden:
+            continue
+        groups_out.append((prefix + name, grp.help))
+        if level < depth:
+            _collect_help_tree(
+                grp.commands, grp._groups, prefix + name + " ", level + 1,
+                depth, commands_out, groups_out,
+            )
+
+
+def _help_tree_section(title: str, rows: list[tuple[str, str]]) -> list[str]:
+    """One titled section of rows, aligned on its own column, or nothing."""
+    if not rows:
+        return []
+    max_len = max(len(path) for path, _ in rows)
+    lines = ["", title]
+    for path, text in rows:
+        lines.append(f"  {path}{' ' * (max_len - len(path) + 4)}{text}")
+    return lines
+
+
+def _format_app_help(app: App, depth: int = 1) -> str:
+    """Format app-level help: what 'myapp --help' shows at depth 1, and the
+    command tree to ``depth`` levels for 'myapp help --depth N'."""
     lines: list[str] = [f"{app.name} v{app.version} -- {app.help}"]
 
-    visible_commands = {n: c for n, c in app._commands.items() if not c.hidden}
-    if visible_commands:
-        lines.append("")
-        lines.append("Commands:")
-        names = list(visible_commands.keys())
-        max_len = max(len(n) for n in names)
-        for name in names:
-            cmd = visible_commands[name]
-            padding = max_len - len(name) + 4
-            lines.append(f"  {name}{' ' * padding}{cmd.help}")
-
-    visible_groups = {n: g for n, g in app._groups.items() if not g.hidden}
-    if visible_groups:
-        lines.append("")
-        lines.append("Groups:")
-        names = list(visible_groups.keys())
-        max_len = max(len(n) for n in names)
-        for name in names:
-            grp = visible_groups[name]
-            padding = max_len - len(name) + 4
-            lines.append(f"  {name}{' ' * padding}{grp.help}")
+    command_rows: list[tuple[str, str]] = []
+    group_rows: list[tuple[str, str]] = []
+    _collect_help_tree(app._commands, app._groups, "", 1, depth, command_rows, group_rows)
+    lines.extend(_help_tree_section("Commands:", command_rows))
+    lines.extend(_help_tree_section("Groups:", group_rows))
 
     if app._deprecated:
         lines.append("")
@@ -17420,12 +17661,14 @@ def _format_app_help(app: App) -> str:
             lines.append(f"  {ev}{' ' * padding}connection URL, suppressed by --hermetic ({app._connection_envs[ev]})")
 
     lines.append("")
-    lines.append(f"Use '{app.name} <command> --help' for more information.")
+    lines.append(f"Use '{app.name} help <command>' for more information.")
 
     return "\n".join(lines)
 
 
-def _format_group_help(app: App, group: Group, path: list[str] | None = None) -> str:
+def _format_group_help(
+    app: App, group: Group, path: list[str] | None = None, depth: int = 1,
+) -> str:
     """Format group-level help shown when the user runs 'myapp group --help'.
 
     ``path`` is the list of group names leading to this group (e.g. ['dns', 'zone']).
@@ -17436,27 +17679,11 @@ def _format_group_help(app: App, group: Group, path: list[str] | None = None) ->
     full_path = " ".join(path)
     lines: list[str] = [f"{app.name} {full_path} -- {group.help}"]
 
-    visible_commands = {n: c for n, c in group.commands.items() if not c.hidden}
-    if visible_commands:
-        lines.append("")
-        lines.append("Commands:")
-        names = list(visible_commands.keys())
-        max_len = max(len(n) for n in names)
-        for name in names:
-            cmd = visible_commands[name]
-            padding = max_len - len(name) + 4
-            lines.append(f"  {name}{' ' * padding}{cmd.help}")
-
-    visible_groups = {n: g for n, g in group._groups.items() if not g.hidden}
-    if visible_groups:
-        lines.append("")
-        lines.append("Groups:")
-        names = list(visible_groups.keys())
-        max_len = max(len(n) for n in names)
-        for name in names:
-            sub = visible_groups[name]
-            padding = max_len - len(name) + 4
-            lines.append(f"  {name}{' ' * padding}{sub.help}")
+    command_rows: list[tuple[str, str]] = []
+    group_rows: list[tuple[str, str]] = []
+    _collect_help_tree(group.commands, group._groups, "", 1, depth, command_rows, group_rows)
+    lines.extend(_help_tree_section("Commands:", command_rows))
+    lines.extend(_help_tree_section("Groups:", group_rows))
 
     if group.deprecated:
         lines.append("")
@@ -17470,7 +17697,7 @@ def _format_group_help(app: App, group: Group, path: list[str] | None = None) ->
 
     lines.append("")
     lines.append(
-        f"Use '{app.name} {full_path} <command> --help' for more information."
+        f"Use '{app.name} help {full_path} <command>' for more information."
     )
 
     return "\n".join(lines)
@@ -17857,6 +18084,268 @@ def _format_command_help(app: App, cmd: Command, prefix: str = "") -> str:
             lines.append(f"  {spec}{' ' * padding}{f.help}{meta}")
 
     return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# The help and version commands
+#
+# `help` shows the help of the app, a group, a command, or one flag, as text or,
+# under --json, as the help document (the app's schema, version 2). `version`
+# shows the app's name and version. Both are recognized as the first command
+# word; their names are reserved at every level of the command tree.
+# ---------------------------------------------------------------------------
+
+
+class _HelpPageRequested(Exception):
+    """A help or version page rendered by the framework's own commands."""
+
+    def __init__(self, text: str) -> None:
+        self.text = text
+        super().__init__()
+
+
+class _FrameworkDocumentRequested(Exception):
+    """The machine form of the help or version command: the document goes to
+    stdout, and the --json document to stderr, as for a command that owns
+    stdout (§19.6)."""
+
+    def __init__(self, document: str, command: str) -> None:
+        self.document = document
+        self.command = command
+        super().__init__()
+
+
+@dataclass
+class _HelpRequest:
+    own: bool = False
+    depth: int = 0
+    group_path: list = field(default_factory=list)
+    group: object = None
+    cmd: object = None
+    flag: str = ""
+    is_global: bool = False
+    address: list = field(default_factory=list)
+
+
+def _parse_help_depth(value: str) -> int | None:
+    if not value or value[0] == "+" or (len(value) > 1 and value[0] == "0"):
+        return None
+    if not value.isdigit() or not value.isascii():
+        return None
+    n = int(value)
+    return n if n >= 1 else None
+
+
+def _typed_flag_names(members) -> list[str]:
+    """The long names a command's flags put on the command line, depth-first
+    in declaration order: ordinary flags, token-spelled selectors, member
+    flags, and every choice's scoped flags."""
+    out: list[str] = []
+    for m in members:
+        if isinstance(m, Flag):
+            out.append(m.name)
+            continue
+        if not m.is_member_spelled:
+            out.append(m.name)
+        for c in m.choices:
+            if m.is_member_spelled:
+                out.append(c.name)
+            out.extend(_typed_flag_names(c.members))
+    return out
+
+
+def _short_owner(members, global_flags, short: str) -> str:
+    def walk(ms) -> str:
+        for m in ms:
+            if isinstance(m, Flag):
+                if m.short and m.short == short:
+                    return m.name
+                continue
+            if not m.is_member_spelled and m.short and m.short == short:
+                return m.name
+            for c in m.choices:
+                if m.is_member_spelled and c.short and c.short == short:
+                    return c.name
+                found = walk(c.members)
+                if found:
+                    return found
+        return ""
+    return walk(members) or walk(global_flags)
+
+
+def _flag_block_rows_for(members, indent: int, name: str) -> list:
+    """The flag block's rows a one-flag help page shows: the declarations of
+    that name, with the selector and choice lines above a scoped one, each
+    rendered exactly as the whole page renders it."""
+    rows: list = []
+    for m in members:
+        if isinstance(m, Flag):
+            if m.name == name:
+                rows.extend(_flag_block_rows((m,), indent))
+            continue
+        sel: _Selector = m
+        if not sel.is_member_spelled and sel.name == name:
+            rows.extend(_flag_block_rows((sel,), indent))
+            continue
+        sub: list = []
+        for c in sel.choices:
+            if sel.is_member_spelled and c.name == name:
+                sub.append((indent + 2, _build_member_spec(c), c.help, " [required]"))
+                sub.extend(_flag_block_rows(c.members, indent + 4))
+                continue
+            inner = _flag_block_rows_for(c.members, indent + 4, name)
+            if not inner:
+                continue
+            if sel.is_member_spelled:
+                sub.append((indent + 2, _build_member_spec(c), c.help, " [required]"))
+            else:
+                sub.append((indent + 2, c.name, c.help, ""))
+            sub.extend(inner)
+        if not sub:
+            continue
+        presence = _format_selector_presence(sel)
+        if sel.is_member_spelled:
+            rows.append((
+                indent, _build_selector_spec(sel),
+                f"{sel.help} (exactly one of the following)", presence,
+            ))
+        else:
+            rows.append((indent, _build_selector_spec(sel), sel.help, presence))
+        rows.extend(sub)
+    return rows
+
+
+def _render_flag_rows(rows: list) -> list[str]:
+    column = max(indent + len(spec) for indent, spec, _, _ in rows) + 4
+    return [
+        f"{' ' * indent}{spec}{' ' * (column - indent - len(spec))}{help_text}{meta}".rstrip()
+        for indent, spec, help_text, meta in rows
+    ]
+
+
+def _format_help_own_page(app: App) -> str:
+    return "\n".join([
+        f"{app.name} help -- show the help of the app, a group, a command, or one of its flags",
+        "",
+        "Arguments:",
+        f"  address...    groups, then a command, then one of its flags, as typed after '{app.name}' [optional]",
+        "",
+        "Flags:",
+        "  --depth <int>    levels of groups and commands to list below the address, written before it [optional]",
+        "",
+        "With --json, the help document is printed as JSON.",
+    ])
+
+
+def _format_version_own_page(app: App) -> str:
+    return (
+        f"{app.name} version -- show the app's name and version\n\n"
+        "With --json, they are printed as JSON."
+    )
+
+
+def _format_flag_help(app: App, req: _HelpRequest) -> str:
+    prefix = " ".join(req.address[:-2]) + " " if len(req.address) > 2 else ""
+    lines = [f"{app.name} {prefix}{req.cmd.name} -- {req.cmd.help}"]
+    if req.is_global:
+        for f in app._global_flags:
+            if f.name == req.flag:
+                lines += ["", "Global flags:",
+                          f"  {_build_flag_spec(f)}    {f.help}{_build_flag_meta(f)}"]
+        return "\n".join(lines)
+    lines += ["", "Flags:"]
+    lines += _render_flag_rows(_flag_block_rows_for(req.cmd.members, 2, req.flag))
+    return "\n".join(lines)
+
+
+def _help_text(app: App, req: _HelpRequest) -> str:
+    if req.own:
+        return _format_help_own_page(app)
+    if req.flag:
+        return _format_flag_help(app, req)
+    if req.cmd is not None:
+        prefix = " ".join(req.address[:-1]) + " " if len(req.address) > 1 else ""
+        return _format_command_help(app, req.cmd, prefix)
+    if req.group is not None:
+        return _format_group_help(app, req.group, list(req.group_path), max(req.depth, 1))
+    return _format_app_help(app, max(req.depth, 1))
+
+
+def _filter_flag_entries(entries: list, name: str) -> list:
+    """The flag entries that declare ``name`` somewhere in their subtree, with
+    selectors pruned to the choices that do."""
+    kept: list = []
+    for entry in entries:
+        elect_by = entry.get("elect_by")
+        if elect_by is None:
+            if entry.get("name") == name:
+                kept.append(entry)
+            continue
+        if elect_by == "selector-token" and entry.get("name") == name:
+            kept.append(entry)
+            continue
+        kept_choices = []
+        for ch in entry.get("choices", []):
+            if elect_by == "member-flags" and ch.get("name") == name:
+                kept_choices.append(ch)
+                continue
+            if "flags" in ch:
+                sub = _filter_flag_entries(ch["flags"], name)
+                if sub:
+                    ch["flags"] = sub
+                    kept_choices.append(ch)
+        if kept_choices:
+            entry["choices"] = kept_choices
+            kept.append(entry)
+    return kept
+
+
+def _prune_group_depth(node: dict, depth: int) -> None:
+    for g in (node.get("groups") or {}).values():
+        if depth <= 1:
+            for key in ("commands", "groups", "deprecated"):
+                g.pop(key, None)
+            continue
+        _prune_group_depth(g, depth - 1)
+
+
+def _help_document(app: App, req: _HelpRequest) -> str:
+    doc = _dump_schema(app)
+    extra: dict = {}
+    if req.address:
+        extra["address"] = list(req.address)
+    if req.depth:
+        extra["depth"] = req.depth
+    if extra:
+        rebuilt: dict = {}
+        for key, value in doc.items():
+            rebuilt[key] = value
+            if key == "project_id":
+                rebuilt.update(extra)
+        doc = rebuilt
+    node = doc
+    for g in req.group_path:
+        node.pop("commands", None)
+        node.pop("deprecated", None)
+        child = node["groups"][g]
+        node["groups"] = {g: child}
+        node = child
+    if req.cmd is not None:
+        node.pop("groups", None)
+        node.pop("deprecated", None)
+        entry = node["commands"][req.cmd.name]
+        node["commands"] = {req.cmd.name: entry}
+        if req.flag:
+            for obj, key in ((entry, "flags"), (doc, "global_flags")):
+                if key in obj:
+                    kept = _filter_flag_entries(obj[key], req.flag)
+                    if kept:
+                        obj[key] = kept
+                    else:
+                        del obj[key]
+    elif req.depth:
+        _prune_group_depth(node, req.depth)
+    return _canonical_json(doc) + "\n"
 
 
 # ---------------------------------------------------------------------------
@@ -18816,7 +19305,7 @@ def _run_framework_use_lint(app: "App", out, err) -> "_DispatchResult":
 
 
 # ---------------------------------------------------------------------------
-# Schema serialization (--dump-schema)
+# Schema serialization (the help document, `help --json`)
 # ---------------------------------------------------------------------------
 
 _TYPE_NAMES = {str: "str", bool: "bool", int: "int", float: "float"}
@@ -19296,23 +19785,46 @@ def _build_schema_defaults() -> dict:
     }
 
 
-def _read_project_id() -> str:
-    """Read project name from pyproject.toml in the current working directory."""
-    pyproject_path = Path(os.getcwd()) / "pyproject.toml"
-    if not pyproject_path.exists():
+def _project_id_for_file(module_file: str | None) -> str:
+    """The project_id of the help document: the project the program's own code
+    belongs to, read from where the module that constructed the App lives.
+
+    A module installed under ``site-packages`` or ``dist-packages`` belongs to
+    the distribution whose record lists its file; any other module belongs to
+    the project of the nearest ``pyproject.toml`` above it, by its
+    ``[project] name``. A module in neither place is refused.
+    """
+    if not module_file:
         raise RuntimeError(
-            "Cannot determine project_id: pyproject.toml not found "
-            "or missing [project].name"
+            "cannot determine project_id: the module that constructed the App "
+            "has no source file"
         )
-    with open(pyproject_path, "rb") as f:
-        data = tomllib.load(f)
-    project_name = data.get("project", {}).get("name")
-    if not project_name:
+    path = os.path.realpath(module_file)
+    parts = Path(path).parts
+    if "site-packages" in parts or "dist-packages" in parts:
+        import importlib.metadata as _metadata
+        for dist in _metadata.distributions():
+            for entry in dist.files or ():
+                if os.path.realpath(str(dist.locate_file(entry))) == path:
+                    return dist.metadata["Name"]
         raise RuntimeError(
-            "Cannot determine project_id: pyproject.toml not found "
-            "or missing [project].name"
+            f"cannot determine project_id: no installed distribution records "
+            f"'{path}'"
         )
-    return project_name
+    for directory in Path(path).parents:
+        candidate = directory / "pyproject.toml"
+        if candidate.is_file():
+            with open(candidate, "rb") as f:
+                name = tomllib.load(f).get("project", {}).get("name")
+            if not name:
+                raise RuntimeError(
+                    f"cannot determine project_id: '{candidate}' declares no "
+                    f"[project] name"
+                )
+            return name
+    raise RuntimeError(
+        f"cannot determine project_id: no pyproject.toml above '{path}'"
+    )
 
 
 def _collect_config_field_bindings(
@@ -19485,42 +19997,21 @@ def _dump_schema_core(app: App) -> dict:
 
 
 def _dump_schema(app: App) -> dict:
-    """Produce the full schema dict including ``project_id`` (reads the CWD).
+    """Produce the full schema dict including ``project_id`` (from where the
+    program's own code lives, :func:`_project_id_for_file`).
 
     Delegates the bulk of the work to :func:`_dump_schema_core` and inserts
     ``project_id`` immediately after ``defaults`` so the on-disk layout is
     stable and byte-identical to the core dict once ``project_id`` is removed.
     """
     core = _dump_schema_core(app)
-    project_id = _read_project_id()
+    project_id = _project_id_for_file(app._constructed_in)
     result: dict = {}
     for key, value in core.items():
         result[key] = value
         if key == "defaults":
             result["project_id"] = project_id
     return result
-
-
-def _check_schema_project_id(file_path: str, new_project_id: str) -> None:
-    """Verify that an existing schema file belongs to the same project.
-
-    Raises RuntimeError on mismatch. Silently passes on: missing file,
-    unreadable file, JSON without project_id field, or matching project_id.
-    """
-    try:
-        with open(file_path) as f:
-            existing = json.loads(f.read())
-    except (OSError, json.JSONDecodeError, ValueError):
-        return
-    existing_id = existing.get("project_id")
-    if existing_id is None:
-        return
-    if existing_id != new_project_id:
-        raise RuntimeError(
-            f"Schema mismatch: existing schema belongs to project "
-            f"'{existing_id}', not '{new_project_id}'. "
-            f"Run from the correct project directory."
-        )
 
 
 def _canonical_json_string(value: str) -> str:
@@ -19598,26 +20089,6 @@ def _canonical_json(value: object) -> str:
     out: list[str] = []
     _write_canonical_json(value, 0, out)
     return "".join(out)
-
-
-def _write_schema(app: App) -> str:
-    """Write the schema to the app's declared location and return the path.
-
-    The location is decided once, at App construction (``App.schema_path``, or
-    the framework's ``.strictcli/schema.json`` anchored at the construction-time
-    cwd) -- never at the caller's working directory at dump time.
-    """
-    schema = _dump_schema(app)
-    file_path = app._schema_out_path
-    dir_path = os.path.dirname(file_path)
-    if dir_path:
-        os.makedirs(dir_path, exist_ok=True)
-    _check_schema_project_id(file_path, schema["project_id"])
-    # Exactly one trailing newline at end of file.
-    with open(file_path, "w", encoding="utf-8") as f:
-        f.write(_canonical_json(schema) + "\n")
-    app._record_cache_write(file_path)
-    return file_path
 
 
 # MCP server (--mcp)

@@ -894,13 +894,9 @@ def test_a_member_short_is_published_on_the_payload_entry(tmp_path, monkeypatch)
     """§25.6's `value` entry is an ordinary flag entry, short included."""
     import json
 
-    (tmp_path / "pyproject.toml").write_text(
-        '[project]\nname = "myapp"\nversion = "1.0.0"\n',
-    )
-    monkeypatch.chdir(tmp_path)
-    r = _short_app().test(["--dump-schema"])
+    r = _short_app().test(["help", "--json"])
     assert r.exit_code == 0
-    dumped = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+    dumped = json.loads(r.stdout)
     sel = dumped["commands"]["launch"]["flags"][0]
     role = sel["choices"][0]
     assert role["name"] == "role"

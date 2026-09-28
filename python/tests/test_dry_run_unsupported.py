@@ -240,18 +240,8 @@ class TestHelpRendering:
 class TestSchemaEmission:
     """The pair is emitted only when declared."""
 
-    @pytest.fixture(autouse=True)
-    def _pyproject_in_tmp(self, tmp_path):
-        """--dump-schema needs a project_id, which comes from pyproject.toml."""
-        (tmp_path / "pyproject.toml").write_text('[project]\nname = "testproject"\n')
-
     def _schema(self, build_app, tmp_path, monkeypatch):
-        # The app must be BUILT after the chdir: --dump-schema writes to the
-        # location the App resolved at construction time, so an app built in
-        # the repo's cwd would dump into the repo rather than into tmp_path.
-        monkeypatch.chdir(tmp_path)
-        build_app().test(["--dump-schema"])
-        return json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        return json.loads(build_app().test(["help", "--json"]).stdout)
 
     def test_emitted_when_declared(self, tmp_path, monkeypatch):
         schema = self._schema(_app_with_refusing_command, tmp_path, monkeypatch)

@@ -908,14 +908,6 @@ class TestConfigInit:
 class TestSchemaWithConfigFields:
     """Schema output includes config_fields."""
 
-    @pytest.fixture(autouse=True)
-    def _pyproject_in_tmp(self, tmp_path, monkeypatch):
-        """_dump_schema reads project_id from ./pyproject.toml, so these tests
-        run in a tmp dir holding a minimal one rather than depending on the
-        repository being the current working directory."""
-        (tmp_path / "pyproject.toml").write_text('[project]\nname = "testproject"\n')
-        monkeypatch.chdir(tmp_path)
-
     def test_schema_includes_config_fields(self):
         app = _build_app()
         app.config_field("db.url", type=str, help="Database URL")

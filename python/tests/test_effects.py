@@ -1,7 +1,6 @@
 """Tests for the ctx.effects handle, dry mode, and the Unsettled carriers."""
 
 import json
-import os
 import sys
 
 import pytest
@@ -1116,34 +1115,34 @@ class TestEffectLog:
 
 
 class TestCacheWrites:
-    def test_schema_dump_records_a_cache_write(self, tmp_path, monkeypatch):
+    def test_a_coverage_shard_records_a_cache_write(self, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)
-        (tmp_path / "pyproject.toml").write_text('[project]\nname = "xx"\n')
-        app = _app()
+        (tmp_path / ".strictcli").mkdir()
+        app = _app(test_coverage_dir=str(tmp_path / ".strictcli"))
 
         @app.command("run", help="run", effect="read_only")
         def _run(ctx):
             return 0
 
-        r = app.test(["--dump-schema"])
+        r = app.test(["run"])
         assert r.exit_code == 0
         log = app.effect_log()
         assert log[-1]["kind"] == "cache_write"
         assert log[-1]["verb"] == "cache"
         assert log[-1]["recorded"] is False
-        assert log[-1]["detail"].endswith("schema.json")
+        assert log[-1]["detail"].endswith(".jsonl")
 
     def test_cache_writes_execute_in_dry_mode(self, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)
-        (tmp_path / "pyproject.toml").write_text('[project]\nname = "xx"\n')
-        app = _app()
+        (tmp_path / ".strictcli").mkdir()
+        app = _app(test_coverage_dir=str(tmp_path / ".strictcli"))
 
         @app.command("run", help="run", effect="read_only")
         def _run(ctx):
             return 0
 
-        app.test(["--dry-run", "--dump-schema"])
-        assert (tmp_path / ".strictcli" / "schema.json").is_file()
+        app.test(["--dry-run", "run"])
+        assert list((tmp_path / ".strictcli" / "coverage").glob("*.jsonl"))
 
     def test_cache_writes_never_appear_in_the_would_do_log(self, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)

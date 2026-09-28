@@ -8,8 +8,6 @@ import os
 import pytest
 import strictcli
 
-_PYPROJECT_TOML = '[project]\nname = "testproject"\n'
-
 
 def _make_app(**kwargs):
     """Create a minimal app for testing."""
@@ -284,13 +282,10 @@ class TestVisibilitySchema:
     """Schema serialization includes hidden and interactive fields."""
 
     def _load_schema(self, tmp_path, app):
-        app.test(["--dump-schema"])
-        schema_path = tmp_path / ".strictcli" / "schema.json"
-        return json.loads(schema_path.read_text())
+        return json.loads(app.test(["help", "--json"]).stdout)
 
     def test_schema_hidden_command_emitted(self, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)
-        (tmp_path / "pyproject.toml").write_text(_PYPROJECT_TOML)
 
         app = _make_app()
 
@@ -305,7 +300,6 @@ class TestVisibilitySchema:
 
     def test_schema_interactive_command_emitted(self, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)
-        (tmp_path / "pyproject.toml").write_text(_PYPROJECT_TOML)
 
         app = _make_app()
 
@@ -320,7 +314,6 @@ class TestVisibilitySchema:
 
     def test_schema_normal_command_no_hidden_or_interactive(self, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)
-        (tmp_path / "pyproject.toml").write_text(_PYPROJECT_TOML)
 
         app = _make_app()
 
@@ -335,7 +328,6 @@ class TestVisibilitySchema:
 
     def test_schema_hidden_group_emitted(self, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)
-        (tmp_path / "pyproject.toml").write_text(_PYPROJECT_TOML)
 
         app = _make_app()
         grp = app.group("internal", help="Internal group", hidden=True)
@@ -350,7 +342,6 @@ class TestVisibilitySchema:
 
     def test_schema_normal_group_no_hidden(self, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)
-        (tmp_path / "pyproject.toml").write_text(_PYPROJECT_TOML)
 
         app = _make_app()
         grp = app.group("public", help="Public group")
@@ -365,7 +356,6 @@ class TestVisibilitySchema:
 
     def test_schema_defaults_include_visibility(self, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)
-        (tmp_path / "pyproject.toml").write_text(_PYPROJECT_TOML)
 
         app = _make_app()
 
@@ -382,7 +372,6 @@ class TestVisibilitySchema:
     def test_schema_config_edit_interactive(self, tmp_path, monkeypatch):
         """config edit should appear as interactive in the schema."""
         monkeypatch.chdir(tmp_path)
-        (tmp_path / "pyproject.toml").write_text(_PYPROJECT_TOML)
 
         app = _make_app(config=True)
 

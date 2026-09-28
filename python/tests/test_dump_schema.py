@@ -1,20 +1,16 @@
-"""Tests for --dump-schema flag and schema serialization."""
+"""Tests for the help document (`help --json`) and schema serialization."""
 
 from __future__ import annotations
 
 import json
-import os
 
 import pytest
 import strictcli
-
-_PYPROJECT_TOML = '[project]\nname = "testproject"\n'
 
 
 @pytest.fixture(autouse=True)
 def _pyproject_in_tmp(tmp_path):
     """Ensure every test that uses tmp_path has a pyproject.toml for project_id."""
-    (tmp_path / "pyproject.toml").write_text(_PYPROJECT_TOML)
 
 
 def _make_app(**kwargs):
@@ -22,38 +18,6 @@ def _make_app(**kwargs):
     defaults = dict(name="testapp", help="A test app", version="1.0.0")
     defaults.update(kwargs)
     return strictcli.App(**defaults)
-
-
-class TestDumpSchemaBasic:
-    """--dump-schema writes .strictcli/schema.json and exits 0."""
-
-    def test_writes_file_and_exits_zero(self, tmp_path, monkeypatch):
-        monkeypatch.chdir(tmp_path)
-        app = _make_app()
-
-        @app.command("greet", effect="read_only", help="Say hello")
-        def greet(ctx):
-            pass
-
-        result = app.test(["--dump-schema"])
-        assert result.exit_code == 0
-        schema_path = tmp_path / ".strictcli" / "schema.json"
-        assert schema_path.exists()
-        # stdout should contain the path
-        assert str(schema_path) in result.stdout
-
-    def test_schema_is_valid_json(self, tmp_path, monkeypatch):
-        monkeypatch.chdir(tmp_path)
-        app = _make_app()
-
-        @app.command("greet", effect="read_only", help="Say hello")
-        def greet(ctx):
-            pass
-
-        app.test(["--dump-schema"])
-        schema_path = tmp_path / ".strictcli" / "schema.json"
-        data = json.loads(schema_path.read_text())
-        assert isinstance(data, dict)
 
 
 class TestSchemaContent:
@@ -67,8 +31,8 @@ class TestSchemaContent:
         def noop(ctx):
             pass
 
-        app.test(["--dump-schema"])
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        _dump_r = app.test(["help", "--json"])
+        data = json.loads(_dump_r.stdout)
         assert data["name"] == "myapp"
         assert data["version"] == "2.3.4"
         assert data["help"] == "My great app"
@@ -81,8 +45,8 @@ class TestSchemaContent:
         def noop(ctx):
             pass
 
-        app.test(["--dump-schema"])
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        _dump_r = app.test(["help", "--json"])
+        data = json.loads(_dump_r.stdout)
         assert "env_prefix" not in data
 
     def test_env_prefix_when_set(self, tmp_path, monkeypatch):
@@ -93,8 +57,8 @@ class TestSchemaContent:
         def noop(ctx):
             pass
 
-        app.test(["--dump-schema"])
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        _dump_r = app.test(["help", "--json"])
+        data = json.loads(_dump_r.stdout)
         assert data["env_prefix"] == "MYAPP"
 
     def test_config_omitted_when_false(self, tmp_path, monkeypatch):
@@ -105,8 +69,8 @@ class TestSchemaContent:
         def noop(ctx):
             pass
 
-        app_no_config.test(["--dump-schema"])
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        _dump_r = app_no_config.test(["help", "--json"])
+        data = json.loads(_dump_r.stdout)
         assert "config" not in data
 
 
@@ -124,8 +88,8 @@ class TestSchemaCommands:
         def deploy(ctx, target, force_deploy):
             pass
 
-        app.test(["--dump-schema"])
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        _dump_r = app.test(["help", "--json"])
+        data = json.loads(_dump_r.stdout)
         assert "deploy" in data["commands"]
         cmd = data["commands"]["deploy"]
         assert cmd["name"] == "deploy"
@@ -159,8 +123,8 @@ class TestSchemaCommands:
         def greet(ctx, name):
             pass
 
-        app.test(["--dump-schema"])
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        _dump_r = app.test(["help", "--json"])
+        data = json.loads(_dump_r.stdout)
         cmd = data["commands"]["greet"]
         assert len(cmd["args"]) == 1
         arg = cmd["args"][0]
@@ -179,8 +143,8 @@ class TestSchemaCommands:
         def run():
             pass
 
-        app.test(["--dump-schema"])
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        _dump_r = app.test(["help", "--json"])
+        data = json.loads(_dump_r.stdout)
         cmd = data["commands"]["run"]
         assert cmd["passthrough"] is True
 
@@ -192,8 +156,8 @@ class TestSchemaCommands:
         def greet(ctx):
             pass
 
-        app.test(["--dump-schema"])
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        _dump_r = app.test(["help", "--json"])
+        data = json.loads(_dump_r.stdout)
         cmd = data["commands"]["greet"]
         assert "passthrough" not in cmd  # passthrough=False is the default, omitted
 
@@ -215,8 +179,8 @@ class TestSchemaGroups:
         def dns_add(ctx, type):
             pass
 
-        app.test(["--dump-schema"])
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        _dump_r = app.test(["help", "--json"])
+        data = json.loads(_dump_r.stdout)
         assert "dns" in data["groups"]
         grp = data["groups"]["dns"]
         assert grp["name"] == "dns"
@@ -235,8 +199,8 @@ class TestSchemaGroups:
         def zone_list(ctx):
             pass
 
-        app.test(["--dump-schema"])
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        _dump_r = app.test(["help", "--json"])
+        data = json.loads(_dump_r.stdout)
         assert "dns" in data["groups"]
         assert "zone" in data["groups"]["dns"]["groups"]
         nested = data["groups"]["dns"]["groups"]["zone"]
@@ -255,8 +219,8 @@ class TestSchemaGroups:
 
         dns.deprecate("old-cmd", message="Use 'list' instead")
 
-        app.test(["--dump-schema"])
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        _dump_r = app.test(["help", "--json"])
+        data = json.loads(_dump_r.stdout)
         grp = data["groups"]["dns"]
         assert "old-cmd" in grp["deprecated"]
         assert grp["deprecated"]["old-cmd"] == "Use 'list' instead"
@@ -279,8 +243,8 @@ class TestSchemaGlobalFlags:
         def noop(ctx, loud, output):
             pass
 
-        app.test(["--dump-schema"])
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        _dump_r = app.test(["help", "--json"])
+        data = json.loads(_dump_r.stdout)
         assert len(data["global_flags"]) == 2
         loud = data["global_flags"][0]
         assert loud["name"] == "loud"
@@ -311,44 +275,10 @@ class TestSchemaDeprecated:
 
         app.deprecate("old-cmd", message="Use 'new-cmd' instead")
 
-        app.test(["--dump-schema"])
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        _dump_r = app.test(["help", "--json"])
+        data = json.loads(_dump_r.stdout)
         assert "old-cmd" in data["deprecated"]
         assert data["deprecated"]["old-cmd"] == "Use 'new-cmd' instead"
-
-
-class TestSchemaDirectoryCreation:
-    """--dump-schema creates the directory if missing."""
-
-    def test_creates_directory(self, tmp_path, monkeypatch):
-        monkeypatch.chdir(tmp_path)
-        assert not (tmp_path / ".strictcli").exists()
-        app = _make_app()
-
-        @app.command("noop", effect="read_only", help="Does nothing")
-        def noop(ctx):
-            pass
-
-        result = app.test(["--dump-schema"])
-        assert result.exit_code == 0
-        assert (tmp_path / ".strictcli").is_dir()
-        assert (tmp_path / ".strictcli" / "schema.json").is_file()
-
-    def test_overwrites_existing_file(self, tmp_path, monkeypatch):
-        monkeypatch.chdir(tmp_path)
-        schema_dir = tmp_path / ".strictcli"
-        schema_dir.mkdir()
-        (schema_dir / "schema.json").write_text("{}")
-
-        app = _make_app(version="3.0.0")
-
-        @app.command("noop", effect="read_only", help="Does nothing")
-        def noop(ctx):
-            pass
-
-        app.test(["--dump-schema"])
-        data = json.loads((schema_dir / "schema.json").read_text())
-        assert data["version"] == "3.0.0"
 
 
 class TestSchemaEmptyApp:
@@ -357,9 +287,9 @@ class TestSchemaEmptyApp:
     def test_empty_app(self, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)
         app = _make_app()
-        result = app.test(["--dump-schema"])
+        result = app.test(["help", "--json"])
         assert result.exit_code == 0
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        data = json.loads(result.stdout)
         assert data["name"] == "testapp"
         assert "commands" not in data  # empty dict is the default, omitted
         assert "groups" not in data  # empty dict is the default, omitted
@@ -379,8 +309,8 @@ class TestSchemaFlagTypes:
         def cmd(ctx, count):
             pass
 
-        app.test(["--dump-schema"])
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        _dump_r = app.test(["help", "--json"])
+        data = json.loads(_dump_r.stdout)
         flag = data["commands"]["cmd"]["flags"][0]
         assert flag["value_schema"] == {"type": "integer"}
         assert flag["default"] == 5
@@ -394,8 +324,8 @@ class TestSchemaFlagTypes:
         def cmd(ctx, ratio):
             pass
 
-        app.test(["--dump-schema"])
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        _dump_r = app.test(["help", "--json"])
+        data = json.loads(_dump_r.stdout)
         flag = data["commands"]["cmd"]["flags"][0]
         assert flag["value_schema"] == {"type": "number"}
         assert flag["default"] == 0.5
@@ -409,8 +339,8 @@ class TestSchemaFlagTypes:
         def cmd(ctx, tag):
             pass
 
-        app.test(["--dump-schema"])
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        _dump_r = app.test(["help", "--json"])
+        data = json.loads(_dump_r.stdout)
         flag = data["commands"]["cmd"]["flags"][0]
         # `repeatable` is deleted: the fragment carries the arity (§25.3).
         assert "repeatable" not in flag
@@ -428,8 +358,8 @@ class TestSchemaFlagTypes:
         def cmd(ctx, token):
             pass
 
-        app.test(["--dump-schema"])
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        _dump_r = app.test(["help", "--json"])
+        data = json.loads(_dump_r.stdout)
         flag = data["commands"]["cmd"]["flags"][0]
         assert flag["env"] == "MYAPP_TOKEN"
 
@@ -442,26 +372,14 @@ class TestSchemaFlagTypes:
         def cmd(ctx, force_it):
             pass
 
-        app.test(["--dump-schema"])
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        _dump_r = app.test(["help", "--json"])
+        data = json.loads(_dump_r.stdout)
         flag = data["commands"]["cmd"]["flags"][0]
         assert flag["negatable"] is False
 
 
 class TestDumpSchemaWithOtherArgs:
     """--dump-schema is only detected in the pre-command region."""
-
-    def test_dump_schema_before_command(self, tmp_path, monkeypatch):
-        monkeypatch.chdir(tmp_path)
-        app = _make_app()
-
-        @app.command("greet", effect="read_only", help="Say hello")
-        def greet(ctx):
-            pass
-
-        result = app.test(["--dump-schema"])
-        assert result.exit_code == 0
-        assert (tmp_path / ".strictcli" / "schema.json").exists()
 
     def test_dump_schema_after_command_is_unknown_flag(self, tmp_path, monkeypatch):
         """--dump-schema after a command name is NOT intercepted."""
@@ -501,8 +419,8 @@ class TestSchemaDefaults:
         def noop(ctx):
             pass
 
-        app.test(["--dump-schema"])
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        _dump_r = app.test(["help", "--json"])
+        data = json.loads(_dump_r.stdout)
         assert "defaults" in data
         assert isinstance(data["defaults"], dict)
 
@@ -521,8 +439,8 @@ class TestSchemaDefaults:
         def noop(ctx):
             pass
 
-        app.test(["--dump-schema"])
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        _dump_r = app.test(["help", "--json"])
+        data = json.loads(_dump_r.stdout)
 
         assert data["defaults"] == {
             "schema_version": 2,
@@ -573,8 +491,8 @@ class TestSchemaDefaults:
         def noop(ctx):
             pass
 
-        app.test(["--dump-schema"])
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        _dump_r = app.test(["help", "--json"])
+        data = json.loads(_dump_r.stdout)
         defaults = data["defaults"]
         assert "hidden" not in defaults["flag"]
         assert "default" not in defaults["flag"]
@@ -604,8 +522,8 @@ class TestSchemaOmitsDefaults:
         def cmd(ctx, name):
             pass
 
-        app.test(["--dump-schema"])
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        _dump_r = app.test(["help", "--json"])
+        data = json.loads(_dump_r.stdout)
         flag = data["commands"]["cmd"]["flags"][0]
         assert flag == {
             "name": "name",
@@ -623,8 +541,8 @@ class TestSchemaOmitsDefaults:
         def noop(ctx):
             pass
 
-        app.test(["--dump-schema"])
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        _dump_r = app.test(["help", "--json"])
+        data = json.loads(_dump_r.stdout)
         cmd = data["commands"]["noop"]
         assert "flags" not in cmd
         assert "args" not in cmd
@@ -640,8 +558,8 @@ class TestSchemaOmitsDefaults:
         def do_stuff(ctx):
             pass
 
-        app.test(["--dump-schema"])
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        _dump_r = app.test(["help", "--json"])
+        data = json.loads(_dump_r.stdout)
         group_data = data["groups"]["stuff"]
         assert "commands" in group_data  # has commands, so present
         assert "groups" not in group_data  # empty, omitted
@@ -657,8 +575,8 @@ class TestSchemaOmitsDefaults:
         def cmd(ctx, target):
             pass
 
-        app.test(["--dump-schema"])
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        _dump_r = app.test(["help", "--json"])
+        data = json.loads(_dump_r.stdout)
         arg = data["commands"]["cmd"]["args"][0]
         assert arg["name"] == "target"
         assert arg["help"] == "The target"
@@ -680,8 +598,8 @@ class TestSchemaNonDefaultValues:
         def cmd(ctx, target=None):
             pass
 
-        app.test(["--dump-schema"])
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        _dump_r = app.test(["help", "--json"])
+        data = json.loads(_dump_r.stdout)
         arg = data["commands"]["cmd"]["args"][0]
         assert arg["presence"] == "optional"
         assert "required" not in arg
@@ -697,8 +615,8 @@ class TestSchemaNonDefaultValues:
         def cmd(ctx, files):
             pass
 
-        app.test(["--dump-schema"])
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        _dump_r = app.test(["help", "--json"])
+        data = json.loads(_dump_r.stdout)
         arg = data["commands"]["cmd"]["args"][0]
         assert arg["variadic"] is True
 
@@ -712,8 +630,8 @@ class TestSchemaNonDefaultValues:
         def run():
             pass
 
-        app.test(["--dump-schema"])
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        _dump_r = app.test(["help", "--json"])
+        data = json.loads(_dump_r.stdout)
         cmd = data["commands"]["run"]
         assert cmd["passthrough"] is True
 
@@ -727,8 +645,8 @@ class TestSchemaNonDefaultValues:
         def cmd(ctx, level):
             pass
 
-        app.test(["--dump-schema"])
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        _dump_r = app.test(["help", "--json"])
+        data = json.loads(_dump_r.stdout)
         flag = data["commands"]["cmd"]["flags"][0]
         assert flag["short"] == "l"
         assert flag["default"] == 3
@@ -744,66 +662,9 @@ class TestSchemaNonDefaultValues:
         def noop(ctx):
             pass
 
-        app.test(["--dump-schema"])
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        _dump_r = app.test(["help", "--json"])
+        data = json.loads(_dump_r.stdout)
         assert data["config"] is True
-
-
-class TestSchemaProjectId:
-    """Schema contains project_id from pyproject.toml."""
-
-    def test_project_id_present(self, tmp_path, monkeypatch):
-        monkeypatch.chdir(tmp_path)
-        app = _make_app()
-
-        @app.command("noop", effect="read_only", help="Does nothing")
-        def noop(ctx):
-            pass
-
-        app.test(["--dump-schema"])
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
-        assert data["project_id"] == "testproject"
-
-    def test_project_id_custom_name(self, tmp_path, monkeypatch):
-        (tmp_path / "pyproject.toml").write_text(
-            '[project]\nname = "my-custom-tool"\n'
-        )
-        monkeypatch.chdir(tmp_path)
-        app = _make_app()
-
-        @app.command("noop", effect="read_only", help="Does nothing")
-        def noop(ctx):
-            pass
-
-        app.test(["--dump-schema"])
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
-        assert data["project_id"] == "my-custom-tool"
-
-    def test_project_id_error_no_pyproject(self, tmp_path, monkeypatch):
-        os.remove(tmp_path / "pyproject.toml")
-        monkeypatch.chdir(tmp_path)
-        app = _make_app()
-
-        @app.command("noop", effect="read_only", help="Does nothing")
-        def noop(ctx):
-            pass
-
-        result = app.test(["--dump-schema"])
-        assert result.exit_code != 0
-        assert "project_id" in result.stderr
-
-    def test_project_id_error_no_project_name(self, tmp_path, monkeypatch):
-        (tmp_path / "pyproject.toml").write_text("[tool.something]\nkey = 1\n")
-        monkeypatch.chdir(tmp_path)
-        app = _make_app()
-
-        @app.command("noop", effect="read_only", help="Does nothing")
-        def noop(ctx):
-            pass
-
-        result = app.test(["--dump-schema"])
-        assert result.exit_code != 0
-        assert "project_id" in result.stderr
 
 
 class TestSchemaVersion:
@@ -817,8 +678,8 @@ class TestSchemaVersion:
         def noop(ctx):
             pass
 
-        app.test(["--dump-schema"])
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        _dump_r = app.test(["help", "--json"])
+        data = json.loads(_dump_r.stdout)
         assert data["schema_version"] == 2
 
     def test_schema_version_is_first_key(self, tmp_path, monkeypatch):
@@ -830,8 +691,8 @@ class TestSchemaVersion:
         def noop(ctx):
             pass
 
-        app.test(["--dump-schema"])
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        _dump_r = app.test(["help", "--json"])
+        data = json.loads(_dump_r.stdout)
         keys = list(data.keys())
         assert keys[0] == "schema_version"
 
@@ -849,8 +710,8 @@ class TestSchemaConstraints:
         def noop(ctx):
             pass
 
-        app.test(["--dump-schema"])
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        _dump_r = app.test(["help", "--json"])
+        data = json.loads(_dump_r.stdout)
         assert "constraints" not in data["commands"]["noop"]
 
     def test_the_mutex_constraint_entry_is_gone(self, tmp_path, monkeypatch):
@@ -874,8 +735,8 @@ class TestSchemaConstraints:
         def show(ctx, format: AsJson | Text):
             pass
 
-        app.test(["--dump-schema"])
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        _dump_r = app.test(["help", "--json"])
+        data = json.loads(_dump_r.stdout)
         cmd = data["commands"]["show"]
         assert "constraints" not in cmd
         # The selector is published NESTED, never flattened away, and it lives
@@ -911,8 +772,8 @@ class TestSchemaConstraints:
         def deploy(ctx, host, port):
             pass
 
-        app.test(["--dump-schema"])
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        _dump_r = app.test(["help", "--json"])
+        data = json.loads(_dump_r.stdout)
         cmd = data["commands"]["deploy"]
         assert cmd["constraints"] == [{
             "type": "all_or_none",
@@ -951,8 +812,8 @@ class TestSchemaConstraints:
         def purge(ctx, targets, host, port, all):
             pass
 
-        app.test(["--dump-schema"])
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        _dump_r = app.test(["help", "--json"])
+        data = json.loads(_dump_r.stdout)
         cmd = data["commands"]["purge"]
         assert cmd["constraints"][1] == {
             "type": "at_least_one",
@@ -976,8 +837,8 @@ class TestSchemaConstraints:
         def deploy(ctx, host, port):
             pass
 
-        app.test(["--dump-schema"])
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        _dump_r = app.test(["help", "--json"])
+        data = json.loads(_dump_r.stdout)
         cmd = data["commands"]["deploy"]
         assert cmd["constraints"] == [{
             "type": "requires",
@@ -999,8 +860,8 @@ class TestSchemaConstraints:
         def deploy(ctx, force_deploy, agree):
             pass
 
-        app.test(["--dump-schema"])
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        _dump_r = app.test(["help", "--json"])
+        data = json.loads(_dump_r.stdout)
         cmd = data["commands"]["deploy"]
         assert cmd["constraints"] == [{
             "type": "implies",
@@ -1028,8 +889,8 @@ class TestSchemaConstraints:
         def deploy(ctx, host, port):
             pass
 
-        app.test(["--dump-schema"])
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        _dump_r = app.test(["help", "--json"])
+        data = json.loads(_dump_r.stdout)
         cmd = data["commands"]["deploy"]
         types = [c["type"] for c in cmd["constraints"]]
         assert types == ["all_or_none", "requires"]
@@ -1049,8 +910,8 @@ class TestSchemaConstraints:
         def deploy(ctx, sim_run, skip_confirm):
             pass
 
-        app.test(["--dump-schema"])
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        _dump_r = app.test(["help", "--json"])
+        data = json.loads(_dump_r.stdout)
         c = data["commands"]["deploy"]["constraints"][0]
         assert [m["name"] for m in c["members"]] == ["sim-run", "skip-confirm"]
 
@@ -1066,8 +927,8 @@ class TestSchemaTagContracts:
         def noop(ctx):
             pass
 
-        app.test(["--dump-schema"])
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        _dump_r = app.test(["help", "--json"])
+        data = json.loads(_dump_r.stdout)
         assert "tag_contracts" not in data
 
     def test_tag_contracts_serialized(self, tmp_path, monkeypatch):
@@ -1080,8 +941,8 @@ class TestSchemaTagContracts:
         def deploy(ctx, force_deploy):
             pass
 
-        app.test(["--dump-schema"])
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        _dump_r = app.test(["help", "--json"])
+        data = json.loads(_dump_r.stdout)
         assert "tag_contracts" in data
         assert data["tag_contracts"] == {"dangerous": "force-deploy"}
 
@@ -1097,8 +958,8 @@ class TestSchemaTagContracts:
         def deploy(ctx, force_deploy, timeout):
             pass
 
-        app.test(["--dump-schema"])
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        _dump_r = app.test(["help", "--json"])
+        data = json.loads(_dump_r.stdout)
         assert data["tag_contracts"] == {
             "dangerous": "force-deploy",
             "slow": "timeout",
@@ -1118,8 +979,8 @@ class TestSchemaArgDefaults:
         def cmd(ctx, target):
             pass
 
-        app.test(["--dump-schema"])
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        _dump_r = app.test(["help", "--json"])
+        data = json.loads(_dump_r.stdout)
         arg = data["commands"]["cmd"]["args"][0]
         assert "default" not in arg
 
@@ -1133,8 +994,8 @@ class TestSchemaArgDefaults:
         def cmd(ctx, target):
             pass
 
-        app.test(["--dump-schema"])
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        _dump_r = app.test(["help", "--json"])
+        data = json.loads(_dump_r.stdout)
         arg = data["commands"]["cmd"]["args"][0]
         assert arg["default"] == "localhost"
 
@@ -1149,80 +1010,11 @@ class TestSchemaArgDefaults:
         def cmd(ctx, target):
             pass
 
-        app.test(["--dump-schema"])
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        _dump_r = app.test(["help", "--json"])
+        data = json.loads(_dump_r.stdout)
         arg = data["commands"]["cmd"]["args"][0]
         assert arg["presence"] == "default"
         assert arg["default"] == ""
-
-
-class TestSchemaProjectIdMismatch:
-    """Schema dump refuses to overwrite a schema belonging to a different project."""
-
-    def test_mismatch_raises_error(self, tmp_path, monkeypatch):
-        """Existing schema with a different project_id causes an error."""
-        monkeypatch.chdir(tmp_path)
-        schema_dir = tmp_path / ".strictcli"
-        schema_dir.mkdir()
-        (schema_dir / "schema.json").write_text(
-            json.dumps({"project_id": "other-project"})
-        )
-        app = _make_app()
-
-        @app.command("noop", effect="read_only", help="Does nothing")
-        def noop(ctx):
-            pass
-
-        result = app.test(["--dump-schema"])
-        assert result.exit_code != 0
-        assert "Schema mismatch" in result.stderr
-        assert "other-project" in result.stderr
-        assert "testproject" in result.stderr
-
-    def test_match_no_error(self, tmp_path, monkeypatch):
-        """Existing schema with the same project_id succeeds."""
-        monkeypatch.chdir(tmp_path)
-        schema_dir = tmp_path / ".strictcli"
-        schema_dir.mkdir()
-        (schema_dir / "schema.json").write_text(
-            json.dumps({"project_id": "testproject"})
-        )
-        app = _make_app()
-
-        @app.command("noop", effect="read_only", help="Does nothing")
-        def noop(ctx):
-            pass
-
-        result = app.test(["--dump-schema"])
-        assert result.exit_code == 0
-
-    def test_missing_file_no_error(self, tmp_path, monkeypatch):
-        """No existing schema file passes through without error."""
-        monkeypatch.chdir(tmp_path)
-        assert not (tmp_path / ".strictcli" / "schema.json").exists()
-        app = _make_app()
-
-        @app.command("noop", effect="read_only", help="Does nothing")
-        def noop(ctx):
-            pass
-
-        result = app.test(["--dump-schema"])
-        assert result.exit_code == 0
-
-    def test_corrupt_file_no_error(self, tmp_path, monkeypatch):
-        """Corrupt (non-JSON) schema file passes through without error."""
-        monkeypatch.chdir(tmp_path)
-        schema_dir = tmp_path / ".strictcli"
-        schema_dir.mkdir()
-        (schema_dir / "schema.json").write_text("not valid json {{{")
-        app = _make_app()
-
-        @app.command("noop", effect="read_only", help="Does nothing")
-        def noop(ctx):
-            pass
-
-        result = app.test(["--dump-schema"])
-        assert result.exit_code == 0
 
 
 class TestDumpSchemaDict:
@@ -1266,9 +1058,9 @@ class TestDumpSchemaDict:
         def greet(ctx, loud):
             pass
 
-        result = app.test(["--dump-schema"])
+        result = app.test(["help", "--json"])
         assert result.exit_code == 0
-        written = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        written = json.loads(result.stdout)
         method = app.dump_schema_dict()
 
         # File-writer output minus project_id must equal the method output.
@@ -1316,9 +1108,9 @@ class TestSchemaMarkerDefault:
 
         # The full --dump-schema round-trip must not crash and must write the
         # machine-stable marker shape.
-        result = app.test(["--dump-schema"])
+        result = app.test(["help", "--json"])
         assert result.exit_code == 0
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        data = json.loads(result.stdout)
 
         want_global = {
             "relative_to_root": {"env_var": "MYAPP_HOME", "parts": ["global.sqlite"]}
@@ -1342,81 +1134,6 @@ class TestSchemaMarkerDefault:
         assert "/var/lib/myapp/sub/db.sqlite" not in dumped
 
 
-class TestDeclaredSchemaLocation:
-    """--dump-schema writes where the App declared, not where the caller stands."""
-
-    def test_declared_relative_path(self, tmp_path, monkeypatch):
-        monkeypatch.chdir(tmp_path)
-        app = _make_app(schema_path=os.path.join("build", "cli-schema.json"))
-
-        @app.command("greet", effect="read_only", help="Say hello")
-        def greet(ctx):
-            pass
-
-        result = app.test(["--dump-schema"])
-        assert result.exit_code == 0
-        out = tmp_path / "build" / "cli-schema.json"
-        assert out.exists()
-        assert str(out) in result.stdout
-        assert not (tmp_path / ".strictcli").exists()
-
-    def test_declared_absolute_path(self, tmp_path, monkeypatch):
-        monkeypatch.chdir(tmp_path)
-        target = tmp_path / "out" / "schema.json"
-        app = _make_app(schema_path=str(target))
-
-        @app.command("greet", effect="read_only", help="Say hello")
-        def greet(ctx):
-            pass
-
-        assert app.test(["--dump-schema"]).exit_code == 0
-        assert target.exists()
-
-    def test_declared_relative_to_root(self, tmp_path, monkeypatch):
-        monkeypatch.chdir(tmp_path)
-        root = tmp_path / "root"
-        monkeypatch.setenv("MYAPP_HOME", str(root))
-        app = _make_app(
-            infra_root={"MYAPP_HOME": str(root)},
-            schema_path=strictcli.RelativeToRoot("MYAPP_HOME", "schema.json"),
-        )
-
-        @app.command("greet", effect="read_only", help="Say hello")
-        def greet(ctx):
-            pass
-
-        assert app.test(["--dump-schema"]).exit_code == 0
-        assert (root / "schema.json").exists()
-
-    def test_default_location_is_anchored_at_construction(self, tmp_path, monkeypatch):
-        """A chdir after construction does not redirect the write."""
-        home = tmp_path / "home"
-        home.mkdir()
-        (home / "pyproject.toml").write_text(_PYPROJECT_TOML)
-        elsewhere = tmp_path / "elsewhere"
-        elsewhere.mkdir()
-        # project_id is read from the cwd at dump time -- a separate cwd
-        # dependency this test is not about, so both directories carry one.
-        (elsewhere / "pyproject.toml").write_text(_PYPROJECT_TOML)
-
-        monkeypatch.chdir(home)
-        app = _make_app()
-
-        @app.command("greet", effect="read_only", help="Say hello")
-        def greet(ctx):
-            pass
-
-        monkeypatch.chdir(elsewhere)
-        assert app.test(["--dump-schema"]).exit_code == 0
-        assert (home / ".strictcli" / "schema.json").exists()
-        assert not (elsewhere / ".strictcli").exists()
-
-    def test_undeclared_root_in_schema_path_is_a_registration_error(self, tmp_path, monkeypatch):
-        monkeypatch.chdir(tmp_path)
-        with pytest.raises(ValueError, match="MYAPP_HOME"):
-            _make_app(schema_path=strictcli.RelativeToRoot("MYAPP_HOME", "schema.json"))
-
-
 class TestByteCanon:
     """The dumped document is dumper-independent (contract §25.8).
 
@@ -1427,8 +1144,7 @@ class TestByteCanon:
     """
 
     def _dump(self, tmp_path, app):
-        app.test(["--dump-schema"])
-        return (tmp_path / ".strictcli" / "schema.json").read_text(encoding="utf-8")
+        return app.test(["help", "--json"]).stdout
 
     def test_the_whole_document_byte_for_byte(self, tmp_path, monkeypatch):
         """One small app, pinned as bytes: layout, key order and escaping in
@@ -1447,7 +1163,7 @@ class TestByteCanon:
         text = self._dump(tmp_path, app)
         tail = text[text.index('  "project_id"'):]
         assert tail == (
-            '  "project_id": "testproject",\n'
+            '  "project_id": "strictcli",\n'
             '  "name": "testapp",\n'
             '  "version": "1.0.0",\n'
             '  "help": "A test app",\n'
@@ -1568,8 +1284,8 @@ class TestCanonicalKeyOrder:
     time; keyed objects follow the two rules §25.9 pins."""
 
     def _dump(self, tmp_path, app):
-        app.test(["--dump-schema"])
-        return json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        _dump_r = app.test(["help", "--json"])
+        return json.loads(_dump_r.stdout)
 
     def test_the_top_level_order(self, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)
@@ -1668,8 +1384,8 @@ class TestBehavioralCompleteness:
     """
 
     def _dump(self, tmp_path, app):
-        app.test(["--dump-schema"])
-        return json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        _dump_r = app.test(["help", "--json"])
+        return json.loads(_dump_r.stdout)
 
     def test_the_config_keys_are_absent_at_their_baselines(
         self, tmp_path, monkeypatch,
@@ -1806,8 +1522,8 @@ class TestChoicesSiblingKey:
     """§25.5: the enum lives in the fragment, the records live beside it."""
 
     def _dump(self, tmp_path, app):
-        app.test(["--dump-schema"])
-        return json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        _dump_r = app.test(["help", "--json"])
+        return json.loads(_dump_r.stdout)
 
     def test_help_is_omitted_when_the_entry_declares_none(
         self, tmp_path, monkeypatch,

@@ -10,7 +10,6 @@ from conftest import pass_outcome
 @pytest.fixture(autouse=True)
 def _pyproject_in_tmp(tmp_path):
     """Ensure every test that uses tmp_path has a pyproject.toml for project_id."""
-    (tmp_path / "pyproject.toml").write_text('[project]\nname = "testproject"\n')
 
 
 CHECKS_TOML = """\
@@ -63,9 +62,9 @@ class TestSchemaWithChecks:
         def noop(ctx):
             pass
 
-        result = app.test(["--dump-schema"])
+        result = app.test(["help", "--json"])
         assert result.exit_code == 0
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        data = json.loads(result.stdout)
         assert "checks" in data
         assert isinstance(data["checks"], dict)
         assert len(data["checks"]) == 2
@@ -92,8 +91,8 @@ class TestSchemaWithChecks:
         def noop(ctx):
             pass
 
-        app.test(["--dump-schema"])
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        _dump_r = app.test(["help", "--json"])
+        data = json.loads(_dump_r.stdout)
 
         lint = data["checks"]["lint-code"]
         assert lint["tags"] == ["code", "fast"]
@@ -124,9 +123,9 @@ class TestSchemaWithoutChecks:
         def noop(ctx):
             pass
 
-        result = app.test(["--dump-schema"])
+        result = app.test(["help", "--json"])
         assert result.exit_code == 0
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        data = json.loads(result.stdout)
         assert "checks" not in data
 
 
@@ -181,8 +180,8 @@ class TestSchemaWithScope:
         def noop(ctx):
             pass
 
-        app.test(["--dump-schema"])
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        _dump_r = app.test(["help", "--json"])
+        data = json.loads(_dump_r.stdout)
 
         scoped = data["checks"]["scoped-check"]
         assert scoped["scope"] == "changelog"
@@ -219,8 +218,8 @@ class TestCheckBlockCanon:
         def noop(ctx):
             pass
 
-        app.test(["--dump-schema"])
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        _dump_r = app.test(["help", "--json"])
+        data = json.loads(_dump_r.stdout)
         # Declared in the TOML as lint-code then check-deps.
         assert list(data["checks"]) == ["check-deps", "lint-code"]
 
@@ -241,6 +240,6 @@ class TestCheckBlockCanon:
         def noop(ctx):
             pass
 
-        app.test(["--dump-schema"])
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        _dump_r = app.test(["help", "--json"])
+        data = json.loads(_dump_r.stdout)
         assert "checks" not in data

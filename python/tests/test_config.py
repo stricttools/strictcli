@@ -1433,7 +1433,6 @@ def test_config_flag_not_in_schema(tmp_path, monkeypatch):
     """--config should NOT appear in --dump-schema output."""
     monkeypatch.chdir(tmp_path)
     # Create pyproject.toml for project_id detection
-    (tmp_path / "pyproject.toml").write_text('[project]\nname = "testapp"\n')
 
     app = strictcli.App(name="testapp", version="1.0.0", help="test app", config=True)
 
@@ -1441,9 +1440,9 @@ def test_config_flag_not_in_schema(tmp_path, monkeypatch):
     def run(ctx):
         pass
 
-    r = app.test(["--dump-schema"])
+    r = app.test(["help", "--json"])
     assert r.exit_code == 0
-    schema = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+    schema = json.loads(r.stdout)
     # Check that no global flag is named "config"
     for gf in schema.get("global_flags", []):
         assert gf["name"] != "config", "--config should not appear in schema"

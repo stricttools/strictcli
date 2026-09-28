@@ -20,7 +20,6 @@ def in_project_dir(tmp_path, monkeypatch):
     -- which is why every schema test below takes this fixture rather than
     changing directory for itself.
     """
-    (tmp_path / "pyproject.toml").write_text('[project]\nname = "testproject"\n')
     monkeypatch.chdir(tmp_path)
     return tmp_path
 
@@ -323,9 +322,9 @@ def test_a_bare_retired_entry_is_refused(entry):
 
 
 def _dump(app, project_dir):
-    result = app.test(["--dump-schema"])
+    result = app.test(["help", "--json"])
     assert result.exit_code == 0, result.stderr
-    return (project_dir / ".strictcli" / "schema.json").read_text()
+    return result.stdout
 
 
 def test_the_schema_publishes_retired_choices_sorted_by_key(in_project_dir):

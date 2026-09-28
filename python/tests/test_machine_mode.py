@@ -360,7 +360,9 @@ class TestEnvelopePreDispatch:
         assert envelope(r)["command"] is None
         assert "unknown flag '--nope'" in r.stderr
 
-    def test_help_beats_machine_mode(self):
+    def test_the_help_flag_under_machine_mode_is_refused(self):
+        """--help is text only; the refusal names the help command that
+        prints the machine form, and that command works."""
         app = _app()
 
         @app.command("run", effect="read_only", help="run")
@@ -368,8 +370,12 @@ class TestEnvelopePreDispatch:
             return 0
 
         r = app.test(["--json", "run", "--help"])
-        assert r.exit_code == 0
-        assert "interface_version" not in r.stdout
+        assert r.exit_code == 1
+        assert r.stderr.startswith(
+            "error: help pages are text; for the machine form use "
+            "'app help run --json'\n"
+        )
+        assert app.test(["help", "run", "--json"]).exit_code == 0
 
     def test_a_stale_flag_never_decides_the_next_run(self):
         app = _app()

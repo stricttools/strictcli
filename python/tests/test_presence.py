@@ -756,16 +756,11 @@ class TestProvided:
 
 class TestSchemaPresence:
     def _dump(self, build, tmp_path, monkeypatch):
-        """Build the app INSIDE tmp_path: the schema path is resolved when the
-        App is constructed, so a chdir afterwards comes too late."""
-        (tmp_path / "pyproject.toml").write_text(
-            '[project]\nname = "testapp"\nversion = "1.0.0"\n'
-        )
-        monkeypatch.chdir(tmp_path)
+        """The help document of a freshly built app."""
         app = build()
-        r = app.test(["--dump-schema"])
+        r = app.test(["help", "--json"])
         assert r.exit_code == 0, r.stderr
-        return json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        return json.loads(r.stdout)
 
     def test_every_flag_and_arg_entry_carries_presence(self, tmp_path, monkeypatch):
         def build():

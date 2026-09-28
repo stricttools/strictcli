@@ -125,7 +125,7 @@ def test_group_help_shows_full_path():
     r = app.test(["dns", "zone", "--help"])
     assert r.exit_code == 0
     assert "nch dns zone -- manage DNS zones" in r.stdout
-    assert "Use 'nch dns zone <command> --help'" in r.stdout
+    assert "Use 'nch help dns zone <command>'" in r.stdout
 
 
 def test_4level_help_at_each_level():

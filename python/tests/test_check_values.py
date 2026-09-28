@@ -150,11 +150,10 @@ class TestCheckMetadata:
 
     def test_metadata_reaches_the_schema_dump(self, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)
-        (tmp_path / "pyproject.toml").write_text('[project]\nname = "testapp"\n')
         app = _app(tmp_path)
-        r = app.test(["--dump-schema"])
+        r = app.test(["help", "--json"])
         assert r.exit_code == 0
-        schema = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        schema = json.loads(r.stdout)
         entry = schema["checks"]["lint"]
         assert entry["description"] == "Checks lint"
         assert entry["subject"] == "quality"

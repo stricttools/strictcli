@@ -9,8 +9,6 @@ from dataclasses import FrozenInstanceError
 import pytest
 import strictcli
 
-_PYPROJECT_TOML = '[project]\nname = "testproject"\n'
-
 
 def _make_app(**kwargs):
     """Create a minimal app for testing."""
@@ -379,7 +377,6 @@ class TestTagContracts:
 @pytest.fixture(autouse=True)
 def _pyproject_in_tmp(tmp_path):
     """Ensure every test that uses tmp_path has a pyproject.toml for project_id."""
-    (tmp_path / "pyproject.toml").write_text(_PYPROJECT_TOML)
 
 
 class TestSchemaTagOutput:
@@ -393,9 +390,9 @@ class TestSchemaTagOutput:
         def cmd(ctx):
             pass
 
-        result = app.test(["--dump-schema"])
+        result = app.test(["help", "--json"])
         assert result.exit_code == 0
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        data = json.loads(result.stdout)
         assert data["commands"]["cmd"]["tags"] == ["admin", "beta"]
 
     def test_schema_untagged_command(self, tmp_path, monkeypatch):
@@ -406,9 +403,9 @@ class TestSchemaTagOutput:
         def cmd(ctx):
             pass
 
-        result = app.test(["--dump-schema"])
+        result = app.test(["help", "--json"])
         assert result.exit_code == 0
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        data = json.loads(result.stdout)
         assert "tags" not in data["commands"]["cmd"]
 
     def test_schema_group_own_tags(self, tmp_path, monkeypatch):
@@ -420,9 +417,9 @@ class TestSchemaTagOutput:
         def cmd(ctx):
             pass
 
-        result = app.test(["--dump-schema"])
+        result = app.test(["help", "--json"])
         assert result.exit_code == 0
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        data = json.loads(result.stdout)
         assert data["groups"]["admin"]["tags"] == ["admin"]
 
     def test_schema_defaults_include_tags(self, tmp_path, monkeypatch):
@@ -433,9 +430,9 @@ class TestSchemaTagOutput:
         def cmd(ctx):
             pass
 
-        result = app.test(["--dump-schema"])
+        result = app.test(["help", "--json"])
         assert result.exit_code == 0
-        data = json.loads((tmp_path / ".strictcli" / "schema.json").read_text())
+        data = json.loads(result.stdout)
         defaults = data["defaults"]
         assert defaults["command"]["tags"] == []
         assert defaults["group"]["tags"] == []
