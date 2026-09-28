@@ -85,7 +85,7 @@ test("checks.toml: checks must be a table", () => {
 test("checks.toml: invalid check name", () => {
 	assertEmbedThrows(
 		`app = "testapp"\n[checks.Bad]\ndescription = "Checks Bad"\nsubject = "quality"\n${VALID_CHECK_BODY}`,
-		'checks.toml: invalid check name "Bad" (must match [a-z][a-z0-9-]*)',
+		'checks.toml: invalid check name "Bad" (must be lowercase kebab-case of at least two characters: [a-z][a-z0-9]*(-[a-z0-9]+)*)',
 	);
 });
 
@@ -143,7 +143,7 @@ test("checks.toml: bool fields must be booleans (Python type names)", () => {
 
 test("checks.toml: depends_on validation", () => {
 	assertEmbedThrows(
-		'app = "testapp"\n[checks.lint]\ndescription = "Checks lint"\nsubject = "quality"\ntags = []\nseverity = "error"\nfast = true\npure = true\nneeds_network = false\ndepends_on = "x"\n',
+		'app = "testapp"\n[checks.lint]\ndescription = "Checks lint"\nsubject = "quality"\ntags = []\nseverity = "error"\nfast = true\npure = true\nneeds_network = false\ndepends_on = "xx"\n',
 		'checks.toml: check "lint": "depends_on" must be a list of strings',
 	);
 	assertEmbedThrows(
@@ -181,7 +181,7 @@ test("checks.toml: app-only file is valid; scope is carried on defs", () => {
 	assert.deepEqual(order, []);
 
 	const parsed = parseChecksToml(
-		`app = "t"\n[checks.lint]\ndescription = "Checks lint"\nsubject = "quality"\n${VALID_CHECK_BODY}scope = "changelog"\n`,
+		`app = "tt"\n[checks.lint]\ndescription = "Checks lint"\nsubject = "quality"\n${VALID_CHECK_BODY}scope = "changelog"\n`,
 	);
 	const def = parsed.defs.get("lint");
 	assert.ok(def);
@@ -200,11 +200,11 @@ test("cannot use both checksPath and checksEmbed", () => {
 	assert.throws(
 		() =>
 			createApp({
-				name: "t",
+				name: "tt",
 				version: "1",
-				help: "h",
+				help: "hh",
 				checksPath: "/nope/checks.toml",
-				checksEmbed: 'app = "t"\n',
+				checksEmbed: 'app = "tt"\n',
 			}),
 		{ message: "cannot use both WithChecks and WithChecksEmbed" },
 	);
@@ -214,9 +214,9 @@ test("checksPath must exist", () => {
 	assert.throws(
 		() =>
 			createApp({
-				name: "t",
+				name: "tt",
 				version: "1",
-				help: "h",
+				help: "hh",
 				checksPath: "/no/such/checks.toml",
 			}),
 		{ message: "checks_path does not exist: /no/such/checks.toml" },
@@ -228,12 +228,12 @@ test("checksPath loads a checks.toml file from disk", async () => {
 	const path = join(dir, "checks.toml");
 	writeFileSync(
 		path,
-		`app = "t"\n[checks.lint]\ndescription = "Checks lint"\nsubject = "quality"\n${VALID_CHECK_BODY}`,
+		`app = "tt"\n[checks.lint]\ndescription = "Checks lint"\nsubject = "quality"\n${VALID_CHECK_BODY}`,
 	);
 	const app = createApp({
-		name: "t",
+		name: "tt",
 		version: "1",
-		help: "h",
+		help: "hh",
 		checksPath: path,
 	});
 	app.errorCheck("lint", (_ctx, r) => r.passed("all good"));
@@ -247,7 +247,7 @@ test("checksPath loads a checks.toml file from disk", async () => {
 
 test("CheckOutcome cannot be constructed directly", () => {
 	assert.throws(
-		() => new CheckOutcome(Symbol("forged"), "passed", "m", [], []),
+		() => new CheckOutcome(Symbol("forged"), "passed", "mm", [], []),
 		{
 			message:
 				"CheckOutcome cannot be constructed directly; obtain one from a reporter (passed/skipped/found)",
@@ -256,7 +256,7 @@ test("CheckOutcome cannot be constructed directly", () => {
 });
 
 test("mintSkip is the runner's internal skip mint", () => {
-	const o = mintSkip('skipped: dependency "x" failed');
+	const o = mintSkip('skipped: dependency "xx" failed');
 	assert.equal(o.kind, "skipped");
 	assert.equal(deriveStatus(o), "skip");
 });
@@ -279,13 +279,13 @@ test("reporter: passed/skipped/found minting rules", () => {
 
 test("reporter: problems block passed and skipped", () => {
 	const r1 = new ErrorReporter();
-	r1.error("x");
+	r1.error("xx");
 	assert.throws(() => r1.passed("nope"), {
 		message:
 			"problems were reported; a check that found problems cannot pass -- use found instead",
 	});
 	const r2 = new WarnReporter();
-	r2.warn("x");
+	r2.warn("xx");
 	assert.throws(() => r2.skipped("nope"), {
 		message: "problems were reported; a check that found problems cannot skip",
 	});
@@ -344,7 +344,7 @@ test("WarnReporter structurally lacks error-minting", () => {
 // --- Registration double-entry ---
 
 test("errorCheck: checks not enabled", () => {
-	const app = createApp({ name: "t", version: "1", help: "h" });
+	const app = createApp({ name: "tt", version: "1", help: "hh" });
 	assert.throws(() => app.errorCheck("lint", (_c, r) => r.passed("ok")), {
 		message: 'cannot register check "lint": checks not enabled',
 	});
@@ -371,19 +371,19 @@ test("errorCheck: duplicate registration", () => {
 
 test("registration severity cross-check, both directions", () => {
 	const warnToml =
-		'app = "testapp"\n[checks.w]\ndescription = "Checks w"\nsubject = "quality"\ntags = []\nseverity = "warn"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n';
+		'app = "testapp"\n[checks.ww]\ndescription = "Checks w"\nsubject = "quality"\ntags = []\nseverity = "warn"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n';
 	const app = appWithEmbed(warnToml);
-	assert.throws(() => app.errorCheck("w", (_c, r) => r.passed("ok")), {
+	assert.throws(() => app.errorCheck("ww", (_c, r) => r.passed("ok")), {
 		message:
-			'check "w": declared severity "warn" in checks.toml but registered via app.errorCheck; use app.warnCheck',
+			'check "ww": declared severity "warn" in checks.toml but registered via app.errorCheck; use app.warnCheck',
 	});
 
 	const app2 = appWithEmbed(
-		`app = "testapp"\n[checks.e]\ndescription = "Checks e"\nsubject = "quality"\n${VALID_CHECK_BODY}`,
+		`app = "testapp"\n[checks.ee]\ndescription = "Checks e"\nsubject = "quality"\n${VALID_CHECK_BODY}`,
 	);
-	assert.throws(() => app2.warnCheck("e", (_c, r) => r.passed("ok")), {
+	assert.throws(() => app2.warnCheck("ee", (_c, r) => r.passed("ok")), {
 		message:
-			'check "e": declared severity "error" in checks.toml but registered via app.warnCheck; use app.errorCheck',
+			'check "ee": declared severity "error" in checks.toml but registered via app.warnCheck; use app.errorCheck',
 	});
 });
 

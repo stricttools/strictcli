@@ -318,7 +318,7 @@ test("hooks: declaration refusals, and the fix clears each", () => {
 	const cases: [string, string][] = [
 		[
 			`${base}[hooks.Pre-Push]\ntag = "prepush"\n`,
-			'checks.toml: invalid hook name "Pre-Push" (must match [a-z][a-z0-9-]*)',
+			'checks.toml: invalid hook name "Pre-Push" (must be lowercase kebab-case of at least two characters: [a-z][a-z0-9]*(-[a-z0-9]+)*)',
 		],
 		[
 			`${base}[hooks]\npre-push = "prepush"\n`,

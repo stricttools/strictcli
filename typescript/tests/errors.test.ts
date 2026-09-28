@@ -135,7 +135,10 @@ import { ParseError, RegistrationError } from "../src/errors.js";
 // subject refusals, the seven hook-declaration refusals, the three refused
 // resolver values, the three hook-selection refusals, and the resolver's
 // must-be-callable guard.
-const EXPECTED_TEMPLATE_COUNT = 444;
+// The naming rule nets +6: the command, group, deprecated-command and flag
+// name refusals, the short-form refusal, and the framework-command
+// reservation.
+const EXPECTED_TEMPLATE_COUNT = 450;
 
 function templateFunctions(): [string, (...args: never[]) => unknown][] {
 	// Widen to unknown first: the module also exports the two error classes,
@@ -322,7 +325,7 @@ test("strict scalar parsing templates are byte-identical to sibling output", () 
 test("registration templates are byte-identical to sibling output", () => {
 	assert.equal(
 		errors.errInvalidTagName("My Tag"),
-		'invalid tag name "My Tag": must match [a-z][a-z0-9-]*',
+		'invalid tag name "My Tag": must be lowercase kebab-case of at least two characters: [a-z][a-z0-9]*(-[a-z0-9]+)*',
 	);
 	assert.equal(
 		errors.errFlagForceReserved(),
@@ -405,27 +408,27 @@ test("registration templates are byte-identical to sibling output", () => {
 test("%q slots quote exactly like Go strconv.Quote", () => {
 	assert.equal(
 		errors.errInvalidTagName('a"b'),
-		'invalid tag name "a\\"b": must match [a-z][a-z0-9-]*',
+		'invalid tag name "a\\"b": must be lowercase kebab-case of at least two characters: [a-z][a-z0-9]*(-[a-z0-9]+)*',
 	);
 	assert.equal(
 		errors.errInvalidTagName("a\\b"),
-		'invalid tag name "a\\\\b": must match [a-z][a-z0-9-]*',
+		'invalid tag name "a\\\\b": must be lowercase kebab-case of at least two characters: [a-z][a-z0-9]*(-[a-z0-9]+)*',
 	);
 	assert.equal(
 		errors.errInvalidTagName("a\tb"),
-		'invalid tag name "a\\tb": must match [a-z][a-z0-9-]*',
+		'invalid tag name "a\\tb": must be lowercase kebab-case of at least two characters: [a-z][a-z0-9]*(-[a-z0-9]+)*',
 	);
 	assert.equal(
 		errors.errInvalidTagName("a\nb"),
-		'invalid tag name "a\\nb": must match [a-z][a-z0-9-]*',
+		'invalid tag name "a\\nb": must be lowercase kebab-case of at least two characters: [a-z][a-z0-9]*(-[a-z0-9]+)*',
 	);
 	assert.equal(
 		errors.errInvalidTagName("a\x01b"),
-		'invalid tag name "a\\x01b": must match [a-z][a-z0-9-]*',
+		'invalid tag name "a\\x01b": must be lowercase kebab-case of at least two characters: [a-z][a-z0-9]*(-[a-z0-9]+)*',
 	);
 	assert.equal(
 		errors.errInvalidTagName("café"),
-		'invalid tag name "café": must match [a-z][a-z0-9-]*',
+		'invalid tag name "café": must be lowercase kebab-case of at least two characters: [a-z][a-z0-9]*(-[a-z0-9]+)*',
 	);
 });
 

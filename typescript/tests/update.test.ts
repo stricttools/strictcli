@@ -30,7 +30,7 @@ import { tempDir } from "./helpers.js";
 const ok = () => undefined;
 
 function tiny(): App {
-	return createApp({ name: "t", version: "1.0.0", help: "t" });
+	return createApp({ name: "tt", version: "1.0.0", help: "tt" });
 }
 
 /** The contract's own worked example (§27.8). */
@@ -97,7 +97,7 @@ test("the ban refuses a value default on a flag of a mutating command", () => {
 	assert.equal(
 		message(() =>
 			tiny().command(
-				defineMutatingCommand("u", {
+				defineMutatingCommand("uu", {
 					help: "update",
 					flags: {
 						ttl: flag("ttl", t.int, {
@@ -110,7 +110,7 @@ test("the ban refuses a value default on a flag of a mutating command", () => {
 				}),
 			),
 		),
-		'command "u": flag \'--ttl\' declares presence: "default" with default: 300 on a mutating command: absence would write a value the invocation never stated (declare presence: "required" or presence: "optional", or apply the fallback in the handler and say so in its help)',
+		'command "uu": flag \'--ttl\' declares presence: "default" with default: 300 on a mutating command: absence would write a value the invocation never stated (declare presence: "required" or presence: "optional", or apply the fallback in the handler and say so in its help)',
 	);
 });
 
@@ -121,7 +121,7 @@ test("the ban refuses a value default on a positional arg", () => {
 	assert.match(
 		message(() =>
 			tiny().command(
-				defineMutatingCommand("u", {
+				defineMutatingCommand("uu", {
 					help: "update",
 					args: [
 						arg("target", t.str, {
@@ -134,7 +134,7 @@ test("the ban refuses a value default on a positional arg", () => {
 				}),
 			),
 		),
-		/^command "u": argument 'target' declares presence: "default" with default: prod on a mutating command/,
+		/^command "uu": argument 'target' declares presence: "default" with default: prod on a mutating command/,
 	);
 });
 
@@ -142,7 +142,7 @@ test("the ban reaches every scalar, the empty ones included", () => {
 	const refuse = (name: string, f: unknown): string =>
 		message(() =>
 			tiny().command(
-				defineMutatingCommand("u", {
+				defineMutatingCommand("uu", {
 					help: "update",
 					flags: { [name]: f } as never,
 					handler: ok,
@@ -206,20 +206,20 @@ test("the ban reaches a NON-EMPTY compound default", () => {
 	assert.match(
 		message(() =>
 			tiny().command(
-				defineMutatingCommand("u", {
+				defineMutatingCommand("uu", {
 					help: "update",
 					flags: {
 						tag: flag("tag", t.list(t.str), {
 							help: "tags",
 							presence: "default",
-							default: ["a"],
+							default: ["aa"],
 						}),
 					},
 					handler: ok,
 				}),
 			),
 		),
-		/flag '--tag' declares presence: "default" with default: a on a mutating command/,
+		/flag '--tag' declares presence: "default" with default: aa on a mutating command/,
 	);
 });
 
@@ -227,7 +227,7 @@ test("the ban reaches a NON-EMPTY compound default", () => {
 test("the ban's carve-outs and exemptions all register", () => {
 	// An empty collection declares no elements.
 	tiny().command(
-		defineMutatingCommand("u", {
+		defineMutatingCommand("uu", {
 			help: "update",
 			flags: {
 				tag: flag("tag", t.list(t.str), {
@@ -246,12 +246,12 @@ test("the ban's carve-outs and exemptions all register", () => {
 	);
 	// A relativeToRoot default decides WHERE, never WHAT.
 	createApp({
-		name: "t",
+		name: "tt",
 		version: "1.0.0",
-		help: "t",
+		help: "tt",
 		infraRoot: { T_HOME: "~/.t" },
 	}).command(
-		defineMutatingCommand("u", {
+		defineMutatingCommand("uu", {
 			help: "update",
 			flags: {
 				path: flag("path", t.str, {
@@ -265,7 +265,7 @@ test("the ban's carve-outs and exemptions all register", () => {
 	);
 	// A read_only command writes no value, invented or otherwise.
 	tiny().command(
-		defineReadOnlyCommand("r", {
+		defineReadOnlyCommand("rr", {
 			help: "read",
 			flags: {
 				ttl: flag("ttl", t.int, {
@@ -279,9 +279,9 @@ test("the ban's carve-outs and exemptions all register", () => {
 	);
 	// An app-level global is NOT reached (§27.1's stated hole).
 	createApp({
-		name: "t",
+		name: "tt",
 		version: "1.0.0",
-		help: "t",
+		help: "tt",
 		flags: {
 			depth: flag("depth", t.int, {
 				help: "depth",
@@ -289,7 +289,7 @@ test("the ban's carve-outs and exemptions all register", () => {
 				default: 3n,
 			}),
 		},
-	}).command(defineMutatingCommand("u", { help: "update", handler: ok }));
+	}).command(defineMutatingCommand("uu", { help: "update", handler: ok }));
 });
 
 test("the ban reaches a flag set's flag, per attaching command", () => {
@@ -308,7 +308,7 @@ test("the ban reaches a flag set's flag, per attaching command", () => {
 		},
 	};
 	tiny().command(
-		defineReadOnlyCommand("r", {
+		defineReadOnlyCommand("rr", {
 			help: "read",
 			flagSets: [shared],
 			handler: ok,
@@ -317,14 +317,14 @@ test("the ban reaches a flag set's flag, per attaching command", () => {
 	assert.match(
 		message(() =>
 			tiny().command(
-				defineMutatingCommand("u", {
+				defineMutatingCommand("uu", {
 					help: "update",
 					flagSets: [shared],
 					handler: ok,
 				}),
 			),
 		),
-		/command "u": flag '--ttl' declares presence: "default" with default: 300 on a mutating command/,
+		/command "uu": flag '--ttl' declares presence: "default" with default: 300 on a mutating command/,
 	);
 });
 
@@ -335,7 +335,7 @@ test("the ban spares the selector and reaches its scope, at every depth", () => 
 	assert.match(
 		message(() =>
 			tiny().command(
-				defineMutatingCommand("u", {
+				defineMutatingCommand("uu", {
 					help: "update",
 					flags: {
 						via: choiceFlag(
@@ -368,10 +368,10 @@ test("the ban spares the selector and reaches its scope, at every depth", () => 
 				}),
 			),
 		),
-		/command "u": flag '--retries' declares presence: "default" with default: 3 on a mutating command/,
+		/command "uu": flag '--retries' declares presence: "default" with default: 3 on a mutating command/,
 	);
 	tiny().command(
-		defineMutatingCommand("u", {
+		defineMutatingCommand("uu", {
 			help: "update",
 			flags: {
 				via: choiceFlag(
@@ -410,7 +410,7 @@ test("update_of on a read_only command is refused", () => {
 	assert.equal(
 		message(() =>
 			tiny().command(
-				defineReadOnlyCommand("u", {
+				defineReadOnlyCommand("uu", {
 					help: "update",
 					updateOf: {
 						resource: "thing",
@@ -427,7 +427,7 @@ test("update_of on a read_only command is refused", () => {
 				}),
 			),
 		),
-		'command "u": a read_only command cannot declare update_of (a command that changes nothing writes no properties)',
+		'command "uu": a read_only command cannot declare update_of (a command that changes nothing writes no properties)',
 	);
 });
 
@@ -437,7 +437,7 @@ test("the write mode's vocabulary is closed", () => {
 	assert.equal(
 		message(() =>
 			tiny().command(
-				defineMutatingCommand("u", {
+				defineMutatingCommand("uu", {
 					help: "update",
 					updateOf: {
 						resource: "thing",
@@ -454,7 +454,7 @@ test("the write mode's vocabulary is closed", () => {
 				}),
 			),
 		),
-		'command "u": invalid write_mode "patch": must be "sparse" or "full_replace"',
+		'command "uu": invalid write_mode "patch": must be "sparse" or "full_replace"',
 	);
 });
 
@@ -462,7 +462,7 @@ test("the resource name takes the constraint-name charset", () => {
 	assert.equal(
 		message(() =>
 			tiny().command(
-				defineMutatingCommand("u", {
+				defineMutatingCommand("uu", {
 					help: "update",
 					updateOf: {
 						resource: "DNS_Record",
@@ -479,7 +479,7 @@ test("the resource name takes the constraint-name charset", () => {
 				}),
 			),
 		),
-		'command "u": update resource "DNS_Record" must match [a-z][a-z0-9-]*',
+		'command "uu": update resource "DNS_Record" must be lowercase kebab-case of at least two characters: [a-z][a-z0-9]*(-[a-z0-9]+)*',
 	);
 });
 
@@ -487,7 +487,7 @@ test("an update with no properties is refused", () => {
 	assert.equal(
 		message(() =>
 			tiny().command(
-				defineMutatingCommand("u", {
+				defineMutatingCommand("uu", {
 					help: "update",
 					updateOf: {
 						resource: "thing",
@@ -502,7 +502,7 @@ test("an update with no properties is refused", () => {
 				}),
 			),
 		),
-		'command "u": update of "thing" declares no properties: an update with nothing to write is not an update',
+		'command "uu": update of "thing" declares no properties: an update with nothing to write is not an update',
 	);
 });
 
@@ -512,7 +512,7 @@ test("the name-resolution refusals", () => {
 	assert.equal(
 		message(() =>
 			tiny().command(
-				defineMutatingCommand("u", {
+				defineMutatingCommand("uu", {
 					help: "update",
 					updateOf: {
 						resource: "thing",
@@ -529,13 +529,13 @@ test("the name-resolution refusals", () => {
 				}),
 			),
 		),
-		'command "u": update of "thing" references unknown name "nope"',
+		'command "uu": update of "thing" references unknown name "nope"',
 	);
 	// ambiguous
 	assert.equal(
 		message(() =>
 			tiny().command(
-				defineMutatingCommand("u", {
+				defineMutatingCommand("uu", {
 					help: "update",
 					updateOf: {
 						resource: "thing",
@@ -560,13 +560,13 @@ test("the name-resolution refusals", () => {
 				}),
 			),
 		),
-		'command "u": update of "thing" references "target", which names both a flag and a positional arg',
+		'command "uu": update of "thing" references "target", which names both a flag and a positional arg',
 	);
 	// duplicated
 	assert.equal(
 		message(() =>
 			tiny().command(
-				defineMutatingCommand("u", {
+				defineMutatingCommand("uu", {
 					help: "update",
 					updateOf: {
 						resource: "thing",
@@ -583,13 +583,13 @@ test("the name-resolution refusals", () => {
 				}),
 			),
 		),
-		'command "u": update of "thing" declares "content" twice',
+		'command "uu": update of "thing" declares "content" twice',
 	);
 	// both roles
 	assert.equal(
 		message(() =>
 			tiny().command(
-				defineMutatingCommand("u", {
+				defineMutatingCommand("uu", {
 					help: "update",
 					updateOf: {
 						resource: "thing",
@@ -607,14 +607,14 @@ test("the name-resolution refusals", () => {
 				}),
 			),
 		),
-		'command "u": update of "thing" declares "content" as both identity and property',
+		'command "uu": update of "thing" declares "content" as both identity and property',
 	);
 	// scoped -- a scoped flag resolves and is refused by the scope step, never
 	// reported as unknown (§24.8, §27.3).
 	assert.equal(
 		message(() =>
 			tiny().command(
-				defineMutatingCommand("u", {
+				defineMutatingCommand("uu", {
 					help: "update",
 					updateOf: {
 						resource: "thing",
@@ -651,7 +651,7 @@ test("the name-resolution refusals", () => {
 				}),
 			),
 		),
-		`command "u": update of "thing" references 'subject', which is declared under '--via email': an update's identity and properties are declared at root scope only`,
+		`command "uu": update of "thing" references 'subject', which is declared under '--via email': an update's identity and properties are declared at root scope only`,
 	);
 });
 
@@ -659,7 +659,7 @@ test("a property may not be a positional arg", () => {
 	assert.equal(
 		message(() =>
 			tiny().command(
-				defineMutatingCommand("u", {
+				defineMutatingCommand("uu", {
 					help: "update",
 					updateOf: {
 						resource: "thing",
@@ -673,7 +673,7 @@ test("a property may not be a positional arg", () => {
 				}),
 			),
 		),
-		'command "u": update of "thing" property "content" is a positional arg: a property must be individually omissible and clearable, and only a flag is',
+		'command "uu": update of "thing" property "content" is a positional arg: a property must be individually omissible and clearable, and only a flag is',
 	);
 });
 
@@ -681,7 +681,7 @@ test("a property may not be a choice flag", () => {
 	assert.equal(
 		message(() =>
 			tiny().command(
-				defineMutatingCommand("u", {
+				defineMutatingCommand("uu", {
 					help: "update",
 					updateOf: {
 						resource: "thing",
@@ -702,7 +702,7 @@ test("a property may not be a choice flag", () => {
 				}),
 			),
 		),
-		`command "u": update of "thing" property '--via' is a choice flag: an elected record is a selection, not a property value`,
+		`command "uu": update of "thing" property '--via' is a choice flag: an elected record is a selection, not a property value`,
 	);
 });
 
@@ -710,7 +710,7 @@ test("a property declares optional and nothing else", () => {
 	assert.equal(
 		message(() =>
 			tiny().command(
-				defineMutatingCommand("u", {
+				defineMutatingCommand("uu", {
 					help: "update",
 					updateOf: {
 						resource: "thing",
@@ -727,13 +727,13 @@ test("a property declares optional and nothing else", () => {
 				}),
 			),
 		),
-		`command "u": update of "thing" property flag '--content' declares presence: "required": a property is absent exactly when it is not being written, and the presence declaration for that is presence: "optional"`,
+		`command "uu": update of "thing" property flag '--content' declares presence: "required": a property is absent exactly when it is not being written, and the presence declaration for that is presence: "optional"`,
 	);
 });
 
 test("an identity member may be an arg or a choice flag, and may be optional", () => {
 	tiny().command(
-		defineMutatingCommand("u", {
+		defineMutatingCommand("uu", {
 			help: "update",
 			updateOf: {
 				resource: "thing",
@@ -767,7 +767,7 @@ test("nullable off a property is refused", () => {
 	assert.equal(
 		message(() =>
 			tiny().command(
-				defineMutatingCommand("u", {
+				defineMutatingCommand("uu", {
 					help: "update",
 					flags: {
 						content: flag("content", t.str, {
@@ -780,13 +780,13 @@ test("nullable off a property is refused", () => {
 				}),
 			),
 		),
-		`command "u": flag '--content' declares nullable: true but is not a property of an update: only a property can be cleared`,
+		`command "uu": flag '--content' declares nullable: true but is not a property of an update: only a property can be cleared`,
 	);
 	// On an identity member of an update.
 	assert.match(
 		message(() =>
 			tiny().command(
-				defineMutatingCommand("u", {
+				defineMutatingCommand("uu", {
 					help: "update",
 					updateOf: {
 						resource: "thing",
@@ -809,7 +809,7 @@ test("nullable off a property is refused", () => {
 				}),
 			),
 		),
-		/command "u": flag '--zone' declares nullable: true but is not a property of an update/,
+		/command "uu": flag '--zone' declares nullable: true but is not a property of an update/,
 	);
 });
 
@@ -817,7 +817,7 @@ test("the minted unset name is reserved", () => {
 	assert.equal(
 		message(() =>
 			tiny().command(
-				defineMutatingCommand("u", {
+				defineMutatingCommand("uu", {
 					help: "update",
 					updateOf: {
 						resource: "thing",
@@ -839,7 +839,7 @@ test("the minted unset name is reserved", () => {
 				}),
 			),
 		),
-		`command "u": flag name "unset-content" is reserved: property '--content' declares nullable: true, which mints '--unset-content'`,
+		`command "uu": flag name "unset-content" is reserved: property '--content' declares nullable: true, which mints '--unset-content'`,
 	);
 });
 
@@ -847,9 +847,9 @@ test("the unset-name reservation reaches the app's globals", () => {
 	// A global is recognized after the command name too, so a global of the
 	// minted name would be unreachable behind the clear spelling.
 	const app = createApp({
-		name: "t",
+		name: "tt",
 		version: "1.0.0",
-		help: "t",
+		help: "tt",
 		flags: {
 			unset_content: flag("unset-content", t.str, {
 				help: "a global of that name",
@@ -860,7 +860,7 @@ test("the unset-name reservation reaches the app's globals", () => {
 	assert.equal(
 		message(() =>
 			app.command(
-				defineMutatingCommand("u", {
+				defineMutatingCommand("uu", {
 					help: "update",
 					updateOf: {
 						resource: "thing",
@@ -878,7 +878,7 @@ test("the unset-name reservation reaches the app's globals", () => {
 				}),
 			),
 		),
-		`command "u": flag name "unset-content" is reserved: property '--content' declares nullable: true, which mints '--unset-content'`,
+		`command "uu": flag name "unset-content" is reserved: property '--content' declares nullable: true, which mints '--unset-content'`,
 	);
 });
 
@@ -888,7 +888,7 @@ test("the registration order is pinned", () => {
 	assert.match(
 		message(() =>
 			tiny().command(
-				defineMutatingCommand("u", {
+				defineMutatingCommand("uu", {
 					help: "update",
 					updateOf: {
 						resource: "BAD-NAME",
@@ -912,7 +912,7 @@ test("the registration order is pinned", () => {
 	assert.match(
 		message(() =>
 			tiny().command(
-				defineReadOnlyCommand("u", {
+				defineReadOnlyCommand("uu", {
 					help: "update",
 					updateOf: {
 						resource: "BAD-NAME",
@@ -929,7 +929,7 @@ test("the registration order is pinned", () => {
 	assert.match(
 		message(() =>
 			tiny().command(
-				defineMutatingCommand("u", {
+				defineMutatingCommand("uu", {
 					help: "update",
 					updateOf: {
 						resource: "BAD-NAME",
@@ -940,13 +940,13 @@ test("the registration order is pinned", () => {
 				}),
 			),
 		),
-		/update resource "BAD-NAME" must match/,
+		/update resource "BAD-NAME" must be lowercase kebab-case/,
 	);
 	// Role legality runs ahead of presence legality.
 	assert.match(
 		message(() =>
 			tiny().command(
-				defineMutatingCommand("u", {
+				defineMutatingCommand("uu", {
 					help: "update",
 					updateOf: {
 						resource: "thing",
@@ -968,7 +968,7 @@ test("the registration order is pinned", () => {
 	assert.match(
 		message(() =>
 			tiny().command(
-				defineMutatingCommand("u", {
+				defineMutatingCommand("uu", {
 					help: "update",
 					updateOf: {
 						resource: "thing",
@@ -1051,7 +1051,7 @@ test("an env-provided property satisfies the rule", async () => {
 	// rendered, so a configured value cannot join a write invisibly.
 	const app = tiny();
 	app.command(
-		defineMutatingCommand("u", {
+		defineMutatingCommand("uu", {
 			help: "update",
 			updateOf: {
 				resource: "thing",
@@ -1071,7 +1071,7 @@ test("an env-provided property satisfies the rule", async () => {
 	);
 	process.env.T_CONTENT = "from-env";
 	try {
-		const r = await app.test(["--json", "u"]);
+		const r = await app.test(["--json", "uu"]);
 		assert.equal(r.exitCode, 0, r.stderr);
 		assert.ok(r.stdout.includes('"written":["content"]'), r.stdout);
 	} finally {
@@ -1119,7 +1119,7 @@ test("unset accepts dashed and underscored names", async () => {
 	let underscored = false;
 	const app = tiny();
 	app.command(
-		defineMutatingCommand("u", {
+		defineMutatingCommand("uu", {
 			help: "update",
 			updateOf: {
 				resource: "thing",
@@ -1140,7 +1140,7 @@ test("unset accepts dashed and underscored names", async () => {
 			}) as never,
 		}),
 	);
-	const r = await app.test(["u", "--unset-phone-number"]);
+	const r = await app.test(["uu", "--unset-phone-number"]);
 	assert.equal(r.exitCode, 0, r.stderr);
 	assert.equal(dashed, true);
 	assert.equal(underscored, true);
@@ -1163,7 +1163,7 @@ test("unset on an unknown name throws like provided", async () => {
 				"--record-id",
 				"r7",
 				"--content",
-				"x",
+				"xx",
 			]),
 		/nope/,
 	);
@@ -1283,19 +1283,19 @@ test("the write-set line's pinned forms", async () => {
 	const cases: [string, string[], "sparse" | "full_replace", string][] = [
 		[
 			"one written",
-			["--content", "x"],
+			["--content", "xx"],
 			"sparse",
 			"  writes: content (other properties unchanged)",
 		],
 		[
 			"two written, declaration order",
-			["--ttl", "5", "--content", "x"],
+			["--ttl", "5", "--content", "xx"],
 			"sparse",
 			"  writes: content, ttl (other properties unchanged)",
 		],
 		[
 			"both segments",
-			["--content", "x", "--unset-ttl"],
+			["--content", "xx", "--unset-ttl"],
 			"sparse",
 			"  writes: content; clears: ttl (other properties unchanged)",
 		],
@@ -1307,7 +1307,7 @@ test("the write-set line's pinned forms", async () => {
 		],
 		[
 			"full replace",
-			["--content", "x"],
+			["--content", "xx"],
 			"full_replace",
 			"  writes: content (other properties are re-sent as read)",
 		],
@@ -1361,7 +1361,7 @@ test("the write-set line renders in dry mode only", async () => {
 		"--record-id",
 		"r7",
 		"--content",
-		"x",
+		"xx",
 	]);
 	assert.ok(!r.stdout.includes("writes:"), r.stdout);
 });
@@ -1402,7 +1402,7 @@ test("the envelope's write-set key order is pinned", async () => {
 		"--record-id",
 		"r7",
 		"--content",
-		"x",
+		"xx",
 	]);
 	assert.ok(
 		r.stdout.includes(
@@ -1415,7 +1415,7 @@ test("the envelope's write-set key order is pinned", async () => {
 test("full replace swaps resent and untouched", async () => {
 	const app = tiny();
 	app.command(
-		defineMutatingCommand("u", {
+		defineMutatingCommand("uu", {
 			help: "update",
 			updateOf: {
 				resource: "thing",
@@ -1432,7 +1432,7 @@ test("full replace swaps resent and untouched", async () => {
 			handler: ok,
 		}),
 	);
-	const r = await app.test(["--json", "u", "--content", "x"]);
+	const r = await app.test(["--json", "uu", "--content", "xx"]);
 	assert.ok(
 		r.stdout.includes(
 			'"writes":{"resource":"thing","write_mode":"full_replace","written":["content"],"cleared":[],"resent":["ttl"],"untouched":[]}',
@@ -1443,15 +1443,15 @@ test("full replace swaps resent and untouched", async () => {
 
 test("a command with no update carries a null writes member", async () => {
 	const app = tiny();
-	app.command(defineReadOnlyCommand("r", { help: "read", handler: ok }));
-	const r = await app.test(["--json", "r"]);
+	app.command(defineReadOnlyCommand("rr", { help: "read", handler: ok }));
+	const r = await app.test(["--json", "rr"]);
 	assert.ok(r.stdout.includes('"writes":null'), r.stdout);
 });
 
 test("the envelope uses underscored parameter names", async () => {
 	const app = tiny();
 	app.command(
-		defineMutatingCommand("u", {
+		defineMutatingCommand("uu", {
 			help: "update",
 			updateOf: {
 				resource: "thing",
@@ -1471,7 +1471,7 @@ test("the envelope uses underscored parameter names", async () => {
 			handler: ok,
 		}),
 	);
-	const r = await app.test(["--json", "u", "--phone-number", "555"]);
+	const r = await app.test(["--json", "uu", "--phone-number", "555"]);
 	assert.ok(
 		r.stdout.includes(
 			'"written":["phone_number"],"cleared":[],"resent":[],"untouched":["display_name"]',
@@ -1483,7 +1483,7 @@ test("the envelope uses underscored parameter names", async () => {
 test("the human line uses declared names without the prefix", async () => {
 	const app = tiny();
 	app.command(
-		defineMutatingCommand("u", {
+		defineMutatingCommand("uu", {
 			help: "update",
 			updateOf: {
 				resource: "thing",
@@ -1499,7 +1499,7 @@ test("the human line uses declared names without the prefix", async () => {
 			handler: ok,
 		}),
 	);
-	const r = await app.test(["--dry-run", "u", "--phone-number", "555"]);
+	const r = await app.test(["--dry-run", "uu", "--phone-number", "555"]);
 	assert.ok(
 		r.stdout.includes("  writes: phone-number (other properties unchanged)\n"),
 		r.stdout,
@@ -1525,7 +1525,7 @@ test("a nullable property renders its minted spelling on one line", async () => 
 test("a nullable bool renders all three spellings", async () => {
 	const app = tiny();
 	app.command(
-		defineMutatingCommand("u", {
+		defineMutatingCommand("uu", {
 			help: "update",
 			updateOf: {
 				resource: "thing",
@@ -1542,7 +1542,7 @@ test("a nullable bool renders all three spellings", async () => {
 			handler: ok,
 		}),
 	);
-	const r = await app.test(["u", "--help"]);
+	const r = await app.test(["uu", "--help"]);
 	assert.ok(
 		r.stdout.includes("--proxied, --no-proxied, --unset-proxied"),
 		r.stdout,
@@ -1628,7 +1628,7 @@ test("the dump publishes the update pair and nullable", () => {
 
 test("a command with no update omits the pair", () => {
 	const app = tiny();
-	app.command(defineReadOnlyCommand("r", { help: "read", handler: ok }));
+	app.command(defineReadOnlyCommand("rr", { help: "read", handler: ok }));
 	const text = dumpText(app);
 	// Read past the `defaults` block, which carries both keys' baselines.
 	const entries = text.slice(text.indexOf('\n  "commands"'));
@@ -1639,7 +1639,7 @@ test("a command with no update omits the pair", () => {
 test("an update with no identity publishes an empty array", () => {
 	const app = tiny();
 	app.command(
-		defineMutatingCommand("u", {
+		defineMutatingCommand("uu", {
 			help: "update",
 			updateOf: {
 				resource: "thing",
@@ -1724,7 +1724,7 @@ test("the update description block", () => {
 test("the block omits identifies and the null clause when neither applies", () => {
 	const app = tiny();
 	app.command(
-		defineMutatingCommand("u", {
+		defineMutatingCommand("uu", {
 			help: "update it",
 			updateOf: {
 				resource: "thing",
@@ -1740,7 +1740,7 @@ test("the block omits identifies and the null clause when neither applies", () =
 			handler: ok,
 		}),
 	);
-	const tool = app.asTools().find((x) => x.name === "u");
+	const tool = app.asTools().find((x) => x.name === "uu");
 	assert.equal(
 		tool?.description,
 		"update it\n\n" +
@@ -1837,7 +1837,7 @@ test("dryRunSupported: false composes with an update", async () => {
 		"--record-id",
 		"r7",
 		"--content",
-		"x",
+		"xx",
 	]);
 	assert.equal(r.exitCode, 1);
 	assert.ok(r.stderr.includes("the API has no preview endpoint"), r.stderr);
@@ -1852,7 +1852,7 @@ test("dryRunSupported: false composes with an update", async () => {
 		"--record-id",
 		"r7",
 		"--content",
-		"x",
+		"xx",
 	]);
 	assert.ok(live.stdout.includes('"written":["content"]'), live.stdout);
 });
@@ -1862,7 +1862,7 @@ test("an update command declares constraints like any command", async () => {
 	// at-least-one, which is the intended composition (§27.12).
 	const app = tiny();
 	app.command(
-		defineMutatingCommand("u", {
+		defineMutatingCommand("uu", {
 			help: "update",
 			updateOf: {
 				resource: "thing",
@@ -1887,7 +1887,7 @@ test("an update command declares constraints like any command", async () => {
 			handler: ok,
 		}),
 	);
-	const r = await app.test(["u", "--content", "x"]);
+	const r = await app.test(["uu", "--content", "xx"]);
 	assert.equal(r.exitCode, 1);
 	assert.ok(r.stderr.includes('constraint "addressing"'), r.stderr);
 });
@@ -1898,7 +1898,7 @@ test("an implied property is a provision", async () => {
 	// -- the write set has no source filter (§27.4).
 	const app = tiny();
 	app.command(
-		defineMutatingCommand("u", {
+		defineMutatingCommand("uu", {
 			help: "update",
 			updateOf: {
 				resource: "thing",
@@ -1926,7 +1926,7 @@ test("an implied property is a provision", async () => {
 			handler: ok,
 		}),
 	);
-	const r = await app.test(["--json", "u", "--secure"]);
+	const r = await app.test(["--json", "uu", "--secure"]);
 	assert.ok(r.stdout.includes('"written":["proxied"]'), r.stdout);
 });
 
@@ -1938,7 +1938,7 @@ test("clearing a bool property", async () => {
 	let unset = false;
 	const app = tiny();
 	app.command(
-		defineMutatingCommand("u", {
+		defineMutatingCommand("uu", {
 			help: "update",
 			updateOf: {
 				resource: "thing",
@@ -1962,7 +1962,7 @@ test("clearing a bool property", async () => {
 			}) as never,
 		}),
 	);
-	const r = await app.test(["u", "--unset-proxied"]);
+	const r = await app.test(["uu", "--unset-proxied"]);
 	assert.equal(r.exitCode, 0, r.stderr);
 	assert.equal(value, undefined);
 	assert.equal(unset, true);

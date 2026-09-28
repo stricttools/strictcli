@@ -136,8 +136,15 @@ test("at-least-one: a vacuous group is violated, and the members render structur
 
 test("at-least-one: engaging one member satisfies it, and a second is never refused", async () => {
 	assert.equal(
-		(await authorApp().test(["rewrite", "--old-name", "a", "--new-name", "b"]))
-			.exitCode,
+		(
+			await authorApp().test([
+				"rewrite",
+				"--old-name",
+				"aa",
+				"--new-name",
+				"bb",
+			])
+		).exitCode,
 		0,
 	);
 	// No upper bound: this family is NOT exclusivity (§26.1).
@@ -146,13 +153,13 @@ test("at-least-one: engaging one member satisfies it, and a second is never refu
 			await authorApp().test([
 				"rewrite",
 				"--old-name",
-				"a",
+				"aa",
 				"--new-name",
-				"b",
+				"bb",
 				"--old-email",
-				"c",
+				"cc",
 				"--new-email",
-				"d",
+				"dd",
 			])
 		).exitCode,
 		0,
@@ -160,7 +167,7 @@ test("at-least-one: engaging one member satisfies it, and a second is never refu
 });
 
 test("all-or-none: a child violation reports instead of its parent (§26.4's order)", async () => {
-	const r = await authorApp().test(["rewrite", "--old-name", "a"]);
+	const r = await authorApp().test(["rewrite", "--old-name", "aa"]);
 	assert.equal(
 		r.stderr,
 		'error: constraint "author-name": --old-name, --new-name must be used together\n' +
@@ -172,13 +179,13 @@ test("all-or-none: a vacuous group is satisfied -- the 'none' half of its own na
 	const app = makeApp();
 	app.command(
 		defineReadOnlyCommand("cmd", {
-			help: "h",
+			help: "hh",
 			flags: {
-				a: flag("a", t.str, { help: "h", presence: "optional" }),
-				b: flag("b", t.str, { help: "h", presence: "optional" }),
+				aa: flag("aa", t.str, { help: "hh", presence: "optional" }),
+				bb: flag("bb", t.str, { help: "hh", presence: "optional" }),
 			},
 			constraints: [
-				allOrNone({ name: "pair", members: [{ name: "a" }, { name: "b" }] }),
+				allOrNone({ name: "pair", members: [{ name: "aa" }, { name: "bb" }] }),
 			],
 			handler: ok,
 		}),
@@ -230,18 +237,18 @@ test("when: a declared default never engages, and an implied value does", async 
 	const app = makeApp();
 	app.command(
 		defineReadOnlyCommand("cmd", {
-			help: "h",
+			help: "hh",
 			flags: {
 				trigger: flag("trigger", t.bool, {
-					help: "h",
+					help: "hh",
 					presence: "default",
 					default: false,
 				}),
 				target: flag("target", t.bool, {
-					help: "h",
+					help: "hh",
 					presence: "optional",
 				}),
-				other: flag("other", t.str, { help: "h", presence: "optional" }),
+				other: flag("other", t.str, { help: "hh", presence: "optional" }),
 			},
 			constraints: [
 				implies({
@@ -289,7 +296,7 @@ test("a token-spelled selector is an ordinary member, engaged only by an actual 
 		const app = makeApp();
 		app.command(
 			defineReadOnlyCommand("send", {
-				help: "h",
+				help: "hh",
 				flags: {
 					via: choiceFlag(
 						"via",
@@ -297,7 +304,7 @@ test("a token-spelled selector is an ordinary member, engaged only by an actual 
 						{ help: "delivery channel", presence: "default", default: "email" },
 					),
 					dry: flag("dry", t.bool, {
-						help: "h",
+						help: "hh",
 						presence: "default",
 						default: false,
 					}),
@@ -509,14 +516,14 @@ test("mcp: requires projects dependentRequired, implies projects nothing and say
 		defineReadOnlyCommand("deploy", {
 			help: "deploy",
 			flags: {
-				cert: flag("cert", t.str, { help: "h", presence: "optional" }),
+				cert: flag("cert", t.str, { help: "hh", presence: "optional" }),
 				ssl: flag("ssl", t.bool, {
-					help: "h",
+					help: "hh",
 					presence: "default",
 					default: false,
 				}),
 				quiet_mode: flag("quiet-mode", t.bool, {
-					help: "h",
+					help: "hh",
 					presence: "default",
 					default: false,
 				}),
@@ -560,12 +567,12 @@ test("mcp: a FALSE implied value is a value, not a name", async () => {
 			help: "deploy",
 			flags: {
 				ssl: flag("ssl", t.bool, {
-					help: "h",
+					help: "hh",
 					presence: "default",
 					default: true,
 				}),
 				insecure: flag("insecure", t.bool, {
-					help: "h",
+					help: "hh",
 					presence: "default",
 					default: false,
 				}),
@@ -601,14 +608,20 @@ test("mcp: two at-least-one rules are conjoined rather than merged or dropped", 
 		defineReadOnlyCommand("pick", {
 			help: "pick",
 			flags: {
-				a: flag("a", t.str, { help: "h", presence: "optional" }),
-				b: flag("b", t.str, { help: "h", presence: "optional" }),
-				c: flag("c", t.str, { help: "h", presence: "optional" }),
-				d: flag("d", t.str, { help: "h", presence: "optional" }),
+				aa: flag("aa", t.str, { help: "hh", presence: "optional" }),
+				bb: flag("bb", t.str, { help: "hh", presence: "optional" }),
+				cc: flag("cc", t.str, { help: "hh", presence: "optional" }),
+				dd: flag("dd", t.str, { help: "hh", presence: "optional" }),
 			},
 			constraints: [
-				atLeastOne({ name: "first", members: [{ name: "a" }, { name: "b" }] }),
-				atLeastOne({ name: "second", members: [{ name: "c" }, { name: "d" }] }),
+				atLeastOne({
+					name: "first",
+					members: [{ name: "aa" }, { name: "bb" }],
+				}),
+				atLeastOne({
+					name: "second",
+					members: [{ name: "cc" }, { name: "dd" }],
+				}),
 			],
 			handler: ok,
 		}),
@@ -619,8 +632,8 @@ test("mcp: two at-least-one rules are conjoined rather than merged or dropped", 
 	const params = buildJSONSchema(cmd as never);
 	assert.equal(params.anyOf, undefined);
 	assert.deepEqual(params.allOf, [
-		{ anyOf: [{ required: ["a"] }, { required: ["b"] }] },
-		{ anyOf: [{ required: ["c"] }, { required: ["d"] }] },
+		{ anyOf: [{ required: ["aa"] }, { required: ["bb"] }] },
+		{ anyOf: [{ required: ["cc"] }, { required: ["dd"] }] },
 	]);
 });
 
@@ -630,15 +643,18 @@ test("mcp: an all-or-none over a nested group emits no keyword and names the nes
 		defineReadOnlyCommand("grouped", {
 			help: "grouped",
 			flags: {
-				a: flag("a", t.str, { help: "h", presence: "optional" }),
-				b: flag("b", t.str, { help: "h", presence: "optional" }),
-				c: flag("c", t.str, { help: "h", presence: "optional" }),
+				aa: flag("aa", t.str, { help: "hh", presence: "optional" }),
+				bb: flag("bb", t.str, { help: "hh", presence: "optional" }),
+				cc: flag("cc", t.str, { help: "hh", presence: "optional" }),
 			},
 			constraints: [
-				atLeastOne({ name: "inner", members: [{ name: "a" }, { name: "b" }] }),
+				atLeastOne({
+					name: "inner",
+					members: [{ name: "aa" }, { name: "bb" }],
+				}),
 				allOrNone({
 					name: "outer",
-					members: [{ name: "inner" }, { name: "c" }],
+					members: [{ name: "inner" }, { name: "cc" }],
 				}),
 			],
 			handler: ok,
@@ -651,8 +667,8 @@ test("mcp: an all-or-none over a nested group emits no keyword and names the nes
 	assert.deepEqual(params.dependentRequired, undefined);
 	assert.ok(
 		toolFor(app, "grouped").description.endsWith(
-			"  at least one of: a, b\n" +
-				"  all or none of: (a or b), c -- not expressed in the schema: the nested grouping",
+			"  at least one of: aa, bb\n" +
+				"  all or none of: (aa or bb), cc -- not expressed in the schema: the nested grouping",
 		),
 		toolFor(app, "grouped").description,
 	);
@@ -667,40 +683,40 @@ function nestedSelectorApp(depth: 1 | 2): App {
 	const app = makeApp();
 	app.command(
 		defineReadOnlyCommand("cmd", {
-			help: "h",
+			help: "hh",
 			flags: {
-				a: flag("a", t.str, { help: "h", presence: "optional" }),
-				b: flag("b", t.bool, {
-					help: "h",
+				aa: flag("aa", t.str, { help: "hh", presence: "optional" }),
+				bb: flag("bb", t.bool, {
+					help: "hh",
 					presence: "default",
 					default: false,
 				}),
-				c: flag("c", t.str, { help: "h", presence: "optional" }),
+				cc: flag("cc", t.str, { help: "hh", presence: "optional" }),
 			},
 			constraints:
 				depth === 1
 					? [
 							allOrNone({
 								name: "inner",
-								members: [{ name: "a" }, { name: "b", when: "true" }],
+								members: [{ name: "aa" }, { name: "bb", when: "true" }],
 							}),
 							atLeastOne({
 								name: "outer",
-								members: [{ name: "inner" }, { name: "c" }],
+								members: [{ name: "inner" }, { name: "cc" }],
 							}),
 						]
 					: [
 							allOrNone({
 								name: "deep",
-								members: [{ name: "a" }, { name: "b", when: "true" }],
+								members: [{ name: "aa" }, { name: "bb", when: "true" }],
 							}),
 							allOrNone({
 								name: "inner",
-								members: [{ name: "deep" }, { name: "c" }],
+								members: [{ name: "deep" }, { name: "cc" }],
 							}),
 							atLeastOne({
 								name: "outer",
-								members: [{ name: "inner" }, { name: "a" }],
+								members: [{ name: "inner" }, { name: "aa" }],
 							}),
 						],
 			handler: ok,
@@ -761,14 +777,20 @@ test("mcp: the rule keywords sit after `required` and before `additionalProperti
 		defineReadOnlyCommand("pick", {
 			help: "pick",
 			flags: {
-				a: flag("a", t.str, { help: "h", presence: "optional" }),
-				b: flag("b", t.str, { help: "h", presence: "optional" }),
-				c: flag("c", t.str, { help: "h", presence: "optional" }),
-				d: flag("d", t.str, { help: "h", presence: "optional" }),
+				aa: flag("aa", t.str, { help: "hh", presence: "optional" }),
+				bb: flag("bb", t.str, { help: "hh", presence: "optional" }),
+				cc: flag("cc", t.str, { help: "hh", presence: "optional" }),
+				dd: flag("dd", t.str, { help: "hh", presence: "optional" }),
 			},
 			constraints: [
-				atLeastOne({ name: "first", members: [{ name: "a" }, { name: "b" }] }),
-				atLeastOne({ name: "second", members: [{ name: "c" }, { name: "d" }] }),
+				atLeastOne({
+					name: "first",
+					members: [{ name: "aa" }, { name: "bb" }],
+				}),
+				atLeastOne({
+					name: "second",
+					members: [{ name: "cc" }, { name: "dd" }],
+				}),
 			],
 			handler: ok,
 		}),
@@ -788,7 +810,7 @@ test("mcp: the rule keywords sit after `required` and before `additionalProperti
 	plain.command(
 		defineReadOnlyCommand("bare", {
 			help: "bare",
-			flags: { a: flag("a", t.str, { help: "h", presence: "optional" }) },
+			flags: { aa: flag("aa", t.str, { help: "hh", presence: "optional" }) },
 			handler: ok,
 		}),
 	);
@@ -805,41 +827,41 @@ test("mcp: the rule keywords sit after `required` and before `additionalProperti
 
 test("violation: the decline clause searches DIRECT members only", async () => {
 	// §12.15's pin: the clause teaches about the sentence it is appended to,
-	// and that sentence lists the PARENT's operands. A `--no-b` one level down
+	// and that sentence lists the PARENT's operands. A `--no-bb` one level down
 	// names a token the reader is not looking at, and the nested group is left
 	// vacuous rather than violated.
-	const r = await nestedSelectorApp(1).test(["cmd", "--no-b"]);
+	const r = await nestedSelectorApp(1).test(["cmd", "--no-bb"]);
 	assert.equal(
 		r.stderr,
-		'error: constraint "outer": at least one of (--a with --b), --c is required\n' +
+		'error: constraint "outer": at least one of (--aa with --bb), --cc is required\n' +
 			"try 'myapp cmd --help'\n",
 	);
 	// The same decline on a DIRECT member does append the clause.
 	const app = makeApp();
 	app.command(
 		defineReadOnlyCommand("direct", {
-			help: "h",
+			help: "hh",
 			flags: {
-				b: flag("b", t.bool, {
-					help: "h",
+				bb: flag("bb", t.bool, {
+					help: "hh",
 					presence: "default",
 					default: false,
 				}),
-				c: flag("c", t.str, { help: "h", presence: "optional" }),
+				cc: flag("cc", t.str, { help: "hh", presence: "optional" }),
 			},
 			constraints: [
 				atLeastOne({
 					name: "outer",
-					members: [{ name: "b", when: "true" }, { name: "c" }],
+					members: [{ name: "bb", when: "true" }, { name: "cc" }],
 				}),
 			],
 			handler: ok,
 		}),
 	);
 	assert.equal(
-		(await app.test(["direct", "--no-b"])).stderr,
-		'error: constraint "outer": at least one of --b, --c is required ' +
-			"(--no-b declines an option; it does not choose one)\n" +
+		(await app.test(["direct", "--no-bb"])).stderr,
+		'error: constraint "outer": at least one of --bb, --cc is required ' +
+			"(--no-bb declines an option; it does not choose one)\n" +
 			"try 'myapp direct --help'\n",
 	);
 });

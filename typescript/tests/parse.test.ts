@@ -944,8 +944,8 @@ test("nesting: mixed groups and commands at same level", async () => {
 	const out: string[] = [];
 	const app = makeApp();
 	app.command(
-		defineReadOnlyCommand("version", {
-			help: "show version",
+		defineReadOnlyCommand("status", {
+			help: "show status",
 			handler: () => {
 				out.push("1.0.0");
 			},

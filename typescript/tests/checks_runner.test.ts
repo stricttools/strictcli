@@ -140,11 +140,11 @@ test("cascade: dependency FAIL skips dependents with exact skip message", async 
 });
 
 test("cascade: warn dependency satisfies the dependent (no cascade)", async () => {
-	const toml = `app = "t"\n[checks.compile]\ndescription = "Checks compile"\nsubject = "quality"\n${checkBody("error")}\n[checks.lint]\ndescription = "Checks lint"\nsubject = "quality"\n${checkBody("error", { depends_on: '["compile"]' })}`;
+	const toml = `app = "tt"\n[checks.compile]\ndescription = "Checks compile"\nsubject = "quality"\n${checkBody("error")}\n[checks.lint]\ndescription = "Checks lint"\nsubject = "quality"\n${checkBody("error", { depends_on: '["compile"]' })}`;
 	const app = createApp({
-		name: "t",
+		name: "tt",
 		version: "1",
-		help: "h",
+		help: "hh",
 		checksEmbed: toml,
 	});
 	app.errorCheck("compile", (_c, r) => {
@@ -161,11 +161,11 @@ test("cascade: warn dependency satisfies the dependent (no cascade)", async () =
 });
 
 test("cascade: explicit SKIP is not a failure, dependents still run", async () => {
-	const toml = `app = "t"\n[checks.compile]\ndescription = "Checks compile"\nsubject = "quality"\n${checkBody("error")}\n[checks.lint]\ndescription = "Checks lint"\nsubject = "quality"\n${checkBody("error", { depends_on: '["compile"]' })}`;
+	const toml = `app = "tt"\n[checks.compile]\ndescription = "Checks compile"\nsubject = "quality"\n${checkBody("error")}\n[checks.lint]\ndescription = "Checks lint"\nsubject = "quality"\n${checkBody("error", { depends_on: '["compile"]' })}`;
 	const app = createApp({
-		name: "t",
+		name: "tt",
 		version: "1",
-		help: "h",
+		help: "hh",
 		checksEmbed: toml,
 	});
 	app.errorCheck("compile", (_c, r) => r.skipped("not applicable"));
@@ -178,11 +178,11 @@ test("cascade: explicit SKIP is not a failure, dependents still run", async () =
 });
 
 test("cascade: multi-level chain, mid-chain failure cascades transitively", async () => {
-	const toml = `app = "t"\n[checks.check-a]\ndescription = "Checks check-a"\nsubject = "quality"\n${checkBody("error")}\n[checks.check-b]\ndescription = "Checks check-b"\nsubject = "quality"\n${checkBody("error", { depends_on: '["check-a"]' })}\n[checks.check-c]\ndescription = "Checks check-c"\nsubject = "quality"\n${checkBody("error", { depends_on: '["check-b"]' })}`;
+	const toml = `app = "tt"\n[checks.check-a]\ndescription = "Checks check-a"\nsubject = "quality"\n${checkBody("error")}\n[checks.check-b]\ndescription = "Checks check-b"\nsubject = "quality"\n${checkBody("error", { depends_on: '["check-a"]' })}\n[checks.check-c]\ndescription = "Checks check-c"\nsubject = "quality"\n${checkBody("error", { depends_on: '["check-b"]' })}`;
 	const app = createApp({
-		name: "t",
+		name: "tt",
 		version: "1",
-		help: "h",
+		help: "hh",
 		checksEmbed: toml,
 	});
 	app.errorCheck("check-a", (_c, r) => r.passed("a passed"));
@@ -203,30 +203,30 @@ test("cascade: multi-level chain, mid-chain failure cascades transitively", asyn
 });
 
 test("cycle detection: exact Python cycle-path bytes", async () => {
-	const toml = `app = "t"\n[checks.a]\ndescription = "Checks a"\nsubject = "quality"\n${checkBody("error", { depends_on: '["b"]' })}\n[checks.b]\ndescription = "Checks b"\nsubject = "quality"\n${checkBody("error", { depends_on: '["a"]' })}`;
+	const toml = `app = "tt"\n[checks.aa]\ndescription = "Checks a"\nsubject = "quality"\n${checkBody("error", { depends_on: '["bb"]' })}\n[checks.bb]\ndescription = "Checks b"\nsubject = "quality"\n${checkBody("error", { depends_on: '["aa"]' })}`;
 	const app = createApp({
-		name: "t",
+		name: "tt",
 		version: "1",
-		help: "h",
+		help: "hh",
 		checksEmbed: toml,
 	});
-	app.errorCheck("a", (_c, r) => r.passed("ok"));
-	app.errorCheck("b", (_c, r) => r.passed("ok"));
+	app.errorCheck("aa", (_c, r) => r.passed("ok"));
+	app.errorCheck("bb", (_c, r) => r.passed("ok"));
 	app.setCheckContext(() => CTX);
 	await assert.rejects(app.test(["check", "--all"]), {
-		message: "check dependency cycle: a -> b -> a",
+		message: "check dependency cycle: aa -> bb -> aa",
 	});
 	await assert.rejects(app.runChecks(CTX, { runAll: true }), {
-		message: "check dependency cycle: a -> b -> a",
+		message: "check dependency cycle: aa -> bb -> aa",
 	});
 });
 
 test("filtered-dep pull-in: selecting only the dependent runs the dependency too", async () => {
-	const toml = `app = "t"\n[checks.compile]\ndescription = "Checks compile"\nsubject = "quality"\n${checkBody("error")}\n[checks.lint]\ndescription = "Checks lint"\nsubject = "quality"\n${checkBody("error", { depends_on: '["compile"]' })}`;
+	const toml = `app = "tt"\n[checks.compile]\ndescription = "Checks compile"\nsubject = "quality"\n${checkBody("error")}\n[checks.lint]\ndescription = "Checks lint"\nsubject = "quality"\n${checkBody("error", { depends_on: '["compile"]' })}`;
 	const app = createApp({
-		name: "t",
+		name: "tt",
 		version: "1",
-		help: "h",
+		help: "hh",
 		checksEmbed: toml,
 	});
 	app.errorCheck("compile", (_c, r) => r.passed("compiled ok"));
@@ -241,33 +241,33 @@ test("filtered-dep pull-in: selecting only the dependent runs the dependency too
 });
 
 test("non-minted outcome is a hard error (belt-and-braces)", async () => {
-	const toml = `app = "t"\n[checks.a]\ndescription = "Checks a"\nsubject = "quality"\n${checkBody("error")}`;
+	const toml = `app = "tt"\n[checks.aa]\ndescription = "Checks a"\nsubject = "quality"\n${checkBody("error")}`;
 	const app = createApp({
-		name: "t",
+		name: "tt",
 		version: "1",
-		help: "h",
+		help: "hh",
 		checksEmbed: toml,
 	});
 	// Force an untyped bad return through the typed surface.
 	app.errorCheck(
-		"a",
+		"aa",
 		(() => 42) as unknown as Parameters<typeof app.errorCheck>[1],
 	);
 	app.setCheckContext(() => CTX);
 	await assert.rejects(app.test(["check", "--all"]), {
 		message:
-			'check "a" returned an outcome not minted by its reporter; use reporter methods (Passed/Skipped/Found)',
+			'check "aa" returned an outcome not minted by its reporter; use reporter methods (Passed/Skipped/Found)',
 	});
 });
 
 class CheckAborted extends Error {}
 
 test("a throwing impl is contained as its own failure and the next check still runs", async () => {
-	const toml = `app = "t"\n[checks.broken]\ndescription = "Checks broken"\nsubject = "quality"\n${checkBody("error")}\n[checks.fine]\ndescription = "Checks fine"\nsubject = "quality"\n${checkBody("error")}`;
+	const toml = `app = "tt"\n[checks.broken]\ndescription = "Checks broken"\nsubject = "quality"\n${checkBody("error")}\n[checks.fine]\ndescription = "Checks fine"\nsubject = "quality"\n${checkBody("error")}`;
 	const app = createApp({
-		name: "t",
+		name: "tt",
 		version: "1",
-		help: "h",
+		help: "hh",
 		checksEmbed: toml,
 	});
 	app.errorCheck("broken", () => {
@@ -286,11 +286,11 @@ test("a throwing impl is contained as its own failure and the next check still r
 });
 
 test("a contained abort cascade-skips its dependents", async () => {
-	const toml = `app = "t"\n[checks.broken]\ndescription = "Checks broken"\nsubject = "quality"\n${checkBody("error")}\n[checks.dependent]\ndescription = "Checks dependent"\nsubject = "quality"\n${checkBody("error", { depends_on: '["broken"]' })}`;
+	const toml = `app = "tt"\n[checks.broken]\ndescription = "Checks broken"\nsubject = "quality"\n${checkBody("error")}\n[checks.dependent]\ndescription = "Checks dependent"\nsubject = "quality"\n${checkBody("error", { depends_on: '["broken"]' })}`;
 	const app = createApp({
-		name: "t",
+		name: "tt",
 		version: "1",
-		help: "h",
+		help: "hh",
 		checksEmbed: toml,
 	});
 	app.errorCheck("broken", () => {
@@ -305,11 +305,11 @@ test("a contained abort cascade-skips its dependents", async () => {
 });
 
 test("a warn-severity check that throws still fails", async () => {
-	const toml = `app = "t"\n[checks.broken]\ndescription = "Checks broken"\nsubject = "quality"\n${checkBody("warn")}`;
+	const toml = `app = "tt"\n[checks.broken]\ndescription = "Checks broken"\nsubject = "quality"\n${checkBody("warn")}`;
 	const app = createApp({
-		name: "t",
+		name: "tt",
 		version: "1",
-		help: "h",
+		help: "hh",
 		checksEmbed: toml,
 	});
 	app.warnCheck("broken", () => {
@@ -322,21 +322,21 @@ test("a warn-severity check that throws still fails", async () => {
 });
 
 test("abort attribution: type names, an empty message, and a thrown primitive", async () => {
-	const toml = `app = "t"\n[checks.a]\ndescription = "Checks a"\nsubject = "quality"\n${checkBody("error")}`;
+	const toml = `app = "tt"\n[checks.aa]\ndescription = "Checks a"\nsubject = "quality"\n${checkBody("error")}`;
 	const thrown: [unknown, string][] = [
-		[new CheckAborted("boom"), 'check "a" aborted with CheckAborted: boom'],
-		[new TypeError("bad"), 'check "a" aborted with TypeError: bad'],
-		[new CheckAborted(""), 'check "a" aborted with CheckAborted'],
-		["boom", 'check "a" aborted with string: boom'],
+		[new CheckAborted("boom"), 'check "aa" aborted with CheckAborted: boom'],
+		[new TypeError("bad"), 'check "aa" aborted with TypeError: bad'],
+		[new CheckAborted(""), 'check "aa" aborted with CheckAborted'],
+		["boom", 'check "aa" aborted with string: boom'],
 	];
 	for (const [value, want] of thrown) {
 		const app = createApp({
-			name: "t",
+			name: "tt",
 			version: "1",
-			help: "h",
+			help: "hh",
 			checksEmbed: toml,
 		});
-		app.errorCheck("a", () => {
+		app.errorCheck("aa", () => {
 			throw value;
 		});
 		app.setCheckContext(() => CTX);
@@ -350,11 +350,11 @@ test("abort attribution: type names, an empty message, and a thrown primitive", 
 });
 
 test("durationMs: integer wall-clock around the impl only; cascade-skips carry 0", async () => {
-	const toml = `app = "t"\n[checks.slow]\ndescription = "Checks slow"\nsubject = "quality"\n${checkBody("error")}\n[checks.dep]\ndescription = "Checks dep"\nsubject = "quality"\n${checkBody("error", { depends_on: '["slow"]' })}`;
+	const toml = `app = "tt"\n[checks.slow]\ndescription = "Checks slow"\nsubject = "quality"\n${checkBody("error")}\n[checks.dep]\ndescription = "Checks dep"\nsubject = "quality"\n${checkBody("error", { depends_on: '["slow"]' })}`;
 	const app = createApp({
-		name: "t",
+		name: "tt",
 		version: "1",
-		help: "h",
+		help: "hh",
 		checksEmbed: toml,
 	});
 	app.errorCheck("slow", async (_c, r) => {
@@ -381,21 +381,21 @@ test("durationMs: integer wall-clock around the impl only; cascade-skips carry 0
 // --- Programmatic runChecks surface ---
 
 test("runChecks: not enabled is a hard error", async () => {
-	const app = createApp({ name: "t", version: "1", help: "h" });
+	const app = createApp({ name: "tt", version: "1", help: "hh" });
 	await assert.rejects(app.runChecks(CTX), {
 		message: "checks are not enabled on this App",
 	});
 });
 
 test("runChecks: empty selection returns empty results and exit 0", async () => {
-	const toml = `app = "t"\n[checks.a]\ndescription = "Checks a"\nsubject = "quality"\n${checkBody("error")}`;
+	const toml = `app = "tt"\n[checks.aa]\ndescription = "Checks a"\nsubject = "quality"\n${checkBody("error")}`;
 	const app = createApp({
-		name: "t",
+		name: "tt",
 		version: "1",
-		help: "h",
+		help: "hh",
 		checksEmbed: toml,
 	});
-	app.errorCheck("a", (_c, r) => r.passed("ok"));
+	app.errorCheck("aa", (_c, r) => r.passed("ok"));
 	const out = await app.runChecks(CTX);
 	assert.deepEqual(out.results, []);
 	assert.deepEqual(out.impureListed, []);
@@ -403,14 +403,14 @@ test("runChecks: empty selection returns empty results and exit 0", async () => 
 });
 
 test("runChecks: result accessors, and a warning exits nonzero", async () => {
-	const toml = `app = "t"\n[checks.a]\ndescription = "Checks a"\nsubject = "quality"\n${checkBody("warn")}`;
+	const toml = `app = "tt"\n[checks.aa]\ndescription = "Checks a"\nsubject = "quality"\n${checkBody("warn")}`;
 	const app = createApp({
-		name: "t",
+		name: "tt",
 		version: "1",
-		help: "h",
+		help: "hh",
 		checksEmbed: toml,
 	});
-	app.warnCheck("a", (_c, r) => {
+	app.warnCheck("aa", (_c, r) => {
 		r.warn("minor issues");
 		r.note("checked stuff");
 		return r.found("minor issues");
@@ -419,7 +419,7 @@ test("runChecks: result accessors, and a warning exits nonzero", async () => {
 	assert.equal(strict.exitCode, 1);
 	const r = strict.results[0];
 	assert.ok(r !== undefined);
-	assert.equal(r.name, "a");
+	assert.equal(r.name, "aa");
 	assert.equal(r.status, "warn");
 	assert.equal(r.message, "minor issues");
 	assert.deepEqual(
@@ -432,11 +432,11 @@ test("runChecks: result accessors, and a warning exits nonzero", async () => {
 });
 
 test("runChecks: tag/glob filters intersect", async () => {
-	const toml = `app = "t"
+	const toml = `app = "tt"
 [checks.check-alpha]
 description = "Checks check-alpha"
 subject = "quality"
-tags = ["x"]
+tags = ["xx"]
 severity = "error"
 fast = true
 pure = true
@@ -446,7 +446,7 @@ depends_on = []
 [checks.check-beta]
 description = "Checks check-beta"
 subject = "quality"
-tags = ["x"]
+tags = ["xx"]
 severity = "error"
 fast = true
 pure = true
@@ -456,7 +456,7 @@ depends_on = []
 [checks.check-gamma]
 description = "Checks check-gamma"
 subject = "quality"
-tags = ["y"]
+tags = ["yy"]
 severity = "error"
 fast = true
 pure = true
@@ -464,16 +464,16 @@ needs_network = false
 depends_on = []
 `;
 	const app = createApp({
-		name: "t",
+		name: "tt",
 		version: "1",
-		help: "h",
+		help: "hh",
 		checksEmbed: toml,
 	});
 	app.errorCheck("check-alpha", (_c, r) => r.passed("alpha passed"));
 	app.errorCheck("check-beta", (_c, r) => r.passed("beta passed"));
 	app.errorCheck("check-gamma", (_c, r) => r.passed("gamma passed"));
 	const out = await app.runChecks(CTX, {
-		tagExpr: "x",
+		tagExpr: "xx",
 		nameGlob: "check-a*",
 	});
 	assert.deepEqual(
@@ -484,11 +484,11 @@ depends_on = []
 });
 
 test("runChecks: purity partition lists impure checks and their dependents", async () => {
-	const toml = `app = "t"
+	const toml = `app = "tt"
 [checks.pure-a]
 description = "Checks pure-a"
 subject = "quality"
-tags = ["x"]
+tags = ["xx"]
 severity = "error"
 fast = true
 pure = true
@@ -498,7 +498,7 @@ depends_on = []
 [checks.impure-b]
 description = "Checks impure-b"
 subject = "quality"
-tags = ["x"]
+tags = ["xx"]
 severity = "error"
 fast = true
 pure = false
@@ -508,7 +508,7 @@ depends_on = []
 [checks.net-c]
 description = "Checks net-c"
 subject = "quality"
-tags = ["x"]
+tags = ["xx"]
 severity = "error"
 fast = true
 pure = true
@@ -518,7 +518,7 @@ depends_on = []
 [checks.pure-d]
 description = "Checks pure-d"
 subject = "quality"
-tags = ["x"]
+tags = ["xx"]
 severity = "error"
 fast = true
 pure = true
@@ -526,9 +526,9 @@ needs_network = false
 depends_on = ["impure-b"]
 `;
 	const app = createApp({
-		name: "t",
+		name: "tt",
 		version: "1",
-		help: "h",
+		help: "hh",
 		checksEmbed: toml,
 	});
 	const ran: string[] = [];
@@ -551,14 +551,14 @@ depends_on = ["impure-b"]
 });
 
 test("runChecks: unregistered declared check is a thrown error", async () => {
-	const toml = `app = "t"\n[checks.a]\ndescription = "Checks a"\nsubject = "quality"\n${checkBody("error")}`;
+	const toml = `app = "tt"\n[checks.aa]\ndescription = "Checks a"\nsubject = "quality"\n${checkBody("error")}`;
 	const app = createApp({
-		name: "t",
+		name: "tt",
 		version: "1",
-		help: "h",
+		help: "hh",
 		checksEmbed: toml,
 	});
 	await assert.rejects(app.runChecks(CTX, { runAll: true }), {
-		message: "checks declared in checks.toml but not registered: a",
+		message: "checks declared in checks.toml but not registered: aa",
 	});
 });

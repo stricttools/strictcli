@@ -130,10 +130,10 @@ test("check --list --json: compact entries, scope only when non-empty", async ()
 
 test("check --list on an app-only checks.toml prints No checks defined.", async () => {
 	const app = createApp({
-		name: "t",
+		name: "tt",
 		version: "1",
-		help: "h",
-		checksEmbed: 'app = "t"\n',
+		help: "hh",
+		checksEmbed: 'app = "tt"\n',
 	});
 	const result = await app.test(["check", "--list"]);
 	assert.equal(result.exitCode, 0);
@@ -210,11 +210,11 @@ test("check with non-matching filter prints the no-match message", async () => {
 
 test("check: a warn-only run exits 1 and --ignore-warnings is refused", async () => {
 	const toml =
-		'app = "t"\n[checks.lint]\ndescription = "Checks lint"\nsubject = "quality"\ntags = ["x"]\nseverity = "error"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n';
+		'app = "tt"\n[checks.lint]\ndescription = "Checks lint"\nsubject = "quality"\ntags = ["xx"]\nseverity = "error"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n';
 	const app = createApp({
-		name: "t",
+		name: "tt",
 		version: "1",
-		help: "h",
+		help: "hh",
 		checksEmbed: toml,
 	});
 	app.errorCheck("lint", (_c, r) => {
@@ -294,7 +294,7 @@ test("check --dry-run: a selected pure check really runs", async () => {
 });
 
 test("dry-run purity annotations: pure=false and needs_network=true are impure", async () => {
-	const toml = `app = "t"
+	const toml = `app = "tt"
 [checks.deploy]
 description = "Checks deploy"
 subject = "quality"
@@ -316,9 +316,9 @@ needs_network = true
 depends_on = []
 `;
 	const app = createApp({
-		name: "t",
+		name: "tt",
 		version: "1",
-		help: "h",
+		help: "hh",
 		checksEmbed: toml,
 	});
 	app.errorCheck("deploy", (_c, r) => r.passed("deployed"));
@@ -333,7 +333,7 @@ depends_on = []
 });
 
 test("check --dry-run: a pure check that fails makes the rehearsal fail", async () => {
-	const toml = `app = "t"
+	const toml = `app = "tt"
 [checks.lint]
 description = "Checks lint"
 subject = "quality"
@@ -355,9 +355,9 @@ needs_network = false
 depends_on = []
 `;
 	const app = createApp({
-		name: "t",
+		name: "tt",
 		version: "1",
-		help: "h",
+		help: "hh",
 		checksEmbed: toml,
 	});
 	app.errorCheck("lint", (_c, r) => {
@@ -379,14 +379,14 @@ depends_on = []
 
 test("check run without a context factory is a stderr error, exit 1", async () => {
 	const toml =
-		'app = "t"\n[checks.a]\ndescription = "Checks a"\nsubject = "quality"\ntags = ["x"]\nseverity = "error"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n';
+		'app = "tt"\n[checks.aa]\ndescription = "Checks a"\nsubject = "quality"\ntags = ["xx"]\nseverity = "error"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n';
 	const app = createApp({
-		name: "t",
+		name: "tt",
 		version: "1",
-		help: "h",
+		help: "hh",
 		checksEmbed: toml,
 	});
-	app.errorCheck("a", (_c, r) => r.passed("ok"));
+	app.errorCheck("aa", (_c, r) => r.passed("ok"));
 	const result = await app.test(["check", "--all"]);
 	assert.equal(result.exitCode, 1);
 	assert.equal(result.stdout, "");
@@ -415,7 +415,7 @@ test("malformed tag expression is reported through the error writer", async () =
 });
 
 test("check command is absent when checks are never enabled", async () => {
-	const app = createApp({ name: "t", version: "1", help: "h" });
+	const app = createApp({ name: "tt", version: "1", help: "hh" });
 	const result = await app.test(["check", "--all"]);
 	assert.equal(result.exitCode, 1);
 	assert.match(result.stderr, /unknown command 'check'/);
@@ -433,11 +433,11 @@ test("check command appears in app help when checks are enabled", async () => {
 
 test("scoped checks run normally (scope is parse-only, matching Go)", async () => {
 	const toml =
-		'app = "t"\n[checks.scoped-check]\ndescription = "Checks scoped-check"\nsubject = "quality"\ntags = ["release"]\nseverity = "error"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\nscope = "changelog"\n';
+		'app = "tt"\n[checks.scoped-check]\ndescription = "Checks scoped-check"\nsubject = "quality"\ntags = ["release"]\nseverity = "error"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\nscope = "changelog"\n';
 	const app = createApp({
-		name: "t",
+		name: "tt",
 		version: "1",
-		help: "h",
+		help: "hh",
 		checksEmbed: toml,
 	});
 	app.errorCheck("scoped-check", (_c, r) => r.passed("scoped check ok"));
@@ -452,11 +452,11 @@ test("scoped checks run normally (scope is parse-only, matching Go)", async () =
 
 test("a global flag colliding with a check flag is dropped from the command", async () => {
 	const toml =
-		'app = "g"\n[checks.a]\ndescription = "Checks a"\nsubject = "quality"\ntags = ["x"]\nseverity = "error"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n';
+		'app = "gg"\n[checks.aa]\ndescription = "Checks a"\nsubject = "quality"\ntags = ["xx"]\nseverity = "error"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n';
 	const app = createApp({
-		name: "g",
+		name: "gg",
 		version: "1",
-		help: "h",
+		help: "hh",
 		flags: {
 			all: flag("all", t.bool, {
 				help: "Global all toggle",
@@ -466,7 +466,7 @@ test("a global flag colliding with a check flag is dropped from the command", as
 		},
 		checksEmbed: toml,
 	});
-	app.errorCheck("a", (_c, r) => r.passed("ok"));
+	app.errorCheck("aa", (_c, r) => r.passed("ok"));
 	app.setCheckContext(() => CTX);
 	// The candidate `all` check flag is dropped; the global's value reaches
 	// the handler under the same key.
@@ -477,7 +477,7 @@ test("a global flag colliding with a check flag is dropped from the command", as
 	// framework-owned --json (contract §7.5's sweep box).
 	const asJson = await app.test(["--json", "check", "--all"]);
 	assert.equal(asJson.exitCode, 0);
-	assert.match(asJson.stdout, /"name":"a"/);
+	assert.match(asJson.stdout, /"name":"aa"/);
 });
 
 test("check no longer declares --verbose or --dry-run", async () => {

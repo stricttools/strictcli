@@ -47,7 +47,7 @@ test("reserved quartet: flag() refuses each reserved name", () => {
 	for (const name of RESERVED) {
 		assert.throws(
 			() =>
-				flag(name, t.bool, { help: "h", presence: "default", default: false }),
+				flag(name, t.bool, { help: "hh", presence: "default", default: false }),
 			{
 				name: "RegistrationError",
 				message: reservedMessage(name),
@@ -59,7 +59,7 @@ test("reserved quartet: flag() refuses each reserved name", () => {
 test("reserved names: `yes` is banned outright", () => {
 	assert.throws(
 		() =>
-			flag("yes", t.bool, { help: "h", presence: "default", default: false }),
+			flag("yes", t.bool, { help: "hh", presence: "default", default: false }),
 		{
 			name: "RegistrationError",
 			message: YES_BAN_MESSAGE,
@@ -68,12 +68,12 @@ test("reserved names: `yes` is banned outright", () => {
 	assert.throws(
 		() =>
 			createApp({
-				name: "t",
+				name: "tt",
 				version: "1",
-				help: "h",
+				help: "hh",
 				flags: {
 					yes: flag("yes", t.bool, {
-						help: "h",
+						help: "hh",
 						presence: "default",
 						default: false,
 					}),
@@ -88,14 +88,14 @@ test("reserved quartet: the ban applies at every level, not just globals", () =>
 	// same flag() factory, so the ban is unconditional by construction.
 	for (const name of RESERVED) {
 		assert.throws(() =>
-			flag(name, t.bool, { help: "h", presence: "default", default: false }),
+			flag(name, t.bool, { help: "hh", presence: "default", default: false }),
 		);
 	}
 	// A flag set and a mutex group cannot even be built with one.
 	assert.throws(() =>
 		flagSet("common", {
 			quiet: flag("quiet", t.bool, {
-				help: "h",
+				help: "hh",
 				presence: "default",
 				default: false,
 			}),
@@ -107,10 +107,10 @@ test("reserved quartet: the ban applies at every level, not just globals", () =>
 		memberChoiceFlag(
 			"consent",
 			{
-				yes: choice({ help: "h" }),
-				no_thanks: choice({ help: "h" }),
+				yes: choice({ help: "hh" }),
+				no_thanks: choice({ help: "hh" }),
 			},
-			{ help: "h", presence: "required" },
+			{ help: "hh", presence: "required" },
 		),
 	);
 });
@@ -123,14 +123,14 @@ test("reserved quartet: the global-flag path carries the same message", () => {
 		name: "verbose",
 		schema: "bool" as const,
 		carrier: t.bool,
-		opts: { help: "h", presence: "default" as const, default: false },
+		opts: { help: "hh", presence: "default" as const, default: false },
 	};
 	assert.throws(
 		() =>
 			createApp({
-				name: "t",
+				name: "tt",
 				version: "1",
-				help: "h",
+				help: "hh",
 				flags: { verbose: forged },
 			}),
 		{ message: reservedMessage("verbose") },
@@ -150,7 +150,7 @@ test("reserved quartet: --output is explicitly NOT reserved", () => {
 test("reserved quartet: short names are unaffected by the ban", () => {
 	assert.doesNotThrow(() =>
 		flag("quietly", t.bool, {
-			help: "h",
+			help: "hh",
 			short: "q",
 			presence: "default",
 			default: false,
@@ -160,7 +160,7 @@ test("reserved quartet: short names are unaffected by the ban", () => {
 
 test("reserved quartet: arg names are unaffected (an arg has no -- spelling)", () => {
 	assert.doesNotThrow(() =>
-		arg("verbose", t.str, { help: "h", presence: "required" }),
+		arg("verbose", t.str, { help: "hh", presence: "required" }),
 	);
 });
 
@@ -175,7 +175,7 @@ test("consent parameter: flag() refuses the underscore spelling", () => {
 	assert.throws(
 		() =>
 			flag("approve_consequential", t.bool, {
-				help: "h",
+				help: "hh",
 				presence: "default",
 				default: false,
 			}),
@@ -183,7 +183,10 @@ test("consent parameter: flag() refuses the underscore spelling", () => {
 	);
 	assert.throws(
 		() =>
-			flag("approve_consequential", t.str, { help: "h", presence: "required" }),
+			flag("approve_consequential", t.str, {
+				help: "hh",
+				presence: "required",
+			}),
 		{
 			message: CONSENT_FLAG_BAN,
 		},
@@ -193,7 +196,7 @@ test("consent parameter: flag() refuses the underscore spelling", () => {
 test("consent parameter: arg() refuses it too", () => {
 	assert.throws(
 		() =>
-			arg("approve_consequential", t.str, { help: "h", presence: "required" }),
+			arg("approve_consequential", t.str, { help: "hh", presence: "required" }),
 		{
 			name: "RegistrationError",
 			message: CONSENT_ARG_BAN,
@@ -203,10 +206,10 @@ test("consent parameter: arg() refuses it too", () => {
 
 test("consent parameter: only that one name reaches the arg surface", () => {
 	assert.doesNotThrow(() =>
-		arg("approve", t.str, { help: "h", presence: "required" }),
+		arg("approve", t.str, { help: "hh", presence: "required" }),
 	);
 	assert.doesNotThrow(() =>
-		arg("approve-consequential", t.str, { help: "h", presence: "required" }),
+		arg("approve-consequential", t.str, { help: "hh", presence: "required" }),
 	);
 });
 
@@ -214,51 +217,51 @@ test("consent parameter: only that one name reaches the arg surface", () => {
 
 test("classification: the twin factories splice in the effect", () => {
 	assert.equal(
-		defineReadOnlyCommand("a", { help: "h", handler: () => 0 }).effect,
+		defineReadOnlyCommand("aa", { help: "hh", handler: () => 0 }).effect,
 		"read_only",
 	);
 	assert.equal(
-		defineMutatingCommand("b", { help: "h", handler: () => 0 }).effect,
+		defineMutatingCommand("bb", { help: "hh", handler: () => 0 }).effect,
 		"mutating",
 	);
 	assert.equal(
-		readOnlyPassthrough("c", { help: "h", handler: () => 0 }).effect,
+		readOnlyPassthrough("cc", { help: "hh", handler: () => 0 }).effect,
 		"read_only",
 	);
 	assert.equal(
-		mutatingPassthrough("d", { help: "h", handler: () => 0 }).effect,
+		mutatingPassthrough("dd", { help: "hh", handler: () => 0 }).effect,
 		"mutating",
 	);
 });
 
 test("classification: a carrier with no effect is a registration error", () => {
-	const app = createApp({ name: "t", version: "1", help: "h" });
+	const app = createApp({ name: "tt", version: "1", help: "hh" });
 	const forged = {
-		...defineReadOnlyCommand("x", { help: "h", handler: () => 0 }),
+		...defineReadOnlyCommand("xx", { help: "hh", handler: () => 0 }),
 		effect: undefined,
 	} as unknown as AnyCommand;
 	assert.throws(() => app.command(forged), {
 		name: "RegistrationError",
 		message:
-			'command "x": effect classification is required (effect="read_only" or effect="mutating")',
+			'command "xx": effect classification is required (effect="read_only" or effect="mutating")',
 	});
 });
 
 test("classification: an invalid effect is a registration error", () => {
-	const app = createApp({ name: "t", version: "1", help: "h" });
+	const app = createApp({ name: "tt", version: "1", help: "hh" });
 	const forged = {
-		...defineReadOnlyCommand("x", { help: "h", handler: () => 0 }),
+		...defineReadOnlyCommand("xx", { help: "hh", handler: () => 0 }),
 		effect: "maybe",
 	} as unknown as AnyCommand;
 	assert.throws(() => app.command(forged), {
 		name: "RegistrationError",
 		message:
-			'command "x": invalid effect "maybe": must be "read_only" or "mutating"',
+			'command "xx": invalid effect "maybe": must be "read_only" or "mutating"',
 	});
 });
 
 test("classification: deprecated commands are exempt, and carrying one errors", () => {
-	const app = createApp({ name: "t", version: "1", help: "h" });
+	const app = createApp({ name: "tt", version: "1", help: "hh" });
 	// The exempt path: no effect, no error.
 	assert.doesNotThrow(() => app.deprecate(deprecated("old", "gone")));
 	const forged = {
@@ -273,7 +276,7 @@ test("classification: deprecated commands are exempt, and carrying one errors", 
 });
 
 test("classification: deprecated entries stay out of the command schema", () => {
-	const app = createApp({ name: "t", version: "1", help: "h" });
+	const app = createApp({ name: "tt", version: "1", help: "hh" });
 	app.deprecate(deprecated("old", "gone"));
 	const schema = app.dumpSchemaDict();
 	assert.deepEqual(schema.deprecated, { old: "gone" });
@@ -282,17 +285,17 @@ test("classification: deprecated entries stay out of the command schema", () => 
 
 // --- §6.1 grant declarations ---
 
-test("grants: names must match [a-z][a-z0-9-]*", () => {
+test("grants: names must be lowercase kebab-case of at least two characters: [a-z][a-z0-9]*(-[a-z0-9]+)*", () => {
 	assert.throws(
 		() =>
 			defineMutatingCommand("go", {
-				help: "h",
-				grants: [{ name: "Push", reason: "r", kind: "proc_mutate" }],
+				help: "hh",
+				grants: [{ name: "Push", reason: "rr", kind: "proc_mutate" }],
 				handler: () => 0,
 			}),
 		{
 			message:
-				"command \"go\": invalid grant name 'Push': must match [a-z][a-z0-9-]*",
+				"command \"go\": invalid grant name 'Push': must be lowercase kebab-case of at least two characters: [a-z][a-z0-9]*(-[a-z0-9]+)*",
 		},
 	);
 });
@@ -301,9 +304,9 @@ test("grants: duplicate names are rejected", () => {
 	assert.throws(
 		() =>
 			defineMutatingCommand("go", {
-				help: "h",
+				help: "hh",
 				grants: [
-					{ name: "push", reason: "r", kind: "proc_mutate" },
+					{ name: "push", reason: "rr", kind: "proc_mutate" },
 					{ name: "push", reason: "r2", kind: "net_mutate" },
 				],
 				handler: () => 0,
@@ -316,7 +319,7 @@ test("grants: the reason is mandatory and non-empty", () => {
 	assert.throws(
 		() =>
 			defineMutatingCommand("go", {
-				help: "h",
+				help: "hh",
 				grants: [{ name: "push", reason: "  ", kind: "proc_mutate" }],
 				handler: () => 0,
 			}),
@@ -330,11 +333,11 @@ test("grants: the kind must be one of the four grantable kinds", () => {
 	assert.throws(
 		() =>
 			defineMutatingCommand("go", {
-				help: "h",
+				help: "hh",
 				grants: [
 					{
 						name: "push",
-						reason: "r",
+						reason: "rr",
 						kind: "cache_write" as never,
 					},
 				],
@@ -349,7 +352,7 @@ test("grants: the kind must be one of the four grantable kinds", () => {
 
 test("grants: a passthrough may declare them too", () => {
 	const def = mutatingPassthrough("exec", {
-		help: "h",
+		help: "hh",
 		grants: [
 			{ name: "run-any", reason: "opaque by design", kind: "proc_mutate" },
 		],
@@ -364,7 +367,7 @@ test("forwarding: the reason is mandatory and non-empty", () => {
 	assert.throws(
 		() =>
 			defineReadOnlyCommand("go", {
-				help: "h",
+				help: "hh",
 				forwarding: { reason: "" },
 				handler: () => 0,
 			}),
@@ -373,10 +376,10 @@ test("forwarding: the reason is mandatory and non-empty", () => {
 });
 
 test("forwarding: a declared reason reaches the schema", () => {
-	const app = createApp({ name: "t", version: "1", help: "h" });
+	const app = createApp({ name: "tt", version: "1", help: "hh" });
 	app.command(
 		defineReadOnlyCommand("wrap", {
-			help: "h",
+			help: "hh",
 			forwarding: { reason: "wraps another CLI" },
 			handler: () => 0,
 		}),
@@ -392,11 +395,11 @@ test("forwarding: a declared reason reaches the schema", () => {
 
 test("framework-internal: the six auto-registered commands declare forwarding", () => {
 	const app = createApp({
-		name: "t",
+		name: "tt",
 		version: "1",
-		help: "h",
+		help: "hh",
 		config: true,
-		checksEmbed: 'app = "t"\n',
+		checksEmbed: 'app = "tt"\n',
 	});
 	const schema = app.dumpSchemaDict();
 	const commands = schema.commands as Record<string, Record<string, unknown>>;
@@ -419,9 +422,9 @@ test("framework-internal: the six auto-registered commands declare forwarding", 
 
 test("framework-internal: the five config subcommands carry §9.2's classifications", () => {
 	const app = createApp({
-		name: "t",
+		name: "tt",
 		version: "1",
-		help: "h",
+		help: "hh",
 		config: true,
 	});
 	const groups = app.dumpSchemaDict().groups as Record<
@@ -441,10 +444,10 @@ test("framework-internal: the five config subcommands carry §9.2's classificati
 
 test("framework-internal: `check` classifies read_only", () => {
 	const app = createApp({
-		name: "t",
+		name: "tt",
 		version: "1",
-		help: "h",
-		checksEmbed: 'app = "t"\n',
+		help: "hh",
+		checksEmbed: 'app = "tt"\n',
 	});
 	const commands = app.dumpSchemaDict().commands as Record<
 		string,
@@ -455,10 +458,10 @@ test("framework-internal: `check` classifies read_only", () => {
 
 test("framework-internal: the marker is not emitted in the schema", () => {
 	const app = createApp({
-		name: "t",
+		name: "tt",
 		version: "1",
-		help: "h",
-		checksEmbed: 'app = "t"\n',
+		help: "hh",
+		checksEmbed: 'app = "tt"\n',
 	});
 	const commands = app.dumpSchemaDict().commands as Record<
 		string,
@@ -468,12 +471,12 @@ test("framework-internal: the marker is not emitted in the schema", () => {
 });
 
 test("framework-internal: a FOREIGN handler carrying the marker fails registration", () => {
-	const app = createApp({ name: "t", version: "1", help: "h" });
+	const app = createApp({ name: "tt", version: "1", help: "hh" });
 	// defineFrameworkCommand is package-internal, but a consumer reaching it by
 	// any route -- monkey-patching, prototype tampering, reflection -- gets a
 	// carrier whose handler is NOT in the framework WeakSet.
 	const foreign = defineFrameworkCommand("sneaky", "mutating", {
-		help: "h",
+		help: "hh",
 		handler: (() => 0) as never,
 	});
 	assert.throws(() => app.command(foreign), {
@@ -484,16 +487,16 @@ test("framework-internal: a FOREIGN handler carrying the marker fails registrati
 });
 
 test("framework-internal: a marked handler registers cleanly", () => {
-	const app = createApp({ name: "t", version: "1", help: "h" });
+	const app = createApp({ name: "tt", version: "1", help: "hh" });
 	const ours = defineFrameworkCommand("blessed", "read_only", {
-		help: "h",
+		help: "hh",
 		handler: markFrameworkHandler(() => 0) as never,
 	});
 	assert.doesNotThrow(() => app.command(ours));
 });
 
 test("framework-internal: verification keys on identity, not on the name", () => {
-	const app = createApp({ name: "t", version: "1", help: "h" });
+	const app = createApp({ name: "tt", version: "1", help: "hh" });
 	const blessed = markFrameworkHandler(function checkHandler() {
 		return 0;
 	});
@@ -503,8 +506,8 @@ test("framework-internal: verification keys on identity, not on the name", () =>
 	assert.throws(
 		() =>
 			app.command(
-				defineFrameworkCommand("x", "read_only", {
-					help: "h",
+				defineFrameworkCommand("xx", "read_only", {
+					help: "hh",
 					handler: impostor as never,
 				}),
 			),
@@ -516,8 +519,8 @@ test("framework-internal: the marker is unreachable from the public spec", () =>
 	// There is no `frameworkInternal` key in any options object: passing one
 	// through the public factory is dropped, so the carrier is unmarked and the
 	// verification never fires.
-	const def = defineReadOnlyCommand("x", {
-		help: "h",
+	const def = defineReadOnlyCommand("xx", {
+		help: "hh",
 		handler: () => 0,
 		...({ frameworkInternal: true } as object),
 	} as never);
@@ -528,9 +531,9 @@ test("framework-internal: the marker is unreachable from the public spec", () =>
 
 test("check subsumption: the app-level allowlist reaches the schema", () => {
 	const app = createApp({
-		name: "t",
+		name: "tt",
 		version: "1",
-		help: "h",
+		help: "hh",
 		procObserveAllowlist: [
 			["git", "status"],
 			["gh", "release", "view"],
@@ -543,7 +546,7 @@ test("check subsumption: the app-level allowlist reaches the schema", () => {
 });
 
 test("check subsumption: an empty allowlist is omitted from the schema", () => {
-	const app = createApp({ name: "t", version: "1", help: "h" });
+	const app = createApp({ name: "tt", version: "1", help: "hh" });
 	assert.ok(!("proc_observe_allowlist" in app.dumpSchemaDict()));
 });
 
@@ -551,9 +554,9 @@ test("allowlist: entries must be non-empty lists of strings", () => {
 	assert.throws(
 		() =>
 			createApp({
-				name: "t",
+				name: "tt",
 				version: "1",
-				help: "h",
+				help: "hh",
 				procObserveAllowlist: [[]],
 			}),
 		{ message: "proc_observe_allowlist entries must not be empty" },
@@ -561,9 +564,9 @@ test("allowlist: entries must be non-empty lists of strings", () => {
 	assert.throws(
 		() =>
 			createApp({
-				name: "t",
+				name: "tt",
 				version: "1",
-				help: "h",
+				help: "hh",
 				procObserveAllowlist: [[1 as never]],
 			}),
 		{
@@ -577,11 +580,11 @@ test("allowlist: entries must be non-empty lists of strings", () => {
 
 test("registration: framework commands go through the same validated path", () => {
 	const app = createApp({
-		name: "t",
+		name: "tt",
 		version: "1",
-		help: "h",
+		help: "hh",
 		config: true,
-		checksEmbed: 'app = "t"\n',
+		checksEmbed: 'app = "tt"\n',
 	}) as unknown as AppImpl;
 	// Every registered command -- consumer or framework -- lands in the same
 	// RegisteredCommand map with a classified carrier.
@@ -600,7 +603,11 @@ test("registration: framework commands go through the same validated path", () =
 test("registration: RegistrationError is the thrown type for every ban", () => {
 	assert.throws(
 		() =>
-			flag("quiet", t.bool, { help: "h", presence: "default", default: false }),
+			flag("quiet", t.bool, {
+				help: "hh",
+				presence: "default",
+				default: false,
+			}),
 		RegistrationError,
 	);
 });

@@ -167,19 +167,22 @@ test("flagSet and memberChoiceFlag hold keyed maps", () => {
 
 test("defineReadOnlyCommand validates help, tags, and flag-map keys", () => {
 	assert.throws(
-		() => defineReadOnlyCommand("x", { help: " ", handler: () => 0 }),
+		() => defineReadOnlyCommand("xx", { help: " ", handler: () => 0 }),
 		{
-			message: 'command "x": missing help text',
+			message: 'command "xx": missing help text',
 		},
 	);
 	assert.throws(
 		() =>
-			defineReadOnlyCommand("x", {
+			defineReadOnlyCommand("xx", {
 				help: "h",
 				tags: ["Bad"],
 				handler: () => 0,
 			}),
-		{ message: 'invalid tag name "Bad": must match [a-z][a-z0-9-]*' },
+		{
+			message:
+				'invalid tag name "Bad": must be lowercase kebab-case of at least two characters: [a-z][a-z0-9]*(-[a-z0-9]+)*',
+		},
 	);
 	assert.throws(
 		() =>

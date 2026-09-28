@@ -106,6 +106,7 @@ import {
 	errFlagHelpEmpty,
 	errFlagIntDefaultTypeMismatch,
 	errFlagNameConsentReserved,
+	errFlagNameInvalid,
 	errFlagNameJsonReserved,
 	errFlagNameReservedByFramework,
 	errFlagNameYesBanned,
@@ -120,6 +121,7 @@ import {
 	errFlagRetiredChoicesIncompatibleBool,
 	errFlagRetiredChoicesRequireChoices,
 	errFlagRetiredChoiceTypeMismatch,
+	errFlagShortInvalid,
 	errFlagUniqueRequiresRepeatable,
 	errForwardingReasonEmpty,
 	errGrantDuplicate,
@@ -172,6 +174,7 @@ import {
 } from "./errors.js";
 import type { HandlerArgs } from "./infer.js";
 import { type InfraRootPath, isInfraRootPath } from "./infra.js";
+import { isKebabName, isShortForm, validateCommandTreeName } from "./names.js";
 import { validatePayloadSchemaLiteral } from "./payload_schema.js";
 import type {
 	Carrier,
@@ -738,9 +741,6 @@ export const RESERVED_FRAMEWORK_FLAG_NAMES: ReadonlySet<string> = new Set([
  */
 export const BANNED_FLAG_NAMES: ReadonlySet<string> = new Set(["yes"]);
 
-/** §24.7's choice-name charset, checked at registration in both spellings. */
-const CHOICE_NAME_RE = /^[a-z][a-z0-9-]*$/;
-
 /**
  * The machine-mode flag name, reserved on the SAME unconditional every-level
  * tier as the quartet (contract §7.1's 2026-08-13 amendment). It is NOT a
@@ -879,6 +879,17 @@ function validateFlagName(name: string): void {
 	if (name.startsWith("no-")) {
 		throw new RegistrationError(errFlagNoPrefixReserved(name));
 	}
+	// The naming rule, after the bans so a banned name keeps its own message.
+	if (!isKebabName(name)) {
+		throw new RegistrationError(errFlagNameInvalid(name));
+	}
+}
+
+/** A declared short form is one ASCII letter; an empty one is no short. */
+function validateShortForm(name: string, short: unknown): void {
+	if (short !== undefined && short !== "" && !isShortForm(short)) {
+		throw new RegistrationError(errFlagShortInvalid(name, String(short)));
+	}
 }
 
 // Mirrors Python Flag.__post_init__ (the divergence ground truth), with the
@@ -893,6 +904,7 @@ function validateFlagConfig(
 		throw new RegistrationError(errFlagHelpEmpty());
 	}
 	validateFlagName(name);
+	validateShortForm(name, o.short);
 	const presence = resolvePresence(name, o, FLAG_PRESENCE_ERRORS);
 	const kind = schemaKind(carrier.schema);
 	const elem = elemSchemaOf(carrier);
@@ -1839,6 +1851,7 @@ function buildChoiceFlag<
 	// ordinary flag's: a ban enforced only against a flat root list is this
 	// construct's most likely correctness defect (§24.7).
 	validateFlagName(name);
+	validateShortForm(name, o.short);
 	// `optional` is refused with the redirect that names the remedy. The type
 	// union has no `"optional"` member, so only a widened caller reaches this.
 	if (o.presence === "optional") {
@@ -1863,11 +1876,17 @@ function buildChoiceFlag<
 		if (typeof c?.help !== "string" || c.help.trim() === "") {
 			throw new RegistrationError(errChoiceHelpEmpty(name, choiceName));
 		}
+		// A member's choice name IS a flag name and inherits every flag-name
+		// rule, including the bans and the naming rule (§24.7), which run
+		// first as they do where the member flag is built by a flag factory.
+		if (electBy === "member-flags") {
+			validateFlagName(choiceName);
+		}
 		// A choice name is a surface name whatever the spelling elects it: the
 		// token-spelled one publishes it in an enum and the member-spelled one
-		// puts it on the command line as a flag. Both take §24.7's charset, and
+		// puts it on the command line as a flag. Both take the naming rule, and
 		// the keyed choice map -- a property key -- imposes none of its own.
-		if (!CHOICE_NAME_RE.test(choiceName)) {
+		if (!isKebabName(choiceName)) {
 			throw new RegistrationError(errChoiceNameCharset(name, choiceName));
 		}
 		// A payload rides the electing token, and a token-spelled choice's
@@ -1896,9 +1915,7 @@ function buildChoiceFlag<
 			);
 		}
 		if (electBy === "member-flags") {
-			// A member's choice name IS a flag name and inherits every flag-name
-			// rule, including the bans (§24.7).
-			validateFlagName(choiceName);
+			validateShortForm(choiceName, memberShort(c));
 			// TypeScript's spelling has no per-member presence slot: electing the
 			// member supplies its payload, so the rule holds by construction. A
 			// widened caller writing one anyway is refused (§12.13).
@@ -2599,9 +2616,6 @@ const WRITE_MODES: ReadonlySet<string> = new Set<WriteMode>([
 	"full_replace",
 ]);
 
-/** `[a-z][a-z0-9-]*`, the framework's one identifier charset (§27.2). */
-const RESOURCE_NAME_RE = /^[a-z][a-z0-9-]*$/;
-
 /**
  * Resolves and validates one command's update declaration (§27.11).
  *
@@ -2643,7 +2657,7 @@ function validateUpdate(input: UpdateSetInput): void {
 	if (d !== undefined) {
 		// Step 3: record legality -- the resource name's charset, the write
 		// mode's vocabulary, at least one property.
-		if (typeof d.resource !== "string" || !RESOURCE_NAME_RE.test(d.resource)) {
+		if (typeof d.resource !== "string" || !isKebabName(d.resource)) {
 			throw new RegistrationError(
 				errUpdateResourceCharset(cn, String(d.resource)),
 			);
@@ -2797,9 +2811,6 @@ export function validateUpdateAgainstGlobals(
 
 // --- Constraint-set registration (contract §26.8) ---
 
-/** `[a-z][a-z0-9-]*`, the framework's one identifier charset. */
-const CONSTRAINT_NAME_RE = /^[a-z][a-z0-9-]*$/;
-
 /** The two co-occurrence families -- the only kinds carrying members. */
 function isCoOccurrence(c: Constraint): c is CoOccurrence {
 	return c.kind === "at-least-one" || c.kind === "all-or-none";
@@ -2915,7 +2926,7 @@ function validateConstraintSet(input: ConstraintSetInput): void {
 	// 1. Name legality: charset, duplicates, collision with a flag or arg name.
 	const byName = new Map<string, Constraint>();
 	for (const c of constraints) {
-		if (!CONSTRAINT_NAME_RE.test(c.name)) {
+		if (!isKebabName(c.name)) {
 			throw new RegistrationError(errConstraintNameCharset(cn, c.name));
 		}
 		if (byName.has(c.name)) {
@@ -3523,8 +3534,6 @@ export interface MutatingCommandSpec<
 	readonly forwarding?: Forwarding;
 }
 
-const GRANT_NAME_RE = /^[a-z][a-z0-9-]*$/;
-
 /** Validates a command's grant declarations at registration time. */
 export function validateGrants(
 	cmdName: string,
@@ -3538,7 +3547,7 @@ export function validateGrants(
 				`command "${cmdName}": grants must be grant objects, got ${typeof g}`,
 			);
 		}
-		if (typeof g.name !== "string" || !GRANT_NAME_RE.test(g.name)) {
+		if (typeof g.name !== "string" || !isKebabName(g.name)) {
 			throw new RegistrationError(errGrantNameInvalid(cmdName, String(g.name)));
 		}
 		if (seen.has(g.name)) {
@@ -3651,15 +3660,13 @@ export function validateForwarding(
 	return forwarding;
 }
 
-const TAG_RE = /^[a-z][a-z0-9-]*$/;
-
 /** Validates tag names and removes duplicates, preserving order. */
 export function validateAndDedupTags(
 	tags: readonly string[],
 ): readonly string[] {
 	const result: string[] = [];
 	for (const tag of tags) {
-		if (!TAG_RE.test(tag)) {
+		if (!isKebabName(tag)) {
 			throw new RegistrationError(errInvalidTagName(tag));
 		}
 		if (!result.includes(tag)) {
@@ -3696,6 +3703,7 @@ function buildCommandDef<
 	spec: ReadOnlyCommandSpec<F, A, FS> | MutatingCommandSpec<F, A, FS>,
 	effect: Effect,
 ): CommandDef<N, F, A, FS, C> {
+	validateCommandTreeName("command", name);
 	if (typeof spec.help !== "string" || spec.help.trim() === "") {
 		throw new RegistrationError(errCommandMissingHelp(name));
 	}
@@ -3976,6 +3984,7 @@ function buildPassthroughDef<N extends string, C>(
 	spec: PassthroughSpec<C>,
 	effect: Effect,
 ): PassthroughDef<N, C> {
+	validateCommandTreeName("command", name);
 	if (typeof spec.help !== "string" || spec.help.trim() === "") {
 		throw new RegistrationError(errCommandMissingHelp(name));
 	}
@@ -4057,6 +4066,7 @@ export function deprecated<const N extends string>(
 	if (typeof name !== "string" || name.trim() === "") {
 		throw new RegistrationError(errDeprecatedNameEmpty());
 	}
+	validateCommandTreeName("deprecated command", name);
 	if (typeof message !== "string" || message.trim() === "") {
 		throw new RegistrationError(errDeprecatedMessageEmpty(name));
 	}

@@ -79,8 +79,8 @@ test("infra: marker toString is the Python repr, including the empty-parts quirk
 	// Captured from Python: repr(RelativeToRoot('E')) keeps the trailing ", ".
 	assert.equal(String(relativeToRoot("E")), "RelativeToRoot('E', )");
 	assert.equal(
-		String(relativeToRoot("E", "a", "b")),
-		"RelativeToRoot('E', 'a', 'b')",
+		String(relativeToRoot("E", "aa", "bb")),
+		"RelativeToRoot('E', 'aa', 'bb')",
 	);
 });
 
@@ -171,7 +171,7 @@ test("infra: default path gets ~ expanded when the env var is unset", async () =
 		createApp({
 			name: "myapp",
 			version: "1.0.0",
-			help: "t",
+			help: "tt",
 			infraRoot: { SCRATCH_HOME_X: "~/scratch" },
 		}),
 	);
@@ -230,7 +230,7 @@ test("infra: hermetic suppresses the flag's env var but not the marker default",
 		const app = createApp({
 			name: "myapp",
 			version: "1.0.0",
-			help: "t",
+			help: "tt",
 			infraRoot: { MYAPP_HOME: "/var/lib/myapp" },
 		});
 		app.command(
@@ -270,7 +270,7 @@ test("infra: global flag marker default resolves with source 'infra'", async () 
 		const a = createApp({
 			name: "myapp",
 			version: "1.0.0",
-			help: "t",
+			help: "tt",
 			infraRoot: { MYAPP_HOME: "/var/lib/myapp" },
 			flags: {
 				state_dir: flag("state-dir", t.str, {
@@ -307,7 +307,7 @@ test("infra: handshake values are read live, roots stay captured", async () => {
 			createApp({
 				name: "myapp",
 				version: "1.0.0",
-				help: "t",
+				help: "tt",
 				infraRoot: { MYAPP_HOME: "/var/lib/myapp" },
 				handshakeEnv: { MYAPP_ORCHESTRATED: "set by the orchestrator" },
 			}),
@@ -343,7 +343,7 @@ test("infra: infraValue on an undeclared var throws the sibling message", async 
 	const app = createApp({
 		name: "myapp",
 		version: "1.0.0",
-		help: "t",
+		help: "tt",
 		infraRoot: { MYAPP_HOME: "/var/lib/myapp" },
 	});
 	app.command(
@@ -374,7 +374,7 @@ test("infra: handshake help must be a non-empty string", () => {
 			createApp({
 				name: "myapp",
 				version: "1.0.0",
-				help: "t",
+				help: "tt",
 				handshakeEnv: { MYAPP_ORCHESTRATED: "   " },
 			}),
 		{
@@ -390,7 +390,7 @@ test("infra: handshake var colliding with a declared root is rejected", () => {
 			createApp({
 				name: "myapp",
 				version: "1.0.0",
-				help: "t",
+				help: "tt",
 				infraRoot: { MYAPP_HOME: "/var/lib/myapp" },
 				handshakeEnv: { MYAPP_HOME: "also a handshake" },
 			}),
@@ -407,7 +407,7 @@ test("infra: global flag marker referencing an undeclared root is a hard error",
 			createApp({
 				name: "myapp",
 				version: "1.0.0",
-				help: "t",
+				help: "tt",
 				flags: {
 					db: flag("db", t.str, {
 						help: "db",
@@ -424,7 +424,7 @@ test("infra: global flag marker referencing an undeclared root is a hard error",
 });
 
 test("infra: command flag marker referencing an undeclared root is a hard error", () => {
-	const app = createApp({ name: "myapp", version: "1.0.0", help: "t" });
+	const app = createApp({ name: "myapp", version: "1.0.0", help: "tt" });
 	const cmd = defineReadOnlyCommand("run", {
 		help: "run",
 		flags: {
@@ -444,7 +444,7 @@ test("infra: command flag marker referencing an undeclared root is a hard error"
 });
 
 test("infra: group-nested command flag markers are validated too", () => {
-	const app = createApp({ name: "myapp", version: "1.0.0", help: "t" });
+	const app = createApp({ name: "myapp", version: "1.0.0", help: "tt" });
 	const grp = app.group("db", { help: "db group" });
 	assert.throws(
 		() =>
@@ -472,7 +472,7 @@ test("infra: declared markers register cleanly at every level", () => {
 	const app = createApp({
 		name: "myapp",
 		version: "1.0.0",
-		help: "t",
+		help: "tt",
 		infraRoot: { MYAPP_HOME: "/var/lib/myapp" },
 		flags: {
 			state_dir: flag("state-dir", t.str, {
@@ -501,15 +501,15 @@ test("infra: declared markers register cleanly at every level", () => {
 test("infra: validateFlagInfraMarker ignores non-marker defaults", () => {
 	const roots = new Map<string, string>();
 	validateFlagInfraMarker(
-		flag("plain", t.str, { help: "p", presence: "default", default: "x" }),
+		flag("plain", t.str, { help: "pp", presence: "default", default: "xx" }),
 		roots,
 	);
 	validateFlagInfraMarker(
-		flag("opt", t.str, { help: "o", presence: "optional" }),
+		flag("opt", t.str, { help: "oo", presence: "optional" }),
 		roots,
 	);
 	validateFlagInfraMarker(
-		flag("req", t.str, { help: "r", presence: "required" }),
+		flag("req", t.str, { help: "rr", presence: "required" }),
 		roots,
 	);
 });
@@ -517,13 +517,13 @@ test("infra: validateFlagInfraMarker ignores non-marker defaults", () => {
 test("infra: marker on an int flag is rejected like Python (type mismatch)", () => {
 	assert.throws(
 		() =>
-			flag("n", t.int, {
-				help: "n",
+			flag("nn", t.int, {
+				help: "nn",
 				presence: "default",
 				default: relativeToRoot("MYAPP_HOME"),
 			}),
 		{
-			message: `Flag "n": type=int requires an int default, got 'RelativeToRoot'`,
+			message: `Flag "nn": type=int requires an int default, got 'RelativeToRoot'`,
 		},
 	);
 });
@@ -533,14 +533,14 @@ test("infra: marker default vs choices renders the Python repr", () => {
 	// parts) lands inside the choices-mismatch message.
 	assert.throws(
 		() =>
-			flag("c", t.str, {
-				help: "c",
-				choices: [{ value: "a" }, { value: "b" }],
+			flag("cc", t.str, {
+				help: "cc",
+				choices: [{ value: "aa" }, { value: "bb" }],
 				presence: "default",
 				default: relativeToRoot("MYAPP_HOME"),
 			}),
 		{
-			message: `Flag "c": default RelativeToRoot('MYAPP_HOME', ) is not in choices ['a', 'b']`,
+			message: `Flag "cc": default RelativeToRoot('MYAPP_HOME', ) is not in choices ['aa', 'bb']`,
 		},
 	);
 });
@@ -612,7 +612,7 @@ function scopedInfraApp(): App {
 	const app = createApp({
 		name: "myapp",
 		version: "1.0.0",
-		help: "t",
+		help: "tt",
 		infraRoot: { MYAPP_HOME: "/var/lib/myapp" },
 	});
 	app.command(
@@ -704,7 +704,7 @@ test("infra: a scoped marker resolves at BOTH programmatic front doors", async (
 			const app = createApp({
 				name: "myapp",
 				version: "1.0.0",
-				help: "t",
+				help: "tt",
 				infraRoot: { MYAPP_HOME: "/var/lib/myapp" },
 			});
 			app.command(
@@ -777,7 +777,7 @@ function defaultedSelectionInfraApp(seen?: Record<string, unknown>): App {
 	const app = createApp({
 		name: "myapp",
 		version: "1.0.0",
-		help: "t",
+		help: "tt",
 		infraRoot: { MYAPP_HOME: "/var/lib/myapp" },
 	});
 	app.command(
@@ -942,7 +942,7 @@ function undeclaredRootScopeApp(defaulted: boolean): App {
 	const app = createApp({
 		name: "myapp",
 		version: "1.0.0",
-		help: "t",
+		help: "tt",
 		infraRoot: { MYAPP_HOME: "/var/lib/myapp" },
 	});
 	app.command(

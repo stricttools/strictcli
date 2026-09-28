@@ -168,6 +168,7 @@ import {
 import { type CallOptions, invokeApp } from "./invoke.js";
 import { runFrameworkUseLint } from "./lint_framework_use.js";
 import { type McpIO, serveMcp } from "./mcp.js";
+import { isKebabName, validateCommandTreeName } from "./names.js";
 import { interpretHandlerReturn, jsonCompact } from "./outcome.js";
 import { doParse, flagParamName, formatParseErrorOutput } from "./parse.js";
 import { dumpSchemaCore, writeSchema } from "./schema.js";
@@ -777,6 +778,7 @@ function registerDeprecated(
 	if (typeof def.name !== "string" || def.name.trim() === "") {
 		throw new RegistrationError(errDeprecatedNameEmpty());
 	}
+	validateCommandTreeName("deprecated command", def.name);
 	if (typeof def.message !== "string" || def.message.trim() === "") {
 		throw new RegistrationError(errDeprecatedMessageEmpty(def.name));
 	}
@@ -819,6 +821,7 @@ export class GroupImpl implements Group {
 	}
 
 	group(name: string, spec: GroupSpec): Group {
+		validateCommandTreeName("group", name);
 		if (typeof spec.help !== "string" || spec.help.trim() === "") {
 			throw new RegistrationError(errGroupHelpEmpty());
 		}
@@ -845,8 +848,6 @@ export class GroupImpl implements Group {
 		registerDeprecated(this.commands, this.groups, this.deprecated, def);
 	}
 }
-
-const TAG_RE = /^[a-z][a-z0-9-]*$/;
 
 export class AppImpl implements App {
 	readonly name: string;
@@ -1109,6 +1110,7 @@ export class AppImpl implements App {
 	}
 
 	group(name: string, spec: GroupSpec): Group {
+		validateCommandTreeName("group", name);
 		if (typeof spec.help !== "string" || spec.help.trim() === "") {
 			throw new RegistrationError(errGroupHelpEmpty());
 		}
@@ -1130,7 +1132,7 @@ export class AppImpl implements App {
 	}
 
 	tagContract(tag: string, requiresFlag: string): void {
-		if (!TAG_RE.test(tag)) {
+		if (!isKebabName(tag)) {
 			throw new RegistrationError(errInvalidTagName(tag));
 		}
 		this.tagContracts.set(tag, requiresFlag);

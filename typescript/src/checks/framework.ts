@@ -52,6 +52,7 @@ import {
 	errUnknownCheckOutcomeKind,
 	RegistrationError,
 } from "../errors.js";
+import { isKebabName } from "../names.js";
 import { parseTomlConfig, TomlLoadFailure } from "../toml.js";
 import type { CheckSpec } from "./provider.js";
 import { matchTagExpr } from "./tagdsl.js";
@@ -525,9 +526,6 @@ export function validateCheckRegistrations(
 
 // --- checks.toml parsing ---
 
-/** Validates identifier names (check names, tag names). */
-export const CHECK_IDENTIFIER_RE = /^[a-z][a-z0-9-]*$/;
-
 /** Allowed fields in a check definition table. */
 const KNOWN_CHECK_FIELDS: ReadonlySet<string> = new Set([
 	"tags",
@@ -579,7 +577,7 @@ function parseCheckHooks(raw: unknown): Map<string, string> {
 	}
 	const hooks = new Map<string, string>();
 	for (const name of Object.keys(raw).sort()) {
-		if (!CHECK_IDENTIFIER_RE.test(name)) {
+		if (!isKebabName(name)) {
 			throw new RegistrationError(errChecksTomlInvalidHookName(name));
 		}
 		const fields = raw[name];
@@ -710,7 +708,7 @@ export function parseChecksToml(text: string): ParsedChecksToml {
 	const order: string[] = [];
 
 	for (const [name, fieldsRaw] of Object.entries(checksRaw)) {
-		if (!CHECK_IDENTIFIER_RE.test(name)) {
+		if (!isKebabName(name)) {
 			throw new RegistrationError(errChecksTomlInvalidCheckName(name));
 		}
 		if (!isTomlTable(fieldsRaw)) {

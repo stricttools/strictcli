@@ -797,16 +797,17 @@ test("guard: a choice name must match the declared charset, both spellings", () 
 		});
 		rejects(
 			() => choiceFlag("via", choices, { help: "h", presence: "required" }),
-			`Flag "via": choice name "${bad}" must match [a-z][a-z0-9-]*`,
+			`Flag "via": choice name "${bad}" must be lowercase kebab-case of at least two characters: [a-z][a-z0-9]*(-[a-z0-9]+)*`,
 		);
+		// Under member spelling the name IS a flag name, and the flag rule runs
+		// first, as it does in Go, where the member flag's own constructor
+		// refuses the name before the selector sees it.
 		rejects(
 			() =>
 				memberChoiceFlag("via", choices, { help: "h", presence: "required" }),
-			`Flag "via": choice name "${bad}" must match [a-z][a-z0-9-]*`,
+			`flag name "${bad}" must be lowercase kebab-case of at least two characters: [a-z][a-z0-9]*(-[a-z0-9]+)*`,
 		);
 	}
-	// The charset is checked BEFORE the member-spelled name bans: a name that
-	// fails both is a charset failure, as it is in the sibling implementations.
 	rejects(
 		() =>
 			memberChoiceFlag(
@@ -814,7 +815,7 @@ test("guard: a choice name must match the declared charset, both spellings", () 
 				{ "No-Thing": choice({ help: "h" }), sms: choice({ help: "sms" }) },
 				{ help: "h", presence: "required" },
 			),
-		'Flag "via": choice name "No-Thing" must match [a-z][a-z0-9-]*',
+		'flag name "No-Thing" must be lowercase kebab-case of at least two characters: [a-z][a-z0-9]*(-[a-z0-9]+)*',
 	);
 	// A charset-legal name still meets the bans under member spelling only.
 	rejects(
@@ -3018,7 +3019,7 @@ test("templates: the scope path, suffix and origin clauses compose as pinned", (
 	);
 	assert.equal(
 		errors.errChoiceNameCharset("via", "Email"),
-		'Flag "via": choice name "Email" must match [a-z][a-z0-9-]*',
+		'Flag "via": choice name "Email" must be lowercase kebab-case of at least two characters: [a-z][a-z0-9]*(-[a-z0-9]+)*',
 	);
 });
 

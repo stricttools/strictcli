@@ -204,7 +204,7 @@ export function errConflictModeBadMode(mode: string): string {
 // ---------------------------------------------------------------------------
 
 export function errInvalidTagName(t: string): string {
-	return `invalid tag name ${q(t)}: must match [a-z][a-z0-9-]*`;
+	return `invalid tag name ${q(t)}: ${KEBAB_NAME_CLAUSE}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -1570,7 +1570,7 @@ export function errChecksTomlChecksMustBeTable(): string {
 }
 
 export function errChecksTomlInvalidCheckName(name: string): string {
-	return `checks.toml: invalid check name ${q(name)} (must match [a-z][a-z0-9-]*)`;
+	return `checks.toml: invalid check name ${q(name)} (${KEBAB_NAME_CLAUSE})`;
 }
 
 export function errChecksTomlCheckMustBeTable(name: string): string {
@@ -1645,7 +1645,7 @@ export function errChecksTomlHooksMustBeTable(): string {
 }
 
 export function errChecksTomlInvalidHookName(name: string): string {
-	return `checks.toml: invalid hook name ${q(name)} (must match [a-z][a-z0-9-]*)`;
+	return `checks.toml: invalid hook name ${q(name)} (${KEBAB_NAME_CLAUSE})`;
 }
 
 export function errChecksTomlHookMustBeTable(name: string): string {
@@ -2031,7 +2031,7 @@ export function errGrantDuplicate(name: string, grant: string): string {
 }
 
 export function errGrantNameInvalid(name: string, grant: string): string {
-	return `command ${q(name)}: invalid grant name '${grant}': must match [a-z][a-z0-9-]*`;
+	return `command ${q(name)}: invalid grant name '${grant}': ${KEBAB_NAME_CLAUSE}`;
 }
 
 export function errGrantKindInvalid(
@@ -2666,7 +2666,7 @@ export function errChoiceHelpEmpty(sel: string, c: string): string {
  * charset failure it is.
  */
 export function errChoiceNameCharset(sel: string, c: string): string {
-	return `Flag ${q(sel)}: choice name ${q(c)} must match [a-z][a-z0-9-]*`;
+	return `Flag ${q(sel)}: choice name ${q(c)} ${KEBAB_NAME_CLAUSE}`;
 }
 
 export function errSelectorDefaultUnknownChoice(
@@ -2924,7 +2924,7 @@ export const WHEN_NON_EMPTY_SPELLING = 'when: "non_empty"';
 export const CONSTRAINT_MEMBER_SPELLING = '{ name: "<x>" }';
 
 export function errConstraintNameCharset(name: string, c: string): string {
-	return `command ${q(name)}: constraint name ${q(c)} must match [a-z][a-z0-9-]*`;
+	return `command ${q(name)}: constraint name ${q(c)} ${KEBAB_NAME_CLAUSE}`;
 }
 
 export function errConstraintNameDuplicate(name: string, c: string): string {
@@ -3130,7 +3130,7 @@ export function errUpdateWriteModeInvalid(name: string, v: string): string {
 }
 
 export function errUpdateResourceCharset(name: string, r: string): string {
-	return `command ${q(name)}: update resource ${q(r)} must match [a-z][a-z0-9-]*`;
+	return `command ${q(name)}: update resource ${q(r)} ${KEBAB_NAME_CLAUSE}`;
 }
 
 export function errUpdatePropertiesEmpty(name: string, r: string): string {
@@ -3402,4 +3402,45 @@ export function errLintArgvAccess(construct: string): string {
 
 export function errLintEnvironmentRead(construct: string): string {
 	return `${construct} reads the environment outside the declared mechanisms; declare a flag's environment binding, a handshake, a connection, or a location root`;
+}
+
+// ---------------------------------------------------------------------------
+// strictcli.go — the naming rule and the framework-command reservation
+// ---------------------------------------------------------------------------
+
+/**
+ * The clause every naming-rule refusal ends in: one rule for every identifier
+ * a caller types or references (commands, groups, long flags, choices,
+ * constraints, tags, checks, hooks, grants, resources, requirements).
+ */
+export const KEBAB_NAME_CLAUSE =
+	"must be lowercase kebab-case of at least two characters: [a-z][a-z0-9]*(-[a-z0-9]+)*";
+
+export function errCommandNameInvalid(name: string): string {
+	return `command name ${q(name)} ${KEBAB_NAME_CLAUSE}`;
+}
+
+export function errGroupNameInvalid(name: string): string {
+	return `group name ${q(name)} ${KEBAB_NAME_CLAUSE}`;
+}
+
+export function errDeprecatedNameInvalid(name: string): string {
+	return `deprecated command name ${q(name)} ${KEBAB_NAME_CLAUSE}`;
+}
+
+export function errFlagNameInvalid(name: string): string {
+	return `flag name ${q(name)} ${KEBAB_NAME_CLAUSE}`;
+}
+
+export function errFlagShortInvalid(name: string, short: string): string {
+	return `Flag ${q(name)}: short form ${q(short)} must be one ASCII letter (a-z or A-Z)`;
+}
+
+/**
+ * Refuses an app command, group or deprecated command named after a framework
+ * command: help and version are reserved at every level of the command tree.
+ * `kind` is "command", "group" or "deprecated command".
+ */
+export function errFrameworkCommandName(kind: string, name: string): string {
+	return `${kind} name ${q(name)} is reserved: help and version are framework commands at every level of the command tree`;
 }

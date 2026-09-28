@@ -1811,7 +1811,7 @@ function oneFlagApp(f: ReturnType<typeof flag>): App {
 	app.command(
 		defineReadOnlyCommand("cmd", {
 			help: "a command",
-			flags: { a: f },
+			flags: { aa: f },
 			handler: () => 0,
 		}),
 	);
@@ -1822,29 +1822,32 @@ test("v2: the fragment table's rows, and the fragment's own key order", () => {
 	// Every row of §25.2's table that a TS declaration can produce, with the
 	// keys in the pinned order `type`, `items`, `additionalProperties`, `enum`.
 	const rows: [ReturnType<typeof flag>, unknown][] = [
-		[flag("a", t.str, { help: "h", presence: "optional" }), { type: "string" }],
 		[
-			flag("a", t.bool, { help: "h", presence: "optional" }),
+			flag("aa", t.str, { help: "h", presence: "optional" }),
+			{ type: "string" },
+		],
+		[
+			flag("aa", t.bool, { help: "h", presence: "optional" }),
 			{ type: "boolean" },
 		],
 		[
-			flag("a", t.int, { help: "h", presence: "optional" }),
+			flag("aa", t.int, { help: "h", presence: "optional" }),
 			{ type: "integer" },
 		],
 		[
-			flag("a", t.float, { help: "h", presence: "optional" }),
+			flag("aa", t.float, { help: "h", presence: "optional" }),
 			{ type: "number" },
 		],
 		[
-			flag("a", t.list(t.str), { help: "h", presence: "optional" }),
+			flag("aa", t.list(t.str), { help: "h", presence: "optional" }),
 			{ type: "array", items: { type: "string" } },
 		],
 		[
-			flag("a", t.dict(t.float), { help: "h", presence: "optional" }),
+			flag("aa", t.dict(t.float), { help: "h", presence: "optional" }),
 			{ type: "object", additionalProperties: { type: "number" } },
 		],
 		[
-			flag("a", t.str, {
+			flag("aa", t.str, {
 				help: "h",
 				presence: "optional",
 				choices: [{ value: "x" }, { value: "y" }],
@@ -1855,7 +1858,7 @@ test("v2: the fragment table's rows, and the fragment's own key order", () => {
 			// An ARRAY-shaped carrier carries its enum INSIDE items, describing
 			// the element -- never at the fragment root, which would say the array
 			// itself must equal one of the choices.
-			flag("a", t.list(t.int), {
+			flag("aa", t.list(t.int), {
 				help: "h",
 				presence: "optional",
 				choices: [{ value: 1n }, { value: 2n }],
@@ -1879,7 +1882,7 @@ test("v2: the fragment table's rows, and the fragment's own key order", () => {
 
 test("v2: an optional flag emits the plain type -- there is no null in a fragment", () => {
 	const entry = flagEntries(
-		oneFlagApp(flag("a", t.str, { help: "h", presence: "optional" })),
+		oneFlagApp(flag("aa", t.str, { help: "h", presence: "optional" })),
 	)[0] as Record<string, unknown>;
 	// Presence is the sole authority on absence; a nullable fragment would be a
 	// second statement about the same fact.
@@ -1916,7 +1919,7 @@ test("v2: a variadic arg publishes the array fragment in either spelling", () =>
 test("v2: a choices declaration splits into an enum and the sibling records", () => {
 	const entry = flagEntries(
 		oneFlagApp(
-			flag("a", t.str, {
+			flag("aa", t.str, {
 				help: "h",
 				presence: "optional",
 				choices: [
@@ -1979,12 +1982,12 @@ test("v2: the flag entry's key order is the pinned one", () => {
 test("v2: prefixed is omitted at its baseline and emitted when declared false", () => {
 	const declared = flagEntries(
 		oneFlagApp(
-			flag("a", t.str, { help: "h", presence: "optional", prefixed: false }),
+			flag("aa", t.str, { help: "h", presence: "optional", prefixed: false }),
 		),
 	)[0] as Record<string, unknown>;
 	assert.equal(declared.prefixed, false);
 	const baseline = flagEntries(
-		oneFlagApp(flag("a", t.str, { help: "h", presence: "optional" })),
+		oneFlagApp(flag("aa", t.str, { help: "h", presence: "optional" })),
 	)[0] as Record<string, unknown>;
 	assert.ok(!("prefixed" in baseline));
 });

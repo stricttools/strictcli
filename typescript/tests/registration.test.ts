@@ -42,13 +42,13 @@ test("flag: help, force ban, no- prefix ban", () => {
 		"Flag.help must be a non-empty string",
 	);
 	rejects(
-		() => flag("force", t.str, { help: "h", presence: "required" }),
+		() => flag("force", t.str, { help: "hh", presence: "required" }),
 		"flag 'force' is a reserved name; use a qualified name like 'force-overwrite' or 'force-delete'",
 	);
 	rejects(
 		() =>
 			flag("no-frame", t.bool, {
-				help: "h",
+				help: "hh",
 				presence: "default",
 				default: true,
 			}),
@@ -63,7 +63,7 @@ test("flag: dict carriers reject repeatable, unique, choices, envSeparator", () 
 				"meta",
 				t.dict(t.int),
 				loose({
-					help: "h",
+					help: "hh",
 					repeatable: true,
 					presence: "default",
 					default: new Map(),
@@ -77,7 +77,7 @@ test("flag: dict carriers reject repeatable, unique, choices, envSeparator", () 
 				"meta",
 				t.dict(t.int),
 				loose({
-					help: "h",
+					help: "hh",
 					unique: true,
 					presence: "default",
 					default: new Map(),
@@ -91,7 +91,7 @@ test("flag: dict carriers reject repeatable, unique, choices, envSeparator", () 
 				"meta",
 				t.dict(t.int),
 				loose({
-					help: "h",
+					help: "hh",
 					choices: [{ value: 1n }],
 					presence: "default",
 					default: new Map(),
@@ -105,7 +105,7 @@ test("flag: dict carriers reject repeatable, unique, choices, envSeparator", () 
 				"meta",
 				t.dict(t.int),
 				loose({
-					help: "h",
+					help: "hh",
 					envSeparator: ",",
 					presence: "default",
 					default: new Map(),
@@ -122,7 +122,7 @@ test("flag: repeatable constraint web", () => {
 				"chatter",
 				t.bool,
 				loose({
-					help: "h",
+					help: "hh",
 					presence: "default",
 					default: false,
 					repeatable: true,
@@ -137,7 +137,7 @@ test("flag: repeatable constraint web", () => {
 			flag(
 				"tag",
 				t.str,
-				loose({ help: "h", repeatable: true, presence: "required" }),
+				loose({ help: "hh", repeatable: true, presence: "required" }),
 			),
 		'Flag "tag": repeatable requires a list type',
 	);
@@ -146,7 +146,7 @@ test("flag: repeatable constraint web", () => {
 			flag(
 				"tag",
 				t.str,
-				loose({ help: "h", unique: true, presence: "required" }),
+				loose({ help: "hh", unique: true, presence: "required" }),
 			),
 		'Flag "tag": unique requires repeatable=True',
 	);
@@ -158,14 +158,14 @@ test("flag: envSeparator constraint web", () => {
 			flag(
 				"tag",
 				t.str,
-				loose({ help: "h", envSeparator: ",", presence: "required" }),
+				loose({ help: "hh", envSeparator: ",", presence: "required" }),
 			),
 		'Flag "tag": env_separator requires repeatable=True',
 	);
 	rejects(
 		() =>
 			flag("tag", t.list(t.str), {
-				help: "h",
+				help: "hh",
 				envSeparator: ",",
 				presence: "default",
 				default: [],
@@ -175,7 +175,7 @@ test("flag: envSeparator constraint web", () => {
 	rejects(
 		() =>
 			flag("tag", t.list(t.str), {
-				help: "h",
+				help: "hh",
 				env: "TAGS",
 				presence: "default",
 				default: [],
@@ -185,7 +185,7 @@ test("flag: envSeparator constraint web", () => {
 	rejects(
 		() =>
 			flag("tag", t.list(t.str), {
-				help: "h",
+				help: "hh",
 				env: "TAGS",
 				envSeparator: ",,",
 				presence: "default",
@@ -196,7 +196,7 @@ test("flag: envSeparator constraint web", () => {
 	rejects(
 		() =>
 			flag("tag", t.list(t.str), {
-				help: "h",
+				help: "hh",
 				env: "TAGS",
 				envSeparator: "\\",
 				presence: "default",
@@ -206,7 +206,7 @@ test("flag: envSeparator constraint web", () => {
 	);
 	// Positive: the full valid combination.
 	const ok = flag("tag", t.list(t.str), {
-		help: "h",
+		help: "hh",
 		env: "TAGS",
 		envSeparator: ",",
 		unique: true,
@@ -222,13 +222,13 @@ test("flag: conflictMode must be cli-wins or error", () => {
 			flag(
 				"target",
 				t.str,
-				loose({ help: "h", conflictMode: "merge", presence: "required" }),
+				loose({ help: "hh", conflictMode: "merge", presence: "required" }),
 			),
 		'Flag "target": conflict_mode must be "cli-wins" or "error", got \'merge\'',
 	);
 	assert.equal(
 		flag("target", t.str, {
-			help: "h",
+			help: "hh",
 			conflictMode: "error",
 			presence: "required",
 		}).opts.conflictMode,
@@ -243,7 +243,7 @@ test("flag: choices validation", () => {
 				"chatter",
 				t.bool,
 				loose({
-					help: "h",
+					help: "hh",
 					presence: "default",
 					default: false,
 					choices: [{ value: true }],
@@ -256,7 +256,7 @@ test("flag: choices validation", () => {
 			flag(
 				"fmt",
 				t.str,
-				loose({ help: "h", choices: [], presence: "required" }),
+				loose({ help: "hh", choices: [], presence: "required" }),
 			),
 		'Flag "fmt": choices must be a non-empty list',
 	);
@@ -266,8 +266,8 @@ test("flag: choices validation", () => {
 				"fmt",
 				t.str,
 				loose({
-					help: "h",
-					choices: [{ value: "a" }, { value: 5n }],
+					help: "hh",
+					choices: [{ value: "aa" }, { value: 5n }],
 					presence: "required",
 				}),
 			),
@@ -279,12 +279,12 @@ test("flag: choices validation", () => {
 				"lvl",
 				t.int,
 				loose({
-					help: "h",
-					choices: [{ value: 1n }, { value: "x" }],
+					help: "hh",
+					choices: [{ value: 1n }, { value: "xx" }],
 					presence: "required",
 				}),
 			),
-		"Flag \"lvl\": choice 'x' is not of type int",
+		"Flag \"lvl\": choice 'xx' is not of type int",
 	);
 	rejects(
 		() =>
@@ -292,7 +292,7 @@ test("flag: choices validation", () => {
 				"ratio",
 				t.float,
 				loose({
-					help: "h",
+					help: "hh",
 					choices: [{ value: 1.5 }, { value: 2n }],
 					presence: "required",
 				}),
@@ -302,25 +302,25 @@ test("flag: choices validation", () => {
 	// Python parity: choices on LIST flags are allowed and validate elements
 	// against the item type (Go rejects; Python is the divergence oracle).
 	const ok = flag("tag", t.list(t.str), {
-		help: "h",
-		choices: [{ value: "a" }, { value: "b" }],
+		help: "hh",
+		choices: [{ value: "aa" }, { value: "bb" }],
 		presence: "default",
 		default: [],
 	});
-	assert.deepEqual(ok.opts.choices, [{ value: "a" }, { value: "b" }]);
+	assert.deepEqual(ok.opts.choices, [{ value: "aa" }, { value: "bb" }]);
 	rejects(
 		() =>
 			flag(
 				"tag",
 				t.list(t.int),
 				loose({
-					help: "h",
-					choices: [{ value: 1n }, { value: "x" }],
+					help: "hh",
+					choices: [{ value: 1n }, { value: "xx" }],
 					presence: "default",
 					default: [],
 				}),
 			),
-		"Flag \"tag\": choice 'x' is not of type int",
+		"Flag \"tag\": choice 'xx' is not of type int",
 	);
 });
 
@@ -330,7 +330,7 @@ test("flag: scalar default type checks (int and float only, like siblings)", () 
 			flag(
 				"count",
 				t.int,
-				loose({ help: "h", presence: "default", default: 5 }),
+				loose({ help: "hh", presence: "default", default: 5 }),
 			),
 		"Flag \"count\": type=int requires an int default, got 'float'",
 	);
@@ -339,7 +339,7 @@ test("flag: scalar default type checks (int and float only, like siblings)", () 
 			flag(
 				"count",
 				t.int,
-				loose({ help: "h", presence: "default", default: "x" }),
+				loose({ help: "hh", presence: "default", default: "xx" }),
 			),
 		"Flag \"count\": type=int requires an int default, got 'str'",
 	);
@@ -348,7 +348,7 @@ test("flag: scalar default type checks (int and float only, like siblings)", () 
 			flag(
 				"ratio",
 				t.float,
-				loose({ help: "h", presence: "default", default: 5n }),
+				loose({ help: "hh", presence: "default", default: 5n }),
 			),
 		"Flag \"ratio\": type=float requires a float default, got 'int'",
 	);
@@ -357,7 +357,7 @@ test("flag: scalar default type checks (int and float only, like siblings)", () 
 			flag(
 				"ratio",
 				t.float,
-				loose({ help: "h", presence: "default", default: "x" }),
+				loose({ help: "hh", presence: "default", default: "xx" }),
 			),
 		"Flag \"ratio\": type=float requires a float default, got 'str'",
 	);
@@ -369,7 +369,7 @@ test("flag: dict default shape checks", () => {
 			flag(
 				"meta",
 				t.dict(t.int),
-				loose({ help: "h", presence: "default", default: [1n] }),
+				loose({ help: "hh", presence: "default", default: [1n] }),
 			),
 		'Flag "meta": dict flag default must be a Map',
 	);
@@ -377,7 +377,7 @@ test("flag: dict default shape checks", () => {
 	// the redundancy error it used to raise is deleted (§12.12).
 	assert.doesNotThrow(() =>
 		flag("meta", t.dict(t.int), {
-			help: "h",
+			help: "hh",
 			presence: "default",
 			default: new Map(),
 		}),
@@ -388,12 +388,12 @@ test("flag: dict default shape checks", () => {
 				"meta",
 				t.dict(t.int),
 				loose({
-					help: "h",
+					help: "hh",
 					presence: "default",
-					default: new Map([["a", "x"]]),
+					default: new Map([["aa", "xx"]]),
 				}),
 			),
-		"Flag \"meta\": dict default value for key 'a' is not of type int",
+		"Flag \"meta\": dict default value for key 'aa' is not of type int",
 	);
 	rejects(
 		() =>
@@ -401,7 +401,7 @@ test("flag: dict default shape checks", () => {
 				"meta",
 				t.dict(t.int),
 				loose({
-					help: "h",
+					help: "hh",
 					presence: "default",
 					default: new Map([[5n, 1n]]),
 				}),
@@ -409,9 +409,9 @@ test("flag: dict default shape checks", () => {
 		'Flag "meta": dict default key 5 must be a string',
 	);
 	const ok = flag("meta", t.dict(t.int), {
-		help: "h",
+		help: "hh",
 		presence: "default",
-		default: new Map([["a", 1n]]),
+		default: new Map([["aa", 1n]]),
 	});
 	assert.equal(ok.schema, "dict[str,int]");
 });
@@ -422,7 +422,7 @@ test("flag: list default shape checks", () => {
 			flag(
 				"tag",
 				t.list(t.str),
-				loose({ help: "h", presence: "default", default: "x" }),
+				loose({ help: "hh", presence: "default", default: "xx" }),
 			),
 		'Flag "tag": list flag default must be an array',
 	);
@@ -430,7 +430,7 @@ test("flag: list default shape checks", () => {
 	// "empty when absent", and omitting it is now the error.
 	assert.doesNotThrow(() =>
 		flag("tag", t.list(t.str), {
-			help: "h",
+			help: "hh",
 			presence: "default",
 			default: [],
 		}),
@@ -440,7 +440,7 @@ test("flag: list default shape checks", () => {
 			flag(
 				"tag",
 				t.list(t.str),
-				loose({ help: "h", presence: "default", default: ["a", 5n] }),
+				loose({ help: "hh", presence: "default", default: ["aa", 5n] }),
 			),
 		'Flag "tag": default element 1 is not of type str',
 	);
@@ -449,23 +449,23 @@ test("flag: list default shape checks", () => {
 			flag(
 				"lvl",
 				t.list(t.int),
-				loose({ help: "h", presence: "default", default: [1n, 2] }),
+				loose({ help: "hh", presence: "default", default: [1n, 2] }),
 			),
 		'Flag "lvl": default element 1 is not of type int',
 	);
 	const ok = flag("tag", t.list(t.str), {
-		help: "h",
+		help: "hh",
 		presence: "default",
-		default: ["a"],
+		default: ["aa"],
 	});
-	assert.deepEqual(ok.opts.default, ["a"]);
+	assert.deepEqual(ok.opts.default, ["aa"]);
 });
 
 test("flag: default must be in choices (Python repr formatting)", () => {
 	rejects(
 		() =>
 			flag("fmt", t.str, {
-				help: "h",
+				help: "hh",
 				choices: [{ value: "text" }, { value: "json" }],
 				presence: "default",
 				default: "xml",
@@ -475,7 +475,7 @@ test("flag: default must be in choices (Python repr formatting)", () => {
 	rejects(
 		() =>
 			flag("lvl", t.int, {
-				help: "h",
+				help: "hh",
 				choices: [{ value: 1n }, { value: 2n }],
 				presence: "default",
 				default: 5n,
@@ -483,7 +483,7 @@ test("flag: default must be in choices (Python repr formatting)", () => {
 		'Flag "lvl": default 5 is not in choices [1, 2]',
 	);
 	const ok = flag("fmt", t.str, {
-		help: "h",
+		help: "hh",
 		choices: [{ value: "text" }, { value: "json" }],
 		presence: "default",
 		default: "text",
@@ -502,19 +502,23 @@ test("arg: help and required-default", () => {
 
 test("arg: compound carriers are rejected", () => {
 	rejects(
-		() => arg("v", loose(t.dict(t.int)), { help: "h", presence: "required" }),
-		'Arg "v": dict type is not supported on args',
+		() => arg("vv", loose(t.dict(t.int)), { help: "hh", presence: "required" }),
+		'Arg "vv": dict type is not supported on args',
 	);
 	rejects(
-		() => arg("v", loose(t.list(t.int)), { help: "h", presence: "required" }),
-		'Arg "v": list type on args requires variadic=True',
+		() => arg("vv", loose(t.list(t.int)), { help: "hh", presence: "required" }),
+		'Arg "vv": list type on args requires variadic=True',
 	);
 	// The refusal that stood here is DELETED (§25.4): a variadic arg takes
 	// either spelling -- the element carrier plus `variadic: true`, or the list
 	// carrier the siblings spell it with -- and both register, deliver the same
 	// array and publish the same fragment. This widens the surface; the element
 	// spelling stays legal and stays the idiomatic one.
-	arg("v", t.list(t.int), { help: "h", variadic: true, presence: "required" });
+	arg("vv", t.list(t.int), {
+		help: "hh",
+		variadic: true,
+		presence: "required",
+	});
 });
 
 test("arg: both variadic spellings deliver and publish identically (§25.4)", async () => {
@@ -548,9 +552,9 @@ test("arg: both variadic spellings deliver and publish identically (§25.4)", as
 		);
 		return app;
 	};
-	const elementSpelling = await mk(false).test(["cmd", "a", "b"]);
-	const listSpelling = await mk(true).test(["cmd", "a", "b"]);
-	assert.equal(listSpelling.stdout, "files=a,b\n");
+	const elementSpelling = await mk(false).test(["cmd", "aa", "bb"]);
+	const listSpelling = await mk(true).test(["cmd", "aa", "bb"]);
+	assert.equal(listSpelling.stdout, "files=aa,bb\n");
 	assert.equal(listSpelling.stdout, elementSpelling.stdout);
 	assert.equal(
 		(await mk(true).test(["cmd", "--help"])).stdout,
@@ -580,108 +584,120 @@ test("arg: choices validation", () => {
 	rejects(
 		() =>
 			arg(
-				"v",
+				"vv",
 				t.bool,
-				loose({ help: "h", choices: [{ value: true }], presence: "required" }),
+				loose({ help: "hh", choices: [{ value: true }], presence: "required" }),
 			),
-		'Arg "v": choices is incompatible with type=bool',
-	);
-	rejects(
-		() =>
-			arg("v", t.str, loose({ help: "h", choices: [], presence: "required" })),
-		'Arg "v": choices must be a non-empty list',
+		'Arg "vv": choices is incompatible with type=bool',
 	);
 	rejects(
 		() =>
 			arg(
-				"v",
+				"vv",
+				t.str,
+				loose({ help: "hh", choices: [], presence: "required" }),
+			),
+		'Arg "vv": choices must be a non-empty list',
+	);
+	rejects(
+		() =>
+			arg(
+				"vv",
 				t.str,
 				loose({
-					help: "h",
-					choices: [{ value: "a" }, { value: 5n }],
+					help: "hh",
+					choices: [{ value: "aa" }, { value: 5n }],
 					presence: "required",
 				}),
 			),
-		'Arg "v": choice 5 is not of type str',
+		'Arg "vv": choice 5 is not of type str',
 	);
 	// Variadic args may declare choices (validated per element at parse time).
-	const ok = arg("v", t.str, {
-		help: "h",
+	const ok = arg("vv", t.str, {
+		help: "hh",
 		variadic: true,
-		choices: [{ value: "a" }, { value: "b" }],
+		choices: [{ value: "aa" }, { value: "bb" }],
 		presence: "required",
 	});
-	assert.deepEqual(ok.opts.choices, [{ value: "a" }, { value: "b" }]);
+	assert.deepEqual(ok.opts.choices, [{ value: "aa" }, { value: "bb" }]);
 });
 
 test("arg: default type checks for all four types", () => {
 	rejects(
 		() =>
-			arg("v", t.str, loose({ help: "h", presence: "default", default: 5n })),
-		"Arg \"v\": type=str requires a str default, got 'int'",
-	);
-	rejects(
-		() =>
-			arg("v", t.int, loose({ help: "h", presence: "default", default: "x" })),
-		"Arg \"v\": type=int requires an int default, got 'str'",
+			arg("vv", t.str, loose({ help: "hh", presence: "default", default: 5n })),
+		"Arg \"vv\": type=str requires a str default, got 'int'",
 	);
 	rejects(
 		() =>
 			arg(
-				"v",
-				t.float,
-				loose({ help: "h", presence: "default", default: "x" }),
+				"vv",
+				t.int,
+				loose({ help: "hh", presence: "default", default: "xx" }),
 			),
-		"Arg \"v\": type=float requires a float default, got 'str'",
+		"Arg \"vv\": type=int requires an int default, got 'str'",
 	);
 	rejects(
 		() =>
-			arg("v", t.bool, loose({ help: "h", presence: "default", default: 5n })),
-		"Arg \"v\": type=bool requires a bool default, got 'int'",
+			arg(
+				"vv",
+				t.float,
+				loose({ help: "hh", presence: "default", default: "xx" }),
+			),
+		"Arg \"vv\": type=float requires a float default, got 'str'",
+	);
+	rejects(
+		() =>
+			arg(
+				"vv",
+				t.bool,
+				loose({ help: "hh", presence: "default", default: 5n }),
+			),
+		"Arg \"vv\": type=bool requires a bool default, got 'int'",
 	);
 });
 
 test("arg: default must be in choices (Python repr formatting)", () => {
 	rejects(
 		() =>
-			arg("v", t.str, {
-				help: "h",
-				choices: [{ value: "a" }, { value: "b" }],
+			arg("vv", t.str, {
+				help: "hh",
+				choices: [{ value: "aa" }, { value: "bb" }],
 				presence: "default",
-				default: "c",
+				default: "cc",
 			}),
-		"Arg \"v\": default 'c' is not in choices ['a', 'b']",
+		"Arg \"vv\": default 'cc' is not in choices ['aa', 'bb']",
 	);
 	rejects(
 		() =>
-			arg("v", t.int, {
-				help: "h",
+			arg("vv", t.int, {
+				help: "hh",
 				choices: [{ value: 1n }, { value: 2n }],
 				presence: "default",
 				default: 5n,
 			}),
-		'Arg "v": default 5 is not in choices [1, 2]',
+		'Arg "vv": default 5 is not in choices [1, 2]',
 	);
 });
 
 // --- twin command factory validation ---
 
 const strFlag = (name: string) =>
-	flag(name, t.str, { help: "h", presence: "required" });
+	flag(name, t.str, { help: "hh", presence: "required" });
 /** Mutex members declare their own absence (contract §23.5's mutex row). */
 const optStrFlag = (name: string) =>
-	flag(name, t.str, { help: "h", presence: "optional" });
+	flag(name, t.str, { help: "hh", presence: "optional" });
 const boolFlag = (name: string) =>
-	flag(name, t.bool, { help: "h", presence: "default", default: false });
+	flag(name, t.bool, { help: "hh", presence: "default", default: false });
 
 test("command: missing help", () => {
 	rejects(
-		() => defineReadOnlyCommand("x", { help: " ", handler: () => 0 }),
-		'command "x": missing help text',
+		() => defineReadOnlyCommand("xx", { help: " ", handler: () => 0 }),
+		'command "xx": missing help text',
 	);
 	rejects(
-		() => readOnlyPassthrough("x", { help: " ", handler: () => 0 }),
-		'command "x": missing help text',
+		() => readOnlyPassthrough("xx", { help: " ", handler: () => 0 }),
+		'command "xx": missing help text',
 	);
 });
 
@@ -689,10 +705,10 @@ test("command: flag-map keys must be underscore forms (flags, flagSets, mutex)",
 	rejects(
 		() =>
 			defineReadOnlyCommand("build", {
-				help: "h",
+				help: "hh",
 				flags: {
 					simRun: flag("sim-run", t.bool, {
-						help: "h",
+						help: "hh",
 						presence: "default",
 						default: false,
 					}),
@@ -704,7 +720,7 @@ test("command: flag-map keys must be underscore forms (flags, flagSets, mutex)",
 	rejects(
 		() =>
 			defineReadOnlyCommand("build", {
-				help: "h",
+				help: "hh",
 				flagSets: [flagSet("fs", loose({ wrong: strFlag("right") }))],
 				handler: () => 0,
 			}),
@@ -716,7 +732,7 @@ test("selector: at least two choices, and no co-electable name reuse", () => {
 	rejects(
 		() =>
 			choiceFlag("via", loose({ email: choice({ help: "email" }) }), {
-				help: "h",
+				help: "hh",
 				presence: "required",
 			}),
 		'Flag "via": a choice flag must declare at least two choices',
@@ -726,7 +742,7 @@ test("selector: at least two choices, and no co-electable name reuse", () => {
 	rejects(
 		() =>
 			defineReadOnlyCommand("cmd", {
-				help: "h",
+				help: "hh",
 				flags: {
 					via: choiceFlag(
 						"via",
@@ -737,7 +753,7 @@ test("selector: at least two choices, and no co-electable name reuse", () => {
 							}),
 							sms: choice({ help: "sms" }),
 						},
-						{ help: "h", presence: "required" },
+						{ help: "hh", presence: "required" },
 					),
 					mode: choiceFlag(
 						"mode",
@@ -748,7 +764,7 @@ test("selector: at least two choices, and no co-electable name reuse", () => {
 							}),
 							slow: choice({ help: "slow" }),
 						},
-						{ help: "h", presence: "required" },
+						{ help: "hh", presence: "required" },
 					),
 				},
 				handler: () => 0,
@@ -761,24 +777,24 @@ test("command: duplicate flag and arg names", () => {
 	rejects(
 		() =>
 			defineReadOnlyCommand("cmd", {
-				help: "h",
-				flags: { a: strFlag("a") },
-				flagSets: [flagSet("fs", { a: strFlag("a") })],
+				help: "hh",
+				flags: { aa: strFlag("aa") },
+				flagSets: [flagSet("fs", { aa: strFlag("aa") })],
 				handler: () => 0,
 			}),
-		'command "cmd": duplicate flag name "a"',
+		'command "cmd": duplicate flag name "aa"',
 	);
 	rejects(
 		() =>
 			defineReadOnlyCommand("cmd", {
-				help: "h",
+				help: "hh",
 				args: [
-					arg("x", t.str, { help: "h", presence: "required" }),
-					arg("x", t.str, { help: "h", presence: "required" }),
+					arg("xx", t.str, { help: "hh", presence: "required" }),
+					arg("xx", t.str, { help: "hh", presence: "required" }),
 				],
 				handler: () => 0,
 			}),
-		'command "cmd": duplicate arg name "x"',
+		'command "cmd": duplicate arg name "xx"',
 	);
 });
 
@@ -786,10 +802,18 @@ test("command: variadic arg constraints", () => {
 	rejects(
 		() =>
 			defineReadOnlyCommand("cmd", {
-				help: "h",
+				help: "hh",
 				args: [
-					arg("x", t.str, { help: "h", variadic: true, presence: "required" }),
-					arg("y", t.str, { help: "h", variadic: true, presence: "required" }),
+					arg("xx", t.str, {
+						help: "hh",
+						variadic: true,
+						presence: "required",
+					}),
+					arg("yy", t.str, {
+						help: "hh",
+						variadic: true,
+						presence: "required",
+					}),
 				],
 				handler: () => 0,
 			}),
@@ -798,14 +822,18 @@ test("command: variadic arg constraints", () => {
 	rejects(
 		() =>
 			defineReadOnlyCommand("cmd", {
-				help: "h",
+				help: "hh",
 				args: [
-					arg("x", t.str, { help: "h", variadic: true, presence: "required" }),
-					arg("y", t.str, { help: "h", presence: "required" }),
+					arg("xx", t.str, {
+						help: "hh",
+						variadic: true,
+						presence: "required",
+					}),
+					arg("yy", t.str, { help: "hh", presence: "required" }),
 				],
 				handler: () => 0,
 			}),
-		'command "cmd": variadic arg "x" must be the last arg',
+		'command "cmd": variadic arg "xx" must be the last arg',
 	);
 });
 
@@ -815,26 +843,32 @@ test("constraint: name legality -- charset, duplicates, flag/arg collision", () 
 	rejects(
 		() =>
 			defineReadOnlyCommand("cmd", {
-				help: "h",
-				flags: { a: optStrFlag("a"), b: optStrFlag("b") },
+				help: "hh",
+				flags: { aa: optStrFlag("aa"), bb: optStrFlag("bb") },
 				constraints: [
 					allOrNone({
 						name: "Bad-Name",
-						members: [{ name: "a" }, { name: "b" }],
+						members: [{ name: "aa" }, { name: "bb" }],
 					}),
 				],
 				handler: () => 0,
 			}),
-		'command "cmd": constraint name "Bad-Name" must match [a-z][a-z0-9-]*',
+		'command "cmd": constraint name "Bad-Name" must be lowercase kebab-case of at least two characters: [a-z][a-z0-9]*(-[a-z0-9]+)*',
 	);
 	rejects(
 		() =>
 			defineReadOnlyCommand("cmd", {
-				help: "h",
-				flags: { a: optStrFlag("a"), b: optStrFlag("b") },
+				help: "hh",
+				flags: { aa: optStrFlag("aa"), bb: optStrFlag("bb") },
 				constraints: [
-					allOrNone({ name: "pair", members: [{ name: "a" }, { name: "b" }] }),
-					atLeastOne({ name: "pair", members: [{ name: "a" }, { name: "b" }] }),
+					allOrNone({
+						name: "pair",
+						members: [{ name: "aa" }, { name: "bb" }],
+					}),
+					atLeastOne({
+						name: "pair",
+						members: [{ name: "aa" }, { name: "bb" }],
+					}),
 				],
 				handler: () => 0,
 			}),
@@ -843,25 +877,25 @@ test("constraint: name legality -- charset, duplicates, flag/arg collision", () 
 	rejects(
 		() =>
 			defineReadOnlyCommand("cmd", {
-				help: "h",
-				flags: { a: optStrFlag("a"), b: optStrFlag("b") },
+				help: "hh",
+				flags: { aa: optStrFlag("aa"), bb: optStrFlag("bb") },
 				constraints: [
-					allOrNone({ name: "a", members: [{ name: "a" }, { name: "b" }] }),
+					allOrNone({ name: "aa", members: [{ name: "aa" }, { name: "bb" }] }),
 				],
 				handler: () => 0,
 			}),
-		'command "cmd": constraint name "a" is already a flag or arg name: a member reference resolves by name and would be ambiguous',
+		'command "cmd": constraint name "aa" is already a flag or arg name: a member reference resolves by name and would be ambiguous',
 	);
 	rejects(
 		() =>
 			defineReadOnlyCommand("cmd", {
-				help: "h",
-				flags: { a: optStrFlag("a"), b: optStrFlag("b") },
-				args: [arg("target", t.str, { help: "h", presence: "optional" })],
+				help: "hh",
+				flags: { aa: optStrFlag("aa"), bb: optStrFlag("bb") },
+				args: [arg("target", t.str, { help: "hh", presence: "optional" })],
 				constraints: [
 					allOrNone({
 						name: "target",
-						members: [{ name: "a" }, { name: "b" }],
+						members: [{ name: "aa" }, { name: "bb" }],
 					}),
 				],
 				handler: () => 0,
@@ -878,10 +912,10 @@ test("constraint: the two-member floor is a compile error, and a widened caller 
 	rejects(
 		() =>
 			defineReadOnlyCommand("cmd", {
-				help: "h",
-				flags: { a: optStrFlag("a") },
+				help: "hh",
+				flags: { aa: optStrFlag("aa") },
 				constraints: [
-					allOrNone(loose({ name: "pair", members: [{ name: "a" }] })),
+					allOrNone(loose({ name: "pair", members: [{ name: "aa" }] })),
 				],
 				handler: () => 0,
 			}),
@@ -890,10 +924,10 @@ test("constraint: the two-member floor is a compile error, and a widened caller 
 	rejects(
 		() =>
 			defineReadOnlyCommand("cmd", {
-				help: "h",
-				flags: { a: optStrFlag("a"), b: optStrFlag("b") },
+				help: "hh",
+				flags: { aa: optStrFlag("aa"), bb: optStrFlag("bb") },
 				constraints: [
-					allOrNone(loose({ name: "pair", members: ["a", { name: "b" }] })),
+					allOrNone(loose({ name: "pair", members: ["aa", { name: "bb" }] })),
 				],
 				handler: () => 0,
 			}),
@@ -910,11 +944,11 @@ test("constraint: the record-shape sweep is set-wide and precedes the arity coun
 	rejects(
 		() =>
 			defineReadOnlyCommand("cmd", {
-				help: "h",
-				flags: { a: optStrFlag("a"), b: optStrFlag("b") },
+				help: "hh",
+				flags: { aa: optStrFlag("aa"), bb: optStrFlag("bb") },
 				constraints: [
-					allOrNone(loose({ name: "one", members: [{ name: "a" }] })),
-					allOrNone(loose({ name: "two", members: ["a", { name: "b" }] })),
+					allOrNone(loose({ name: "one", members: [{ name: "aa" }] })),
+					allOrNone(loose({ name: "two", members: ["aa", { name: "bb" }] })),
 				],
 				handler: () => 0,
 			}),
@@ -926,42 +960,48 @@ test("constraint: member resolution -- unknown, ambiguous, duplicate", () => {
 	rejects(
 		() =>
 			defineReadOnlyCommand("cmd", {
-				help: "h",
-				flags: { a: optStrFlag("a") },
-				constraints: [
-					allOrNone({ name: "pair", members: [{ name: "a" }, { name: "b" }] }),
-				],
-				handler: () => 0,
-			}),
-		'command "cmd": constraint "pair" references unknown member "b"',
-	);
-	rejects(
-		() =>
-			defineReadOnlyCommand("cmd", {
-				help: "h",
-				flags: { a: optStrFlag("a"), b: optStrFlag("b") },
-				args: [arg("a", t.str, { help: "h", presence: "optional" })],
-				constraints: [
-					allOrNone({ name: "pair", members: [{ name: "a" }, { name: "b" }] }),
-				],
-				handler: () => 0,
-			}),
-		'command "cmd": constraint "pair" references "a", which names both a flag and a positional arg',
-	);
-	rejects(
-		() =>
-			defineReadOnlyCommand("cmd", {
-				help: "h",
-				flags: { a: optStrFlag("a"), b: optStrFlag("b") },
+				help: "hh",
+				flags: { aa: optStrFlag("aa") },
 				constraints: [
 					allOrNone({
 						name: "pair",
-						members: [{ name: "a" }, { name: "b" }, { name: "a" }],
+						members: [{ name: "aa" }, { name: "bb" }],
 					}),
 				],
 				handler: () => 0,
 			}),
-		'command "cmd": constraint "pair" declares member "a" twice',
+		'command "cmd": constraint "pair" references unknown member "bb"',
+	);
+	rejects(
+		() =>
+			defineReadOnlyCommand("cmd", {
+				help: "hh",
+				flags: { aa: optStrFlag("aa"), bb: optStrFlag("bb") },
+				args: [arg("aa", t.str, { help: "hh", presence: "optional" })],
+				constraints: [
+					allOrNone({
+						name: "pair",
+						members: [{ name: "aa" }, { name: "bb" }],
+					}),
+				],
+				handler: () => 0,
+			}),
+		'command "cmd": constraint "pair" references "aa", which names both a flag and a positional arg',
+	);
+	rejects(
+		() =>
+			defineReadOnlyCommand("cmd", {
+				help: "hh",
+				flags: { aa: optStrFlag("aa"), bb: optStrFlag("bb") },
+				constraints: [
+					allOrNone({
+						name: "pair",
+						members: [{ name: "aa" }, { name: "bb" }, { name: "aa" }],
+					}),
+				],
+				handler: () => 0,
+			}),
+		'command "cmd": constraint "pair" declares member "aa" twice',
 	);
 });
 
@@ -969,13 +1009,13 @@ test("constraint: nesting legality -- family, election, cycles", () => {
 	rejects(
 		() =>
 			defineReadOnlyCommand("cmd", {
-				help: "h",
-				flags: { a: boolFlag("a"), b: boolFlag("b") },
+				help: "hh",
+				flags: { aa: boolFlag("aa"), bb: boolFlag("bb") },
 				constraints: [
-					requires({ name: "dep", flag: "a", dependsOn: "b" }),
+					requires({ name: "dep", flag: "aa", dependsOn: "bb" }),
 					atLeastOne({
 						name: "top",
-						members: [{ name: "dep" }, { name: "a", when: "true" }],
+						members: [{ name: "dep" }, { name: "aa", when: "true" }],
 					}),
 				],
 				handler: () => 0,
@@ -985,13 +1025,16 @@ test("constraint: nesting legality -- family, election, cycles", () => {
 	rejects(
 		() =>
 			defineReadOnlyCommand("cmd", {
-				help: "h",
-				flags: { a: optStrFlag("a"), b: optStrFlag("b") },
+				help: "hh",
+				flags: { aa: optStrFlag("aa"), bb: optStrFlag("bb") },
 				constraints: [
-					allOrNone({ name: "pair", members: [{ name: "a" }, { name: "b" }] }),
+					allOrNone({
+						name: "pair",
+						members: [{ name: "aa" }, { name: "bb" }],
+					}),
 					atLeastOne({
 						name: "top",
-						members: [{ name: "pair", when: "present" }, { name: "a" }],
+						members: [{ name: "pair", when: "present" }, { name: "aa" }],
 					}),
 				],
 				handler: () => 0,
@@ -1001,12 +1044,12 @@ test("constraint: nesting legality -- family, election, cycles", () => {
 	rejects(
 		() =>
 			defineReadOnlyCommand("cmd", {
-				help: "h",
-				flags: { a: optStrFlag("a"), b: optStrFlag("b") },
+				help: "hh",
+				flags: { aa: optStrFlag("aa"), bb: optStrFlag("bb") },
 				constraints: [
 					atLeastOne({
 						name: "loop",
-						members: [{ name: "a" }, { name: "loop" }],
+						members: [{ name: "aa" }, { name: "loop" }],
 					}),
 				],
 				handler: () => 0,
@@ -1016,14 +1059,17 @@ test("constraint: nesting legality -- family, election, cycles", () => {
 	rejects(
 		() =>
 			defineReadOnlyCommand("cmd", {
-				help: "h",
-				flags: { a: optStrFlag("a"), b: optStrFlag("b") },
+				help: "hh",
+				flags: { aa: optStrFlag("aa"), bb: optStrFlag("bb") },
 				constraints: [
 					atLeastOne({
 						name: "one",
-						members: [{ name: "a" }, { name: "two" }],
+						members: [{ name: "aa" }, { name: "two" }],
 					}),
-					allOrNone({ name: "two", members: [{ name: "b" }, { name: "one" }] }),
+					allOrNone({
+						name: "two",
+						members: [{ name: "bb" }, { name: "one" }],
+					}),
 				],
 				handler: () => 0,
 			}),
@@ -1035,12 +1081,12 @@ test("constraint: election legality -- the bool refusal and the two type guards"
 	rejects(
 		() =>
 			defineReadOnlyCommand("cmd", {
-				help: "h",
-				flags: { all: boolFlag("all"), b: optStrFlag("b") },
+				help: "hh",
+				flags: { all: boolFlag("all"), bb: optStrFlag("bb") },
 				constraints: [
 					atLeastOne({
 						name: "sel",
-						members: [{ name: "all" }, { name: "b" }],
+						members: [{ name: "all" }, { name: "bb" }],
 					}),
 				],
 				handler: () => 0,
@@ -1050,48 +1096,48 @@ test("constraint: election legality -- the bool refusal and the two type guards"
 	rejects(
 		() =>
 			defineReadOnlyCommand("cmd", {
-				help: "h",
-				flags: { a: optStrFlag("a"), b: optStrFlag("b") },
+				help: "hh",
+				flags: { aa: optStrFlag("aa"), bb: optStrFlag("bb") },
 				constraints: [
 					atLeastOne({
 						name: "sel",
-						members: [{ name: "a", when: "true" }, { name: "b" }],
+						members: [{ name: "aa", when: "true" }, { name: "bb" }],
 					}),
 				],
 				handler: () => 0,
 			}),
-		'command "cmd": constraint "sel" member \'--a\' declares when: "true", which needs a bool; \'--a\' is a str',
+		'command "cmd": constraint "sel" member \'--aa\' declares when: "true", which needs a bool; \'--aa\' is a str',
 	);
 	rejects(
 		() =>
 			defineReadOnlyCommand("cmd", {
-				help: "h",
+				help: "hh",
 				flags: {
-					n: flag("n", t.int, { help: "h", presence: "optional" }),
-					b: optStrFlag("b"),
+					nn: flag("nn", t.int, { help: "hh", presence: "optional" }),
+					bb: optStrFlag("bb"),
 				},
 				constraints: [
 					atLeastOne({
 						name: "sel",
-						members: [{ name: "n", when: "non_empty" }, { name: "b" }],
+						members: [{ name: "nn", when: "non_empty" }, { name: "bb" }],
 					}),
 				],
 				handler: () => 0,
 			}),
-		'command "cmd": constraint "sel" member \'--n\' declares when: "non_empty", which needs a string or a collection; \'--n\' is a int',
+		'command "cmd": constraint "sel" member \'--nn\' declares when: "non_empty", which needs a string or a collection; \'--nn\' is a int',
 	);
 	// A scalar bool ARG reaches the same refusal, and renders BARE (§12.15's
 	// member rule is all four member-naming guards').
 	rejects(
 		() =>
 			defineReadOnlyCommand("cmd", {
-				help: "h",
-				flags: { b: optStrFlag("b") },
-				args: [arg("force-it", t.bool, { help: "h", presence: "optional" })],
+				help: "hh",
+				flags: { bb: optStrFlag("bb") },
+				args: [arg("force-it", t.bool, { help: "hh", presence: "optional" })],
 				constraints: [
 					atLeastOne({
 						name: "sel",
-						members: [{ name: "force-it" }, { name: "b" }],
+						members: [{ name: "force-it" }, { name: "bb" }],
 					}),
 				],
 				handler: () => 0,
@@ -1109,18 +1155,18 @@ test("constraint: `<t>` is the framework's own closed vocabulary", () => {
 	rejects(
 		() =>
 			defineReadOnlyCommand("cmd", {
-				help: "h",
+				help: "hh",
 				flags: {
 					labels: flag("labels", t.dict(t.int), {
-						help: "h",
+						help: "hh",
 						presence: "optional",
 					}),
-					b: optStrFlag("b"),
+					bb: optStrFlag("bb"),
 				},
 				constraints: [
 					atLeastOne({
 						name: "sel",
-						members: [{ name: "labels", when: "true" }, { name: "b" }],
+						members: [{ name: "labels", when: "true" }, { name: "bb" }],
 					}),
 				],
 				handler: () => 0,
@@ -1133,19 +1179,19 @@ test("constraint: `<t>` is the framework's own closed vocabulary", () => {
 	rejects(
 		() =>
 			defineReadOnlyCommand("cmd", {
-				help: "h",
+				help: "hh",
 				flags: {
 					tags: flag("tags", t.list(t.str), {
-						help: "h",
+						help: "hh",
 						presence: "optional",
 						repeatable: true,
 					}),
-					b: optStrFlag("b"),
+					bb: optStrFlag("bb"),
 				},
 				constraints: [
 					atLeastOne({
 						name: "sel",
-						members: [{ name: "tags", when: "true" }, { name: "b" }],
+						members: [{ name: "tags", when: "true" }, { name: "bb" }],
 					}),
 				],
 				handler: () => 0,
@@ -1157,11 +1203,11 @@ test("constraint: `<t>` is the framework's own closed vocabulary", () => {
 	rejects(
 		() =>
 			defineReadOnlyCommand("cmd", {
-				help: "h",
-				flags: { b: optStrFlag("b") },
+				help: "hh",
+				flags: { bb: optStrFlag("bb") },
 				args: [
 					arg("targets", t.str, {
-						help: "h",
+						help: "hh",
 						variadic: true,
 						presence: "optional",
 					}),
@@ -1169,7 +1215,7 @@ test("constraint: `<t>` is the framework's own closed vocabulary", () => {
 				constraints: [
 					atLeastOne({
 						name: "sel",
-						members: [{ name: "targets", when: "true" }, { name: "b" }],
+						members: [{ name: "targets", when: "true" }, { name: "bb" }],
 					}),
 				],
 				handler: () => 0,
@@ -1182,11 +1228,11 @@ test("constraint: `<t>` is the framework's own closed vocabulary", () => {
 	rejects(
 		() =>
 			defineReadOnlyCommand("cmd", {
-				help: "h",
-				flags: { b: optStrFlag("b") },
+				help: "hh",
+				flags: { bb: optStrFlag("bb") },
 				args: [
 					arg("flags", t.bool, {
-						help: "h",
+						help: "hh",
 						variadic: true,
 						presence: "optional",
 					}),
@@ -1194,7 +1240,7 @@ test("constraint: `<t>` is the framework's own closed vocabulary", () => {
 				constraints: [
 					atLeastOne({
 						name: "sel",
-						members: [{ name: "flags", when: "true" }, { name: "b" }],
+						members: [{ name: "flags", when: "true" }, { name: "bb" }],
 					}),
 				],
 				handler: () => 0,
@@ -1205,13 +1251,13 @@ test("constraint: `<t>` is the framework's own closed vocabulary", () => {
 	rejects(
 		() =>
 			defineReadOnlyCommand("cmd", {
-				help: "h",
-				flags: { b: optStrFlag("b") },
-				args: [arg("count", t.int, { help: "h", presence: "optional" })],
+				help: "hh",
+				flags: { bb: optStrFlag("bb") },
+				args: [arg("count", t.int, { help: "hh", presence: "optional" })],
 				constraints: [
 					atLeastOne({
 						name: "sel",
-						members: [{ name: "count", when: "non_empty" }, { name: "b" }],
+						members: [{ name: "count", when: "non_empty" }, { name: "bb" }],
 					}),
 				],
 				handler: () => 0,
@@ -1223,19 +1269,19 @@ test("constraint: `<t>` is the framework's own closed vocabulary", () => {
 	rejects(
 		() =>
 			defineReadOnlyCommand("cmd", {
-				help: "h",
+				help: "hh",
 				flags: {
 					via: choiceFlag(
 						"via",
 						{ email: choice({ help: "email" }), sms: choice({ help: "sms" }) },
-						{ help: "h", presence: "required" },
+						{ help: "hh", presence: "required" },
 					),
-					b: optStrFlag("b"),
+					bb: optStrFlag("bb"),
 				},
 				constraints: [
 					atLeastOne({
 						name: "sel",
-						members: [{ name: "via", when: "true" }, { name: "b" }],
+						members: [{ name: "via", when: "true" }, { name: "bb" }],
 					}),
 				],
 				handler: () => 0,
@@ -1250,11 +1296,11 @@ test("constraint: a variadic bool arg is sized, so it declares no election", () 
 	// spelling, and no way to be provided while selecting nothing.
 	assert.ok(
 		defineReadOnlyCommand("cmd", {
-			help: "h",
-			flags: { b: optStrFlag("b") },
+			help: "hh",
+			flags: { bb: optStrFlag("bb") },
 			args: [
 				arg("flags", t.bool, {
-					help: "h",
+					help: "hh",
 					variadic: true,
 					presence: "optional",
 				}),
@@ -1262,7 +1308,7 @@ test("constraint: a variadic bool arg is sized, so it declares no election", () 
 			constraints: [
 				atLeastOne({
 					name: "sel",
-					members: [{ name: "flags" }, { name: "b" }],
+					members: [{ name: "flags" }, { name: "bb" }],
 				}),
 			],
 			handler: () => 0,
@@ -1271,11 +1317,11 @@ test("constraint: a variadic bool arg is sized, so it declares no election", () 
 	// And `non_empty` is legal on it, which is what `sized` means.
 	assert.ok(
 		defineReadOnlyCommand("cmd2", {
-			help: "h",
-			flags: { b: optStrFlag("b") },
+			help: "hh",
+			flags: { bb: optStrFlag("bb") },
 			args: [
 				arg("flags", t.bool, {
-					help: "h",
+					help: "hh",
 					variadic: true,
 					presence: "optional",
 				}),
@@ -1283,7 +1329,7 @@ test("constraint: a variadic bool arg is sized, so it declares no election", () 
 			constraints: [
 				atLeastOne({
 					name: "sel",
-					members: [{ name: "flags", when: "non_empty" }, { name: "b" }],
+					members: [{ name: "flags", when: "non_empty" }, { name: "bb" }],
 				}),
 			],
 			handler: () => 0,
@@ -1298,25 +1344,28 @@ test("constraint: presence legality -- a required member is refused, flag and ar
 	rejects(
 		() =>
 			defineReadOnlyCommand("cmd", {
-				help: "h",
-				flags: { a: strFlag("a"), b: optStrFlag("b") },
+				help: "hh",
+				flags: { aa: strFlag("aa"), bb: optStrFlag("bb") },
 				constraints: [
-					allOrNone({ name: "pair", members: [{ name: "a" }, { name: "b" }] }),
+					allOrNone({
+						name: "pair",
+						members: [{ name: "aa" }, { name: "bb" }],
+					}),
 				],
 				handler: () => 0,
 			}),
-		'command "cmd": constraint "pair" member \'--a\' declares presence: "required": a member the invocation must always supply leaves the constraint nothing to decide',
+		'command "cmd": constraint "pair" member \'--aa\' declares presence: "required": a member the invocation must always supply leaves the constraint nothing to decide',
 	);
 	rejects(
 		() =>
 			defineReadOnlyCommand("cmd", {
-				help: "h",
-				flags: { b: optStrFlag("b") },
-				args: [arg("targets", t.str, { help: "h", presence: "required" })],
+				help: "hh",
+				flags: { bb: optStrFlag("bb") },
+				args: [arg("targets", t.str, { help: "hh", presence: "required" })],
 				constraints: [
 					atLeastOne({
 						name: "sel",
-						members: [{ name: "targets" }, { name: "b" }],
+						members: [{ name: "targets" }, { name: "bb" }],
 					}),
 				],
 				handler: () => 0,
@@ -1332,18 +1381,18 @@ test("constraint: the resolution order runs identity-outward across the whole se
 	rejects(
 		() =>
 			defineReadOnlyCommand("cmd", {
-				help: "h",
-				flags: { a: optStrFlag("a"), b: optStrFlag("b") },
+				help: "hh",
+				flags: { aa: optStrFlag("aa"), bb: optStrFlag("bb") },
 				constraints: [
-					allOrNone(loose({ name: "first", members: [{ name: "a" }] })),
+					allOrNone(loose({ name: "first", members: [{ name: "aa" }] })),
 					allOrNone({
 						name: "Second",
-						members: [{ name: "a" }, { name: "b" }],
+						members: [{ name: "aa" }, { name: "bb" }],
 					}),
 				],
 				handler: () => 0,
 			}),
-		'command "cmd": constraint name "Second" must match [a-z][a-z0-9-]*',
+		'command "cmd": constraint name "Second" must be lowercase kebab-case of at least two characters: [a-z][a-z0-9]*(-[a-z0-9]+)*',
 	);
 });
 
@@ -1355,37 +1404,40 @@ test("constraint: the dependency families' own guards are a TRAILING phase", () 
 	rejects(
 		() =>
 			defineReadOnlyCommand("cmd", {
-				help: "h",
+				help: "hh",
 				flags: {
 					src: optStrFlag("src"),
 					loud: boolFlag("loud"),
-					a: strFlag("a"),
-					b: optStrFlag("b"),
-				},
-				constraints: [
-					implies({ name: "imp", flag: "src", implies: "loud", value: true }),
-					allOrNone({ name: "pair", members: [{ name: "a" }, { name: "b" }] }),
-				],
-				handler: () => 0,
-			}),
-		'command "cmd": constraint "pair" member \'--a\' declares presence: "required": a member the invocation must always supply leaves the constraint nothing to decide',
-	);
-	// The same ordering for the bool-election refusal, which is step 6 itself.
-	rejects(
-		() =>
-			defineReadOnlyCommand("cmd", {
-				help: "h",
-				flags: {
-					src: optStrFlag("src"),
-					loud: boolFlag("loud"),
-					quietish: boolFlag("quietish"),
-					b: optStrFlag("b"),
+					aa: strFlag("aa"),
+					bb: optStrFlag("bb"),
 				},
 				constraints: [
 					implies({ name: "imp", flag: "src", implies: "loud", value: true }),
 					allOrNone({
 						name: "pair",
-						members: [{ name: "quietish" }, { name: "b" }],
+						members: [{ name: "aa" }, { name: "bb" }],
+					}),
+				],
+				handler: () => 0,
+			}),
+		'command "cmd": constraint "pair" member \'--aa\' declares presence: "required": a member the invocation must always supply leaves the constraint nothing to decide',
+	);
+	// The same ordering for the bool-election refusal, which is step 6 itself.
+	rejects(
+		() =>
+			defineReadOnlyCommand("cmd", {
+				help: "hh",
+				flags: {
+					src: optStrFlag("src"),
+					loud: boolFlag("loud"),
+					quietish: boolFlag("quietish"),
+					bb: optStrFlag("bb"),
+				},
+				constraints: [
+					implies({ name: "imp", flag: "src", implies: "loud", value: true }),
+					allOrNone({
+						name: "pair",
+						members: [{ name: "quietish" }, { name: "bb" }],
 					}),
 				],
 				handler: () => 0,
@@ -1398,31 +1450,31 @@ test("constraint: Requires reference validation (unknown reported before same-fl
 	rejects(
 		() =>
 			defineReadOnlyCommand("cmd", {
-				help: "h",
-				constraints: [requires({ name: "dep", flag: "a", dependsOn: "a" })],
+				help: "hh",
+				constraints: [requires({ name: "dep", flag: "aa", dependsOn: "aa" })],
 				handler: () => 0,
 			}),
-		'command "cmd": constraint "dep" references unknown flag "a"',
+		'command "cmd": constraint "dep" references unknown flag "aa"',
 	);
 	rejects(
 		() =>
 			defineReadOnlyCommand("cmd", {
-				help: "h",
-				flags: { a: strFlag("a") },
-				constraints: [requires({ name: "dep", flag: "a", dependsOn: "a" })],
+				help: "hh",
+				flags: { aa: strFlag("aa") },
+				constraints: [requires({ name: "dep", flag: "aa", dependsOn: "aa" })],
 				handler: () => 0,
 			}),
-		'command "cmd": Requires flag and depends_on cannot be the same ("a")',
+		'command "cmd": Requires flag and depends_on cannot be the same ("aa")',
 	);
 	rejects(
 		() =>
 			defineReadOnlyCommand("cmd", {
-				help: "h",
-				flags: { a: strFlag("a") },
-				constraints: [requires({ name: "dep", flag: "a", dependsOn: "b" })],
+				help: "hh",
+				flags: { aa: strFlag("aa") },
+				constraints: [requires({ name: "dep", flag: "aa", dependsOn: "bb" })],
 				handler: () => 0,
 			}),
-		'command "cmd": constraint "dep" references unknown flag "b"',
+		'command "cmd": constraint "dep" references unknown flag "bb"',
 	);
 });
 
@@ -1430,57 +1482,57 @@ test("constraint: Implies reference validation", () => {
 	rejects(
 		() =>
 			defineReadOnlyCommand("cmd", {
-				help: "h",
+				help: "hh",
 				constraints: [
-					implies({ name: "imp", flag: "a", implies: "b", value: true }),
+					implies({ name: "imp", flag: "aa", implies: "bb", value: true }),
 				],
 				handler: () => 0,
 			}),
-		'command "cmd": constraint "imp" references unknown flag "a"',
+		'command "cmd": constraint "imp" references unknown flag "aa"',
 	);
 	rejects(
 		() =>
 			defineReadOnlyCommand("cmd", {
-				help: "h",
-				flags: { a: boolFlag("a") },
+				help: "hh",
+				flags: { aa: boolFlag("aa") },
 				constraints: [
-					implies({ name: "imp", flag: "a", implies: "a", value: true }),
+					implies({ name: "imp", flag: "aa", implies: "aa", value: true }),
 				],
 				handler: () => 0,
 			}),
-		'command "cmd": Implies flag and implies cannot be the same ("a")',
+		'command "cmd": Implies flag and implies cannot be the same ("aa")',
 	);
 	rejects(
 		() =>
 			defineReadOnlyCommand("cmd", {
-				help: "h",
-				flags: { a: strFlag("a"), b: boolFlag("b") },
+				help: "hh",
+				flags: { aa: strFlag("aa"), bb: boolFlag("bb") },
 				constraints: [
-					implies({ name: "imp", flag: "a", implies: "b", value: true }),
+					implies({ name: "imp", flag: "aa", implies: "bb", value: true }),
 				],
 				handler: () => 0,
 			}),
-		'command "cmd": Implies trigger flag "a" must be a bool flag',
+		'command "cmd": Implies trigger flag "aa" must be a bool flag',
 	);
 	rejects(
 		() =>
 			defineReadOnlyCommand("cmd", {
-				help: "h",
-				flags: { a: boolFlag("a"), b: strFlag("b") },
+				help: "hh",
+				flags: { aa: boolFlag("aa"), bb: strFlag("bb") },
 				constraints: [
-					implies({ name: "imp", flag: "a", implies: "b", value: true }),
+					implies({ name: "imp", flag: "aa", implies: "bb", value: true }),
 				],
 				handler: () => 0,
 			}),
-		'command "cmd": Implies target flag "b" must be a bool flag',
+		'command "cmd": Implies target flag "bb" must be a bool flag',
 	);
 	rejects(
 		() =>
 			defineReadOnlyCommand("cmd", {
-				help: "h",
-				flags: { a: boolFlag("a"), b: boolFlag("b") },
+				help: "hh",
+				flags: { aa: boolFlag("aa"), bb: boolFlag("bb") },
 				constraints: [
-					implies(loose({ name: "imp", flag: "a", implies: "b", value: 5n })),
+					implies(loose({ name: "imp", flag: "aa", implies: "bb", value: 5n })),
 				],
 				handler: () => 0,
 			}),
@@ -1492,18 +1544,18 @@ test("command: tag name validation and dedup", () => {
 	rejects(
 		() =>
 			defineReadOnlyCommand("cmd", {
-				help: "h",
+				help: "hh",
 				tags: ["Bad"],
 				handler: () => 0,
 			}),
-		'invalid tag name "Bad": must match [a-z][a-z0-9-]*',
+		'invalid tag name "Bad": must be lowercase kebab-case of at least two characters: [a-z][a-z0-9]*(-[a-z0-9]+)*',
 	);
 	const cmd = defineReadOnlyCommand("cmd", {
-		help: "h",
-		tags: ["b", "a", "b"],
+		help: "hh",
+		tags: ["bb", "aa", "bb"],
 		handler: () => 0,
 	});
-	assert.deepEqual(cmd.tags, ["b", "a"]);
+	assert.deepEqual(cmd.tags, ["bb", "aa"]);
 });
 
 // --- createApp validation ---
@@ -1519,11 +1571,11 @@ function makeApp(extra?: Partial<Parameters<typeof createApp>[0]>): AppImpl {
 
 test("createApp: version and help are required non-empty", () => {
 	rejects(
-		() => createApp({ name: "myapp", version: " ", help: "h" }),
+		() => createApp({ name: "myapp", version: " ", help: "hh" }),
 		"App.version must be a non-empty string",
 	);
 	rejects(
-		() => createApp(loose({ name: "myapp", help: "h" })),
+		() => createApp(loose({ name: "myapp", help: "hh" })),
 		"App.version must be a non-empty string",
 	);
 	rejects(
@@ -1535,9 +1587,7 @@ test("createApp: version and help are required non-empty", () => {
 test("createApp: the reserved global flag names are rejected", () => {
 	for (const name of [
 		"help",
-		"h",
 		"version",
-		"v",
 		"dump-schema",
 		"mcp",
 		"config",
@@ -1558,7 +1608,7 @@ test("createApp: reserved global short flags are rejected", () => {
 			makeApp({
 				flags: {
 					muted: flag("muted", t.bool, {
-						help: "h",
+						help: "hh",
 						short: "v",
 						presence: "default",
 						default: false,
@@ -1575,7 +1625,7 @@ test("createApp: global flag map keys must be underscore forms", () => {
 			makeApp({
 				flags: {
 					simRun: flag("sim-run", t.bool, {
-						help: "h",
+						help: "hh",
 						presence: "default",
 						default: false,
 					}),
@@ -1639,7 +1689,7 @@ test("app.command: command flags may not collide with global flags", () => {
 		() =>
 			app.command(
 				defineReadOnlyCommand("cmd", {
-					help: "h",
+					help: "hh",
 					flags: { chatter: boolFlag("chatter") },
 					handler: () => 0,
 				}),
@@ -1654,10 +1704,10 @@ test("app.command: env prefix enforcement", () => {
 		() =>
 			app.command(
 				defineReadOnlyCommand("cmd", {
-					help: "h",
+					help: "hh",
 					flags: {
 						target: flag("target", t.str, {
-							help: "h",
+							help: "hh",
 							env: "TGT",
 							presence: "required",
 						}),
@@ -1670,16 +1720,16 @@ test("app.command: env prefix enforcement", () => {
 	// prefixed: false opts out; a conforming prefix passes.
 	app.command(
 		defineReadOnlyCommand("ok", {
-			help: "h",
+			help: "hh",
 			flags: {
 				target: flag("target", t.str, {
-					help: "h",
+					help: "hh",
 					env: "TGT",
 					prefixed: false,
 					presence: "required",
 				}),
 				output: flag("output", t.str, {
-					help: "h",
+					help: "hh",
 					env: "MYAPP_OUTPUT",
 					presence: "required",
 				}),
@@ -1694,11 +1744,11 @@ test("app: registration order is preserved (commands, groups, global flags)", ()
 	const app = makeApp({
 		flags: { zeta: strFlag("zeta"), alpha: strFlag("alpha") },
 	});
-	app.command(defineReadOnlyCommand("bravo", { help: "h", handler: () => 0 }));
-	app.command(defineReadOnlyCommand("alpha", { help: "h", handler: () => 0 }));
-	app.command(readOnlyPassthrough("zulu", { help: "h", handler: () => 0 }));
-	app.group("mike", { help: "h" });
-	app.group("kilo", { help: "h" });
+	app.command(defineReadOnlyCommand("bravo", { help: "hh", handler: () => 0 }));
+	app.command(defineReadOnlyCommand("alpha", { help: "hh", handler: () => 0 }));
+	app.command(readOnlyPassthrough("zulu", { help: "hh", handler: () => 0 }));
+	app.group("mike", { help: "hh" });
+	app.group("kilo", { help: "hh" });
 	assert.deepEqual([...app.commands.keys()], ["bravo", "alpha", "zulu"]);
 	assert.deepEqual([...app.groups.keys()], ["mike", "kilo"]);
 	assert.deepEqual(
@@ -1712,7 +1762,7 @@ test("app: top-level re-registration overwrites in place (sibling parity)", () =
 	app.command(
 		defineReadOnlyCommand("cmd", { help: "first", handler: () => 0 }),
 	);
-	app.command(defineReadOnlyCommand("other", { help: "h", handler: () => 0 }));
+	app.command(defineReadOnlyCommand("other", { help: "hh", handler: () => 0 }));
 	app.command(
 		defineReadOnlyCommand("cmd", { help: "second", handler: () => 0 }),
 	);
@@ -1724,22 +1774,22 @@ test("app.command: merged declaration order is flags, then flag sets", () => {
 	const app = makeApp();
 	app.command(
 		defineReadOnlyCommand("deploy", {
-			help: "h",
+			help: "hh",
 			flags: {
 				region: strFlag("region"),
 				source: memberChoiceFlag(
 					"source",
 					{
 						"from-file": choice({
-							help: "h",
+							help: "hh",
 							value: { carrier: t.str, help: "path to the file" },
 						}),
 						"from-url": choice({
-							help: "h",
+							help: "hh",
 							value: { carrier: t.str, help: "the URL to read" },
 						}),
 					},
-					{ help: "h", presence: "required" },
+					{ help: "hh", presence: "required" },
 				),
 			},
 			flagSets: [flagSet("common", { chatter: boolFlag("chatter") })],
@@ -1771,8 +1821,8 @@ test("group: help and tag validation", () => {
 		"Group.help must be a non-empty string",
 	);
 	rejects(
-		() => app.group("dns", { help: "h", tags: ["Bad"] }),
-		'invalid tag name "Bad": must match [a-z][a-z0-9-]*',
+		() => app.group("dns", { help: "hh", tags: ["Bad"] }),
+		'invalid tag name "Bad": must be lowercase kebab-case of at least two characters: [a-z][a-z0-9]*(-[a-z0-9]+)*',
 	);
 });
 
@@ -1787,13 +1837,13 @@ test("group: nested collision checks", () => {
 	rejects(
 		() =>
 			dns.command(
-				defineReadOnlyCommand("zone", { help: "h", handler: () => 0 }),
+				defineReadOnlyCommand("zone", { help: "hh", handler: () => 0 }),
 			),
 		'command "zone" collides with an existing group',
 	);
-	dns.command(defineReadOnlyCommand("list", { help: "h", handler: () => 0 }));
+	dns.command(defineReadOnlyCommand("list", { help: "hh", handler: () => 0 }));
 	rejects(
-		() => dns.group("list", { help: "h" }),
+		() => dns.group("list", { help: "hh" }),
 		'group "list" collides with an existing command',
 	);
 });
@@ -1808,7 +1858,7 @@ test("group: arbitrary nesting depth with sorted tag accumulation", () => {
 	const record = zone.group("record", { help: "Records" });
 	record.command(
 		defineReadOnlyCommand("create", {
-			help: "h",
+			help: "hh",
 			tags: ["beta"],
 			handler: () => 0,
 		}),
@@ -1831,12 +1881,12 @@ test("group: arbitrary nesting depth with sorted tag accumulation", () => {
 test("group: hidden and tags are stored", () => {
 	const app = makeApp();
 	const g = app.group("internal", {
-		help: "h",
+		help: "hh",
 		hidden: true,
-		tags: ["b", "a"],
+		tags: ["bb", "aa"],
 	});
 	assert.equal(g.hidden, true);
-	assert.deepEqual(g.tags, ["b", "a"]);
+	assert.deepEqual(g.tags, ["bb", "aa"]);
 });
 
 // --- Deprecated commands ---
@@ -1854,8 +1904,8 @@ test("deprecated: factory validates name and message", () => {
 
 test("deprecate: collision checks at app and group level", () => {
 	const app = makeApp();
-	app.command(defineReadOnlyCommand("cmd", { help: "h", handler: () => 0 }));
-	app.group("grp", { help: "h" });
+	app.command(defineReadOnlyCommand("cmd", { help: "hh", handler: () => 0 }));
+	app.group("grp", { help: "hh" });
 	rejects(
 		() => app.deprecate(deprecated("cmd", "use other")),
 		'deprecated command "cmd" collides with an existing command',
@@ -1873,7 +1923,7 @@ test("deprecate: collision checks at app and group level", () => {
 
 	const grp = app.groups.get("grp");
 	assert.ok(grp);
-	grp.command(defineReadOnlyCommand("sub", { help: "h", handler: () => 0 }));
+	grp.command(defineReadOnlyCommand("sub", { help: "hh", handler: () => 0 }));
 	rejects(
 		() => grp.deprecate(deprecated("sub", "gone")),
 		'deprecated command "sub" collides with an existing command',
@@ -1888,7 +1938,7 @@ test("tagContract: validates the tag name and stores the contract", () => {
 	const app = makeApp();
 	rejects(
 		() => app.tagContract("Bad", "sim-run"),
-		'invalid tag name "Bad": must match [a-z][a-z0-9-]*',
+		'invalid tag name "Bad": must be lowercase kebab-case of at least two characters: [a-z][a-z0-9]*(-[a-z0-9]+)*',
 	);
 	app.tagContract("release", "sim-run");
 	assert.equal(app.tagContracts.get("release"), "sim-run");
@@ -1964,16 +2014,16 @@ test("integration: precisely-typed command registers with derived data intact", 
 
 test("presence: declaring nothing does not register", () => {
 	rejects(
-		() => flag("target", t.str, loose({ help: "h" })),
+		() => flag("target", t.str, loose({ help: "hh" })),
 		'Flag "target": presence is undeclared: declare exactly one of presence: "required", presence: "optional", or presence: "default" with default: <value>',
 	);
 	rejects(
-		() => arg("src", t.str, loose({ help: "h" })),
+		() => arg("src", t.str, loose({ help: "hh" })),
 		'Arg "src": presence is undeclared: declare exactly one of presence: "required", presence: "optional", or presence: "default" with default: <value>',
 	);
 	// A presence value outside the closed set declares none of the three.
 	rejects(
-		() => flag("target", t.str, loose({ help: "h", presence: "maybe" })),
+		() => flag("target", t.str, loose({ help: "hh", presence: "maybe" })),
 		'Flag "target": presence is undeclared: declare exactly one of presence: "required", presence: "optional", or presence: "default" with default: <value>',
 	);
 });
@@ -1984,9 +2034,9 @@ test("presence: declaring two does not register, in canonical order", () => {
 			flag(
 				"target",
 				t.str,
-				loose({ help: "h", presence: "required", default: "x" }),
+				loose({ help: "hh", presence: "required", default: "xx" }),
 			),
-		'Flag "target": presence is declared twice: presence: "required" and presence: "default" with default: x cannot be combined; declare exactly one',
+		'Flag "target": presence is declared twice: presence: "required" and presence: "default" with default: xx cannot be combined; declare exactly one',
 	);
 	// Written default-first; the message still renders required/optional first.
 	rejects(
@@ -1994,25 +2044,25 @@ test("presence: declaring two does not register, in canonical order", () => {
 			flag(
 				"target",
 				t.str,
-				loose({ default: "x", presence: "optional", help: "h" }),
+				loose({ default: "xx", presence: "optional", help: "hh" }),
 			),
-		'Flag "target": presence is declared twice: presence: "optional" and presence: "default" with default: x cannot be combined; declare exactly one',
+		'Flag "target": presence is declared twice: presence: "optional" and presence: "default" with default: xx cannot be combined; declare exactly one',
 	);
 	rejects(
 		() =>
 			arg(
 				"src",
 				t.str,
-				loose({ help: "h", presence: "required", default: "x" }),
+				loose({ help: "hh", presence: "required", default: "xx" }),
 			),
-		'Arg "src": presence is declared twice: presence: "required" and presence: "default" with default: x cannot be combined; declare exactly one',
+		'Arg "src": presence is declared twice: presence: "required" and presence: "default" with default: xx cannot be combined; declare exactly one',
 	);
 	rejects(
 		() =>
 			flag(
 				"count",
 				t.int,
-				loose({ help: "h", presence: "optional", default: 5n }),
+				loose({ help: "hh", presence: "optional", default: 5n }),
 			),
 		'Flag "count": presence is declared twice: presence: "optional" and presence: "default" with default: 5 cannot be combined; declare exactly one',
 	);
@@ -2022,11 +2072,11 @@ test("presence: a null-valued default redirects to the optional spelling", () =>
 	// The redirect fires when the null default is the SOLE declaration -- the
 	// old idiom it exists to teach (ledger item 154).
 	rejects(
-		() => flag("target", t.str, loose({ help: "h", default: null })),
+		() => flag("target", t.str, loose({ help: "hh", default: null })),
 		'Flag "target": default: null does not declare optionality: use presence: "optional" (it delivers undefined when the flag is absent)',
 	);
 	rejects(
-		() => arg("src", t.str, loose({ help: "h", default: null })),
+		() => arg("src", t.str, loose({ help: "hh", default: null })),
 		'Arg "src": default: null does not declare optionality: use presence: "optional" (it delivers undefined when the arg is absent)',
 	);
 	// The two-part default spelling carrying null is still ONE declaration, so
@@ -2036,7 +2086,7 @@ test("presence: a null-valued default redirects to the optional spelling", () =>
 			flag(
 				"target",
 				t.str,
-				loose({ help: "h", presence: "default", default: null }),
+				loose({ help: "hh", presence: "default", default: null }),
 			),
 		'Flag "target": default: null does not declare optionality: use presence: "optional" (it delivers undefined when the flag is absent)',
 	);
@@ -2045,7 +2095,7 @@ test("presence: a null-valued default redirects to the optional spelling", () =>
 			arg(
 				"src",
 				t.str,
-				loose({ help: "h", presence: "default", default: null }),
+				loose({ help: "hh", presence: "default", default: null }),
 			),
 		'Arg "src": default: null does not declare optionality: use presence: "optional" (it delivers undefined when the arg is absent)',
 	);
@@ -2062,7 +2112,7 @@ test("presence: the two-declared error wins over the null-default redirect", () 
 			flag(
 				"target",
 				t.str,
-				loose({ help: "h", presence: "optional", default: null }),
+				loose({ help: "hh", presence: "optional", default: null }),
 			),
 		'Flag "target": presence is declared twice: presence: "optional" and presence: "default" with default: null cannot be combined; declare exactly one',
 	);
@@ -2071,7 +2121,7 @@ test("presence: the two-declared error wins over the null-default redirect", () 
 			flag(
 				"target",
 				t.str,
-				loose({ help: "h", presence: "required", default: null }),
+				loose({ help: "hh", presence: "required", default: null }),
 			),
 		'Flag "target": presence is declared twice: presence: "required" and presence: "default" with default: null cannot be combined; declare exactly one',
 	);
@@ -2080,7 +2130,7 @@ test("presence: the two-declared error wins over the null-default redirect", () 
 			arg(
 				"src",
 				t.str,
-				loose({ help: "h", presence: "optional", default: null }),
+				loose({ help: "hh", presence: "optional", default: null }),
 			),
 		'Arg "src": presence is declared twice: presence: "optional" and presence: "default" with default: null cannot be combined; declare exactly one',
 	);
@@ -2089,7 +2139,7 @@ test("presence: the two-declared error wins over the null-default redirect", () 
 			arg(
 				"src",
 				t.str,
-				loose({ help: "h", presence: "required", default: null }),
+				loose({ help: "hh", presence: "required", default: null }),
 			),
 		'Arg "src": presence is declared twice: presence: "required" and presence: "default" with default: null cannot be combined; declare exactly one',
 	);
@@ -2099,11 +2149,11 @@ test('presence: "default" without a value does not register (TS-only)', () => {
 	// No sibling can express a half-written default declaration: Python's
 	// default=<value> and Go's Default(v) ARE the value.
 	rejects(
-		() => flag("target", t.str, loose({ help: "h", presence: "default" })),
+		() => flag("target", t.str, loose({ help: "hh", presence: "default" })),
 		'Flag "target": presence: "default" requires a default value: declare default: <value>, or presence: "optional" for no value',
 	);
 	rejects(
-		() => arg("src", t.str, loose({ help: "h", presence: "default" })),
+		() => arg("src", t.str, loose({ help: "hh", presence: "default" })),
 		'Arg "src": presence: "default" requires a default value: declare default: <value>, or presence: "optional" for no value',
 	);
 });
@@ -2116,7 +2166,7 @@ test("presence: a selector cannot declare optional, and refuses with a redirect"
 			choiceFlag(
 				"via",
 				{ email: choice({ help: "email" }), sms: choice({ help: "sms" }) },
-				loose({ help: "h", presence: "optional" }),
+				loose({ help: "hh", presence: "optional" }),
 			),
 		'Flag "via": a choice flag cannot declare presence: "optional": an absent selection is a choice nobody named, so name it as a choice of its own',
 	);
@@ -2128,10 +2178,10 @@ test("presence: a selector cannot declare optional, and refuses with a redirect"
 			memberChoiceFlag(
 				"scope",
 				{
-					all: loose({ ...choice({ help: "h" }), presence: "optional" }),
-					one: choice({ help: "h" }),
+					all: loose({ ...choice({ help: "hh" }), presence: "optional" }),
+					one: choice({ help: "hh" }),
 				},
-				{ help: "h", presence: "required" },
+				{ help: "hh", presence: "required" },
 			),
 		'Choice "all" of "scope": a member flag must declare presence: "required", read as required once this member is elected',
 	);
@@ -2144,20 +2194,20 @@ test("presence: a variadic arg cannot declare a default", () => {
 				"files",
 				t.str,
 				loose({
-					help: "h",
+					help: "hh",
 					variadic: true,
 					presence: "default",
-					default: "x",
+					default: "xx",
 				}),
 			),
 		'Arg "files": a variadic arg cannot declare presence: "default": it always delivers a list, so declare presence: "required" for at least one value or presence: "optional" for possibly none',
 	);
 	// Both other declarations are legal on a variadic arg.
 	assert.doesNotThrow(() =>
-		arg("files", t.str, { help: "h", variadic: true, presence: "required" }),
+		arg("files", t.str, { help: "hh", variadic: true, presence: "required" }),
 	);
 	assert.doesNotThrow(() =>
-		arg("files", t.str, { help: "h", variadic: true, presence: "optional" }),
+		arg("files", t.str, { help: "hh", variadic: true, presence: "optional" }),
 	);
 });
 
@@ -2165,7 +2215,7 @@ test("presence: an optional flag composes with choices and never checks absence"
 	// The default-in-choices check applies to declared VALUES only (§23.5).
 	assert.doesNotThrow(() =>
 		flag("format", t.str, {
-			help: "h",
+			help: "hh",
 			presence: "optional",
 			choices: [{ value: "text" }, { value: "json" }],
 		}),
@@ -2173,7 +2223,7 @@ test("presence: an optional flag composes with choices and never checks absence"
 	rejects(
 		() =>
 			flag("format", t.str, {
-				help: "h",
+				help: "hh",
 				presence: "default",
 				default: "yaml",
 				choices: [{ value: "text" }, { value: "json" }],
@@ -2187,16 +2237,21 @@ test("presence: an optional flag composes with choices and never checks absence"
 
 void [
 	// @ts-expect-error version is a required createApp field
-	() => createApp({ name: "x", help: "h" }),
+	() => createApp({ name: "xx", help: "hh" }),
 	// @ts-expect-error help is a required createApp field
-	() => createApp({ name: "x", version: "1.0.0" }),
+	() => createApp({ name: "xx", version: "1.0.0" }),
 	(app: ReturnType<typeof createApp>) =>
 		// @ts-expect-error deprecated carriers register via app.deprecate, not app.command
 		app.command(deprecated("old", "gone")),
 	() =>
 		// @ts-expect-error repeatable is not available on scalar carriers
-		flag("tag", t.str, { help: "h", repeatable: true, presence: "required" }),
+		flag("tag", t.str, { help: "hh", repeatable: true, presence: "required" }),
 	() =>
-		// @ts-expect-error configFormat is a closed union
-		createApp({ name: "x", version: "1.0.0", help: "h", configFormat: "yaml" }),
+		createApp({
+			name: "xx",
+			version: "1.0.0",
+			help: "hh",
+			// @ts-expect-error configFormat is a closed union
+			configFormat: "yaml",
+		}),
 ];
