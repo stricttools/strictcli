@@ -1336,6 +1336,114 @@ test("guard: sibling scopes may reuse a short when the two tokenize alike", () =
 	});
 });
 
+/**
+ * A sibling-reused short names whichever claimant's scope the election made
+ * live (§24.7), not the last-declared one: the token is read before the
+ * election, and bound once the election is known -- as Python and Go do.
+ */
+function sharedShortApp(seen: unknown[]): App {
+	const app = makeApp();
+	app.command(
+		defineReadOnlyCommand("send", {
+			help: "send",
+			flags: {
+				via: choiceFlag(
+					"via",
+					{
+						email: choice({
+							help: "email",
+							flags: {
+								subject: flag("subject", t.str, {
+									help: "h",
+									short: "x",
+									presence: "optional",
+								}),
+							},
+						}),
+						sms: choice({
+							help: "sms",
+							flags: {
+								phone: flag("phone", t.str, {
+									help: "h",
+									short: "x",
+									presence: "optional",
+								}),
+							},
+						}),
+						post: choice({ help: "post" }),
+					},
+					{ help: "h", presence: "required" },
+				),
+			},
+			handler: (a) => {
+				seen.push(a.via);
+				return 0;
+			},
+		}),
+	);
+	return app;
+}
+
+test("selector: a sibling-reused short binds to the elected scope's flag", async () => {
+	for (const [argv, want] of [
+		[["send", "--via", "email", "-x", "2"], { choice: "email", subject: "2" }],
+		[["send", "-x", "2", "--via", "email"], { choice: "email", subject: "2" }],
+		[["send", "--via", "sms", "-x", "1"], { choice: "sms", phone: "1" }],
+	] as const) {
+		const seen: unknown[] = [];
+		const r = await sharedShortApp(seen).test([...argv]);
+		assert.equal(r.exitCode, 0, `${argv.join(" ")}: ${r.stderr}`);
+		assert.deepEqual(seen, [want]);
+	}
+});
+
+test("selector: a sibling-reused short repeats the elected scope's flag", async () => {
+	const repeated = (name: string, a: string, b: string) =>
+		errOut(
+			`--${name}: given more than once, as '${a}' and '${b}'; it takes one value`,
+			"myapp send",
+		);
+	let r = await sharedShortApp([]).test([
+		"send",
+		"--via",
+		"email",
+		"-x",
+		"1",
+		"--subject",
+		"2",
+	]);
+	assert.equal(r.stderr, repeated("subject", "-x 1", "--subject 2"));
+	r = await sharedShortApp([]).test([
+		"send",
+		"-x",
+		"1",
+		"--via",
+		"email",
+		"-x",
+		"2",
+	]);
+	assert.equal(r.stderr, repeated("subject", "-x 1", "-x 2"));
+	r = await sharedShortApp([]).test([
+		"send",
+		"--via",
+		"sms",
+		"--phone",
+		"1",
+		"-x",
+		"2",
+	]);
+	assert.equal(r.stderr, repeated("phone", "--phone 1", "-x 2"));
+	// Under a scope no claimant lives in, the short names the FIRST-declared one.
+	r = await sharedShortApp([]).test(["send", "--via", "post", "-x", "1"]);
+	assert.equal(
+		r.stderr,
+		errOut(
+			"flag '--subject' is only valid under '--via email', but '--via post' was elected",
+			"myapp send",
+		),
+	);
+});
+
 test("guard: a short reused by sibling scopes must tokenize identically", () => {
 	rejects(
 		() =>

@@ -85,6 +85,7 @@ import {
 	type Occurrence,
 	type Occurrences,
 	type ParseProblem,
+	type PendingShort,
 	parseScopes,
 	STAGE,
 	throwFirstProblem,
@@ -506,9 +507,20 @@ interface ScopedTokenTarget {
 	readonly takesValue: boolean;
 }
 
+/**
+ * A scoped short form. Mutually exclusive scopes may reuse one short for two
+ * different names (§24.7), so which name it stands for is known only once the
+ * election is: `names` lists every claimant in declaration order, and the
+ * token is bound to the one whose scope the election made live.
+ */
+interface ScopedShortTarget {
+	readonly names: readonly string[];
+	readonly takesValue: boolean;
+}
+
 interface ScopedLookups {
 	readonly long: Map<string, ScopedTokenTarget>;
-	readonly short: Map<string, ScopedTokenTarget>;
+	readonly short: Map<string, ScopedShortTarget>;
 	readonly negation: Map<string, ScopedTokenTarget>;
 	/** True when the command declares no selector at all. */
 	readonly empty: boolean;
@@ -516,7 +528,7 @@ interface ScopedLookups {
 
 function newScopedLookups(decls: readonly AnyDecl[]): ScopedLookups {
 	const long = new Map<string, ScopedTokenTarget>();
-	const short = new Map<string, ScopedTokenTarget>();
+	const short = new Map<string, { names: string[]; takesValue: boolean }>();
 	const negation = new Map<string, ScopedTokenTarget>();
 	const index = buildScopeIndex(decls);
 	for (const [name, entries] of index) {
@@ -543,7 +555,14 @@ function newScopedLookups(decls: readonly AnyDecl[]): ScopedLookups {
 			// token: the member flag IS what a reader types (§24.4).
 			const sh = e.short;
 			if (typeof sh === "string" && sh !== "") {
-				short.set(`-${sh}`, target);
+				// Every claimant, in declaration order: a sibling-reused short is
+				// bound after the election, never to whichever name came last.
+				const claim = short.get(`-${sh}`);
+				if (claim === undefined) {
+					short.set(`-${sh}`, { names: [name], takesValue: first.takesValue });
+				} else if (!claim.names.includes(name)) {
+					claim.names.push(name);
+				}
 			}
 		}
 	}
@@ -656,6 +675,22 @@ export function parseCommand(
 		spelling: string,
 	): void => {
 		recordOccurrence(occ, name, raw, seq++, spelling);
+	};
+	/**
+	 * A short two sibling scopes reuse for two names: its name waits for the
+	 * election (§24.7), and the scope phase binds it to the live claimant.
+	 */
+	const pendingShorts: PendingShort[] = [];
+	const pushScopedShort = (
+		sc: ScopedShortTarget,
+		raw: string,
+		spelling: string,
+	): void => {
+		if (sc.names.length === 1) {
+			pushScoped(sc.names[0] as string, raw, spelling);
+			return;
+		}
+		pendingShorts.push({ names: sc.names, raw, seq: seq++, spelling });
 	};
 
 	let i = 0;
@@ -780,12 +815,12 @@ export function parseCommand(
 				const takesValue =
 					f !== undefined
 						? f.schema !== "bool"
-						: (sc as ScopedTokenTarget).takesValue;
+						: (sc as ScopedShortTarget).takesValue;
 				if (!takesValue) {
 					if (f !== undefined) {
 						pushRoot(f, true, tok);
 					} else {
-						pushScoped((sc as ScopedTokenTarget).name, "true", tok);
+						pushScopedShort(sc as ScopedShortTarget, "true", tok);
 					}
 					i++;
 					continue;
@@ -798,8 +833,8 @@ export function parseCommand(
 				if (f !== undefined) {
 					pushRoot(f, tokens[i + 1] as string, `${tok} ${tokens[i + 1]}`);
 				} else {
-					pushScoped(
-						(sc as ScopedTokenTarget).name,
+					pushScopedShort(
+						sc as ScopedShortTarget,
 						tokens[i + 1] as string,
 						`${tok} ${tokens[i + 1]}`,
 					);
@@ -912,6 +947,7 @@ export function parseCommand(
 	const scopeResult = parseScopes({
 		decls: def.allDecls,
 		occ,
+		pendingShorts,
 		hermetic,
 		cfg,
 		tracker,

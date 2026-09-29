@@ -640,7 +640,12 @@ root list is the construct's most likely correctness defect:
 - A scoped flag may not reuse a command-level flag's name, nor its own choice
   flag's name. Sibling scopes may reuse a name only with an identical type and
   arity; simultaneously electable scopes may not reuse one at all. Shorts are
-  claimed across every simultaneously live scope.
+  claimed across every simultaneously live scope. Sibling scopes may reuse a
+  short for two different names when the two tokenize alike, and the token then
+  names the flag of whichever scope the election made live -- wherever it sits
+  relative to the election token -- so `--via email -x 1 --subject 2` repeats
+  `--subject`. When no live scope claims it, it names the first-declared
+  claimant, which the out-of-scope refusal quotes.
 - Positional args cannot be declared inside a scope.
 - Every `choices` entry is a value-plus-help record; a bare value is refused.
 

@@ -1,0 +1,834 @@
+[
+  {
+    "name": "shared short: it binds to the first-declared scope's flag when that scope is elected",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "send",
+          "help": "send it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "type": "str",
+                      "help": "the subject",
+                      "presence": "optional",
+                      "short": "x"
+                    },
+                    {
+                      "name": "urgent",
+                      "type": "bool",
+                      "help": "mark urgent",
+                      "presence": "default",
+                      "default": false,
+                      "short": "u"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "a text",
+                  "flags": [
+                    {
+                      "name": "phone",
+                      "type": "str",
+                      "help": "destination",
+                      "presence": "optional",
+                      "short": "x"
+                    },
+                    {
+                      "name": "flash",
+                      "type": "bool",
+                      "help": "a flash message",
+                      "presence": "default",
+                      "default": false,
+                      "short": "u"
+                    }
+                  ]
+                },
+                {
+                  "name": "post",
+                  "help": "a letter",
+                  "flags": [
+                    {
+                      "name": "street",
+                      "type": "str",
+                      "help": "the street",
+                      "presence": "optional"
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "handler_prints": "via={via}"
+        }
+      ]
+    },
+    "argv": [
+      "send",
+      "--via",
+      "email",
+      "-x",
+      "2"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "via=email(subject=2, urgent=false)",
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "shared short: it binds to the last-declared scope's flag when that scope is elected",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "send",
+          "help": "send it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "type": "str",
+                      "help": "the subject",
+                      "presence": "optional",
+                      "short": "x"
+                    },
+                    {
+                      "name": "urgent",
+                      "type": "bool",
+                      "help": "mark urgent",
+                      "presence": "default",
+                      "default": false,
+                      "short": "u"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "a text",
+                  "flags": [
+                    {
+                      "name": "phone",
+                      "type": "str",
+                      "help": "destination",
+                      "presence": "optional",
+                      "short": "x"
+                    },
+                    {
+                      "name": "flash",
+                      "type": "bool",
+                      "help": "a flash message",
+                      "presence": "default",
+                      "default": false,
+                      "short": "u"
+                    }
+                  ]
+                },
+                {
+                  "name": "post",
+                  "help": "a letter",
+                  "flags": [
+                    {
+                      "name": "street",
+                      "type": "str",
+                      "help": "the street",
+                      "presence": "optional"
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "handler_prints": "via={via}"
+        }
+      ]
+    },
+    "argv": [
+      "send",
+      "--via",
+      "sms",
+      "-x",
+      "1"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "via=sms(phone=1, flash=false)",
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "shared short: it binds by the election even when typed before the selector",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "send",
+          "help": "send it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "type": "str",
+                      "help": "the subject",
+                      "presence": "optional",
+                      "short": "x"
+                    },
+                    {
+                      "name": "urgent",
+                      "type": "bool",
+                      "help": "mark urgent",
+                      "presence": "default",
+                      "default": false,
+                      "short": "u"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "a text",
+                  "flags": [
+                    {
+                      "name": "phone",
+                      "type": "str",
+                      "help": "destination",
+                      "presence": "optional",
+                      "short": "x"
+                    },
+                    {
+                      "name": "flash",
+                      "type": "bool",
+                      "help": "a flash message",
+                      "presence": "default",
+                      "default": false,
+                      "short": "u"
+                    }
+                  ]
+                },
+                {
+                  "name": "post",
+                  "help": "a letter",
+                  "flags": [
+                    {
+                      "name": "street",
+                      "type": "str",
+                      "help": "the street",
+                      "presence": "optional"
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "handler_prints": "via={via}"
+        }
+      ]
+    },
+    "argv": [
+      "send",
+      "-x",
+      "2",
+      "--via",
+      "email"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "via=email(subject=2, urgent=false)",
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "shared short: a shared bool short binds to the elected scope's flag",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "send",
+          "help": "send it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "type": "str",
+                      "help": "the subject",
+                      "presence": "optional",
+                      "short": "x"
+                    },
+                    {
+                      "name": "urgent",
+                      "type": "bool",
+                      "help": "mark urgent",
+                      "presence": "default",
+                      "default": false,
+                      "short": "u"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "a text",
+                  "flags": [
+                    {
+                      "name": "phone",
+                      "type": "str",
+                      "help": "destination",
+                      "presence": "optional",
+                      "short": "x"
+                    },
+                    {
+                      "name": "flash",
+                      "type": "bool",
+                      "help": "a flash message",
+                      "presence": "default",
+                      "default": false,
+                      "short": "u"
+                    }
+                  ]
+                },
+                {
+                  "name": "post",
+                  "help": "a letter",
+                  "flags": [
+                    {
+                      "name": "street",
+                      "type": "str",
+                      "help": "the street",
+                      "presence": "optional"
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "handler_prints": "via={via}"
+        }
+      ]
+    },
+    "argv": [
+      "send",
+      "--via",
+      "email",
+      "-u"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "via=email(subject=None, urgent=true)",
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "shared short: a shared bool short binds to the other scope's flag too",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "send",
+          "help": "send it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "type": "str",
+                      "help": "the subject",
+                      "presence": "optional",
+                      "short": "x"
+                    },
+                    {
+                      "name": "urgent",
+                      "type": "bool",
+                      "help": "mark urgent",
+                      "presence": "default",
+                      "default": false,
+                      "short": "u"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "a text",
+                  "flags": [
+                    {
+                      "name": "phone",
+                      "type": "str",
+                      "help": "destination",
+                      "presence": "optional",
+                      "short": "x"
+                    },
+                    {
+                      "name": "flash",
+                      "type": "bool",
+                      "help": "a flash message",
+                      "presence": "default",
+                      "default": false,
+                      "short": "u"
+                    }
+                  ]
+                },
+                {
+                  "name": "post",
+                  "help": "a letter",
+                  "flags": [
+                    {
+                      "name": "street",
+                      "type": "str",
+                      "help": "the street",
+                      "presence": "optional"
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "handler_prints": "via={via}"
+        }
+      ]
+    },
+    "argv": [
+      "send",
+      "--via",
+      "sms",
+      "-u"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "via=sms(phone=None, flash=true)",
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "shared short: beside the elected flag's long form it is a repetition of that flag",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "send",
+          "help": "send it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "type": "str",
+                      "help": "the subject",
+                      "presence": "optional",
+                      "short": "x"
+                    },
+                    {
+                      "name": "urgent",
+                      "type": "bool",
+                      "help": "mark urgent",
+                      "presence": "default",
+                      "default": false,
+                      "short": "u"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "a text",
+                  "flags": [
+                    {
+                      "name": "phone",
+                      "type": "str",
+                      "help": "destination",
+                      "presence": "optional",
+                      "short": "x"
+                    },
+                    {
+                      "name": "flash",
+                      "type": "bool",
+                      "help": "a flash message",
+                      "presence": "default",
+                      "default": false,
+                      "short": "u"
+                    }
+                  ]
+                },
+                {
+                  "name": "post",
+                  "help": "a letter",
+                  "flags": [
+                    {
+                      "name": "street",
+                      "type": "str",
+                      "help": "the street",
+                      "presence": "optional"
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "handler_prints": "via={via}"
+        }
+      ]
+    },
+    "argv": [
+      "send",
+      "--via",
+      "email",
+      "-x",
+      "1",
+      "--subject",
+      "2"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: --subject: given more than once, as '-x 1' and '--subject 2'; it takes one value\ntry 'myapp send --help'"
+    }
+  },
+  {
+    "name": "shared short: beside the other elected flag's long form it is a repetition of that flag",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "send",
+          "help": "send it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "type": "str",
+                      "help": "the subject",
+                      "presence": "optional",
+                      "short": "x"
+                    },
+                    {
+                      "name": "urgent",
+                      "type": "bool",
+                      "help": "mark urgent",
+                      "presence": "default",
+                      "default": false,
+                      "short": "u"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "a text",
+                  "flags": [
+                    {
+                      "name": "phone",
+                      "type": "str",
+                      "help": "destination",
+                      "presence": "optional",
+                      "short": "x"
+                    },
+                    {
+                      "name": "flash",
+                      "type": "bool",
+                      "help": "a flash message",
+                      "presence": "default",
+                      "default": false,
+                      "short": "u"
+                    }
+                  ]
+                },
+                {
+                  "name": "post",
+                  "help": "a letter",
+                  "flags": [
+                    {
+                      "name": "street",
+                      "type": "str",
+                      "help": "the street",
+                      "presence": "optional"
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "handler_prints": "via={via}"
+        }
+      ]
+    },
+    "argv": [
+      "send",
+      "--via",
+      "sms",
+      "--phone",
+      "1",
+      "-x",
+      "2"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: --phone: given more than once, as '--phone 1' and '-x 2'; it takes one value\ntry 'myapp send --help'"
+    }
+  },
+  {
+    "name": "shared short: given twice it is a repetition of the elected scope's flag",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "send",
+          "help": "send it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "type": "str",
+                      "help": "the subject",
+                      "presence": "optional",
+                      "short": "x"
+                    },
+                    {
+                      "name": "urgent",
+                      "type": "bool",
+                      "help": "mark urgent",
+                      "presence": "default",
+                      "default": false,
+                      "short": "u"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "a text",
+                  "flags": [
+                    {
+                      "name": "phone",
+                      "type": "str",
+                      "help": "destination",
+                      "presence": "optional",
+                      "short": "x"
+                    },
+                    {
+                      "name": "flash",
+                      "type": "bool",
+                      "help": "a flash message",
+                      "presence": "default",
+                      "default": false,
+                      "short": "u"
+                    }
+                  ]
+                },
+                {
+                  "name": "post",
+                  "help": "a letter",
+                  "flags": [
+                    {
+                      "name": "street",
+                      "type": "str",
+                      "help": "the street",
+                      "presence": "optional"
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "handler_prints": "via={via}"
+        }
+      ]
+    },
+    "argv": [
+      "send",
+      "-x",
+      "1",
+      "--via",
+      "email",
+      "-x",
+      "2"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: --subject: given more than once, as '-x 1' and '-x 2'; it takes one value\ntry 'myapp send --help'"
+    }
+  },
+  {
+    "name": "shared short: under a scope that claims no such short it names the first-declared flag",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "send",
+          "help": "send it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "type": "str",
+                      "help": "the subject",
+                      "presence": "optional",
+                      "short": "x"
+                    },
+                    {
+                      "name": "urgent",
+                      "type": "bool",
+                      "help": "mark urgent",
+                      "presence": "default",
+                      "default": false,
+                      "short": "u"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "a text",
+                  "flags": [
+                    {
+                      "name": "phone",
+                      "type": "str",
+                      "help": "destination",
+                      "presence": "optional",
+                      "short": "x"
+                    },
+                    {
+                      "name": "flash",
+                      "type": "bool",
+                      "help": "a flash message",
+                      "presence": "default",
+                      "default": false,
+                      "short": "u"
+                    }
+                  ]
+                },
+                {
+                  "name": "post",
+                  "help": "a letter",
+                  "flags": [
+                    {
+                      "name": "street",
+                      "type": "str",
+                      "help": "the street",
+                      "presence": "optional"
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "handler_prints": "via={via}"
+        }
+      ]
+    },
+    "argv": [
+      "send",
+      "--via",
+      "post",
+      "-x",
+      "1"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: flag '--subject' is only valid under '--via email', but '--via post' was elected\ntry 'myapp send --help'"
+    }
+  }
+]

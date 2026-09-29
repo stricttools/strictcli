@@ -106,6 +106,53 @@ export interface Occurrence {
 export type Occurrences = Map<string, Occurrence>;
 
 /**
+ * One occurrence of a short that sibling scopes reuse for different names
+ * (§24.7). Which name it stands for waits for the election: the scope phase
+ * binds it to the claimant whose scope is live, and -- when none is -- to the
+ * first-declared one, which is the name a scope refusal then quotes.
+ */
+export interface PendingShort {
+	/** Every claimant's dash name, in declaration order. */
+	readonly names: readonly string[];
+	/** The raw token text (`"true"` for a bool), uninterpreted. */
+	readonly raw: string;
+	/** This occurrence's position in the whole token scan. */
+	readonly seq: number;
+	/** The occurrence as typed. */
+	readonly spelling: string;
+}
+
+/**
+ * Enters one bound short into the occurrences, at its own place in
+ * command-line order: a repeated-flag refusal quotes the first two
+ * occurrences as TYPED, whichever spelling was bound late.
+ */
+function bindPendingShort(
+	occ: Occurrences,
+	name: string,
+	p: PendingShort,
+): void {
+	const entry: Occurrence = occ.get(name) ?? {
+		positive: [],
+		negated: false,
+		spellings: [],
+	};
+	entry.positive.push({ raw: p.raw, seq: p.seq });
+	entry.positive.sort((a, b) => a.seq - b.seq);
+	entry.spellings.push({ text: p.spelling, seq: p.seq });
+	entry.spellings.sort((a, b) => a.seq - b.seq);
+	occ.set(name, entry);
+}
+
+/** The position of a name's first occurrence on the command line. */
+function firstSeq(o: Occurrence): number {
+	return o.spellings.reduce(
+		(m, sp) => Math.min(m, sp.seq),
+		Number.POSITIVE_INFINITY,
+	);
+}
+
+/**
  * The phases, as comparable stage numbers (§24.3's precedence rule).
  *
  * `shape` is the token scan's own structural verdict -- which flag a token
@@ -167,6 +214,8 @@ export interface ScopeParseInput {
 	readonly decls: readonly AnyDecl[];
 	/** Every surface name's raw occurrences, as the token scan collected them. */
 	readonly occ: Occurrences;
+	/** Sibling-reused shorts, bound to a name once the elections are known. */
+	readonly pendingShorts?: readonly PendingShort[];
 	/** Hermetic mode: env vars and config are not consulted for anything. */
 	readonly hermetic: boolean;
 	/** The loaded config, or null when the app declares none. */
@@ -232,6 +281,8 @@ interface Run {
 	readonly records: Map<string, unknown>;
 	/** Each root selector's own source label. */
 	readonly sources: Map<string, SourceLabel>;
+	/** Sibling-reused shorts not yet bound to a live scope's claimant. */
+	pending: PendingShort[];
 }
 
 /**
@@ -249,8 +300,15 @@ export function parseScopes(input: ScopeParseInput): ScopeParseResult {
 		skippedBindings: [],
 		records: new Map(),
 		sources: new Map(),
+		pending: [...(input.pendingShorts ?? [])],
 	};
 	resolveScope(input.decls, [], null, run);
+	// A reused short no live scope claims keeps its first-declared name, which
+	// the out-of-scope refusal below then names (as Go and Python do).
+	for (const p of run.pending) {
+		bindPendingShort(input.occ, p.names[0] as string, p);
+	}
+	run.pending = [];
 	validateScopeMembership(run);
 	collectSkippedBindings(input.decls, [], run);
 	return {
@@ -272,7 +330,12 @@ export function parseScopes(input: ScopeParseInput): ScopeParseResult {
  */
 function validateScopeMembership(run: Run): void {
 	const index = buildScopeIndex(run.input.decls);
-	for (const name of run.input.occ.keys()) {
+	// In command-line order of each name's first occurrence: a short bound
+	// after the election is reported where it was typed, not last.
+	const supplied = [...run.input.occ.entries()]
+		.sort(([, a], [, b]) => firstSeq(a) - firstSeq(b))
+		.map(([name]) => name);
+	for (const name of supplied) {
 		if (run.liveNames.has(name)) {
 			continue;
 		}
@@ -377,6 +440,21 @@ function resolveScope(
 	const suffix =
 		errScopeSuffix(scopePath(path)) +
 		errElectionOriginSuffix(electionOriginOf(path, run));
+	// This scope is live: a reused short one of its flags claims names that
+	// flag, before any of the scope's values is resolved (§24.7).
+	if (path.length > 0 && run.pending.length > 0) {
+		const here = new Set(
+			decls.filter((d) => d.kind !== "choice-flag").map((d) => d.name),
+		);
+		run.pending = run.pending.filter((p) => {
+			const name = p.names.find((n) => here.has(n));
+			if (name === undefined) {
+				return true;
+			}
+			bindPendingShort(run.input.occ, name, p);
+			return false;
+		});
+	}
 	for (const decl of decls) {
 		for (const s of surfaceNames(decl)) {
 			run.liveNames.add(s.name);
