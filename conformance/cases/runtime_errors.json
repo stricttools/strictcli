@@ -1,6 +1,6 @@
 [
   {
-    "name": "errors: repeated non-repeatable flag is last-wins",
+    "name": "errors: repeated non-repeatable flag is refused",
     "app": {
       "name": "myapp",
       "version": "1.0.0",
@@ -30,8 +30,9 @@
       "second"
     ],
     "expect": {
-      "exit_code": 0,
-      "stdout_equals": "target=second"
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: --target: given more than once, as '--target first' and '--target second'; it takes one value\ntry 'myapp cmd --help'"
     }
   },
   {

@@ -1,0 +1,1801 @@
+[
+  {
+    "name": "repeated flag: a str flag given twice in the space form is refused",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "region",
+          "type": "str",
+          "help": "the region",
+          "presence": "default",
+          "default": "eu",
+          "short": "r"
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "commits",
+              "type": "str",
+              "help": "the commit range",
+              "presence": "optional",
+              "short": "c",
+              "env": "MYAPP_COMMITS"
+            },
+            {
+              "name": "cache",
+              "type": "bool",
+              "help": "use the cache",
+              "presence": "default",
+              "default": true,
+              "short": "k"
+            },
+            {
+              "name": "count",
+              "type": "int",
+              "help": "a count",
+              "presence": "optional"
+            }
+          ],
+          "handler_prints": "commits={commits} cache={cache} region={region}"
+        }
+      ]
+    },
+    "argv": [
+      "run",
+      "--commits",
+      "a",
+      "--commits",
+      "b"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: --commits: given more than once, as '--commits a' and '--commits b'; it takes one value\ntry 'myapp run --help'"
+    }
+  },
+  {
+    "name": "repeated flag: a str flag given twice in the equals form is refused",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "region",
+          "type": "str",
+          "help": "the region",
+          "presence": "default",
+          "default": "eu",
+          "short": "r"
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "commits",
+              "type": "str",
+              "help": "the commit range",
+              "presence": "optional",
+              "short": "c",
+              "env": "MYAPP_COMMITS"
+            },
+            {
+              "name": "cache",
+              "type": "bool",
+              "help": "use the cache",
+              "presence": "default",
+              "default": true,
+              "short": "k"
+            },
+            {
+              "name": "count",
+              "type": "int",
+              "help": "a count",
+              "presence": "optional"
+            }
+          ],
+          "handler_prints": "commits={commits} cache={cache} region={region}"
+        }
+      ]
+    },
+    "argv": [
+      "run",
+      "--commits=a",
+      "--commits=b"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: --commits: given more than once, as '--commits=a' and '--commits=b'; it takes one value\ntry 'myapp run --help'"
+    }
+  },
+  {
+    "name": "repeated flag: a short alias mixed with the long form is refused",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "region",
+          "type": "str",
+          "help": "the region",
+          "presence": "default",
+          "default": "eu",
+          "short": "r"
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "commits",
+              "type": "str",
+              "help": "the commit range",
+              "presence": "optional",
+              "short": "c",
+              "env": "MYAPP_COMMITS"
+            },
+            {
+              "name": "cache",
+              "type": "bool",
+              "help": "use the cache",
+              "presence": "default",
+              "default": true,
+              "short": "k"
+            },
+            {
+              "name": "count",
+              "type": "int",
+              "help": "a count",
+              "presence": "optional"
+            }
+          ],
+          "handler_prints": "commits={commits} cache={cache} region={region}"
+        }
+      ]
+    },
+    "argv": [
+      "run",
+      "-c",
+      "a",
+      "--commits",
+      "b"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: --commits: given more than once, as '-c a' and '--commits b'; it takes one value\ntry 'myapp run --help'"
+    }
+  },
+  {
+    "name": "repeated flag: the same value twice is still refused",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "region",
+          "type": "str",
+          "help": "the region",
+          "presence": "default",
+          "default": "eu",
+          "short": "r"
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "commits",
+              "type": "str",
+              "help": "the commit range",
+              "presence": "optional",
+              "short": "c",
+              "env": "MYAPP_COMMITS"
+            },
+            {
+              "name": "cache",
+              "type": "bool",
+              "help": "use the cache",
+              "presence": "default",
+              "default": true,
+              "short": "k"
+            },
+            {
+              "name": "count",
+              "type": "int",
+              "help": "a count",
+              "presence": "optional"
+            }
+          ],
+          "handler_prints": "commits={commits} cache={cache} region={region}"
+        }
+      ]
+    },
+    "argv": [
+      "run",
+      "--commits",
+      "a",
+      "--commits=a"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: --commits: given more than once, as '--commits a' and '--commits=a'; it takes one value\ntry 'myapp run --help'"
+    }
+  },
+  {
+    "name": "repeated flag: the first two of three occurrences are named",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "region",
+          "type": "str",
+          "help": "the region",
+          "presence": "default",
+          "default": "eu",
+          "short": "r"
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "commits",
+              "type": "str",
+              "help": "the commit range",
+              "presence": "optional",
+              "short": "c",
+              "env": "MYAPP_COMMITS"
+            },
+            {
+              "name": "cache",
+              "type": "bool",
+              "help": "use the cache",
+              "presence": "default",
+              "default": true,
+              "short": "k"
+            },
+            {
+              "name": "count",
+              "type": "int",
+              "help": "a count",
+              "presence": "optional"
+            }
+          ],
+          "handler_prints": "commits={commits} cache={cache} region={region}"
+        }
+      ]
+    },
+    "argv": [
+      "run",
+      "--commits",
+      "a",
+      "-c",
+      "b",
+      "--commits=c"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: --commits: given more than once, as '--commits a' and '-c b'; it takes one value\ntry 'myapp run --help'"
+    }
+  },
+  {
+    "name": "repeated flag: a bool given twice is refused",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "region",
+          "type": "str",
+          "help": "the region",
+          "presence": "default",
+          "default": "eu",
+          "short": "r"
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "commits",
+              "type": "str",
+              "help": "the commit range",
+              "presence": "optional",
+              "short": "c",
+              "env": "MYAPP_COMMITS"
+            },
+            {
+              "name": "cache",
+              "type": "bool",
+              "help": "use the cache",
+              "presence": "default",
+              "default": true,
+              "short": "k"
+            },
+            {
+              "name": "count",
+              "type": "int",
+              "help": "a count",
+              "presence": "optional"
+            }
+          ],
+          "handler_prints": "commits={commits} cache={cache} region={region}"
+        }
+      ]
+    },
+    "argv": [
+      "run",
+      "--cache",
+      "-k"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: --cache: given more than once, as '--cache' and '-k'; it takes one value\ntry 'myapp run --help'"
+    }
+  },
+  {
+    "name": "repeated flag: a bool given with its negation is refused",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "region",
+          "type": "str",
+          "help": "the region",
+          "presence": "default",
+          "default": "eu",
+          "short": "r"
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "commits",
+              "type": "str",
+              "help": "the commit range",
+              "presence": "optional",
+              "short": "c",
+              "env": "MYAPP_COMMITS"
+            },
+            {
+              "name": "cache",
+              "type": "bool",
+              "help": "use the cache",
+              "presence": "default",
+              "default": true,
+              "short": "k"
+            },
+            {
+              "name": "count",
+              "type": "int",
+              "help": "a count",
+              "presence": "optional"
+            }
+          ],
+          "handler_prints": "commits={commits} cache={cache} region={region}"
+        }
+      ]
+    },
+    "argv": [
+      "run",
+      "--cache",
+      "--no-cache"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: --cache: given more than once, as '--cache' and '--no-cache'; it takes one value\ntry 'myapp run --help'"
+    }
+  },
+  {
+    "name": "repeated flag: a negation given twice is refused",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "region",
+          "type": "str",
+          "help": "the region",
+          "presence": "default",
+          "default": "eu",
+          "short": "r"
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "commits",
+              "type": "str",
+              "help": "the commit range",
+              "presence": "optional",
+              "short": "c",
+              "env": "MYAPP_COMMITS"
+            },
+            {
+              "name": "cache",
+              "type": "bool",
+              "help": "use the cache",
+              "presence": "default",
+              "default": true,
+              "short": "k"
+            },
+            {
+              "name": "count",
+              "type": "int",
+              "help": "a count",
+              "presence": "optional"
+            }
+          ],
+          "handler_prints": "commits={commits} cache={cache} region={region}"
+        }
+      ]
+    },
+    "argv": [
+      "run",
+      "--no-cache",
+      "--no-cache"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: --cache: given more than once, as '--no-cache' and '--no-cache'; it takes one value\ntry 'myapp run --help'"
+    }
+  },
+  {
+    "name": "repeated flag: the refusal outranks a value that would not parse",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "region",
+          "type": "str",
+          "help": "the region",
+          "presence": "default",
+          "default": "eu",
+          "short": "r"
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "commits",
+              "type": "str",
+              "help": "the commit range",
+              "presence": "optional",
+              "short": "c",
+              "env": "MYAPP_COMMITS"
+            },
+            {
+              "name": "cache",
+              "type": "bool",
+              "help": "use the cache",
+              "presence": "default",
+              "default": true,
+              "short": "k"
+            },
+            {
+              "name": "count",
+              "type": "int",
+              "help": "a count",
+              "presence": "optional"
+            }
+          ],
+          "handler_prints": "commits={commits} cache={cache} region={region}"
+        }
+      ]
+    },
+    "argv": [
+      "run",
+      "--count",
+      "x",
+      "--count",
+      "5"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: --count: given more than once, as '--count x' and '--count 5'; it takes one value\ntry 'myapp run --help'"
+    }
+  },
+  {
+    "name": "repeated flag: the first second occurrence on the command line is reported",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "region",
+          "type": "str",
+          "help": "the region",
+          "presence": "default",
+          "default": "eu",
+          "short": "r"
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "commits",
+              "type": "str",
+              "help": "the commit range",
+              "presence": "optional",
+              "short": "c",
+              "env": "MYAPP_COMMITS"
+            },
+            {
+              "name": "cache",
+              "type": "bool",
+              "help": "use the cache",
+              "presence": "default",
+              "default": true,
+              "short": "k"
+            },
+            {
+              "name": "count",
+              "type": "int",
+              "help": "a count",
+              "presence": "optional"
+            }
+          ],
+          "handler_prints": "commits={commits} cache={cache} region={region}"
+        }
+      ]
+    },
+    "argv": [
+      "run",
+      "--cache",
+      "--commits",
+      "a",
+      "--commits",
+      "b",
+      "--no-cache"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: --commits: given more than once, as '--commits a' and '--commits b'; it takes one value\ntry 'myapp run --help'"
+    }
+  },
+  {
+    "name": "repeated flag: passing the flag once runs",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "region",
+          "type": "str",
+          "help": "the region",
+          "presence": "default",
+          "default": "eu",
+          "short": "r"
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "commits",
+              "type": "str",
+              "help": "the commit range",
+              "presence": "optional",
+              "short": "c",
+              "env": "MYAPP_COMMITS"
+            },
+            {
+              "name": "cache",
+              "type": "bool",
+              "help": "use the cache",
+              "presence": "default",
+              "default": true,
+              "short": "k"
+            },
+            {
+              "name": "count",
+              "type": "int",
+              "help": "a count",
+              "presence": "optional"
+            }
+          ],
+          "handler_prints": "commits={commits} cache={cache} region={region}"
+        }
+      ]
+    },
+    "argv": [
+      "run",
+      "--commits",
+      "b",
+      "--no-cache"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "commits=b cache=false region=eu"
+    }
+  },
+  {
+    "name": "repeated flag: an env var beside the flag is not repetition",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "region",
+          "type": "str",
+          "help": "the region",
+          "presence": "default",
+          "default": "eu",
+          "short": "r"
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "commits",
+              "type": "str",
+              "help": "the commit range",
+              "presence": "optional",
+              "short": "c",
+              "env": "MYAPP_COMMITS"
+            },
+            {
+              "name": "cache",
+              "type": "bool",
+              "help": "use the cache",
+              "presence": "default",
+              "default": true,
+              "short": "k"
+            },
+            {
+              "name": "count",
+              "type": "int",
+              "help": "a count",
+              "presence": "optional"
+            }
+          ],
+          "handler_prints": "commits={commits} cache={cache} region={region}"
+        }
+      ]
+    },
+    "argv": [
+      "run",
+      "--commits",
+      "cli"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "commits=cli cache=true region=eu"
+    },
+    "env": {
+      "MYAPP_COMMITS": "from-env"
+    }
+  },
+  {
+    "name": "repeated flag: a config value beside the flag is not repetition",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "region",
+          "type": "str",
+          "help": "the region",
+          "presence": "default",
+          "default": "eu",
+          "short": "r"
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "commits",
+              "type": "str",
+              "help": "the commit range",
+              "presence": "optional",
+              "short": "c",
+              "env": "MYAPP_COMMITS"
+            },
+            {
+              "name": "cache",
+              "type": "bool",
+              "help": "use the cache",
+              "presence": "default",
+              "default": true,
+              "short": "k"
+            },
+            {
+              "name": "count",
+              "type": "int",
+              "help": "a count",
+              "presence": "optional"
+            }
+          ],
+          "handler_prints": "commits={commits} cache={cache} region={region}"
+        }
+      ],
+      "config": true,
+      "config_content": "{\"commits\": \"from-config\"}"
+    },
+    "argv": [
+      "run",
+      "--commits",
+      "cli"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "commits=cli cache=true region=eu"
+    }
+  },
+  {
+    "name": "repeated flag: a global given twice before the command is refused",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "region",
+          "type": "str",
+          "help": "the region",
+          "presence": "default",
+          "default": "eu",
+          "short": "r"
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "commits",
+              "type": "str",
+              "help": "the commit range",
+              "presence": "optional",
+              "short": "c",
+              "env": "MYAPP_COMMITS"
+            },
+            {
+              "name": "cache",
+              "type": "bool",
+              "help": "use the cache",
+              "presence": "default",
+              "default": true,
+              "short": "k"
+            },
+            {
+              "name": "count",
+              "type": "int",
+              "help": "a count",
+              "presence": "optional"
+            }
+          ],
+          "handler_prints": "commits={commits} cache={cache} region={region}"
+        }
+      ]
+    },
+    "argv": [
+      "--region",
+      "us",
+      "-r",
+      "ap",
+      "run"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: --region: given more than once, as '--region us' and '-r ap'; it takes one value\ntry 'myapp --help'"
+    }
+  },
+  {
+    "name": "repeated flag: a global given twice after the command is refused",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "region",
+          "type": "str",
+          "help": "the region",
+          "presence": "default",
+          "default": "eu",
+          "short": "r"
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "commits",
+              "type": "str",
+              "help": "the commit range",
+              "presence": "optional",
+              "short": "c",
+              "env": "MYAPP_COMMITS"
+            },
+            {
+              "name": "cache",
+              "type": "bool",
+              "help": "use the cache",
+              "presence": "default",
+              "default": true,
+              "short": "k"
+            },
+            {
+              "name": "count",
+              "type": "int",
+              "help": "a count",
+              "presence": "optional"
+            }
+          ],
+          "handler_prints": "commits={commits} cache={cache} region={region}"
+        }
+      ]
+    },
+    "argv": [
+      "run",
+      "--region=us",
+      "--region=ap"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: --region: given more than once, as '--region=us' and '--region=ap'; it takes one value\ntry 'myapp run --help'"
+    }
+  },
+  {
+    "name": "repeated flag: a global given before and after the command is refused",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "region",
+          "type": "str",
+          "help": "the region",
+          "presence": "default",
+          "default": "eu",
+          "short": "r"
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "commits",
+              "type": "str",
+              "help": "the commit range",
+              "presence": "optional",
+              "short": "c",
+              "env": "MYAPP_COMMITS"
+            },
+            {
+              "name": "cache",
+              "type": "bool",
+              "help": "use the cache",
+              "presence": "default",
+              "default": true,
+              "short": "k"
+            },
+            {
+              "name": "count",
+              "type": "int",
+              "help": "a count",
+              "presence": "optional"
+            }
+          ],
+          "handler_prints": "commits={commits} cache={cache} region={region}"
+        }
+      ]
+    },
+    "argv": [
+      "--region",
+      "us",
+      "run",
+      "-r",
+      "ap"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: --region: given more than once, as '--region us' and '-r ap'; it takes one value\ntry 'myapp run --help'"
+    }
+  },
+  {
+    "name": "repeated flag: the reserved --config given twice is refused",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "region",
+          "type": "str",
+          "help": "the region",
+          "presence": "default",
+          "default": "eu",
+          "short": "r"
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "commits",
+              "type": "str",
+              "help": "the commit range",
+              "presence": "optional",
+              "short": "c",
+              "env": "MYAPP_COMMITS"
+            },
+            {
+              "name": "cache",
+              "type": "bool",
+              "help": "use the cache",
+              "presence": "default",
+              "default": true,
+              "short": "k"
+            },
+            {
+              "name": "count",
+              "type": "int",
+              "help": "a count",
+              "presence": "optional"
+            }
+          ],
+          "handler_prints": "commits={commits} cache={cache} region={region}"
+        }
+      ],
+      "config": true
+    },
+    "argv": [
+      "--config",
+      "/nonexistent/a.json",
+      "--config=/nonexistent/b.json",
+      "run"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: --config: given more than once, as '--config /nonexistent/a.json' and '--config=/nonexistent/b.json'; it takes one value\ntry 'myapp --help'"
+    }
+  },
+  {
+    "name": "repeated flag: a scoped flag given twice is refused",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "send",
+          "help": "send it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "an email message",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "type": "str",
+                      "help": "the subject",
+                      "presence": "required",
+                      "short": "s"
+                    },
+                    {
+                      "name": "urgent",
+                      "type": "bool",
+                      "help": "mark urgent",
+                      "presence": "default",
+                      "default": false
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "a text message",
+                  "flags": [
+                    {
+                      "name": "phone",
+                      "type": "str",
+                      "help": "destination",
+                      "presence": "required"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "mode",
+              "help": "which profiles",
+              "presence": "default",
+              "default": {
+                "choice": "all-profiles"
+              },
+              "elect_by": "member-flags",
+              "choices": [
+                {
+                  "name": "profile",
+                  "help": "one named profile",
+                  "value": {
+                    "type": "str",
+                    "help": "one named profile"
+                  }
+                },
+                {
+                  "name": "all-profiles",
+                  "help": "every profile"
+                }
+              ]
+            }
+          ],
+          "handler_prints": "via={via} mode={mode}"
+        }
+      ]
+    },
+    "argv": [
+      "send",
+      "--via",
+      "email",
+      "-s",
+      "hi",
+      "--subject",
+      "yo"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: --subject: given more than once, as '-s hi' and '--subject yo'; it takes one value\ntry 'myapp send --help'"
+    }
+  },
+  {
+    "name": "repeated flag: a scoped bool given with its negation is refused",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "send",
+          "help": "send it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "an email message",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "type": "str",
+                      "help": "the subject",
+                      "presence": "required",
+                      "short": "s"
+                    },
+                    {
+                      "name": "urgent",
+                      "type": "bool",
+                      "help": "mark urgent",
+                      "presence": "default",
+                      "default": false
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "a text message",
+                  "flags": [
+                    {
+                      "name": "phone",
+                      "type": "str",
+                      "help": "destination",
+                      "presence": "required"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "mode",
+              "help": "which profiles",
+              "presence": "default",
+              "default": {
+                "choice": "all-profiles"
+              },
+              "elect_by": "member-flags",
+              "choices": [
+                {
+                  "name": "profile",
+                  "help": "one named profile",
+                  "value": {
+                    "type": "str",
+                    "help": "one named profile"
+                  }
+                },
+                {
+                  "name": "all-profiles",
+                  "help": "every profile"
+                }
+              ]
+            }
+          ],
+          "handler_prints": "via={via} mode={mode}"
+        }
+      ]
+    },
+    "argv": [
+      "send",
+      "--via",
+      "email",
+      "-s",
+      "hi",
+      "--urgent",
+      "--no-urgent"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: --urgent: given more than once, as '--urgent' and '--no-urgent'; it takes one value\ntry 'myapp send --help'"
+    }
+  },
+  {
+    "name": "repeated flag: a payload-carrying member given twice is refused",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "send",
+          "help": "send it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "an email message",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "type": "str",
+                      "help": "the subject",
+                      "presence": "required",
+                      "short": "s"
+                    },
+                    {
+                      "name": "urgent",
+                      "type": "bool",
+                      "help": "mark urgent",
+                      "presence": "default",
+                      "default": false
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "a text message",
+                  "flags": [
+                    {
+                      "name": "phone",
+                      "type": "str",
+                      "help": "destination",
+                      "presence": "required"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "mode",
+              "help": "which profiles",
+              "presence": "default",
+              "default": {
+                "choice": "all-profiles"
+              },
+              "elect_by": "member-flags",
+              "choices": [
+                {
+                  "name": "profile",
+                  "help": "one named profile",
+                  "value": {
+                    "type": "str",
+                    "help": "one named profile"
+                  }
+                },
+                {
+                  "name": "all-profiles",
+                  "help": "every profile"
+                }
+              ]
+            }
+          ],
+          "handler_prints": "via={via} mode={mode}"
+        }
+      ]
+    },
+    "argv": [
+      "send",
+      "--via",
+      "sms",
+      "--phone",
+      "1",
+      "--profile",
+      "a",
+      "--profile",
+      "b"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: --profile: given more than once, as '--profile a' and '--profile b'; it takes one value\ntry 'myapp send --help'"
+    }
+  },
+  {
+    "name": "repeated flag: a payload-less member given with its negation is refused",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "send",
+          "help": "send it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "an email message",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "type": "str",
+                      "help": "the subject",
+                      "presence": "required",
+                      "short": "s"
+                    },
+                    {
+                      "name": "urgent",
+                      "type": "bool",
+                      "help": "mark urgent",
+                      "presence": "default",
+                      "default": false
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "a text message",
+                  "flags": [
+                    {
+                      "name": "phone",
+                      "type": "str",
+                      "help": "destination",
+                      "presence": "required"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "mode",
+              "help": "which profiles",
+              "presence": "default",
+              "default": {
+                "choice": "all-profiles"
+              },
+              "elect_by": "member-flags",
+              "choices": [
+                {
+                  "name": "profile",
+                  "help": "one named profile",
+                  "value": {
+                    "type": "str",
+                    "help": "one named profile"
+                  }
+                },
+                {
+                  "name": "all-profiles",
+                  "help": "every profile"
+                }
+              ]
+            }
+          ],
+          "handler_prints": "via={via} mode={mode}"
+        }
+      ]
+    },
+    "argv": [
+      "send",
+      "--via",
+      "sms",
+      "--phone",
+      "1",
+      "--all-profiles",
+      "--no-all-profiles"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: --all-profiles: given more than once, as '--all-profiles' and '--no-all-profiles'; it takes one value\ntry 'myapp send --help'"
+    }
+  },
+  {
+    "name": "repeated flag: an out-of-scope flag outranks the repetition",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "send",
+          "help": "send it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "an email message",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "type": "str",
+                      "help": "the subject",
+                      "presence": "required",
+                      "short": "s"
+                    },
+                    {
+                      "name": "urgent",
+                      "type": "bool",
+                      "help": "mark urgent",
+                      "presence": "default",
+                      "default": false
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "a text message",
+                  "flags": [
+                    {
+                      "name": "phone",
+                      "type": "str",
+                      "help": "destination",
+                      "presence": "required"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "mode",
+              "help": "which profiles",
+              "presence": "default",
+              "default": {
+                "choice": "all-profiles"
+              },
+              "elect_by": "member-flags",
+              "choices": [
+                {
+                  "name": "profile",
+                  "help": "one named profile",
+                  "value": {
+                    "type": "str",
+                    "help": "one named profile"
+                  }
+                },
+                {
+                  "name": "all-profiles",
+                  "help": "every profile"
+                }
+              ]
+            }
+          ],
+          "handler_prints": "via={via} mode={mode}"
+        }
+      ]
+    },
+    "argv": [
+      "send",
+      "--via",
+      "sms",
+      "--subject",
+      "a",
+      "--subject",
+      "b"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: flag '--subject' is only valid under '--via email', but '--via sms' was elected\ntry 'myapp send --help'"
+    }
+  },
+  {
+    "name": "repeated flag: the repetition outranks a missing required flag",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "send",
+          "help": "send it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "an email message",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "type": "str",
+                      "help": "the subject",
+                      "presence": "required",
+                      "short": "s"
+                    },
+                    {
+                      "name": "urgent",
+                      "type": "bool",
+                      "help": "mark urgent",
+                      "presence": "default",
+                      "default": false
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "a text message",
+                  "flags": [
+                    {
+                      "name": "phone",
+                      "type": "str",
+                      "help": "destination",
+                      "presence": "required"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "mode",
+              "help": "which profiles",
+              "presence": "default",
+              "default": {
+                "choice": "all-profiles"
+              },
+              "elect_by": "member-flags",
+              "choices": [
+                {
+                  "name": "profile",
+                  "help": "one named profile",
+                  "value": {
+                    "type": "str",
+                    "help": "one named profile"
+                  }
+                },
+                {
+                  "name": "all-profiles",
+                  "help": "every profile"
+                }
+              ]
+            }
+          ],
+          "handler_prints": "via={via} mode={mode}"
+        }
+      ]
+    },
+    "argv": [
+      "send",
+      "--via",
+      "email",
+      "--subject",
+      "a",
+      "--subject",
+      "b",
+      "--all-profiles"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: --subject: given more than once, as '--subject a' and '--subject b'; it takes one value\ntry 'myapp send --help'"
+    }
+  },
+  {
+    "name": "repeated flag: a clear given twice is refused",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "update-record",
+          "help": "change one DNS record in place",
+          "effect": "mutating",
+          "update_of": {
+            "resource": "dns-record",
+            "write_mode": "sparse",
+            "identity": [
+              "zone"
+            ],
+            "properties": [
+              "ttl",
+              "proxied"
+            ]
+          },
+          "flags": [
+            {
+              "name": "zone",
+              "help": "the zone",
+              "presence": "required",
+              "type": "str"
+            },
+            {
+              "name": "ttl",
+              "help": "time to live in seconds",
+              "presence": "optional",
+              "type": "int",
+              "nullable": true
+            },
+            {
+              "name": "proxied",
+              "help": "whether the record is proxied",
+              "presence": "optional",
+              "type": "bool"
+            }
+          ],
+          "handler_prints": "ttl={ttl} proxied={proxied}"
+        }
+      ]
+    },
+    "argv": [
+      "update-record",
+      "--zone",
+      "z",
+      "--unset-ttl",
+      "--unset-ttl"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: --unset-ttl: given more than once, as '--unset-ttl' and '--unset-ttl'; it takes one value\ntry 'myapp update-record --help'"
+    }
+  },
+  {
+    "name": "repeated flag: a value beside a clear keeps its own sentence and outranks the repetition",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "update-record",
+          "help": "change one DNS record in place",
+          "effect": "mutating",
+          "update_of": {
+            "resource": "dns-record",
+            "write_mode": "sparse",
+            "identity": [
+              "zone"
+            ],
+            "properties": [
+              "ttl",
+              "proxied"
+            ]
+          },
+          "flags": [
+            {
+              "name": "zone",
+              "help": "the zone",
+              "presence": "required",
+              "type": "str"
+            },
+            {
+              "name": "ttl",
+              "help": "time to live in seconds",
+              "presence": "optional",
+              "type": "int",
+              "nullable": true
+            },
+            {
+              "name": "proxied",
+              "help": "whether the record is proxied",
+              "presence": "optional",
+              "type": "bool"
+            }
+          ],
+          "handler_prints": "ttl={ttl} proxied={proxied}"
+        }
+      ]
+    },
+    "argv": [
+      "update-record",
+      "--zone",
+      "z",
+      "--ttl",
+      "1",
+      "--ttl",
+      "2",
+      "--unset-ttl"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: --ttl and --unset-ttl are mutually exclusive: a property is either written or cleared\ntry 'myapp update-record --help'"
+    }
+  },
+  {
+    "name": "repeated flag: an update bool given with its negation is refused",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "update-record",
+          "help": "change one DNS record in place",
+          "effect": "mutating",
+          "update_of": {
+            "resource": "dns-record",
+            "write_mode": "sparse",
+            "identity": [
+              "zone"
+            ],
+            "properties": [
+              "ttl",
+              "proxied"
+            ]
+          },
+          "flags": [
+            {
+              "name": "zone",
+              "help": "the zone",
+              "presence": "required",
+              "type": "str"
+            },
+            {
+              "name": "ttl",
+              "help": "time to live in seconds",
+              "presence": "optional",
+              "type": "int",
+              "nullable": true
+            },
+            {
+              "name": "proxied",
+              "help": "whether the record is proxied",
+              "presence": "optional",
+              "type": "bool"
+            }
+          ],
+          "handler_prints": "ttl={ttl} proxied={proxied}"
+        }
+      ]
+    },
+    "argv": [
+      "update-record",
+      "--zone",
+      "z",
+      "--proxied",
+      "--no-proxied"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: --proxied: given more than once, as '--proxied' and '--no-proxied'; it takes one value\ntry 'myapp update-record --help'"
+    }
+  }
+]
