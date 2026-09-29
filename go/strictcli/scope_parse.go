@@ -116,6 +116,10 @@ type suppliedElections struct {
 	// memberElected reports, per member flag name, whether the invocation
 	// elected it (true), declined it (false), or said nothing (absent).
 	memberElected map[string]bool
+	// memberSpellings records, per member flag name, every occurrence as typed
+	// in command-line order, so a member given more than once is refused in the
+	// election phase rather than decided by whichever occurrence came last.
+	memberSpellings map[string][]string
 	// suppliedNames is every flag name the invocation named at all.
 	suppliedNames map[string]bool
 	// preElected short-circuits election for the programmatic front door, where
@@ -129,11 +133,12 @@ type suppliedElections struct {
 
 func newSuppliedElections() *suppliedElections {
 	return &suppliedElections{
-		tokenValues:   map[string][]string{},
-		memberElected: map[string]bool{},
-		suppliedNames: map[string]bool{},
-		preElected:    map[*Flag]*ChoiceDecl{},
-		recordElected: map[*Flag]bool{},
+		tokenValues:     map[string][]string{},
+		memberElected:   map[string]bool{},
+		memberSpellings: map[string][]string{},
+		suppliedNames:   map[string]bool{},
+		preElected:      map[*Flag]*ChoiceDecl{},
+		recordElected:   map[*Flag]bool{},
 	}
 }
 
@@ -207,8 +212,8 @@ func (st *electionState) electOne(sel *Flag, path []pathSeg, sup *suppliedElecti
 // unchanged (§24.6).
 func (st *electionState) electToken(sel *Flag, ls *liveSel, sup *suppliedElections, amb ambientSource) (*liveSel, string) {
 	if vals, ok := sup.tokenValues[sel.Name]; ok && len(vals) > 0 {
-		// Last-wins is right for a plain flag and wrong for an election:
-		// discarding a value would discard a whole scope with it.
+		// An election names its values: discarding one would discard a whole
+		// scope with it.
 		if len(vals) > 1 {
 			return nil, errSelectorElectedTwice(sel.Name, vals)
 		}
@@ -258,6 +263,14 @@ func (st *electionState) electToken(sel *Flag, ls *liveSel, sup *suppliedElectio
 // electMembers resolves a member-spelled selector. Election is COMMAND-LINE
 // ONLY (§21.3 carried over by §24.6), and §21.4's three errors survive verbatim.
 func (st *electionState) electMembers(sel *Flag, ls *liveSel, sup *suppliedElections) (*liveSel, string) {
+	// A member given more than once is refused before anything is elected:
+	// `--x --no-x` states two opposite things about one choice, and neither
+	// occurrence may be discarded in favor of the other.
+	for _, ch := range sel.choiceDecls {
+		if sp := sup.memberSpellings[ch.Name]; len(sp) > 1 && !takesManyValues(memberFlag(ch)) {
+			return nil, errFlagGivenMoreThanOnce(ch.Name, sp[0], sp[1])
+		}
+	}
 	var elected []*ChoiceDecl
 	var declined []string
 	firstDeclined := ""
@@ -509,6 +522,16 @@ type occurrence struct {
 	short string
 	raw   string
 	kind  occKind
+	// spelling is the occurrence as typed (`--x v`, `-x v`, `--x=v`, `--no-x`),
+	// which is what a repeated-flag refusal quotes.
+	spelling string
+}
+
+// takesManyValues reports whether a declaration collects every occurrence
+// (a repeatable, list or dict flag). Any other flag takes one value, and a
+// second occurrence of it is refused (errFlagGivenMoreThanOnce).
+func takesManyValues(f *Flag) bool {
+	return f.Repeatable || IsCompoundType(f.Type)
 }
 
 // isMemberFlagName reports whether a name is the electing flag of a

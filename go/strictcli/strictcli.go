@@ -3428,6 +3428,9 @@ func (a *App) preScanReservedFlags(argv []string) preScanResult {
 	var result preScanResult
 	// Track indices to exclude from cleanedArgv (--config tokens)
 	excludeIndices := make(map[int]bool)
+	// --config takes one path: its first occurrence as typed, so a second one
+	// is refused rather than silently replacing the first.
+	configSpelling := ""
 	// Index where the command region begins; -1 means "never reached one"
 	// (a bare -- or an unknown flag-like token ended the scan for good).
 	commandRegionFrom := -1
@@ -3504,6 +3507,11 @@ func (a *App) preScanReservedFlags(argv []string) preScanResult {
 				result.err = errFlagRequiresValue("--config")
 				return result
 			}
+			if configSpelling != "" {
+				result.err = errFlagGivenMoreThanOnce("config", configSpelling, tok)
+				return result
+			}
+			configSpelling = tok
 			result.configPath = val
 			excludeIndices[i] = true
 			i++
@@ -3520,6 +3528,11 @@ func (a *App) preScanReservedFlags(argv []string) preScanResult {
 				result.err = errFlagRequiresValue("--config")
 				return result
 			}
+			if configSpelling != "" {
+				result.err = errFlagGivenMoreThanOnce("config", configSpelling, tok+" "+argv[i+1])
+				return result
+			}
+			configSpelling = tok + " " + argv[i+1]
 			result.configPath = argv[i+1]
 			excludeIndices[i] = true
 			excludeIndices[i+1] = true
@@ -3715,6 +3728,10 @@ func (a *App) doParse(argv []string) parseResult {
 
 	// Extract global flags from cleaned argv (--config/--hermetic stripped), leaving
 	// the rest for command routing. Pass hermetic flag to skip env resolution.
+	preGlobalSpellings, repeatErr := a.preCommandGlobalSpellings(preScan.cleanedArgv)
+	if repeatErr != "" {
+		return parseResult{parseErr: repeatErr}
+	}
 	globalValues, globalSourceMap, rest, globalErr := a.extractGlobalFlags(preScan.cleanedArgv, preScan.hermetic)
 	if globalErr != "" {
 		return parseResult{parseErr: globalErr}
@@ -3838,13 +3855,16 @@ func (a *App) doParse(argv []string) parseResult {
 		}
 	}
 
-	kwargs, postGlobalValues, cmdSources, writes, unsets, err, skipped := parseCommand(cmd, cmdRest, a.globalFlags, a.configData, &a.stdinConsumedBy, a.configConflictMode, preScan.hermetic, a.infraRoots)
+	kwargs, postGlobalValues, cmdSources, writes, unsets, err, skipped := parseCommand(cmd, cmdRest, a.globalFlags, a.configData, &a.stdinConsumedBy, a.configConflictMode, preScan.hermetic, a.infraRoots, preGlobalSpellings)
 	if err != "" {
 		parts := append([]string{a.Name}, path...)
 		parts = append(parts, cmd.Name)
 		return parseResult{parseErr: err, commandPrefix: strings.Join(parts, " ")}
 	}
-	// Merge global values: post-command globals override pre-command ones
+	// Merge global values: post-command globals override pre-command ones. A
+	// global that is not repeatable cannot be in both (parseCommand refused
+	// it); a repeatable one given in both places keeps only the post-command
+	// occurrences.
 	for k, v := range postGlobalValues {
 		globalValues[k] = v
 	}
@@ -3876,6 +3896,80 @@ func tokensContainHelp(tokens []string) bool {
 		}
 	}
 	return false
+}
+
+// preCommandGlobalSpellings walks the pre-command region exactly as
+// extractGlobalFlags tokenizes it, without coercing anything, and returns each
+// global flag's first occurrence as typed. A global that is not repeatable and
+// is given more than once in the region is refused here, before any of the
+// region's values is coerced. The walk stops where extractGlobalFlags stops,
+// and at a token extractGlobalFlags refuses by its shape, which it then
+// reports. The spellings are handed to parseCommand so a global given both
+// before and after the command is refused too.
+func (a *App) preCommandGlobalSpellings(argv []string) (map[string]string, string) {
+	spellings := map[string]string{}
+	if len(a.globalFlags) == 0 {
+		return spellings, ""
+	}
+	longLookup := make(map[string]*Flag)
+	shortLookup := make(map[string]*Flag)
+	negationLookup := make(map[string]*Flag)
+	for i := range a.globalFlags {
+		f := &a.globalFlags[i]
+		longLookup["--"+f.Name] = f
+		if f.Short != "" {
+			shortLookup["-"+f.Short] = f
+		}
+		if f.Type == TypeBool && f.Negatable {
+			negationLookup["--no-"+f.Name] = f
+		}
+	}
+	i := 0
+	for i < len(argv) {
+		tok := argv[i]
+		if tok == "--" || !strings.HasPrefix(tok, "-") || tok == "-" {
+			break
+		}
+		var f *Flag
+		spelling := tok
+		if strings.HasPrefix(tok, "--") && strings.Contains(tok, "=") {
+			f = longLookup[tok[:strings.Index(tok, "=")]]
+			if f == nil || f.Type == TypeBool {
+				break
+			}
+			i++
+		} else if nf, ok := negationLookup[tok]; ok {
+			f = nf
+			i++
+		} else {
+			lf, ok := longLookup[tok]
+			if !ok {
+				lf, ok = shortLookup[tok]
+			}
+			if !ok {
+				break
+			}
+			f = lf
+			if f.Type == TypeBool {
+				i++
+			} else {
+				if i+1 >= len(argv) {
+					break
+				}
+				spelling = tok + " " + argv[i+1]
+				i += 2
+			}
+		}
+		first, seen := spellings[f.Name]
+		if !seen {
+			spellings[f.Name] = spelling
+			continue
+		}
+		if !takesManyValues(f) {
+			return nil, errFlagGivenMoreThanOnce(f.Name, first, spelling)
+		}
+	}
+	return spellings, ""
 }
 
 // extractGlobalFlags scans argv for global flag tokens that appear before the

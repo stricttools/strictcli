@@ -206,7 +206,11 @@ func resolveAtPrefix(flagName, raw string, stdinConsumedBy **string) (string, st
 // conflictMode is "cli-wins" (default) or "error" (config+cli/env overlap is an error).
 // When hermetic is true, env var and config resolution are skipped entirely.
 // Returns (kwargs, postGlobalValues, sources, errorString).
-func parseCommand(cmd *Command, tokens []string, globalFlags []Flag, configData map[string]interface{}, stdinConsumedBy **string, conflictMode string, hermetic bool, infraRoots map[string]string) (map[string]interface{}, map[string]interface{}, map[string]string, *updateState, map[string]bool, string, []string) {
+//
+// preGlobalSpellings carries each global flag's first pre-command occurrence
+// as typed, so a non-repeatable global given before AND after the command is
+// refused like any other repeated flag.
+func parseCommand(cmd *Command, tokens []string, globalFlags []Flag, configData map[string]interface{}, stdinConsumedBy **string, conflictMode string, hermetic bool, infraRoots map[string]string, preGlobalSpellings map[string]string) (map[string]interface{}, map[string]interface{}, map[string]string, *updateState, map[string]bool, string, []string) {
 	// Build flag lookup maps over the command's WHOLE scope tree (contract
 	// §24.3): whether `--target` consumes the next argv element is decided
 	// before any choice is elected, which is why sibling scopes may reuse a name
@@ -263,15 +267,15 @@ func parseCommand(cmd *Command, tokens []string, globalFlags []Flag, configData 
 	suppliedSeen := make(map[string]bool)
 	var positionals []string
 
-	record := func(name string, raw string, kind occKind) {
-		occs = append(occs, occurrence{name: name, raw: raw, kind: kind})
+	record := func(name string, raw string, kind occKind, spelling string) {
+		occs = append(occs, occurrence{name: name, raw: raw, kind: kind, spelling: spelling})
 	}
 	// recordShort is record's short-form twin. A short may be claimed by two
 	// MUTUALLY EXCLUSIVE scopes (§24.7), so which flag it names is not knowable
 	// until the election is resolved; the occurrence carries the short and the
 	// value phase resolves it against the live declaration.
-	recordShort := func(short string, f *Flag, raw string, kind occKind) {
-		occs = append(occs, occurrence{name: f.Name, short: short, raw: raw, kind: kind})
+	recordShort := func(short string, f *Flag, raw string, kind occKind, spelling string) {
+		occs = append(occs, occurrence{name: f.Name, short: short, raw: raw, kind: kind, spelling: spelling})
 	}
 
 	i := 0
@@ -302,7 +306,7 @@ func parseCommand(cmd *Command, tokens []string, globalFlags []Flag, configData 
 				if f.Type == TypeBool {
 					return nil, nil, nil, nil, nil, errBoolFlagNoValue(flagPart), nil
 				}
-				record(f.Name, valuePart, occValue)
+				record(f.Name, valuePart, occValue, tok)
 			} else if _, ok := negationLookup[flagPart]; ok {
 				return nil, nil, nil, nil, nil, errBoolNegationNoValue(flagPart), nil
 			} else {
@@ -314,7 +318,7 @@ func parseCommand(cmd *Command, tokens []string, globalFlags []Flag, configData 
 
 		// --no-flag negation
 		if f, ok := negationLookup[tok]; ok {
-			record(f.Name, "", occNegated)
+			record(f.Name, "", occNegated, tok)
 			i++
 			continue
 		}
@@ -323,7 +327,7 @@ func parseCommand(cmd *Command, tokens []string, globalFlags []Flag, configData 
 		// value of its own -- clearing is one act, not a value -- and it is
 		// checked against the property's own occurrences in phase 4a.
 		if f, ok := unsetLookup[tok]; ok {
-			record(f.Name, "", occUnset)
+			record(f.Name, "", occUnset, tok)
 			i++
 			continue
 		}
@@ -335,13 +339,13 @@ func parseCommand(cmd *Command, tokens []string, globalFlags []Flag, configData 
 				return nil, nil, nil, nil, nil, errUnknownFlag(tok), nil
 			}
 			if f.Type == TypeBool {
-				record(f.Name, "", occBool)
+				record(f.Name, "", occBool, tok)
 				i++
 			} else {
 				if i+1 >= len(tokens) {
 					return nil, nil, nil, nil, nil, errFlagRequiresValue(tok), nil
 				}
-				record(f.Name, tokens[i+1], occValue)
+				record(f.Name, tokens[i+1], occValue, tok+" "+tokens[i+1])
 				i += 2
 			}
 			continue
@@ -351,13 +355,13 @@ func parseCommand(cmd *Command, tokens []string, globalFlags []Flag, configData 
 		if strings.HasPrefix(tok, "-") && len(tok) == 2 {
 			if f, ok := shortLookup[tok]; ok {
 				if f.Type == TypeBool {
-					recordShort(tok[1:], f, "", occBool)
+					recordShort(tok[1:], f, "", occBool, tok)
 					i++
 				} else {
 					if i+1 >= len(tokens) {
 						return nil, nil, nil, nil, nil, errFlagRequiresValue(tok), nil
 					}
-					recordShort(tok[1:], f, tokens[i+1], occValue)
+					recordShort(tok[1:], f, tokens[i+1], occValue, tok+" "+tokens[i+1])
 					i += 2
 				}
 				continue
@@ -396,6 +400,7 @@ func parseCommand(cmd *Command, tokens []string, globalFlags []Flag, configData 
 			// A bool member is elected by `--<name>` and only when the value it
 			// resolves to is true; `--no-<name>` DECLINES (§21.2).
 			sup.memberElected[o.name] = o.kind != occNegated
+			sup.memberSpellings[o.name] = append(sup.memberSpellings[o.name], o.spelling)
 		}
 	}
 	amb := ambientSource{hermetic: hermetic, configData: configData}
@@ -447,6 +452,39 @@ func parseCommand(cmd *Command, tokens []string, globalFlags []Flag, configData 
 				return nil, nil, nil, nil, nil, errUpdateValueAndUnset(o.name), est.skipped
 			}
 		}
+	}
+	// A flag that is not repeatable takes one value: a second occurrence is
+	// refused before any occurrence is coerced, rather than silently
+	// replacing the first. `--x --no-x` is two occurrences of one flag and is
+	// refused the same way. Environment and config are not occurrences; their
+	// precedence is unchanged. A selector's double election and a member's
+	// repetition were refused in the election phase, and a value beside a
+	// clear was refused just above. A clear is one act whatever the
+	// property's shape, so `--unset-x` given twice is refused too.
+	seen := make(map[string]string, len(preGlobalSpellings))
+	for name, sp := range preGlobalSpellings {
+		seen[name] = sp
+	}
+	unsetSeen := map[string]string{}
+	for _, o := range occs {
+		if o.kind == occUnset {
+			if first, ok := unsetSeen[o.name]; ok {
+				return nil, nil, nil, nil, nil, errFlagGivenMoreThanOnce(unsetFlagName(o.name), first, o.spelling), est.skipped
+			}
+			unsetSeen[o.name] = o.spelling
+			continue
+		}
+		if isMemberFlagName(cmd.index, o.name) {
+			continue
+		}
+		f := est.liveFlagFor(cmd, globalByName, o.name)
+		if f == nil || f.Type == TypeChoice || takesManyValues(f) {
+			continue
+		}
+		if first, ok := seen[o.name]; ok {
+			return nil, nil, nil, nil, nil, errFlagGivenMoreThanOnce(o.name, first, o.spelling), est.skipped
+		}
+		seen[o.name] = o.spelling
 	}
 	cliByFlag := make(map[*Flag]interface{})
 	for _, o := range occs {

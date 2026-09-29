@@ -681,6 +681,16 @@ func errFlagDuplicateValue(flagName string, value string) string {
 	return fmt.Sprintf("--%s: duplicate value '%s'", flagName, value)
 }
 
+// errFlagGivenMoreThanOnce: a flag that is not repeatable takes one value, so a
+// second occurrence on the command line is refused rather than silently
+// replacing the first. The first two occurrences are quoted as typed, in
+// command-line order -- which names a short alias, an `=` form or a negation
+// exactly as the reader wrote it. flagName is the name the reader types
+// (`unset-ttl` for a repeated clear, `config` for the reserved `--config`).
+func errFlagGivenMoreThanOnce(flagName, first, second string) string {
+	return fmt.Sprintf("--%s: given more than once, as '%s' and '%s'; it takes one value", flagName, first, second)
+}
+
 // ---------------------------------------------------------------------------
 // parse.go / strictcli.go — env var resolution (parse-time)
 // (parseCommand and extractGlobalFlags share these templates)
@@ -1668,8 +1678,10 @@ func errElectionOriginSuffix(origin string) string {
 	return fmt.Sprintf(" (elected%s)", origin)
 }
 
-// errSelectorElectedTwice: last-wins is right for a plain flag and wrong for an
-// election, because discarding a value would discard a whole scope with it.
+// errSelectorElectedTwice: an election names its values rather than its
+// occurrences, because discarding a value would discard a whole scope with it.
+// Every other flag that is not repeatable is refused by
+// errFlagGivenMoreThanOnce.
 func errSelectorElectedTwice(sel string, values []string) string {
 	quoted := make([]string, len(values))
 	for i, v := range values {
