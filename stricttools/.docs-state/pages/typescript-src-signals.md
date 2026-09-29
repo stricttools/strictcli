@@ -1,8 +1,7 @@
 +++
 title = "typescript/src/signals"
-description = "Framework-owned signal handling on the CLI dispatch path (effects contract §19.13)."
+description = "Framework-owned SIGINT and SIGTERM handling on the CLI path: the handler sees ctx.signal abort, and the command exits 130 or 143 once the handler returns."
 generated = true
-seeded = true
 nav_group = "API Reference"
 nav_order = 40
 +++

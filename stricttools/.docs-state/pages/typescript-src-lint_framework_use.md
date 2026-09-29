@@ -1,8 +1,7 @@
 +++
 title = "typescript/src/lint_framework_use"
-description = "The framework-use lint (effects contract §28), run through the reserved `--lint-framework-use` flag every app carries."
+description = "The --lint-framework-use scan every app reserves, which finds process exits, direct stdout and stderr writes, argv access, and environment reads in the app."
 generated = true
-seeded = true
 nav_group = "API Reference"
 nav_order = 30
 +++

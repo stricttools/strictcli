@@ -563,6 +563,11 @@
         },
         {
           "level": 2,
+          "text": "A flag given once",
+          "anchor": "a-flag-given-once"
+        },
+        {
+          "level": 2,
           "text": "Repeatable flags",
           "anchor": "repeatable-flags"
         },
@@ -3761,6 +3766,11 @@
         },
         {
           "level": 3,
+          "text": "`_msg_lint_framework_use_unparsable`",
+          "anchor": "_msg_lint_framework_use_unparsable"
+        },
+        {
+          "level": 3,
           "text": "`_msg_lint_process_exit`",
           "anchor": "_msg_lint_process_exit"
         },
@@ -5561,6 +5571,11 @@
         },
         {
           "level": 4,
+          "text": "`_pre_command_global_spellings`",
+          "anchor": "_pre_command_global_spellings"
+        },
+        {
+          "level": 4,
           "text": "`_parse_global_flags`",
           "anchor": "_parse_global_flags"
         },
@@ -5768,6 +5783,16 @@
           "level": 3,
           "text": "`_msg_scope_suffix`",
           "anchor": "_msg_scope_suffix"
+        },
+        {
+          "level": 3,
+          "text": "`_msg_flag_given_more_than_once`",
+          "anchor": "_msg_flag_given_more_than_once"
+        },
+        {
+          "level": 3,
+          "text": "`_takes_many_values`",
+          "anchor": "_takes_many_values"
         },
         {
           "level": 3,
@@ -9906,6 +9931,11 @@
         },
         {
           "level": 3,
+          "text": "`errFlagGivenMoreThanOnce`",
+          "anchor": "errflaggivenmorethanonce"
+        },
+        {
+          "level": 3,
           "text": "`errAmbientBindingSkippedEnv`",
           "anchor": "errambientbindingskippedenv"
         },
@@ -11916,6 +11946,11 @@
         },
         {
           "level": 3,
+          "text": "`preCommandGlobalSpellings`",
+          "anchor": "precommandglobalspellings"
+        },
+        {
+          "level": 3,
           "text": "`extractGlobalFlags`",
           "anchor": "extractglobalflags"
         },
@@ -12216,6 +12251,11 @@
         },
         {
           "level": 3,
+          "text": "`OccurrenceSpelling`",
+          "anchor": "occurrencespelling"
+        },
+        {
+          "level": 3,
           "text": "`Occurrence`",
           "anchor": "occurrence"
         },
@@ -12223,6 +12263,11 @@
           "level": 3,
           "text": "`Occurrences`",
           "anchor": "occurrences"
+        },
+        {
+          "level": 3,
+          "text": "`PendingShort`",
+          "anchor": "pendingshort"
         },
         {
           "level": 3,
@@ -12838,7 +12883,7 @@
     }
   ],
   "posts": [],
-  "last_gen": "2026-09-29T00:16:03.306312+00:00",
+  "last_gen": "2026-09-29T17:18:03.837370+00:00",
   "theme": "minimal",
   "vocabulary": {
     "accepted": [

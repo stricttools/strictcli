@@ -1,8 +1,7 @@
 +++
 title = "typescript/src/tokens"
-description = "The compiler's token scanner, shared by the two static checks that read a consumer's source without a syntax tree: the `effects-bypass` check (§11) and the framework-use lint (§28)."
+description = "The token scanner shared by the effects-bypass check and the framework-use lint, the two static checks that read a consumer's source without a syntax tree."
 generated = true
-seeded = true
 nav_group = "API Reference"
 nav_order = 42
 +++

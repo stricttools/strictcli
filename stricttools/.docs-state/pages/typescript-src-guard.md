@@ -1,8 +1,7 @@
 +++
 title = "typescript/src/guard"
-description = "The runtime guard (effects contract §19.12): in machine mode, while the handler runs, `process.stdout.write` is replaced so that nothing reaches the process stdout except through the framework, and `process.exit` is replaced by a function that unwinds the handler instead of terminating the process."
+description = "The runtime guard under --json: while the handler runs, a stray stdout write fails the run, and process.exit unwinds the handler instead of ending the process."
 generated = true
-seeded = true
 nav_group = "API Reference"
 nav_order = 23
 +++

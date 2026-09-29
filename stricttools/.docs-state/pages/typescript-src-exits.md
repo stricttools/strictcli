@@ -1,8 +1,7 @@
 +++
 title = "typescript/src/exits"
-description = "The framework-owned ways a command ends early (effects contract §19.9, §19.12): the early exit a handler throws, the error the in-process door rejects with when a command ended that way, and the private value the process-exit trap throws in place of terminating the process."
+description = "The framework-owned early exit: the ExitNow a handler throws, the ExitError the in-process door rejects with, and the value the process-exit trap throws."
 generated = true
-seeded = true
 nav_group = "API Reference"
 nav_order = 20
 +++
