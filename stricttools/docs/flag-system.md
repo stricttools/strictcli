@@ -322,6 +322,30 @@ resolution. Short flags are shown alongside long flags in help output.
 
 This allows `-r` as an alias for `--recursive`. Short flags follow the same parsing rules as their long counterparts. The reserved quartet has no short forms, and the quartet's ban applies to long names only -- a short flag named `v` is legal.
 
+## A flag given once
+
+A flag that is not repeatable takes one value, so passing it twice on the
+command line is a usage error rather than a silent choice of the last value.
+The message names the flag and quotes its first two occurrences as typed:
+
+```
+$ mytool run --commits a --commits b
+error: --commits: given more than once, as '--commits a' and '--commits b'; it takes one value
+```
+
+- Every spelling counts: `--commits a`, `--commits=a` and a short alias such as `-c a` are all occurrences of `--commits`, and passing the same value twice is still refused.
+- A boolean flag given twice (`--cache --cache`) is refused, and so is a boolean given with its own negation (`--cache --no-cache`): the two tokens state opposite things, and neither is discarded in favor of the other.
+- A global flag counts once across the whole command line, before and after the command name.
+- Flags inside a choice's scope and the member flags of a member-spelled choice follow the same rule. A token-spelled choice flag given twice keeps its own sentence, `--via: elected more than once, as 'email' and 'sms'`.
+- In an update command, `--unset-<prop>` given twice is refused the same way, and a value beside a clear keeps its own sentence, `--ttl and --unset-ttl are mutually exclusive`.
+- The reserved `--config` takes one path and is refused when given twice. The other reserved switches (`--dry-run`, `--approve-consequential`, `--quiet`, `--verbose`, `--json`, `--hermetic`) are unaffected.
+- Environment variables and config files are sources, not occurrences. A command-line value still wins over them exactly as before.
+- Repeatable, `list[T]` and `dict[str, T]` flags collect every occurrence, as described below.
+
+The refusal is decided before any value is read, so it is reported ahead of a
+value that would not parse. It comes after an election or scope problem and
+before a missing required flag.
+
 ## Repeatable flags
 
 A flag with `repeatable=True` can be passed multiple times on the command line,

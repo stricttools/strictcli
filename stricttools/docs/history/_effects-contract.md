@@ -3190,6 +3190,22 @@ election, because discarding a value would discard a whole scope with it:
 by ` and `. The member-spelled twin is §21.4's `--<a> and --<b> are mutually exclusive`, which is
 why this template names values rather than flags.
 
+*(Amended 2026-09-29: a plain flag is no longer last-wins either.)* A flag that is not repeatable,
+given more than once on the command line, is refused -- every spelling counts (`--x v`, `--x=v`, a
+short alias, and for a bool `--x` and `--no-x`), and so do a member flag, a scoped flag, a global
+given on either side of the command, a repeated `--unset-<prop>`, and the reserved `--config`:
+
+```
+--<flag>: given more than once, as '<first>' and '<second>'; it takes one value
+```
+
+`errFlagGivenMoreThanOnce(flag, first, second)`. All three. The first two occurrences, as typed,
+in command-line order. It is decided before any value is read: after the election and scope
+phases, after the value-plus-clear refusal, and before every coercion and presence refusal; a
+member's repetition is refused inside its selector's election, before the mutual-exclusion
+sentences. A token-spelled selector keeps the sentence above. Environment variables and config
+files are sources, not occurrences.
+
 **Registration guards.** All registration-time, all three implementations unless a row says
 otherwise, all in the `Flag "<name>": ` / `Choice "<c>" of "<sel>": ` / `command "<name>": ` prefix
 families the catalog already uses. `Choice "<c>" of "<sel>": ` is new and is the only new prefix:
