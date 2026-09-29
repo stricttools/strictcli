@@ -196,7 +196,7 @@ wheels = [
 
 [[package]]
 name = "strictcli"
-version = "0.43.0"
+version = "0.44.0"
 source = { editable = "../python" }
 dependencies = [
     { name = "tomlkit" },
