@@ -335,16 +335,29 @@ error: --commits: given more than once, as '--commits a' and '--commits b'; it t
 
 - Every spelling counts: `--commits a`, `--commits=a` and a short alias such as `-c a` are all occurrences of `--commits`, and passing the same value twice is still refused.
 - A boolean flag given twice (`--cache --cache`) is refused, and so is a boolean given with its own negation (`--cache --no-cache`): the two tokens state opposite things, and neither is discarded in favor of the other.
-- A global flag counts once across the whole command line, before and after the command name.
+- A global flag counts once across the whole command line, before and after the command name. A repeatable global collects its occurrences from both sides instead, as described under [Global flags](#global-flags).
 - Flags inside a choice's scope and the member flags of a member-spelled choice follow the same rule. A token-spelled choice flag given twice keeps its own sentence, `--via: elected more than once, as 'email' and 'sms'`.
 - In an update command, `--unset-<prop>` given twice is refused the same way, and a value beside a clear keeps its own sentence, `--ttl and --unset-ttl are mutually exclusive`.
 - The reserved `--config` takes one path and is refused when given twice. The other reserved switches (`--dry-run`, `--approve-consequential`, `--quiet`, `--verbose`, `--json`, `--hermetic`) are unaffected.
 - Environment variables and config files are sources, not occurrences. A command-line value still wins over them exactly as before.
 - Repeatable, `list[T]` and `dict[str, T]` flags collect every occurrence, as described below.
 
-The refusal is decided before any value is read, so it is reported ahead of a
-value that would not parse. It comes after an election or scope problem and
-before a missing required flag.
+The command line is read in two regions, and the refusal's place in the order
+depends on the region the value sits in:
+
+- Global flags given before the command name are read first, as a region of
+  their own. A repetition inside that region is refused before any of its values
+  is read, but a value there that does not parse is reported before anything
+  after the command name is looked at -- including a repetition of the same
+  global after the command. `mytool --level x run --level 5` reports
+  `--level: expected integer, got 'x'`, while `mytool --level 5 run --level x`
+  reports the repetition.
+- Within the command's own tokens -- its flags and any global given after the
+  command name -- the refusal is decided before any of those values is read, so
+  it is reported ahead of a value there that would not parse. It comes after an
+  election or scope problem and before a missing required flag.
+
+All three implementations report in this order.
 
 ## Repeatable flags
 
@@ -884,7 +897,23 @@ app = strictcli.App(
 )
 ```
 
-Global flags are parsed before the command token and are passed to every handler.
+Global flags are parsed before and after the command token and are passed to
+every handler. A global that is not repeatable takes one value across the whole
+command line, so giving it on both sides of the command is refused like any
+other repeated flag. A repeatable global -- and a `list[T]` or `dict[str, T]`
+one -- collects every occurrence from both sides, in command-line order:
+
+```
+$ mytool --label a --label b run --label=c
+# handler receives label=["a", "b", "c"]
+```
+
+The occurrences are joined exactly as if they had all been typed on one side:
+`unique=True` refuses a value repeated across the command name, and a `dict`
+global treats a key given on both sides as it treats one given twice on one
+side. An environment variable or
+config file is a source, not an occurrence: it is never joined to command-line
+values, and any occurrence on either side replaces it, as before.
 
 ## Flag sets
 

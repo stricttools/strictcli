@@ -3200,11 +3200,27 @@ given on either side of the command, a repeated `--unset-<prop>`, and the reserv
 ```
 
 `errFlagGivenMoreThanOnce(flag, first, second)`. All three. The first two occurrences, as typed,
-in command-line order. It is decided before any value is read: after the election and scope
+in command-line order. Within the command's own tokens (its flags and every global given after
+the command name) it is decided before any of those values is read: after the election and scope
 phases, after the value-plus-clear refusal, and before every coercion and presence refusal; a
 member's repetition is refused inside its selector's election, before the mutual-exclusion
 sentences. A token-spelled selector keeps the sentence above. Environment variables and config
 files are sources, not occurrences.
+
+*(Amended 2026-09-29: the order across the command name, stated as all three implement it.)* The
+globals given before the command name are a region read first and on their own: a repetition
+inside that region is refused before any of its values is read, but a value in it that does not
+parse is reported before anything after the command name is looked at -- a repetition of the same
+global after the command included. `--level x run --level 5` reports `--level: expected integer,
+got 'x'`; `--level 5 run --level x` reports the repetition.
+
+*(Amended 2026-09-29, owner ruling: a repeatable global collects from both sides.)* A global that
+takes many values -- repeatable, `list[T]` or `dict[str, T]` -- given both before and after the
+command name collects every occurrence in command-line order, exactly as if all of them had been
+typed on one side: `--label a run --label b` delivers `[a, b]`, where it used to keep only the
+post-command `b`. `unique` refuses a value repeated across the command name with its ordinary
+sentence. Environment variables and config files stay sources, not occurrences: they are never
+joined to command-line values, and a command-line occurrence on either side replaces them.
 
 **Registration guards.** All registration-time, all three implementations unless a row says
 otherwise, all in the `Flag "<name>": ` / `Choice "<c>" of "<sel>": ` / `command "<name>": ` prefix
