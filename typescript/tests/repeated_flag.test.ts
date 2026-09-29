@@ -239,6 +239,60 @@ test("repeated flag: a global before, after, and on both sides of the command", 
 	await runs(repeatedApp(), ["--zone", "a", "--zone", "b", "run"], "zone=a,b");
 });
 
+test("repeated flag: a repeatable global collects across the command, in order", async () => {
+	// It used to keep only the post-command occurrences.
+	await runs(repeatedApp(), ["--zone", "a", "run", "--zone", "b"], "zone=a,b");
+	await runs(
+		repeatedApp(),
+		["--zone=a", "--zone", "b", "run", "--zone", "c", "--zone=d"],
+		"zone=a,b,c,d",
+	);
+	await runs(repeatedApp(), ["run", "--zone", "b"], "zone=b");
+});
+
+test("repeated flag: a unique global refuses a duplicate across the command", async () => {
+	const app = createApp({
+		name: "myapp",
+		version: "1.0.0",
+		help: "test app",
+		flags: {
+			port: flag("port", t.list(t.int), {
+				help: "ports",
+				unique: true,
+				presence: "optional",
+			}),
+		},
+	});
+	app.command(
+		defineReadOnlyCommand("run", {
+			help: "run it",
+			handler: (a, ctx) => {
+				const g = a as unknown as { port?: number[] };
+				ctx.info(`port=${(g.port ?? []).join(",")}`);
+				return 0;
+			},
+		}),
+	);
+	await refused(
+		app,
+		["--port", "1", "run", "--port", "1"],
+		"--port: duplicate value '1'",
+	);
+	await runs(app, ["--port", "1", "run", "--port", "2"], "port=1,2");
+});
+
+test("repeated flag: config is never joined to a global's occurrences", async () => {
+	const path = join(tempDir("repeated-flag-"), "config.json");
+	writeFileSync(path, '{"zone": ["from-config"]}');
+	const spec = { config: true, configPath: path };
+	await runs(
+		repeatedApp(spec),
+		["--zone", "a", "run", "--zone", "b"],
+		"zone=a,b",
+	);
+	await runs(repeatedApp(spec), ["run", "--zone", "b"], "zone=b");
+});
+
 test("repeated flag: reports the first second occurrence", async () => {
 	await refused(
 		repeatedApp(),

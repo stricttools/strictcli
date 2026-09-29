@@ -605,6 +605,11 @@ function recordOccurrence(
  * `preGlobalSpellings` carries each global flag's first pre-command occurrence
  * as typed, so a global that is not repeatable, given before AND after the
  * command, is refused like any other repeated flag.
+ *
+ * `preGlobalValues` carries, for each global that takes many values (a list
+ * or a dict), the values its pre-command occurrences produced; when it is
+ * given after the command too, the post-command occurrences extend them in
+ * command-line order rather than replacing them.
  */
 export function parseCommand(
 	cmd: RegisteredCommand,
@@ -615,6 +620,7 @@ export function parseCommand(
 	hermetic: boolean,
 	infraRoots: ReadonlyMap<string, string>,
 	preGlobalSpellings: ReadonlyMap<string, string> = new Map(),
+	preGlobalValues: ReadonlyMap<string, unknown> = new Map(),
 ): ParsedCommand {
 	if (cmd.def.kind !== "command") {
 		throw new Error(
@@ -917,6 +923,27 @@ export function parseCommand(
 	// than root-first (contract §24.3, §18.28 item 262). Nothing here partitions
 	// the two: the scopes' own value phase runs below and its failures are
 	// positioned on the same scale.
+	// A global that takes many values and is given on both sides of the
+	// command collects every occurrence in command-line order: its
+	// post-command occurrences are stored after the pre-command ones, exactly
+	// as if all of them had been typed on one side, so `unique` and a dict's
+	// key rule see the whole line. Only command-line values are seeded; an env
+	// or config value is a source, not an occurrence.
+	for (const { f } of rootOccs) {
+		if (
+			!globalFlagNames.has(f.name) ||
+			schemaKind(f.schema) === "scalar" ||
+			cliSet.has(f.name)
+		) {
+			continue;
+		}
+		const pre = preGlobalValues.get(f.name);
+		if (pre instanceof Map) {
+			cliSet.set(f.name, new Map(pre));
+		} else if (Array.isArray(pre)) {
+			cliSet.set(f.name, [...pre]);
+		}
+	}
 	for (const { f, raw, seq } of rootOccs) {
 		if (typeof raw === "boolean") {
 			cliSet.set(f.name, raw);
@@ -1559,6 +1586,24 @@ export function validateAndBuildKwargs(
 }
 
 // --- Global flag extraction (pre-command phase) ---
+
+/**
+ * The command-line values of every global that takes many values, by dash
+ * name: what a post-command occurrence of the same global extends.
+ */
+function preCommandGlobalValues(
+	app: AppImpl,
+	globals: ExtractedGlobals,
+): Map<string, unknown> {
+	const out = new Map<string, unknown>();
+	for (const f of app.globalFlags) {
+		const param = flagParamName(f.name);
+		if (schemaKind(f.schema) !== "scalar" && globals.sources[param] === "cli") {
+			out.set(f.name, globals.values[param]);
+		}
+	}
+	return out;
+}
 
 export interface ExtractedGlobals {
 	/** Param-name-keyed resolved global flag values. */
@@ -2545,6 +2590,7 @@ export function doParse(
 			pre.hermetic,
 			app.infraRoots,
 			preGlobalSpellings,
+			preCommandGlobalValues(app, globals),
 		);
 	} catch (e) {
 		return parseErrorOutcome(
@@ -2554,7 +2600,9 @@ export function doParse(
 		);
 	}
 
-	// Merge global values: post-command globals override pre-command ones
+	// Merge global values: post-command globals override pre-command ones. A
+	// global that takes many values and was given on both sides already holds
+	// every occurrence here, the pre-command ones first (parseCommand).
 	const globalKwargs: Record<string, unknown> = {
 		...globals.values,
 		...parsed.postGlobalValues,
