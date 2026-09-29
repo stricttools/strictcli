@@ -251,8 +251,8 @@ def test_the_precedence_rule_reports_scope_before_a_coercion_failure():
 
 
 def test_a_selector_elected_more_than_once_is_refused():
-    """Last-wins is right for a plain flag and wrong for an election: it would
-    discard a whole scope with the value (§12.13)."""
+    """An election names its values: discarding one would discard a whole
+    scope with it (§12.13)."""
     r = _notify().test(["send", "--via", "email", "--via", "sms"])
     assert r.exit_code == 1
     assert (

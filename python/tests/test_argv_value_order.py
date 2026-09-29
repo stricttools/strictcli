@@ -136,18 +136,25 @@ def test_the_value_phase_reads_root_and_scoped_tokens_in_one_order(tokens, want)
     assert _refusal(["run", "--via", "email", *tokens]) == want
 
 
-def test_every_occurrence_of_a_scoped_flag_is_coerced_where_it_was_typed():
-    """A later occurrence winning the VALUE never excuses an earlier one from
-    being read: `--retries nope --retries 1` names the token that will not
-    parse, exactly as the root surface has always done."""
+def test_a_repeated_scoped_flag_is_refused_before_either_occurrence_is_read():
+    """A flag that is not repeatable takes one value: `--retries nope
+    --retries 1` is refused as a repetition, which outranks the token that
+    will not parse, exactly as it does at the root surface."""
     assert _refusal(
         ["run", "--via", "email", "--retries", "nope", "--retries", "1"],
-    ) == "error: --retries: expected integer, got 'nope'"
+    ) == (
+        "error: --retries: given more than once, as '--retries nope' and "
+        "'--retries 1'; it takes one value"
+    )
 
 
-def test_the_last_occurrence_still_supplies_the_value():
+def test_no_occurrence_silently_supplies_the_value():
     r = _app().test(["run", "--via", "email", "--retries", "2", "--retries", "3"])
-    assert r.exit_code == 0
+    assert r.exit_code == 1
+    assert r.stderr.startswith(
+        "error: --retries: given more than once, as '--retries 2' and "
+        "'--retries 3'; it takes one value\n"
+    )
 
 
 # ---------------------------------------------------------------------------

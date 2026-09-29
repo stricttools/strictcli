@@ -12327,6 +12327,9 @@ class App:
 
         result: dict = {}
         exclude_indices: set[int] = set()
+        # --config takes one path: its first occurrence as typed, so a second
+        # one is refused rather than silently replacing the first.
+        config_spelling = ""
         # Index where the command region begins; -1 means "never reached one"
         # (a bare -- or an unknown flag-like token ended the scan for good).
         command_region_from = -1
@@ -12391,6 +12394,12 @@ class App:
                 if not val:
                     result["err"] = "flag '--config' requires a value"
                     return result
+                if config_spelling:
+                    result["err"] = _msg_flag_given_more_than_once(
+                        "config", config_spelling, tok,
+                    )
+                    return result
+                config_spelling = tok
                 result["config_path"] = val
                 exclude_indices.add(i)
                 i += 1
@@ -12406,6 +12415,12 @@ class App:
                 if i + 1 >= len(argv):
                     result["err"] = "flag '--config' requires a value"
                     return result
+                if config_spelling:
+                    result["err"] = _msg_flag_given_more_than_once(
+                        "config", config_spelling, f"{tok} {argv[i + 1]}",
+                    )
+                    return result
+                config_spelling = f"{tok} {argv[i + 1]}"
                 result["config_path"] = argv[i + 1]
                 exclude_indices.add(i)
                 exclude_indices.add(i + 1)
@@ -12595,6 +12610,7 @@ class App:
         # Use cleaned argv (--config/--hermetic stripped) for the rest of the pipeline
         cleaned_argv = pre_scan.get("cleaned_argv", argv)
         self._stdin_consumed_by: str | None = None
+        pre_global_spellings = self._pre_command_global_spellings(cleaned_argv)
         global_values, global_source_map, remaining = self._parse_global_flags(
             cleaned_argv, hermetic=is_hermetic,
         )
@@ -12698,6 +12714,7 @@ class App:
                 hermetic=is_hermetic,
                 infra_roots=self._infra_roots,
                 out_diagnostics=self._last_selector_diagnostics,
+                pre_global_spellings=pre_global_spellings,
             )
         except _ParseError as e:
             prefix_parts = [self.name] + path + [cmd.name]
@@ -12798,6 +12815,66 @@ class App:
         # (Already handled by the help check inside the loop, but guard
         # against edge cases.)
         raise _HelpRequested(target=group)  # noqa: F821 -- 'group' always set when loop body ran
+
+    def _pre_command_global_spellings(self, argv: list[str]) -> dict[str, str]:
+        """Each global flag's first pre-command occurrence, as typed.
+
+        Walks the pre-command region exactly as `_parse_global_flags`
+        tokenizes it, without coercing anything. A global that is not
+        repeatable and is given more than once in the region is refused here,
+        before any of the region's values is coerced. The walk stops where
+        `_parse_global_flags` stops, and at a token that function refuses by
+        its shape, which it then reports. The spellings are handed to
+        `_parse_command`, so a global given both before and after the command
+        is refused too.
+        """
+        spellings: dict[str, str] = {}
+        if not self._global_flags:
+            return spellings
+        long_lookup: dict[str, Flag] = {}
+        short_lookup: dict[str, Flag] = {}
+        negation_lookup: dict[str, Flag] = {}
+        for f in self._global_flags:
+            long_lookup[f"--{f.name}"] = f
+            if f.short:
+                short_lookup[f"-{f.short}"] = f
+            if f.type is bool and f.negatable:
+                negation_lookup[f"--no-{f.name}"] = f
+        i = 0
+        while i < len(argv):
+            tok = argv[i]
+            if tok == "--":
+                break
+            spelling = tok
+            if tok.startswith("--") and "=" in tok:
+                f = long_lookup.get(tok[:tok.index("=")])
+                if f is None or (f.type is bool and f.compound != "dict"):
+                    break
+                i += 1
+            elif tok in negation_lookup:
+                f = negation_lookup[tok]
+                i += 1
+            elif (tok.startswith("--") and tok in long_lookup) or (
+                tok.startswith("-") and len(tok) == 2 and tok in short_lookup
+            ):
+                f = long_lookup.get(tok) or short_lookup[tok]
+                if f.type is bool and f.compound != "dict":
+                    i += 1
+                else:
+                    if i + 1 >= len(argv):
+                        break
+                    spelling = f"{tok} {argv[i + 1]}"
+                    i += 2
+            else:
+                break
+            if f.name not in spellings:
+                spellings[f.name] = spelling
+                continue
+            if not _takes_many_values(f):
+                raise _ParseError(_msg_flag_given_more_than_once(
+                    f.name, spellings[f.name], spelling,
+                ))
+        return spellings
 
     def _parse_global_flags(
         self, argv: list[str], *, hermetic: bool = False,
@@ -15088,6 +15165,9 @@ class _Occ:
     # (§24.3). Occurrences the flat door manufactures carry no argv position and
     # never reach that sweep.
     seq: int = -1
+    # The occurrence as typed (`--x v`, `-x v`, `--x=v`, `--no-x`), which is
+    # what a repeated-flag refusal quotes. Empty for a manufactured occurrence.
+    spelling: str = ""
 
 
 @dataclass
@@ -15157,6 +15237,29 @@ def _msg_scope_why_no_member_elected(members: str) -> str:
 def _msg_selector_elected_twice(sel: str, values: list[str]) -> str:
     spelled = " and ".join(f"'{v}'" for v in values)
     return f"--{sel}: elected more than once, as {spelled}"
+
+
+def _msg_flag_given_more_than_once(name: str, first: str, second: str) -> str:
+    """A flag that is not repeatable, given more than once on the command line.
+
+    The first two occurrences are quoted as typed, in command-line order, which
+    names a short alias, an `=` form or a negation exactly as the reader wrote
+    it. ``name`` is the name the reader types (`unset-ttl` for a repeated
+    clear, `config` for the reserved `--config`).
+    """
+    return (
+        f"--{name}: given more than once, as '{first}' and '{second}'; "
+        f"it takes one value"
+    )
+
+
+def _takes_many_values(f: "Flag") -> bool:
+    """Whether a declaration collects every occurrence (repeatable, list, dict).
+
+    Any other flag takes one value, and a second occurrence of it on the
+    command line is refused (`_msg_flag_given_more_than_once`).
+    """
+    return bool(f.repeatable) or f.compound == "dict"
 
 
 def _msg_ambient_binding_skipped_env(var: str, x: str, path_text: str) -> str:
@@ -15250,8 +15353,9 @@ def _elect_token_spelled(
     """A token-spelled selector elects from any source (§24.6, ruling S5)."""
     seen = [o for o in occs if o.name == sel.name]
     if len(seen) > 1:
-        # Last-wins is right for a plain flag and wrong for an election:
-        # discarding a value would discard a whole scope with it (§12.13).
+        # An election names its values: discarding one would discard a whole
+        # scope with it (§12.13). Every other flag that is not repeatable is
+        # refused by `_msg_flag_given_more_than_once`.
         raise _ParseError(_msg_selector_elected_twice(
             sel.name, [str(o.raw) for o in seen],
         ))
@@ -15312,6 +15416,17 @@ def _elect_member_spelled(
     elects only on `--<name>` and `--no-<name>` DECLINES; a payload-carrying
     member elects on presence with any value, including "".
     """
+    # A member given more than once on the command line is refused before
+    # anything is elected: `--x --no-x` states two opposite things about one
+    # choice, and neither occurrence may be discarded in favor of the other.
+    # Occurrences the flat door manufactures carry no argv position.
+    for c in sel.choices:
+        typed = [o for o in occs if o.name == c.name and o.seq >= 0]
+        many = c.payload is not None and _takes_many_values(c.payload)
+        if len(typed) > 1 and not many:
+            raise _ParseError(_msg_flag_given_more_than_once(
+                c.name, typed[0].spelling, typed[1].spelling,
+            ))
     elected: list[_ChoiceSpec] = []
     declined: list[_ChoiceSpec] = []
     for c in sel.choices:
@@ -16673,6 +16788,7 @@ def _parse_command(
     hermetic: bool = False,
     infra_roots: dict[str, str] | None = None,
     out_diagnostics: list[str] | None = None,
+    pre_global_spellings: dict[str, str] | None = None,
 ) -> tuple[Command, dict[str, object], dict[str, object], dict[str, str]]:
     """Parse tokens against a resolved command's flags and args.
 
@@ -16683,6 +16799,10 @@ def _parse_command(
     has already consumed stdin via @-. Updated in-place.
 
     When hermetic is True, env var and config resolution are skipped entirely.
+
+    pre_global_spellings carries each global flag's first pre-command
+    occurrence as typed, so a global that is not repeatable, given before AND
+    after the command, is refused like any other repeated flag.
     """
     if stdin_consumed_by is None:
         stdin_consumed_by = [None]
@@ -16731,6 +16851,9 @@ def _parse_command(
     # argv index that recorded it -- the value phase sweeps root and scoped
     # occurrences in ONE command-line order, so both lists carry their position.
     root_occs: list[tuple[int, Flag, object]] = []
+    # Each root occurrence as typed, by its argv index: what a repeated-flag
+    # refusal quotes.
+    root_spellings: dict[int, str] = {}
     # Phase 1: every scoped occurrence, collected WITHOUT interpreting any of
     # it. Whether a token consumes the next argv element is decided here, before
     # any choice is elected -- which is why sibling scopes may reuse a name only
@@ -16766,7 +16889,9 @@ def _parse_command(
                         f"flag '--{name}' is a boolean negation and does not "
                         f"take a value"
                     )
-                scoped_occs.append(_Occ(target, False, tok, seq=idx))
+                scoped_occs.append(
+                    _Occ(target, False, tok, seq=idx, spelling=tok),
+                )
                 return idx + 1
         site = _scoped_site(name)
         if site is None:
@@ -16776,17 +16901,24 @@ def _parse_command(
                 raise _ParseError(
                     f"flag '--{name}' is a boolean flag and does not take a value"
                 )
-            scoped_occs.append(_Occ(name, True, tok, alts, seq=idx))
+            scoped_occs.append(
+                _Occ(name, True, tok, alts, seq=idx, spelling=tok),
+            )
             return idx + 1
         if inline is not None:
-            scoped_occs.append(_Occ(name, inline, tok, alts, seq=idx))
+            scoped_occs.append(
+                _Occ(name, inline, tok, alts, seq=idx, spelling=tok),
+            )
             return idx + 1
         if idx + 1 >= len(tokens):
             # The token AS TYPED, which is what the root-scope path and both
             # sibling implementations report: a reader who typed `-r` is told
             # about `-r`, not about the long form it resolved to.
             raise _ParseError(f"flag '{tok}' requires a value")
-        scoped_occs.append(_Occ(name, tokens[idx + 1], tok, alts, seq=idx))
+        scoped_occs.append(_Occ(
+            name, tokens[idx + 1], tok, alts, seq=idx,
+            spelling=f"{tok} {tokens[idx + 1]}",
+        ))
         return idx + 2
 
     def _store_value(f: Flag, value: object) -> None:
@@ -16850,6 +16982,7 @@ def _parse_command(
                         f"flag '{flag_part}' is a boolean flag and does not take a value"
                     )
                 root_occs.append((i, f, value_part))
+                root_spellings[i] = tok
             elif flag_part in negation_lookup:
                 raise _ParseError(
                     f"flag '{flag_part}' is a boolean negation and does not take a value"
@@ -16863,6 +16996,7 @@ def _parse_command(
         if tok in negation_lookup:
             f = negation_lookup[tok]
             root_occs.append((i, f, False))
+            root_spellings[i] = tok
             i += 1
             continue
 
@@ -16871,6 +17005,7 @@ def _parse_command(
         # checked against the property's own occurrences below.
         if tok in unset_lookup:
             root_occs.append((i, unset_lookup[tok], _UNSET_OCC))
+            root_spellings[i] = tok
             i += 1
             continue
 
@@ -16880,11 +17015,13 @@ def _parse_command(
                 f = long_lookup[tok]
                 if f.type is bool and f.compound != "dict":
                     root_occs.append((i, f, True))
+                    root_spellings[i] = tok
                     i += 1
                 else:
                     # str/int/float/dict flag: consume next token as value
                     if i + 1 < len(tokens):
                         root_occs.append((i, f, tokens[i + 1]))
+                        root_spellings[i] = f"{tok} {tokens[i + 1]}"
                         i += 2
                     else:
                         raise _ParseError(f"flag '{tok}' requires a value")
@@ -16897,11 +17034,13 @@ def _parse_command(
             f = short_lookup[tok]
             if f.type is bool and f.compound != "dict":
                 root_occs.append((i, f, True))
+                root_spellings[i] = tok
                 i += 1
             else:
                 # str/int/float/dict flag: consume next token as value
                 if i + 1 < len(tokens):
                     root_occs.append((i, f, tokens[i + 1]))
+                    root_spellings[i] = f"{tok} {tokens[i + 1]}"
                     i += 2
                 else:
                     raise _ParseError(f"flag '{tok}' requires a value")
@@ -16943,6 +17082,40 @@ def _parse_command(
     merged = [(seq, True, (f, raw)) for seq, f, raw in root_occs]
     merged.extend((o.seq, False, o) for o in scoped_occs)
     merged.sort(key=lambda entry: entry[0])
+    # A flag that is not repeatable takes one value: a second occurrence is
+    # refused before any occurrence is coerced, rather than silently replacing
+    # the first. `--x --no-x` is two occurrences of one flag and is refused the
+    # same way. Environment and config are not occurrences; their precedence is
+    # unchanged. A selector's double election and a member's repetition were
+    # refused in the election phase, and a value beside a clear just above. A
+    # clear is one act whatever the property's shape, so `--unset-x` given
+    # twice is refused too. A global given before the command is seeded from
+    # the pre-command pass.
+    seen: dict[str, str] = dict(pre_global_spellings or {})
+    unset_seen: dict[str, str] = {}
+    for seq, is_root, item in merged:
+        if is_root:
+            f, raw = item
+            spelling = root_spellings[seq]
+            if raw is _UNSET_OCC:
+                if f.name in unset_seen:
+                    raise _ParseError(_msg_flag_given_more_than_once(
+                        _unset_flag_name(f.name), unset_seen[f.name], spelling,
+                    ))
+                unset_seen[f.name] = spelling
+                continue
+        else:
+            site = _live_site(cmd, election_state, item.name)
+            if site is None or site.kind != "flag":
+                continue
+            f, spelling = site.value_flag, item.spelling
+        if _takes_many_values(f):
+            continue
+        if f.name in seen:
+            raise _ParseError(_msg_flag_given_more_than_once(
+                f.name, seen[f.name], spelling,
+            ))
+        seen[f.name] = spelling
     for _, is_root, item in merged:
         if not is_root:
             site = _live_site(cmd, election_state, item.name)
