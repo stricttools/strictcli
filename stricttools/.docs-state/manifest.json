@@ -119,6 +119,11 @@
         },
         {
           "level": 3,
+          "text": "The naming rule and the framework commands",
+          "anchor": "the-naming-rule-and-the-framework-commands"
+        },
+        {
+          "level": 3,
           "text": "Tag validation",
           "anchor": "tag-validation"
         },
@@ -1057,8 +1062,18 @@
         },
         {
           "level": 2,
-          "text": "Schema Dump",
-          "anchor": "schema-dump"
+          "text": "Help, Version, and the Help Document",
+          "anchor": "help-version-and-the-help-document"
+        },
+        {
+          "level": 2,
+          "text": "Names",
+          "anchor": "names"
+        },
+        {
+          "level": 2,
+          "text": "Runtime Requirements",
+          "anchor": "runtime-requirements"
         },
         {
           "level": 2,
@@ -1384,6 +1399,11 @@
         },
         {
           "level": 3,
+          "text": "`AnyRequirement`",
+          "anchor": "anyrequirement"
+        },
+        {
+          "level": 3,
           "text": "`ChoiceDecl`",
           "anchor": "choicedecl"
         },
@@ -1659,6 +1679,11 @@
         },
         {
           "level": 3,
+          "text": "`WithRequires`",
+          "anchor": "withrequires"
+        },
+        {
+          "level": 3,
           "text": "`Choice`",
           "anchor": "choice"
         },
@@ -1776,16 +1801,6 @@
           "level": 3,
           "text": "`WithConfigPathRelativeToRoot`",
           "anchor": "withconfigpathrelativetoroot"
-        },
-        {
-          "level": 3,
-          "text": "`WithSchemaPath`",
-          "anchor": "withschemapath"
-        },
-        {
-          "level": 3,
-          "text": "`WithSchemaPathRelativeToRoot`",
-          "anchor": "withschemapathrelativetoroot"
         },
         {
           "level": 3,
@@ -3024,8 +3039,18 @@
         },
         {
           "level": 2,
-          "text": "Schema Dump",
-          "anchor": "schema-dump"
+          "text": "Help, Version, and the Help Document",
+          "anchor": "help-version-and-the-help-document"
+        },
+        {
+          "level": 2,
+          "text": "Names",
+          "anchor": "names"
+        },
+        {
+          "level": 2,
+          "text": "Runtime Requirements",
+          "anchor": "runtime-requirements"
         },
         {
           "level": 2,
@@ -3331,6 +3356,26 @@
         },
         {
           "level": 3,
+          "text": "`Requirement`",
+          "anchor": "requirement"
+        },
+        {
+          "level": 3,
+          "text": "`_validate_requires`",
+          "anchor": "_validate_requires"
+        },
+        {
+          "level": 3,
+          "text": "`_register_requirements`",
+          "anchor": "_register_requirements"
+        },
+        {
+          "level": 3,
+          "text": "`_load_requirements`",
+          "anchor": "_load_requirements"
+        },
+        {
+          "level": 3,
           "text": "`Context`",
           "anchor": "context"
         },
@@ -3363,6 +3408,11 @@
           "level": 4,
           "text": "`canceled`",
           "anchor": "canceled"
+        },
+        {
+          "level": 4,
+          "text": "`need`",
+          "anchor": "need"
         },
         {
           "level": 4,
@@ -4271,6 +4321,16 @@
         },
         {
           "level": 3,
+          "text": "`_check_command_tree_name`",
+          "anchor": "_check_command_tree_name"
+        },
+        {
+          "level": 3,
+          "text": "`_check_short_form`",
+          "anchor": "_check_short_form"
+        },
+        {
+          "level": 3,
           "text": "`_parse_checks_toml`",
           "anchor": "_parse_checks_toml"
         },
@@ -4303,11 +4363,6 @@
           "level": 3,
           "text": "`_VersionRequested`",
           "anchor": "_versionrequested"
-        },
-        {
-          "level": 3,
-          "text": "`_DumpSchemaRequested`",
-          "anchor": "_dumpschemarequested"
         },
         {
           "level": 3,
@@ -5511,6 +5566,16 @@
         },
         {
           "level": 4,
+          "text": "`_parse_help_command`",
+          "anchor": "_parse_help_command"
+        },
+        {
+          "level": 4,
+          "text": "`_dispatch_framework_command`",
+          "anchor": "_dispatch_framework_command"
+        },
+        {
+          "level": 4,
           "text": "`_find_command_prefix`",
           "anchor": "_find_command_prefix"
         },
@@ -5951,6 +6016,16 @@
         },
         {
           "level": 3,
+          "text": "`_collect_help_tree`",
+          "anchor": "_collect_help_tree"
+        },
+        {
+          "level": 3,
+          "text": "`_help_tree_section`",
+          "anchor": "_help_tree_section"
+        },
+        {
+          "level": 3,
           "text": "`_format_app_help`",
           "anchor": "_format_app_help"
         },
@@ -6031,8 +6106,38 @@
         },
         {
           "level": 3,
+          "text": "`_format_requirements_section`",
+          "anchor": "_format_requirements_section"
+        },
+        {
+          "level": 3,
           "text": "`_format_command_help`",
           "anchor": "_format_command_help"
+        },
+        {
+          "level": 3,
+          "text": "`_HelpPageRequested`",
+          "anchor": "_helppagerequested"
+        },
+        {
+          "level": 3,
+          "text": "`_FrameworkDocumentRequested`",
+          "anchor": "_frameworkdocumentrequested"
+        },
+        {
+          "level": 3,
+          "text": "`_typed_flag_names`",
+          "anchor": "_typed_flag_names"
+        },
+        {
+          "level": 3,
+          "text": "`_flag_block_rows_for`",
+          "anchor": "_flag_block_rows_for"
+        },
+        {
+          "level": 3,
+          "text": "`_filter_flag_entries`",
+          "anchor": "_filter_flag_entries"
         },
         {
           "level": 3,
@@ -6216,8 +6321,8 @@
         },
         {
           "level": 3,
-          "text": "`_read_project_id`",
-          "anchor": "_read_project_id"
+          "text": "`_project_id_for_file`",
+          "anchor": "_project_id_for_file"
         },
         {
           "level": 3,
@@ -6241,11 +6346,6 @@
         },
         {
           "level": 3,
-          "text": "`_check_schema_project_id`",
-          "anchor": "_check_schema_project_id"
-        },
-        {
-          "level": 3,
           "text": "`_canonical_json_string`",
           "anchor": "_canonical_json_string"
         },
@@ -6258,11 +6358,6 @@
           "level": 3,
           "text": "`_canonical_json`",
           "anchor": "_canonical_json"
-        },
-        {
-          "level": 3,
-          "text": "`_write_schema`",
-          "anchor": "_write_schema"
         },
         {
           "level": 3,
@@ -6688,8 +6783,18 @@
         },
         {
           "level": 2,
-          "text": "Schema Dump",
-          "anchor": "schema-dump"
+          "text": "Help, Version, and the Help Document",
+          "anchor": "help-version-and-the-help-document"
+        },
+        {
+          "level": 2,
+          "text": "Names",
+          "anchor": "names"
+        },
+        {
+          "level": 2,
+          "text": "Runtime Requirements",
+          "anchor": "runtime-requirements"
         },
         {
           "level": 2,
@@ -7117,11 +7222,6 @@
           "level": 3,
           "text": "`validateCheckRegistrations`",
           "anchor": "validatecheckregistrations"
-        },
-        {
-          "level": 3,
-          "text": "`CHECK_IDENTIFIER_RE`",
-          "anchor": "check_identifier_re"
         },
         {
           "level": 3,
@@ -9276,23 +9376,8 @@
         },
         {
           "level": 3,
-          "text": "`errCannotDetermineProjectIDNoPackageJson`",
-          "anchor": "errcannotdetermineprojectidnopackagejson"
-        },
-        {
-          "level": 3,
-          "text": "`errCannotDetermineProjectIDReadError`",
-          "anchor": "errcannotdetermineprojectidreaderror"
-        },
-        {
-          "level": 3,
-          "text": "`errCannotDetermineProjectIDNoName`",
-          "anchor": "errcannotdetermineprojectidnoname"
-        },
-        {
-          "level": 3,
-          "text": "`errSchemaMismatch`",
-          "anchor": "errschemamismatch"
+          "text": "`errProjectIDUndetermined`",
+          "anchor": "errprojectidundetermined"
         },
         {
           "level": 3,
@@ -10273,6 +10358,176 @@
           "level": 3,
           "text": "`errLintEnvironmentRead`",
           "anchor": "errlintenvironmentread"
+        },
+        {
+          "level": 3,
+          "text": "`KEBAB_NAME_CLAUSE`",
+          "anchor": "kebab_name_clause"
+        },
+        {
+          "level": 3,
+          "text": "`errCommandNameInvalid`",
+          "anchor": "errcommandnameinvalid"
+        },
+        {
+          "level": 3,
+          "text": "`errGroupNameInvalid`",
+          "anchor": "errgroupnameinvalid"
+        },
+        {
+          "level": 3,
+          "text": "`errDeprecatedNameInvalid`",
+          "anchor": "errdeprecatednameinvalid"
+        },
+        {
+          "level": 3,
+          "text": "`errFlagNameInvalid`",
+          "anchor": "errflagnameinvalid"
+        },
+        {
+          "level": 3,
+          "text": "`errFlagShortInvalid`",
+          "anchor": "errflagshortinvalid"
+        },
+        {
+          "level": 3,
+          "text": "`errFrameworkCommandName`",
+          "anchor": "errframeworkcommandname"
+        },
+        {
+          "level": 3,
+          "text": "`errHelpTextOnly`",
+          "anchor": "errhelptextonly"
+        },
+        {
+          "level": 3,
+          "text": "`errVersionTextOnly`",
+          "anchor": "errversiontextonly"
+        },
+        {
+          "level": 3,
+          "text": "`errDumpSchemaRemoved`",
+          "anchor": "errdumpschemaremoved"
+        },
+        {
+          "level": 3,
+          "text": "`errHelpDepthMissing`",
+          "anchor": "errhelpdepthmissing"
+        },
+        {
+          "level": 3,
+          "text": "`errHelpDepthValue`",
+          "anchor": "errhelpdepthvalue"
+        },
+        {
+          "level": 3,
+          "text": "`errHelpDepthOnCommand`",
+          "anchor": "errhelpdepthoncommand"
+        },
+        {
+          "level": 3,
+          "text": "`errHelpUnknownOption`",
+          "anchor": "errhelpunknownoption"
+        },
+        {
+          "level": 3,
+          "text": "`errHelpOptionAfterAddress`",
+          "anchor": "errhelpoptionafteraddress"
+        },
+        {
+          "level": 3,
+          "text": "`errHelpFlagOnGroup`",
+          "anchor": "errhelpflagongroup"
+        },
+        {
+          "level": 3,
+          "text": "`errHelpWordAfterCommand`",
+          "anchor": "errhelpwordaftercommand"
+        },
+        {
+          "level": 3,
+          "text": "`errHelpAfterFlag`",
+          "anchor": "errhelpafterflag"
+        },
+        {
+          "level": 3,
+          "text": "`errHelpShortAddress`",
+          "anchor": "errhelpshortaddress"
+        },
+        {
+          "level": 3,
+          "text": "`errHelpFlagWithValue`",
+          "anchor": "errhelpflagwithvalue"
+        },
+        {
+          "level": 3,
+          "text": "`errHelpNegatedFlag`",
+          "anchor": "errhelpnegatedflag"
+        },
+        {
+          "level": 3,
+          "text": "`errHelpUnknownFlag`",
+          "anchor": "errhelpunknownflag"
+        },
+        {
+          "level": 3,
+          "text": "`errHelpUnknownFlagNoFlags`",
+          "anchor": "errhelpunknownflagnoflags"
+        },
+        {
+          "level": 3,
+          "text": "`errHelpInGroup`",
+          "anchor": "errhelpingroup"
+        },
+        {
+          "level": 3,
+          "text": "`errVersionInGroup`",
+          "anchor": "errversioningroup"
+        },
+        {
+          "level": 3,
+          "text": "`errVersionArgs`",
+          "anchor": "errversionargs"
+        },
+        {
+          "level": 3,
+          "text": "`errRequirementNameInvalid`",
+          "anchor": "errrequirementnameinvalid"
+        },
+        {
+          "level": 3,
+          "text": "`errRequirementHelpInvalid`",
+          "anchor": "errrequirementhelpinvalid"
+        },
+        {
+          "level": 3,
+          "text": "`errRequirementInstallInvalid`",
+          "anchor": "errrequirementinstallinvalid"
+        },
+        {
+          "level": 3,
+          "text": "`errRequirementLoadMissing`",
+          "anchor": "errrequirementloadmissing"
+        },
+        {
+          "level": 3,
+          "text": "`errRequirementDeclaredTwice`",
+          "anchor": "errrequirementdeclaredtwice"
+        },
+        {
+          "level": 3,
+          "text": "`errRequirementNameReused`",
+          "anchor": "errrequirementnamereused"
+        },
+        {
+          "level": 3,
+          "text": "`errNeedUndeclared`",
+          "anchor": "errneedundeclared"
+        },
+        {
+          "level": 3,
+          "text": "`errRequirementUnavailable`",
+          "anchor": "errrequirementunavailable"
         }
       ]
     },
@@ -10971,8 +11226,75 @@
         },
         {
           "level": 3,
+          "text": "`formatFlagHelp`",
+          "anchor": "formatflaghelp"
+        },
+        {
+          "level": 3,
           "text": "`formatCommandHelp`",
           "anchor": "formatcommandhelp"
+        }
+      ]
+    },
+    {
+      "path": "typescript-src-help_command.md",
+      "title": "typescript/src/help_command",
+      "type": "doc",
+      "headings": [
+        {
+          "level": 1,
+          "text": "typescript/src/help_command",
+          "anchor": "typescriptsrchelp_command"
+        },
+        {
+          "level": 2,
+          "text": "`typescript/src/help_command`",
+          "anchor": "typescriptsrchelp_command"
+        },
+        {
+          "level": 3,
+          "text": "`HelpRequest`",
+          "anchor": "helprequest"
+        },
+        {
+          "level": 3,
+          "text": "`FrameworkCommandResult`",
+          "anchor": "frameworkcommandresult"
+        },
+        {
+          "level": 3,
+          "text": "`parseHelpCommand`",
+          "anchor": "parsehelpcommand"
+        },
+        {
+          "level": 3,
+          "text": "`formatHelpOwnPage`",
+          "anchor": "formathelpownpage"
+        },
+        {
+          "level": 3,
+          "text": "`formatVersionOwnPage`",
+          "anchor": "formatversionownpage"
+        },
+        {
+          "level": 3,
+          "text": "`helpText`",
+          "anchor": "helptext"
+        },
+        {
+          "level": 3,
+          "text": "`projectIdForEntry`",
+          "anchor": "projectidforentry"
+        },
+        {
+          "level": 3,
+          "text": "`helpDocument`",
+          "anchor": "helpdocument"
+        },
+        {
+          "level": 3,
+          "text": "`dispatchFrameworkCommand`",
+          "anchor": "dispatchframeworkcommand"
         }
       ]
     },
@@ -11180,6 +11502,11 @@
           "level": 3,
           "text": "`schemaType`",
           "anchor": "schematype"
+        },
+        {
+          "level": 3,
+          "text": "`requirement`",
+          "anchor": "requirement"
         },
         {
           "level": 3,
@@ -11430,6 +11757,43 @@
           "level": 3,
           "text": "`McpContinuation`",
           "anchor": "mcpcontinuation"
+        }
+      ]
+    },
+    {
+      "path": "typescript-src-names.md",
+      "title": "typescript/src/names",
+      "type": "doc",
+      "headings": [
+        {
+          "level": 1,
+          "text": "typescript/src/names",
+          "anchor": "typescriptsrcnames"
+        },
+        {
+          "level": 2,
+          "text": "`typescript/src/names`",
+          "anchor": "typescriptsrcnames"
+        },
+        {
+          "level": 3,
+          "text": "`isKebabName`",
+          "anchor": "iskebabname"
+        },
+        {
+          "level": 3,
+          "text": "`isShortForm`",
+          "anchor": "isshortform"
+        },
+        {
+          "level": 3,
+          "text": "`FRAMEWORK_COMMAND_NAMES`",
+          "anchor": "framework_command_names"
+        },
+        {
+          "level": 3,
+          "text": "`validateCommandTreeName`",
+          "anchor": "validatecommandtreename"
         }
       ]
     },
@@ -11710,6 +12074,68 @@
       ]
     },
     {
+      "path": "typescript-src-requirements.md",
+      "title": "typescript/src/requirements",
+      "type": "doc",
+      "headings": [
+        {
+          "level": 1,
+          "text": "typescript/src/requirements",
+          "anchor": "typescriptsrcrequirements"
+        },
+        {
+          "level": 2,
+          "text": "`typescript/src/requirements`",
+          "anchor": "typescriptsrcrequirements"
+        },
+        {
+          "level": 3,
+          "text": "`Requirement`",
+          "anchor": "requirement"
+        },
+        {
+          "level": 3,
+          "text": "`AnyRequirement`",
+          "anchor": "anyrequirement"
+        },
+        {
+          "level": 3,
+          "text": "`requirement`",
+          "anchor": "requirement-1"
+        },
+        {
+          "level": 3,
+          "text": "`validateRequires`",
+          "anchor": "validaterequires"
+        },
+        {
+          "level": 3,
+          "text": "`registerRequirements`",
+          "anchor": "registerrequirements"
+        },
+        {
+          "level": 3,
+          "text": "`neededValue`",
+          "anchor": "neededvalue"
+        },
+        {
+          "level": 3,
+          "text": "`loadRequirements`",
+          "anchor": "loadrequirements"
+        },
+        {
+          "level": 3,
+          "text": "`serializeRequires`",
+          "anchor": "serializerequires"
+        },
+        {
+          "level": 3,
+          "text": "`formatRequirementsSection`",
+          "anchor": "formatrequirementssection"
+        }
+      ]
+    },
+    {
       "path": "typescript-src-routing.md",
       "title": "typescript/src/routing",
       "type": "doc",
@@ -11763,8 +12189,8 @@
         },
         {
           "level": 3,
-          "text": "`writeSchema`",
-          "anchor": "writeschema"
+          "text": "`dumpSchema`",
+          "anchor": "dumpschema"
         }
       ]
     },
@@ -12412,7 +12838,7 @@
     }
   ],
   "posts": [],
-  "last_gen": "2026-09-28T15:48:38.913282+00:00",
+  "last_gen": "2026-09-29T00:16:03.306312+00:00",
   "theme": "minimal",
   "vocabulary": {
     "accepted": [

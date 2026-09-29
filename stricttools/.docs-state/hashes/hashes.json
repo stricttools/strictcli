@@ -182,6 +182,11 @@
     "description": "b3a7308561dd17636fd7ebc6d044b79c9fbc6ae2ab6fc2ced632950541c44f92",
     "source_docstring": "1e9271866ed4885ed7c7e30820abc0f43e063d8929e152a05d1350bb45753250"
   },
+  "en/typescript-src-help_command.md": {
+    "content": "611c8de4eb7f2b131822658e227515f8d8fa11f4f0eb09e004d0dd8f11669fbc",
+    "description": "94b785b802f50bd659207d16906e6ea34ab2f5a6831a62dee14e7fb4c932178e",
+    "seed_hash": "94b785b802f50bd659207d16906e6ea34ab2f5a6831a62dee14e7fb4c932178e"
+  },
   "en/typescript-src-index.md": {
     "content": "4354af8de8f0ca341a89d2197f52534f7d1a5f1dfe0080a63b769cbc55409849",
     "description": "16ebfd573564e4050c6d14173098f92f1b3ccd50651cffff009757572f768759",
@@ -213,6 +218,11 @@
     "description": "ddd7e41e26f348d7dd5eba8b171f8bd5c57374bccbc12d63496feeb007129ef5",
     "source_docstring": "434b3e1311b546b22333da7ecc8c9d722fa04040008f8f31b3c0ffb85b03ee5b"
   },
+  "en/typescript-src-names.md": {
+    "content": "288e7b3fe75c1c7c960fb0c3aa58adbfd82a0f108c1091114bacb353a66ae8cc",
+    "description": "0c55cfec27a9ab04fcd97332acca4fde426d82c539fc6fb3243f2a62f98cd97a",
+    "seed_hash": "0c55cfec27a9ab04fcd97332acca4fde426d82c539fc6fb3243f2a62f98cd97a"
+  },
   "en/typescript-src-outcome.md": {
     "content": "7674643c266a8c7cb008053ebb7e621563ddf0526f3ad75bf6911ecb3683a6fb",
     "description": "6dc0bb6da440bd13819fc9550ec4fb208a4dacce185dc12191bbe6343ff29b51",
@@ -227,6 +237,11 @@
     "content": "bd995d7f0cbc285257c1b490a923d35dbf9afc4cc42ea3c8a35e4a0faf9b9a4f",
     "description": "3d27ea98e353cfb92bf52d09384bfba3ced1372598a57ec705dcd497b6f480c3",
     "source_docstring": "2965999192cde467710c07f94dd456e7340265358a5e653fe1d91fe5bf79fee7"
+  },
+  "en/typescript-src-requirements.md": {
+    "content": "0e440dc4ef886752d2a9259affcd1e793bac6a03099e6deaaf9c505c902cf9a7",
+    "description": "164f5a7c0744dfed9ddc355df436e968d797aeb64d786b5bb5112d3ba9d57142",
+    "seed_hash": "164f5a7c0744dfed9ddc355df436e968d797aeb64d786b5bb5112d3ba9d57142"
   },
   "en/typescript-src-routing.md": {
     "content": "a638ce01776cd826e44a2b03811db7f4e7355e9666fe914201b2fedc6be1b5ce",
