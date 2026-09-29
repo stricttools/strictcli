@@ -185,7 +185,8 @@
   "en/typescript-src-help_command.md": {
     "content": "611c8de4eb7f2b131822658e227515f8d8fa11f4f0eb09e004d0dd8f11669fbc",
     "description": "94b785b802f50bd659207d16906e6ea34ab2f5a6831a62dee14e7fb4c932178e",
-    "seed_hash": "94b785b802f50bd659207d16906e6ea34ab2f5a6831a62dee14e7fb4c932178e"
+    "seed_hash": "94b785b802f50bd659207d16906e6ea34ab2f5a6831a62dee14e7fb4c932178e",
+    "source_docstring": "9eea80f6456eca082dbef3032bf4e5a48e13995c4ecf018a7b4a79d88176b81a"
   },
   "en/typescript-src-index.md": {
     "content": "4354af8de8f0ca341a89d2197f52534f7d1a5f1dfe0080a63b769cbc55409849",
@@ -221,7 +222,8 @@
   "en/typescript-src-names.md": {
     "content": "288e7b3fe75c1c7c960fb0c3aa58adbfd82a0f108c1091114bacb353a66ae8cc",
     "description": "0c55cfec27a9ab04fcd97332acca4fde426d82c539fc6fb3243f2a62f98cd97a",
-    "seed_hash": "0c55cfec27a9ab04fcd97332acca4fde426d82c539fc6fb3243f2a62f98cd97a"
+    "seed_hash": "0c55cfec27a9ab04fcd97332acca4fde426d82c539fc6fb3243f2a62f98cd97a",
+    "source_docstring": "75e41e90efca2fda9cb1950a01e02091c1f032031f4a044138fe1544e2868aae"
   },
   "en/typescript-src-outcome.md": {
     "content": "7674643c266a8c7cb008053ebb7e621563ddf0526f3ad75bf6911ecb3683a6fb",
@@ -241,7 +243,8 @@
   "en/typescript-src-requirements.md": {
     "content": "0e440dc4ef886752d2a9259affcd1e793bac6a03099e6deaaf9c505c902cf9a7",
     "description": "164f5a7c0744dfed9ddc355df436e968d797aeb64d786b5bb5112d3ba9d57142",
-    "seed_hash": "164f5a7c0744dfed9ddc355df436e968d797aeb64d786b5bb5112d3ba9d57142"
+    "seed_hash": "164f5a7c0744dfed9ddc355df436e968d797aeb64d786b5bb5112d3ba9d57142",
+    "source_docstring": "37160fc5fe85b4fa1cfae26761f90d7dc15d38dc8dab942d0046a290622e058a"
   },
   "en/typescript-src-routing.md": {
     "content": "a638ce01776cd826e44a2b03811db7f4e7355e9666fe914201b2fedc6be1b5ce",
