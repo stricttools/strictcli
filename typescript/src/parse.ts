@@ -36,6 +36,7 @@ import {
 	errConfigValueError,
 	errDryRunNotSupported,
 	errDumpSchemaRemoved,
+	errFlagGivenMoreThanOnce,
 	errFlagRequired,
 	errFlagRequiresFlag,
 	errFlagRequiresValue,
@@ -561,13 +562,19 @@ function recordOccurrence(
 	name: string,
 	raw: string | undefined,
 	seq: number,
+	spelling: string,
 ): void {
-	const entry: Occurrence = occ.get(name) ?? { positive: [], negated: false };
+	const entry: Occurrence = occ.get(name) ?? {
+		positive: [],
+		negated: false,
+		spellings: [],
+	};
 	if (raw === undefined) {
 		entry.negated = true;
 	} else {
 		entry.positive.push({ raw, seq });
 	}
+	entry.spellings.push({ text: spelling, seq });
 	occ.set(name, entry);
 }
 
@@ -575,6 +582,10 @@ function recordOccurrence(
  * Parses tokens against a resolved command's flags and args. Global flags are
  * also recognized in post-command tokens and returned separately so the
  * caller can merge them with pre-command globals. Throws ParseError.
+ *
+ * `preGlobalSpellings` carries each global flag's first pre-command occurrence
+ * as typed, so a global that is not repeatable, given before AND after the
+ * command, is refused like any other repeated flag.
  */
 export function parseCommand(
 	cmd: RegisteredCommand,
@@ -584,6 +595,7 @@ export function parseCommand(
 	tracker: StdinTracker,
 	hermetic: boolean,
 	infraRoots: ReadonlyMap<string, string>,
+	preGlobalSpellings: ReadonlyMap<string, string> = new Map(),
 ): ParsedCommand {
 	if (cmd.def.kind !== "command") {
 		throw new Error(
@@ -620,6 +632,8 @@ export function parseCommand(
 		readonly f: AnyFlag;
 		readonly raw: string | boolean;
 		readonly seq: number;
+		/** The occurrence as typed: what a repeated-flag refusal quotes. */
+		readonly spelling: string;
 	}[] = [];
 	/**
 	 * The scan's own counter, shared by root and scoped occurrences: the value
@@ -628,12 +642,20 @@ export function parseCommand(
 	 */
 	let seq = 0;
 	/** The properties `--unset-<prop>` cleared, in command-line order (§27.6). */
-	const unsetOccs: string[] = [];
-	const pushRoot = (f: AnyFlag, raw: string | boolean): void => {
-		rootOccs.push({ f, raw, seq: seq++ });
+	const unsetOccs: { readonly name: string; readonly seq: number }[] = [];
+	const pushRoot = (
+		f: AnyFlag,
+		raw: string | boolean,
+		spelling: string,
+	): void => {
+		rootOccs.push({ f, raw, seq: seq++, spelling });
 	};
-	const pushScoped = (name: string, raw: string | undefined): void => {
-		recordOccurrence(occ, name, raw, seq++);
+	const pushScoped = (
+		name: string,
+		raw: string | undefined,
+		spelling: string,
+	): void => {
+		recordOccurrence(occ, name, raw, seq++, spelling);
 	};
 
 	let i = 0;
@@ -664,13 +686,13 @@ export function parseCommand(
 				if (f.schema === "bool") {
 					record(errBoolFlagNoValue(flagPart));
 				} else {
-					pushRoot(f, valuePart);
+					pushRoot(f, valuePart, tok);
 				}
 			} else if (sc !== undefined) {
 				if (!sc.takesValue) {
 					record(errBoolFlagNoValue(flagPart));
 				} else {
-					pushScoped(sc.name, valuePart);
+					pushScoped(sc.name, valuePart, tok);
 				}
 			} else if (
 				lookups.negation.has(flagPart) ||
@@ -687,13 +709,13 @@ export function parseCommand(
 		// --no-flag negation
 		const negated = lookups.negation.get(tok);
 		if (negated !== undefined) {
-			pushRoot(negated, false);
+			pushRoot(negated, false, tok);
 			i++;
 			continue;
 		}
 		const scopedNegated = scoped.negation.get(tok);
 		if (scopedNegated !== undefined) {
-			pushScoped(scopedNegated.name, undefined);
+			pushScoped(scopedNegated.name, undefined, tok);
 			i++;
 			continue;
 		}
@@ -705,7 +727,7 @@ export function parseCommand(
 		// and takes the ordinary unknown-flag path.
 		const cleared = lookups.unset.get(tok);
 		if (cleared !== undefined) {
-			unsetOccs.push(cleared.name);
+			unsetOccs.push({ name: cleared.name, seq: seq++ });
 			i++;
 			continue;
 		}
@@ -725,9 +747,9 @@ export function parseCommand(
 					: (sc as ScopedTokenTarget).takesValue;
 			if (!takesValue) {
 				if (f !== undefined) {
-					pushRoot(f, true);
+					pushRoot(f, true, tok);
 				} else {
-					pushScoped((sc as ScopedTokenTarget).name, "true");
+					pushScoped((sc as ScopedTokenTarget).name, "true", tok);
 				}
 				i++;
 				continue;
@@ -738,9 +760,13 @@ export function parseCommand(
 				continue;
 			}
 			if (f !== undefined) {
-				pushRoot(f, tokens[i + 1] as string);
+				pushRoot(f, tokens[i + 1] as string, `${tok} ${tokens[i + 1]}`);
 			} else {
-				pushScoped((sc as ScopedTokenTarget).name, tokens[i + 1] as string);
+				pushScoped(
+					(sc as ScopedTokenTarget).name,
+					tokens[i + 1] as string,
+					`${tok} ${tokens[i + 1]}`,
+				);
 			}
 			i += 2;
 			continue;
@@ -757,9 +783,9 @@ export function parseCommand(
 						: (sc as ScopedTokenTarget).takesValue;
 				if (!takesValue) {
 					if (f !== undefined) {
-						pushRoot(f, true);
+						pushRoot(f, true, tok);
 					} else {
-						pushScoped((sc as ScopedTokenTarget).name, "true");
+						pushScoped((sc as ScopedTokenTarget).name, "true", tok);
 					}
 					i++;
 					continue;
@@ -770,9 +796,13 @@ export function parseCommand(
 					continue;
 				}
 				if (f !== undefined) {
-					pushRoot(f, tokens[i + 1] as string);
+					pushRoot(f, tokens[i + 1] as string, `${tok} ${tokens[i + 1]}`);
 				} else {
-					pushScoped((sc as ScopedTokenTarget).name, tokens[i + 1] as string);
+					pushScoped(
+						(sc as ScopedTokenTarget).name,
+						tokens[i + 1] as string,
+						`${tok} ${tokens[i + 1]}`,
+					);
 				}
 				i += 2;
 				continue;
@@ -788,22 +818,61 @@ export function parseCommand(
 	// A property written AND cleared in one invocation is refused BEFORE either
 	// is read: the two tokens state opposite things about one property, and no
 	// order of application makes one of them true (§27.6). The refusal is a
-	// value-stage verdict that outranks every coercion -- position -1, since it
-	// is decided before the first token is coerced rather than at any one
-	// token's place in the line -- so a structural verdict still wins and an
-	// election or scope refusal still runs first.
-	const unsets = new Set(unsetOccs);
+	// repetition-stage verdict that outranks every coercion and every repeated
+	// flag -- position -1, since it is decided before the first token is read
+	// rather than at any one token's place in the line -- so a structural
+	// verdict still wins and an election or scope refusal still runs first.
+	const unsets = new Set(unsetOccs.map((u) => u.name));
 	if (unsets.size > 0) {
 		for (const { f } of rootOccs) {
 			if (unsets.has(f.name)) {
 				problems.push({
-					stage: STAGE.value,
+					stage: STAGE.repetition,
 					message: errUpdateValueAndUnset(f.name),
 					seq: -1,
 				});
 				break;
 			}
 		}
+	}
+
+	// A flag that is not repeatable takes one value: a second occurrence is
+	// refused before any occurrence is read, rather than silently replacing the
+	// first. `--x --no-x` is two occurrences of one flag and is refused the same
+	// way. Environment and config are not occurrences; their precedence is
+	// unchanged. Each refusal is positioned at its second occurrence, so root
+	// and scoped repetitions (scopeparse.ts) are reported in one command-line
+	// order. A global given before the command is seeded from the pre-command
+	// pass. A clear is one act whatever the property's shape, so `--unset-x`
+	// given twice is refused too.
+	const seenSpellings = new Map<string, string>(preGlobalSpellings);
+	for (const { f, seq: at, spelling } of rootOccs) {
+		if (schemaKind(f.schema) !== "scalar") {
+			continue;
+		}
+		const first = seenSpellings.get(f.name);
+		if (first !== undefined) {
+			problems.push({
+				stage: STAGE.repetition,
+				message: errFlagGivenMoreThanOnce(f.name, first, spelling),
+				seq: at,
+			});
+			break;
+		}
+		seenSpellings.set(f.name, spelling);
+	}
+	const unsetSeen = new Set<string>();
+	for (const { name, seq: at } of unsetOccs) {
+		if (unsetSeen.has(name)) {
+			const flag = unsetFlagName(name);
+			problems.push({
+				stage: STAGE.repetition,
+				message: errFlagGivenMoreThanOnce(flag, `--${flag}`, `--${flag}`),
+				seq: at,
+			});
+			break;
+		}
+		unsetSeen.add(name);
 	}
 
 	// The value pass over the root-scope occurrences. It runs after the whole
@@ -1470,6 +1539,73 @@ export interface ExtractedGlobals {
  * an unknown flag-like token. Resolves env, config, defaults, and choices for
  * global flags. Throws ParseError.
  */
+/**
+ * Each global flag's first pre-command occurrence, as typed. Walks the
+ * pre-command region exactly as extractGlobalFlags tokenizes it, without
+ * coercing anything. A global that is not repeatable and is given more than
+ * once in the region is refused here, before any of the region's values is
+ * coerced. The walk stops where extractGlobalFlags stops, and at a token that
+ * function refuses by its shape, which it then reports. The spellings are
+ * handed to parseCommand, so a global given both before and after the command
+ * is refused too. Throws ParseError.
+ */
+export function preCommandGlobalSpellings(
+	app: AppImpl,
+	argv: readonly string[],
+): Map<string, string> {
+	const spellings = new Map<string, string>();
+	if (app.globalFlags.length === 0) {
+		return spellings;
+	}
+	const lookups = newLookups(app.globalFlags);
+	let i = 0;
+	while (i < argv.length) {
+		const tok = argv[i] as string;
+		if (tok === "--") {
+			break;
+		}
+		let f: AnyFlag | undefined;
+		let spelling = tok;
+		if (tok.startsWith("--") && tok.includes("=")) {
+			f = lookups.long.get(tok.slice(0, tok.indexOf("=")));
+			if (f === undefined || f.schema === "bool") {
+				break;
+			}
+			i++;
+		} else if (lookups.negation.has(tok)) {
+			f = lookups.negation.get(tok) as AnyFlag;
+			i++;
+		} else {
+			f = tok.startsWith("--")
+				? lookups.long.get(tok)
+				: tok.startsWith("-") && tok.length === 2
+					? lookups.short.get(tok)
+					: undefined;
+			if (f === undefined) {
+				break;
+			}
+			if (f.schema === "bool") {
+				i++;
+			} else {
+				if (i + 1 >= argv.length) {
+					break;
+				}
+				spelling = `${tok} ${argv[i + 1] as string}`;
+				i += 2;
+			}
+		}
+		const first = spellings.get(f.name);
+		if (first === undefined) {
+			spellings.set(f.name, spelling);
+			continue;
+		}
+		if (schemaKind(f.schema) === "scalar") {
+			throw new ParseError(errFlagGivenMoreThanOnce(f.name, first, spelling));
+		}
+	}
+	return spellings;
+}
+
 export function extractGlobalFlags(
 	app: AppImpl,
 	argv: readonly string[],
@@ -1706,6 +1842,9 @@ export function preScanReservedFlags(
 		json: false,
 	};
 	const excludeIndices = new Set<number>();
+	// --config takes one path: its first occurrence as typed, so a second one
+	// is refused rather than silently replacing the first.
+	let configSpelling: string | undefined;
 	const done = (err?: string): PreScanResult => {
 		const cleanedArgv =
 			excludeIndices.size > 0
@@ -1782,6 +1921,10 @@ export function preScanReservedFlags(
 			if (val === "") {
 				return done(errFlagRequiresValue("--config"));
 			}
+			if (configSpelling !== undefined) {
+				return done(errFlagGivenMoreThanOnce("config", configSpelling, tok));
+			}
+			configSpelling = tok;
 			configPath = val;
 			excludeIndices.add(i);
 			i++;
@@ -1796,6 +1939,13 @@ export function preScanReservedFlags(
 			if (i + 1 >= argv.length) {
 				return done(errFlagRequiresValue("--config"));
 			}
+			const spelled = `${tok} ${argv[i + 1] as string}`;
+			if (configSpelling !== undefined) {
+				return done(
+					errFlagGivenMoreThanOnce("config", configSpelling, spelled),
+				);
+			}
+			configSpelling = spelled;
 			configPath = argv[i + 1] as string;
 			excludeIndices.add(i);
 			excludeIndices.add(i + 1);
@@ -2162,7 +2312,9 @@ export function doParse(
 
 	// Global flags from cleaned argv (--config/--hermetic stripped)
 	let globals: ExtractedGlobals;
+	let preGlobalSpellings: ReadonlyMap<string, string>;
 	try {
+		preGlobalSpellings = preCommandGlobalSpellings(app, pre.cleanedArgv);
 		globals = extractGlobalFlags(
 			app,
 			pre.cleanedArgv,
@@ -2356,6 +2508,7 @@ export function doParse(
 			tracker,
 			pre.hermetic,
 			app.infraRoots,
+			preGlobalSpellings,
 		);
 	} catch (e) {
 		return parseErrorOutcome(

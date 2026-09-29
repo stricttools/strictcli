@@ -30,6 +30,7 @@ import {
 	errElectionOriginDefault,
 	errElectionOriginEnv,
 	errElectionOriginSuffix,
+	errFlagGivenMoreThanOnce,
 	errFlagInvalidChoice,
 	errFlagOutOfScope,
 	errFlagRequired,
@@ -59,6 +60,7 @@ import {
 	requiredFlagForm,
 	type ScopeIndexEntry,
 	type ScopeStep,
+	schemaKind,
 	scopePath,
 	surfaceNames,
 } from "./factories.js";
@@ -82,12 +84,22 @@ export interface OccurrenceValue {
 	readonly seq: number;
 }
 
+/** One occurrence as typed (`--x v`, `-x v`, `--x=v`, `--no-x`), and its position. */
+export interface OccurrenceSpelling {
+	/** The occurrence as typed: what a repeated-flag refusal quotes. */
+	readonly text: string;
+	/** This occurrence's position in the whole token scan, root and scoped alike. */
+	readonly seq: number;
+}
+
 /** One surface name's raw occurrences, collected before anything is interpreted. */
 export interface Occurrence {
 	/** Every positive occurrence, in command-line order. */
 	readonly positive: OccurrenceValue[];
 	/** Whether `--no-<name>` was typed (a bool declines; it elects nothing). */
 	negated: boolean;
+	/** Every occurrence, positive and negated alike, as typed in command-line order. */
+	readonly spellings: OccurrenceSpelling[];
 }
 
 /** Raw occurrences by dash name, produced by parse.ts's token loop. */
@@ -107,8 +119,15 @@ export const STAGE = {
 	shape: 0,
 	election: 1,
 	scope: 2,
-	value: 3,
-	presence: 4,
+	/**
+	 * A flag that is not repeatable given more than once, and a property both
+	 * written and cleared: two tokens stating two things where one is allowed.
+	 * Decided before any value is read, so it outranks every coercion; ordered
+	 * by the position of the second occurrence.
+	 */
+	repetition: 3,
+	value: 4,
+	presence: 5,
 } as const;
 
 /**
@@ -449,8 +468,9 @@ function electByToken(sel: AnyChoiceFlag, run: Run, suffix: string): Election {
 	const occ = run.input.occ.get(sel.name);
 	const typed = occ?.positive ?? [];
 	if (typed.length > 1) {
-		// Last-wins is right for a plain flag and wrong for an election, because
-		// discarding a value would discard a whole scope with it.
+		// An election names its values: discarding one would discard a whole
+		// scope with it. Every other flag that is not repeatable is refused by
+		// errFlagGivenMoreThanOnce.
 		run.problems.push({
 			stage: STAGE.election,
 			message: errSelectorElectedTwice(
@@ -537,6 +557,23 @@ function electByMembers(
 	run: Run,
 	suffix: string,
 ): Election {
+	// A member given more than once is refused before anything is elected:
+	// `--x --no-x` states two opposite things about one choice, and neither
+	// occurrence may be discarded in favor of the other.
+	for (const [choiceName, choice] of Object.entries(sel.choices)) {
+		const typed = run.input.occ.get(choiceName)?.spellings ?? [];
+		const many =
+			choice.value !== undefined &&
+			schemaKind(choice.value.carrier.schema) !== "scalar";
+		const [first, second] = typed;
+		if (first !== undefined && second !== undefined && !many) {
+			run.problems.push({
+				stage: STAGE.election,
+				message: errFlagGivenMoreThanOnce(choiceName, first.text, second.text),
+			});
+			return { elected: undefined, origin: "" };
+		}
+	}
 	const elected: string[] = [];
 	const declined: string[] = [];
 	for (const choiceName of Object.keys(sel.choices)) {
@@ -607,6 +644,23 @@ function resolveScopedFlag(
 	const occ = run.input.occ.get(f.name);
 	const store = new Map<string, unknown>();
 	let source: SourceLabel | undefined;
+
+	// A flag that is not repeatable takes one value: a second occurrence is
+	// refused before any value is read, positioned at the second occurrence so
+	// it is reported in one command-line order with the root flags'.
+	const [first, second] = occ?.spellings ?? [];
+	if (
+		first !== undefined &&
+		second !== undefined &&
+		schemaKind(f.schema) === "scalar"
+	) {
+		run.problems.push({
+			stage: STAGE.repetition,
+			message: errFlagGivenMoreThanOnce(f.name, first.text, second.text),
+			seq: second.seq,
+		});
+		return;
+	}
 
 	if (occ !== undefined && (occ.positive.length > 0 || occ.negated)) {
 		if (f.schema === "bool") {

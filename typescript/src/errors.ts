@@ -2591,12 +2591,30 @@ export function errElectionOriginSuffix(origin: string): string {
 }
 
 /**
- * A selector elected more than once. Last-wins is right for a plain flag and
- * wrong for an election, because discarding a value would discard a whole
+ * A selector elected more than once. An election names its values rather
+ * than its occurrences, because discarding a value would discard a whole
  * scope with it. Values in command-line order, each quoted, joined by ` and `.
+ * Every other flag that is not repeatable is refused by
+ * errFlagGivenMoreThanOnce.
  */
 export function errSelectorElectedTwice(sel: string, values: string): string {
 	return `--${sel}: elected more than once, as ${values}`;
+}
+
+/**
+ * A flag that is not repeatable takes one value, so a second occurrence on the
+ * command line is refused rather than silently replacing the first. The first
+ * two occurrences are quoted as typed, in command-line order -- which names a
+ * short alias, an `=` form or a negation exactly as the reader wrote it.
+ * `flagName` is the name the reader types (`unset-ttl` for a repeated clear,
+ * `config` for the reserved `--config`).
+ */
+export function errFlagGivenMoreThanOnce(
+	flagName: string,
+	first: string,
+	second: string,
+): string {
+	return `--${flagName}: given more than once, as '${first}' and '${second}'; it takes one value`;
 }
 
 // --- Parse-time diagnostics: conditional ambient bindings (§24.6) ---

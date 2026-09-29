@@ -144,7 +144,9 @@ import { ParseError, RegistrationError } from "../src/errors.js";
 // Declared runtime requirements net +8: the four declaration refusals, the
 // twice-referenced and reused-name refusals, the undeclared ctx.need, and the
 // unavailable requirement.
-const EXPECTED_TEMPLATE_COUNT = 474;
+// The repeated-flag refusal nets +1: a flag that is not repeatable, given more
+// than once on the command line.
+const EXPECTED_TEMPLATE_COUNT = 475;
 
 function templateFunctions(): [string, (...args: never[]) => unknown][] {
 	// Widen to unknown first: the module also exports the two error classes,
