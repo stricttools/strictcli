@@ -1,0 +1,1706 @@
+[
+  {
+    "name": "repeatable global: given before the command only",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "label",
+          "type": "str",
+          "help": "labels",
+          "presence": "optional",
+          "repeatable": true,
+          "unique": false,
+          "short": "l",
+          "env": "MYAPP_LABEL",
+          "env_separator": ","
+        },
+        {
+          "name": "port",
+          "type": "int",
+          "help": "ports",
+          "presence": "optional",
+          "repeatable": true,
+          "unique": true
+        },
+        {
+          "name": "zone",
+          "type": "list[str]",
+          "help": "zones",
+          "presence": "default",
+          "default": [],
+          "unique": false
+        },
+        {
+          "name": "meta",
+          "type": "dict[str,str]",
+          "help": "metadata",
+          "presence": "default",
+          "default": {}
+        },
+        {
+          "name": "region",
+          "type": "str",
+          "help": "the region",
+          "presence": "default",
+          "default": "eu",
+          "short": "r"
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "commits",
+              "type": "str",
+              "help": "the commit range",
+              "presence": "optional"
+            }
+          ],
+          "handler_prints": "label={label} port={port} zone={zone} meta={meta} region={region} source={source:label}"
+        }
+      ]
+    },
+    "argv": [
+      "--label",
+      "a",
+      "run"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "label=a port=None zone= meta= region=eu source=cli",
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "repeatable global: given after the command only",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "label",
+          "type": "str",
+          "help": "labels",
+          "presence": "optional",
+          "repeatable": true,
+          "unique": false,
+          "short": "l",
+          "env": "MYAPP_LABEL",
+          "env_separator": ","
+        },
+        {
+          "name": "port",
+          "type": "int",
+          "help": "ports",
+          "presence": "optional",
+          "repeatable": true,
+          "unique": true
+        },
+        {
+          "name": "zone",
+          "type": "list[str]",
+          "help": "zones",
+          "presence": "default",
+          "default": [],
+          "unique": false
+        },
+        {
+          "name": "meta",
+          "type": "dict[str,str]",
+          "help": "metadata",
+          "presence": "default",
+          "default": {}
+        },
+        {
+          "name": "region",
+          "type": "str",
+          "help": "the region",
+          "presence": "default",
+          "default": "eu",
+          "short": "r"
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "commits",
+              "type": "str",
+              "help": "the commit range",
+              "presence": "optional"
+            }
+          ],
+          "handler_prints": "label={label} port={port} zone={zone} meta={meta} region={region} source={source:label}"
+        }
+      ]
+    },
+    "argv": [
+      "run",
+      "--label",
+      "b"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "label=b port=None zone= meta= region=eu source=cli",
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "repeatable global: given on both sides collects every occurrence in order",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "label",
+          "type": "str",
+          "help": "labels",
+          "presence": "optional",
+          "repeatable": true,
+          "unique": false,
+          "short": "l",
+          "env": "MYAPP_LABEL",
+          "env_separator": ","
+        },
+        {
+          "name": "port",
+          "type": "int",
+          "help": "ports",
+          "presence": "optional",
+          "repeatable": true,
+          "unique": true
+        },
+        {
+          "name": "zone",
+          "type": "list[str]",
+          "help": "zones",
+          "presence": "default",
+          "default": [],
+          "unique": false
+        },
+        {
+          "name": "meta",
+          "type": "dict[str,str]",
+          "help": "metadata",
+          "presence": "default",
+          "default": {}
+        },
+        {
+          "name": "region",
+          "type": "str",
+          "help": "the region",
+          "presence": "default",
+          "default": "eu",
+          "short": "r"
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "commits",
+              "type": "str",
+              "help": "the commit range",
+              "presence": "optional"
+            }
+          ],
+          "handler_prints": "label={label} port={port} zone={zone} meta={meta} region={region} source={source:label}"
+        }
+      ]
+    },
+    "argv": [
+      "--label",
+      "a",
+      "run",
+      "--label",
+      "b"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "label=a,b port=None zone= meta= region=eu source=cli",
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "repeatable global: several on each side keep command-line order",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "label",
+          "type": "str",
+          "help": "labels",
+          "presence": "optional",
+          "repeatable": true,
+          "unique": false,
+          "short": "l",
+          "env": "MYAPP_LABEL",
+          "env_separator": ","
+        },
+        {
+          "name": "port",
+          "type": "int",
+          "help": "ports",
+          "presence": "optional",
+          "repeatable": true,
+          "unique": true
+        },
+        {
+          "name": "zone",
+          "type": "list[str]",
+          "help": "zones",
+          "presence": "default",
+          "default": [],
+          "unique": false
+        },
+        {
+          "name": "meta",
+          "type": "dict[str,str]",
+          "help": "metadata",
+          "presence": "default",
+          "default": {}
+        },
+        {
+          "name": "region",
+          "type": "str",
+          "help": "the region",
+          "presence": "default",
+          "default": "eu",
+          "short": "r"
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "commits",
+              "type": "str",
+              "help": "the commit range",
+              "presence": "optional"
+            }
+          ],
+          "handler_prints": "label={label} port={port} zone={zone} meta={meta} region={region} source={source:label}"
+        }
+      ]
+    },
+    "argv": [
+      "--label",
+      "a",
+      "-l",
+      "b",
+      "run",
+      "-l",
+      "c",
+      "--label",
+      "d"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "label=a,b,c,d port=None zone= meta= region=eu source=cli",
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "repeatable global: the equals form on both sides",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "label",
+          "type": "str",
+          "help": "labels",
+          "presence": "optional",
+          "repeatable": true,
+          "unique": false,
+          "short": "l",
+          "env": "MYAPP_LABEL",
+          "env_separator": ","
+        },
+        {
+          "name": "port",
+          "type": "int",
+          "help": "ports",
+          "presence": "optional",
+          "repeatable": true,
+          "unique": true
+        },
+        {
+          "name": "zone",
+          "type": "list[str]",
+          "help": "zones",
+          "presence": "default",
+          "default": [],
+          "unique": false
+        },
+        {
+          "name": "meta",
+          "type": "dict[str,str]",
+          "help": "metadata",
+          "presence": "default",
+          "default": {}
+        },
+        {
+          "name": "region",
+          "type": "str",
+          "help": "the region",
+          "presence": "default",
+          "default": "eu",
+          "short": "r"
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "commits",
+              "type": "str",
+              "help": "the commit range",
+              "presence": "optional"
+            }
+          ],
+          "handler_prints": "label={label} port={port} zone={zone} meta={meta} region={region} source={source:label}"
+        }
+      ]
+    },
+    "argv": [
+      "--label=a",
+      "run",
+      "--label=b"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "label=a,b port=None zone= meta= region=eu source=cli",
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "repeatable global: mixed forms around command flags",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "label",
+          "type": "str",
+          "help": "labels",
+          "presence": "optional",
+          "repeatable": true,
+          "unique": false,
+          "short": "l",
+          "env": "MYAPP_LABEL",
+          "env_separator": ","
+        },
+        {
+          "name": "port",
+          "type": "int",
+          "help": "ports",
+          "presence": "optional",
+          "repeatable": true,
+          "unique": true
+        },
+        {
+          "name": "zone",
+          "type": "list[str]",
+          "help": "zones",
+          "presence": "default",
+          "default": [],
+          "unique": false
+        },
+        {
+          "name": "meta",
+          "type": "dict[str,str]",
+          "help": "metadata",
+          "presence": "default",
+          "default": {}
+        },
+        {
+          "name": "region",
+          "type": "str",
+          "help": "the region",
+          "presence": "default",
+          "default": "eu",
+          "short": "r"
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "commits",
+              "type": "str",
+              "help": "the commit range",
+              "presence": "optional"
+            }
+          ],
+          "handler_prints": "label={label} port={port} zone={zone} meta={meta} region={region} source={source:label}"
+        }
+      ]
+    },
+    "argv": [
+      "-l",
+      "a",
+      "--label=b",
+      "run",
+      "--commits",
+      "x",
+      "--label=c",
+      "-l",
+      "d"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "label=a,b,c,d port=None zone= meta= region=eu source=cli",
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "repeatable global: an int global on both sides",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "label",
+          "type": "str",
+          "help": "labels",
+          "presence": "optional",
+          "repeatable": true,
+          "unique": false,
+          "short": "l",
+          "env": "MYAPP_LABEL",
+          "env_separator": ","
+        },
+        {
+          "name": "port",
+          "type": "int",
+          "help": "ports",
+          "presence": "optional",
+          "repeatable": true,
+          "unique": true
+        },
+        {
+          "name": "zone",
+          "type": "list[str]",
+          "help": "zones",
+          "presence": "default",
+          "default": [],
+          "unique": false
+        },
+        {
+          "name": "meta",
+          "type": "dict[str,str]",
+          "help": "metadata",
+          "presence": "default",
+          "default": {}
+        },
+        {
+          "name": "region",
+          "type": "str",
+          "help": "the region",
+          "presence": "default",
+          "default": "eu",
+          "short": "r"
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "commits",
+              "type": "str",
+              "help": "the commit range",
+              "presence": "optional"
+            }
+          ],
+          "handler_prints": "label={label} port={port} zone={zone} meta={meta} region={region} source={source:label}"
+        }
+      ]
+    },
+    "argv": [
+      "--port",
+      "1",
+      "run",
+      "--port",
+      "2"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "label=None port=1,2 zone= meta= region=eu source=default",
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "repeatable global: a unique global repeats its value across the command",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "label",
+          "type": "str",
+          "help": "labels",
+          "presence": "optional",
+          "repeatable": true,
+          "unique": false,
+          "short": "l",
+          "env": "MYAPP_LABEL",
+          "env_separator": ","
+        },
+        {
+          "name": "port",
+          "type": "int",
+          "help": "ports",
+          "presence": "optional",
+          "repeatable": true,
+          "unique": true
+        },
+        {
+          "name": "zone",
+          "type": "list[str]",
+          "help": "zones",
+          "presence": "default",
+          "default": [],
+          "unique": false
+        },
+        {
+          "name": "meta",
+          "type": "dict[str,str]",
+          "help": "metadata",
+          "presence": "default",
+          "default": {}
+        },
+        {
+          "name": "region",
+          "type": "str",
+          "help": "the region",
+          "presence": "default",
+          "default": "eu",
+          "short": "r"
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "commits",
+              "type": "str",
+              "help": "the commit range",
+              "presence": "optional"
+            }
+          ],
+          "handler_prints": "label={label} port={port} zone={zone} meta={meta} region={region} source={source:label}"
+        }
+      ]
+    },
+    "argv": [
+      "--port",
+      "1",
+      "run",
+      "--port",
+      "1"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: --port: duplicate value '1'\ntry 'myapp run --help'"
+    }
+  },
+  {
+    "name": "repeatable global: a list global on both sides",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "label",
+          "type": "str",
+          "help": "labels",
+          "presence": "optional",
+          "repeatable": true,
+          "unique": false,
+          "short": "l",
+          "env": "MYAPP_LABEL",
+          "env_separator": ","
+        },
+        {
+          "name": "port",
+          "type": "int",
+          "help": "ports",
+          "presence": "optional",
+          "repeatable": true,
+          "unique": true
+        },
+        {
+          "name": "zone",
+          "type": "list[str]",
+          "help": "zones",
+          "presence": "default",
+          "default": [],
+          "unique": false
+        },
+        {
+          "name": "meta",
+          "type": "dict[str,str]",
+          "help": "metadata",
+          "presence": "default",
+          "default": {}
+        },
+        {
+          "name": "region",
+          "type": "str",
+          "help": "the region",
+          "presence": "default",
+          "default": "eu",
+          "short": "r"
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "commits",
+              "type": "str",
+              "help": "the commit range",
+              "presence": "optional"
+            }
+          ],
+          "handler_prints": "label={label} port={port} zone={zone} meta={meta} region={region} source={source:label}"
+        }
+      ]
+    },
+    "argv": [
+      "--zone",
+      "a",
+      "run",
+      "--zone",
+      "b"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "label=None port=None zone=a,b meta= region=eu source=default",
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "repeatable global: a dict global on both sides",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "label",
+          "type": "str",
+          "help": "labels",
+          "presence": "optional",
+          "repeatable": true,
+          "unique": false,
+          "short": "l",
+          "env": "MYAPP_LABEL",
+          "env_separator": ","
+        },
+        {
+          "name": "port",
+          "type": "int",
+          "help": "ports",
+          "presence": "optional",
+          "repeatable": true,
+          "unique": true
+        },
+        {
+          "name": "zone",
+          "type": "list[str]",
+          "help": "zones",
+          "presence": "default",
+          "default": [],
+          "unique": false
+        },
+        {
+          "name": "meta",
+          "type": "dict[str,str]",
+          "help": "metadata",
+          "presence": "default",
+          "default": {}
+        },
+        {
+          "name": "region",
+          "type": "str",
+          "help": "the region",
+          "presence": "default",
+          "default": "eu",
+          "short": "r"
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "commits",
+              "type": "str",
+              "help": "the commit range",
+              "presence": "optional"
+            }
+          ],
+          "handler_prints": "label={label} port={port} zone={zone} meta={meta} region={region} source={source:label}"
+        }
+      ]
+    },
+    "argv": [
+      "--meta",
+      "k=v",
+      "run",
+      "--meta",
+      "j=w"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "label=None port=None zone= meta=j=w,k=v region=eu source=default",
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "repeatable global: an env var is a source, not an occurrence, before the command",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "label",
+          "type": "str",
+          "help": "labels",
+          "presence": "optional",
+          "repeatable": true,
+          "unique": false,
+          "short": "l",
+          "env": "MYAPP_LABEL",
+          "env_separator": ","
+        },
+        {
+          "name": "port",
+          "type": "int",
+          "help": "ports",
+          "presence": "optional",
+          "repeatable": true,
+          "unique": true
+        },
+        {
+          "name": "zone",
+          "type": "list[str]",
+          "help": "zones",
+          "presence": "default",
+          "default": [],
+          "unique": false
+        },
+        {
+          "name": "meta",
+          "type": "dict[str,str]",
+          "help": "metadata",
+          "presence": "default",
+          "default": {}
+        },
+        {
+          "name": "region",
+          "type": "str",
+          "help": "the region",
+          "presence": "default",
+          "default": "eu",
+          "short": "r"
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "commits",
+              "type": "str",
+              "help": "the commit range",
+              "presence": "optional"
+            }
+          ],
+          "handler_prints": "label={label} port={port} zone={zone} meta={meta} region={region} source={source:label}"
+        }
+      ]
+    },
+    "argv": [
+      "--label",
+      "a",
+      "run"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "label=a port=None zone= meta= region=eu source=cli",
+      "stderr_equals": ""
+    },
+    "env": {
+      "MYAPP_LABEL": "e1,e2"
+    }
+  },
+  {
+    "name": "repeatable global: an env var is a source, not an occurrence, after the command",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "label",
+          "type": "str",
+          "help": "labels",
+          "presence": "optional",
+          "repeatable": true,
+          "unique": false,
+          "short": "l",
+          "env": "MYAPP_LABEL",
+          "env_separator": ","
+        },
+        {
+          "name": "port",
+          "type": "int",
+          "help": "ports",
+          "presence": "optional",
+          "repeatable": true,
+          "unique": true
+        },
+        {
+          "name": "zone",
+          "type": "list[str]",
+          "help": "zones",
+          "presence": "default",
+          "default": [],
+          "unique": false
+        },
+        {
+          "name": "meta",
+          "type": "dict[str,str]",
+          "help": "metadata",
+          "presence": "default",
+          "default": {}
+        },
+        {
+          "name": "region",
+          "type": "str",
+          "help": "the region",
+          "presence": "default",
+          "default": "eu",
+          "short": "r"
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "commits",
+              "type": "str",
+              "help": "the commit range",
+              "presence": "optional"
+            }
+          ],
+          "handler_prints": "label={label} port={port} zone={zone} meta={meta} region={region} source={source:label}"
+        }
+      ]
+    },
+    "argv": [
+      "run",
+      "--label",
+      "b"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "label=b port=None zone= meta= region=eu source=cli",
+      "stderr_equals": ""
+    },
+    "env": {
+      "MYAPP_LABEL": "e1,e2"
+    }
+  },
+  {
+    "name": "repeatable global: an env var is not joined to occurrences on both sides",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "label",
+          "type": "str",
+          "help": "labels",
+          "presence": "optional",
+          "repeatable": true,
+          "unique": false,
+          "short": "l",
+          "env": "MYAPP_LABEL",
+          "env_separator": ","
+        },
+        {
+          "name": "port",
+          "type": "int",
+          "help": "ports",
+          "presence": "optional",
+          "repeatable": true,
+          "unique": true
+        },
+        {
+          "name": "zone",
+          "type": "list[str]",
+          "help": "zones",
+          "presence": "default",
+          "default": [],
+          "unique": false
+        },
+        {
+          "name": "meta",
+          "type": "dict[str,str]",
+          "help": "metadata",
+          "presence": "default",
+          "default": {}
+        },
+        {
+          "name": "region",
+          "type": "str",
+          "help": "the region",
+          "presence": "default",
+          "default": "eu",
+          "short": "r"
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "commits",
+              "type": "str",
+              "help": "the commit range",
+              "presence": "optional"
+            }
+          ],
+          "handler_prints": "label={label} port={port} zone={zone} meta={meta} region={region} source={source:label}"
+        }
+      ]
+    },
+    "argv": [
+      "--label",
+      "a",
+      "run",
+      "--label",
+      "b"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "label=a,b port=None zone= meta= region=eu source=cli",
+      "stderr_equals": ""
+    },
+    "env": {
+      "MYAPP_LABEL": "e1,e2"
+    }
+  },
+  {
+    "name": "repeatable global: an env var alone still applies",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "label",
+          "type": "str",
+          "help": "labels",
+          "presence": "optional",
+          "repeatable": true,
+          "unique": false,
+          "short": "l",
+          "env": "MYAPP_LABEL",
+          "env_separator": ","
+        },
+        {
+          "name": "port",
+          "type": "int",
+          "help": "ports",
+          "presence": "optional",
+          "repeatable": true,
+          "unique": true
+        },
+        {
+          "name": "zone",
+          "type": "list[str]",
+          "help": "zones",
+          "presence": "default",
+          "default": [],
+          "unique": false
+        },
+        {
+          "name": "meta",
+          "type": "dict[str,str]",
+          "help": "metadata",
+          "presence": "default",
+          "default": {}
+        },
+        {
+          "name": "region",
+          "type": "str",
+          "help": "the region",
+          "presence": "default",
+          "default": "eu",
+          "short": "r"
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "commits",
+              "type": "str",
+              "help": "the commit range",
+              "presence": "optional"
+            }
+          ],
+          "handler_prints": "label={label} port={port} zone={zone} meta={meta} region={region} source={source:label}"
+        }
+      ]
+    },
+    "argv": [
+      "run"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "label=e1,e2 port=None zone= meta= region=eu source=env",
+      "stderr_equals": ""
+    },
+    "env": {
+      "MYAPP_LABEL": "e1,e2"
+    }
+  },
+  {
+    "name": "repeatable global: a config value is not joined to occurrences on both sides",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "label",
+          "type": "str",
+          "help": "labels",
+          "presence": "optional",
+          "repeatable": true,
+          "unique": false,
+          "short": "l",
+          "env": "MYAPP_LABEL",
+          "env_separator": ","
+        },
+        {
+          "name": "port",
+          "type": "int",
+          "help": "ports",
+          "presence": "optional",
+          "repeatable": true,
+          "unique": true
+        },
+        {
+          "name": "zone",
+          "type": "list[str]",
+          "help": "zones",
+          "presence": "default",
+          "default": [],
+          "unique": false
+        },
+        {
+          "name": "meta",
+          "type": "dict[str,str]",
+          "help": "metadata",
+          "presence": "default",
+          "default": {}
+        },
+        {
+          "name": "region",
+          "type": "str",
+          "help": "the region",
+          "presence": "default",
+          "default": "eu",
+          "short": "r"
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "commits",
+              "type": "str",
+              "help": "the commit range",
+              "presence": "optional"
+            }
+          ],
+          "handler_prints": "label={label} port={port} zone={zone} meta={meta} region={region} source={source:label}"
+        }
+      ],
+      "config": true,
+      "config_content": "{\"label\": [\"c1\", \"c2\"]}"
+    },
+    "argv": [
+      "--label",
+      "a",
+      "run",
+      "--label",
+      "b"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "label=a,b port=None zone= meta= region=eu source=cli",
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "repeatable global: a config value is a source, not an occurrence, after the command",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "label",
+          "type": "str",
+          "help": "labels",
+          "presence": "optional",
+          "repeatable": true,
+          "unique": false,
+          "short": "l",
+          "env": "MYAPP_LABEL",
+          "env_separator": ","
+        },
+        {
+          "name": "port",
+          "type": "int",
+          "help": "ports",
+          "presence": "optional",
+          "repeatable": true,
+          "unique": true
+        },
+        {
+          "name": "zone",
+          "type": "list[str]",
+          "help": "zones",
+          "presence": "default",
+          "default": [],
+          "unique": false
+        },
+        {
+          "name": "meta",
+          "type": "dict[str,str]",
+          "help": "metadata",
+          "presence": "default",
+          "default": {}
+        },
+        {
+          "name": "region",
+          "type": "str",
+          "help": "the region",
+          "presence": "default",
+          "default": "eu",
+          "short": "r"
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "commits",
+              "type": "str",
+              "help": "the commit range",
+              "presence": "optional"
+            }
+          ],
+          "handler_prints": "label={label} port={port} zone={zone} meta={meta} region={region} source={source:label}"
+        }
+      ],
+      "config": true,
+      "config_content": "{\"label\": [\"c1\", \"c2\"]}"
+    },
+    "argv": [
+      "run",
+      "--label",
+      "b"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "label=b port=None zone= meta= region=eu source=cli",
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "repeatable global: a config value alone still applies",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "label",
+          "type": "str",
+          "help": "labels",
+          "presence": "optional",
+          "repeatable": true,
+          "unique": false,
+          "short": "l",
+          "env": "MYAPP_LABEL",
+          "env_separator": ","
+        },
+        {
+          "name": "port",
+          "type": "int",
+          "help": "ports",
+          "presence": "optional",
+          "repeatable": true,
+          "unique": true
+        },
+        {
+          "name": "zone",
+          "type": "list[str]",
+          "help": "zones",
+          "presence": "default",
+          "default": [],
+          "unique": false
+        },
+        {
+          "name": "meta",
+          "type": "dict[str,str]",
+          "help": "metadata",
+          "presence": "default",
+          "default": {}
+        },
+        {
+          "name": "region",
+          "type": "str",
+          "help": "the region",
+          "presence": "default",
+          "default": "eu",
+          "short": "r"
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "commits",
+              "type": "str",
+              "help": "the commit range",
+              "presence": "optional"
+            }
+          ],
+          "handler_prints": "label={label} port={port} zone={zone} meta={meta} region={region} source={source:label}"
+        }
+      ],
+      "config": true,
+      "config_content": "{\"label\": [\"c1\", \"c2\"]}"
+    },
+    "argv": [
+      "run"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "label=c1,c2 port=None zone= meta= region=eu source=config",
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "repeatable global: a global that is not repeatable is still refused on both sides",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "label",
+          "type": "str",
+          "help": "labels",
+          "presence": "optional",
+          "repeatable": true,
+          "unique": false,
+          "short": "l",
+          "env": "MYAPP_LABEL",
+          "env_separator": ","
+        },
+        {
+          "name": "port",
+          "type": "int",
+          "help": "ports",
+          "presence": "optional",
+          "repeatable": true,
+          "unique": true
+        },
+        {
+          "name": "zone",
+          "type": "list[str]",
+          "help": "zones",
+          "presence": "default",
+          "default": [],
+          "unique": false
+        },
+        {
+          "name": "meta",
+          "type": "dict[str,str]",
+          "help": "metadata",
+          "presence": "default",
+          "default": {}
+        },
+        {
+          "name": "region",
+          "type": "str",
+          "help": "the region",
+          "presence": "default",
+          "default": "eu",
+          "short": "r"
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "commits",
+              "type": "str",
+              "help": "the commit range",
+              "presence": "optional"
+            }
+          ],
+          "handler_prints": "label={label} port={port} zone={zone} meta={meta} region={region} source={source:label}"
+        }
+      ]
+    },
+    "argv": [
+      "--region",
+      "us",
+      "run",
+      "--region",
+      "ap"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: --region: given more than once, as '--region us' and '--region ap'; it takes one value\ntry 'myapp run --help'"
+    }
+  },
+  {
+    "name": "global order: a value before the command that does not parse outranks its repetition after it",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "label",
+          "type": "str",
+          "help": "labels",
+          "presence": "optional",
+          "repeatable": true,
+          "unique": false,
+          "short": "l",
+          "env": "MYAPP_LABEL",
+          "env_separator": ","
+        },
+        {
+          "name": "port",
+          "type": "int",
+          "help": "ports",
+          "presence": "optional",
+          "repeatable": true,
+          "unique": true
+        },
+        {
+          "name": "zone",
+          "type": "list[str]",
+          "help": "zones",
+          "presence": "default",
+          "default": [],
+          "unique": false
+        },
+        {
+          "name": "meta",
+          "type": "dict[str,str]",
+          "help": "metadata",
+          "presence": "default",
+          "default": {}
+        },
+        {
+          "name": "region",
+          "type": "str",
+          "help": "the region",
+          "presence": "default",
+          "default": "eu",
+          "short": "r"
+        },
+        {
+          "name": "level",
+          "type": "int",
+          "help": "a level",
+          "presence": "optional"
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "commits",
+              "type": "str",
+              "help": "the commit range",
+              "presence": "optional"
+            }
+          ],
+          "handler_prints": "label={label} port={port} zone={zone} meta={meta} region={region} source={source:label}"
+        }
+      ]
+    },
+    "argv": [
+      "--level",
+      "x",
+      "run",
+      "--level",
+      "5"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: --level: expected integer, got 'x'\ntry 'myapp --help'"
+    }
+  },
+  {
+    "name": "global order: a repetition across the command outranks a value after it that does not parse",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "label",
+          "type": "str",
+          "help": "labels",
+          "presence": "optional",
+          "repeatable": true,
+          "unique": false,
+          "short": "l",
+          "env": "MYAPP_LABEL",
+          "env_separator": ","
+        },
+        {
+          "name": "port",
+          "type": "int",
+          "help": "ports",
+          "presence": "optional",
+          "repeatable": true,
+          "unique": true
+        },
+        {
+          "name": "zone",
+          "type": "list[str]",
+          "help": "zones",
+          "presence": "default",
+          "default": [],
+          "unique": false
+        },
+        {
+          "name": "meta",
+          "type": "dict[str,str]",
+          "help": "metadata",
+          "presence": "default",
+          "default": {}
+        },
+        {
+          "name": "region",
+          "type": "str",
+          "help": "the region",
+          "presence": "default",
+          "default": "eu",
+          "short": "r"
+        },
+        {
+          "name": "level",
+          "type": "int",
+          "help": "a level",
+          "presence": "optional"
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "commits",
+              "type": "str",
+              "help": "the commit range",
+              "presence": "optional"
+            }
+          ],
+          "handler_prints": "label={label} port={port} zone={zone} meta={meta} region={region} source={source:label}"
+        }
+      ]
+    },
+    "argv": [
+      "--level",
+      "5",
+      "run",
+      "--level",
+      "x"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: --level: given more than once, as '--level 5' and '--level x'; it takes one value\ntry 'myapp run --help'"
+    }
+  },
+  {
+    "name": "global order: a repetition before the command outranks a value there that does not parse",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "label",
+          "type": "str",
+          "help": "labels",
+          "presence": "optional",
+          "repeatable": true,
+          "unique": false,
+          "short": "l",
+          "env": "MYAPP_LABEL",
+          "env_separator": ","
+        },
+        {
+          "name": "port",
+          "type": "int",
+          "help": "ports",
+          "presence": "optional",
+          "repeatable": true,
+          "unique": true
+        },
+        {
+          "name": "zone",
+          "type": "list[str]",
+          "help": "zones",
+          "presence": "default",
+          "default": [],
+          "unique": false
+        },
+        {
+          "name": "meta",
+          "type": "dict[str,str]",
+          "help": "metadata",
+          "presence": "default",
+          "default": {}
+        },
+        {
+          "name": "region",
+          "type": "str",
+          "help": "the region",
+          "presence": "default",
+          "default": "eu",
+          "short": "r"
+        },
+        {
+          "name": "level",
+          "type": "int",
+          "help": "a level",
+          "presence": "optional"
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "commits",
+              "type": "str",
+              "help": "the commit range",
+              "presence": "optional"
+            }
+          ],
+          "handler_prints": "label={label} port={port} zone={zone} meta={meta} region={region} source={source:label}"
+        }
+      ]
+    },
+    "argv": [
+      "--level",
+      "x",
+      "--level",
+      "5",
+      "run"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: --level: given more than once, as '--level x' and '--level 5'; it takes one value\ntry 'myapp --help'"
+    }
+  }
+]
