@@ -1806,6 +1806,14 @@ def _msg_lint_framework_use_manifest_mismatch(manifest: str, path: str) -> str:
     )
 
 
+def _msg_lint_framework_use_unparsable(path: str, detail: str) -> str:
+    """Scan refusal: a source file the scan must read does not parse (§28.2).
+
+    ``detail`` is the parser's own message and is not pinned (§12.17).
+    """
+    return f"--lint-framework-use: source file '{path}' does not parse: {detail}"
+
+
 def _msg_lint_process_exit(construct: str, early: str) -> str:
     """Finding message of the ``process-exit`` rule (§28.3)."""
     return (
@@ -19467,8 +19475,17 @@ def _lint_parse(root: str, rel: str) -> ast.Module:
         source = fh.read()
     try:
         return ast.parse(source, filename=rel)
-    except (SyntaxError, ValueError) as e:
-        raise _LintRefusal(str(e)) from None
+    except SyntaxError as e:
+        # A file the scan cannot read is refused rather than skipped: its
+        # constructs would go unseen (§28.2, §18.37 item 349).
+        detail = e.msg if e.lineno is None else f"{e.msg} at line {e.lineno}"
+        raise _LintRefusal(
+            _msg_lint_framework_use_unparsable(rel, detail)
+        ) from None
+    except ValueError as e:
+        raise _LintRefusal(
+            _msg_lint_framework_use_unparsable(rel, str(e))
+        ) from None
 
 
 def _lint_imports_strictcli(tree: ast.Module) -> bool:

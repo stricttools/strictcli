@@ -273,6 +273,13 @@ class TestScanRefusals:
         self._refusal(_lint(tmp_path), strictcli._msg_lint_framework_use_manifest_mismatch(
             "pyproject.toml", str(tmp_path)))
 
+    def test_a_source_file_that_does_not_parse_is_refused(self, tmp_path):
+        # The refusal names the scan and the file in the sentence Go and
+        # TypeScript share (§18.37 item 349); the detail is the parser's own.
+        _project(tmp_path, {"tool/bad.py": "import sys\nx = (\n"})
+        self._refusal(_lint(tmp_path), strictcli._msg_lint_framework_use_unparsable(
+            "tool/bad.py", "'(' was never closed at line 2"))
+
     def test_a_scan_from_another_directory_is_refused(self, tmp_path):
         _project(tmp_path, {})
         sub = tmp_path / "tool"
