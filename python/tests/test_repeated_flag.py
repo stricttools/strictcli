@@ -143,6 +143,43 @@ def test_a_repeatable_global_still_collects():
     _runs(_app(), ["--zone", "a", "--zone", "b", "run"], "zone=a,b")
 
 
+def test_a_repeatable_global_collects_across_the_command():
+    # Every occurrence, in command-line order; it used to keep only the
+    # post-command ones.
+    _runs(_app(), ["--zone", "a", "run", "--zone", "b"], "zone=a,b")
+    _runs(_app(), ["--zone=a", "--zone", "b", "run", "--zone", "c",
+                   "--zone=d"], "zone=a,b,c,d")
+    _runs(_app(), ["run", "--zone", "b"], "zone=b")
+
+
+def test_a_unique_global_refuses_a_duplicate_across_the_command():
+    app = strictcli.App(
+        name="myapp", version="1.0.0", help="test app",
+        flags=[strictcli.Flag(name="port", type=int, help="ports",
+                              repeatable=True, unique=True,
+                              presence="optional")],
+    )
+
+    @app.command("run", effect="read_only", help="run it")
+    def run(ctx, port):
+        print(f"port={port}")
+
+    _refused(app, ["--port", "1", "run", "--port", "1"],
+             "--port: duplicate value '1'")
+    _runs(app, ["--port", "1", "run", "--port", "2"], "port=[1, 2]")
+
+
+def test_a_repeatable_global_across_the_command_ignores_config(tmp_path):
+    # Env and config are sources, not occurrences: never joined to the
+    # command line.
+    path = tmp_path / "config.json"
+    path.write_text('{"zone": ["from-config"]}')
+    app_kwargs = {"config": True, "config_path": str(path)}
+    _runs(_app(**app_kwargs), ["--zone", "a", "run", "--zone", "b"],
+          "zone=a,b")
+    _runs(_app(**app_kwargs), ["run", "--zone", "b"], "zone=b")
+
+
 def test_reports_the_first_second_occurrence():
     _refused(_app(), ["run", "--cache", "--commits", "a", "--commits", "b",
                       "--no-cache"],

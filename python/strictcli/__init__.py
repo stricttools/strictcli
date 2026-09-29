@@ -12723,6 +12723,12 @@ class App:
                 infra_roots=self._infra_roots,
                 out_diagnostics=self._last_selector_diagnostics,
                 pre_global_spellings=pre_global_spellings,
+                pre_global_values={
+                    gf.name: global_values[gf.name]
+                    for gf in self._global_flags
+                    if _takes_many_values(gf)
+                    and global_source_map.get(_flag_param_name(gf.name)) == "cli"
+                },
             )
         except _ParseError as e:
             prefix_parts = [self.name] + path + [cmd.name]
@@ -12735,7 +12741,9 @@ class App:
         self._last_unsets = unsets
 
         # Step 4: merge global flag values into kwargs
-        # Post-command global flags override pre-command ones
+        # Post-command global flags override pre-command ones. A global that
+        # takes many values and was given on both sides already holds every
+        # occurrence here, the pre-command ones first (_parse_command).
         for gf in self._global_flags:
             if gf.name in post_global:
                 global_values[gf.name] = post_global[gf.name]
@@ -16797,6 +16805,7 @@ def _parse_command(
     infra_roots: dict[str, str] | None = None,
     out_diagnostics: list[str] | None = None,
     pre_global_spellings: dict[str, str] | None = None,
+    pre_global_values: dict[str, object] | None = None,
 ) -> tuple[Command, dict[str, object], dict[str, object], dict[str, str]]:
     """Parse tokens against a resolved command's flags and args.
 
@@ -16811,6 +16820,11 @@ def _parse_command(
     pre_global_spellings carries each global flag's first pre-command
     occurrence as typed, so a global that is not repeatable, given before AND
     after the command, is refused like any other repeated flag.
+
+    pre_global_values carries, for each global that takes many values
+    (repeatable, list or dict), the values its pre-command occurrences
+    produced; when it is given after the command too, the post-command
+    occurrences extend them in command-line order rather than replacing them.
     """
     if stdin_consumed_by is None:
         stdin_consumed_by = [None]
@@ -17124,6 +17138,25 @@ def _parse_command(
                 f.name, seen[f.name], spelling,
             ))
         seen[f.name] = spelling
+    # A global that takes many values and is given on both sides of the
+    # command collects every occurrence in command-line order: its
+    # post-command occurrences are stored after the pre-command ones, exactly
+    # as if all of them had been typed on one side, so `unique` and a dict's
+    # key rule see the whole line. Only command-line values are seeded; an env
+    # or config value is a source, not an occurrence.
+    global_names = {g.name for g in (global_flags or [])}
+    for _, is_root, item in merged:
+        if not is_root:
+            continue
+        f = item[0]
+        if (
+            f.name in global_names
+            and _takes_many_values(f)
+            and f.name not in cli_set
+            and f.name in (pre_global_values or {})
+        ):
+            pre = (pre_global_values or {})[f.name]
+            cli_set[f.name] = dict(pre) if isinstance(pre, dict) else list(pre)
     for _, is_root, item in merged:
         if not is_root:
             site = _live_site(cmd, election_state, item.name)
