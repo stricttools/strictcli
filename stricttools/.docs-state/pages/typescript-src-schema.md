@@ -1,6 +1,6 @@
 +++
 title = "typescript/src/schema"
-description = "Schema dump (--dump-schema): builds the machine-readable schema dict and writes .strictcli/schema.json describing every command, group, flag, and arg."
+description = "The help document (`help --json`): builds the machine-readable schema of every command, group, flag, and arg at schema version 2, in one byte canon."
 generated = true
 nav_group = "API Reference"
 nav_order = 38

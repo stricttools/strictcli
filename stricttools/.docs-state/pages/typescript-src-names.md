@@ -1,8 +1,7 @@
 +++
 title = "typescript/src/names"
-description = "The naming rule and the framework-command reservation: one pattern for every identifier a caller types or references, a one-letter short form, and the names of the framework's own commands, reserved at every level of the command tree."
+description = "The naming rule: lowercase kebab-case of at least two characters for every typed identifier, one-letter short forms, and the reserved help and version names."
 generated = true
-seeded = true
 nav_group = "API Reference"
 nav_order = 32
 +++

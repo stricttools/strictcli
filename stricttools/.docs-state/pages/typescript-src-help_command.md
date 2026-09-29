@@ -1,8 +1,7 @@
 +++
 title = "typescript/src/help_command"
-description = "The framework's help and version commands: `help` shows the help of the app, a group, a command, or one flag, as text or, under --json, as the help document (the app's schema, version 2); `version` shows the app's name and version."
+description = "The framework's help and version commands: the help of the app, a group, a command, or one flag, the help document under --json, and the app's version."
 generated = true
-seeded = true
 nav_group = "API Reference"
 nav_order = 25
 +++

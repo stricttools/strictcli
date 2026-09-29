@@ -1,8 +1,7 @@
 +++
 title = "typescript/src/requirements"
-description = "Declared runtime requirements: what a command needs at run time -- a system library, an executable, a device -- declared ONCE as a requirement value and referenced by every command that needs it (`requires: [...]`)."
+description = "Declared runtime requirements: each one declared once, referenced by every command that needs it, and loaded before the handler on every door and in dry mode."
 generated = true
-seeded = true
 nav_group = "API Reference"
 nav_order = 36
 +++
