@@ -686,6 +686,10 @@ def _build_descriptors() -> list[EntityDescriptor]:
                 # half a record. describe_go dumps unexported fields too, which
                 # is why this maps to the lowercase name rather than excluding.
                 "command.update_of": "updateOf",
+                # Declared runtime requirements (contract §29) are stored on an
+                # unexported field for the same reason: WithRequires is the
+                # only spelling.
+                "command.requires": "requires",
             },
             ts_struct="CommandDef",
             ts_to_schema=_SHARED_TS_TO_SCHEMA,
@@ -730,9 +734,6 @@ def _build_descriptors() -> list[EntityDescriptor]:
                 # string or a marker relative to a declared root, and Go keeps
                 # the marker in its own field beside the resolved override.
                 "app.config_path_relative_to_root": "configPathRef",
-                # Go resolves the declared schema location eagerly into one
-                # absolute field, as it does the config path override.
-                "app.schema_path": "schemaOutPath",
                 "app.config_format": "configFormat",
                 "app.no_default_config_path": "noDefaultConfigPath",
                 "app.config_conflict_mode": "configConflictMode",
@@ -1062,7 +1063,6 @@ KNOWN_OPTION_FUNCS: set[str] = {
     "WithNoDefaultConfigPath",
     "WithConfigConflictMode",
     "WithInfraRoot", "WithHandshakeEnv", "WithConfigPathRelativeToRoot",
-    "WithSchemaPath", "WithSchemaPathRelativeToRoot",
     "WithConnectionEnv", "ConnectionURLFlag",
     "RelativeToRoot",
     # ConfigFieldOption constructors (from describe_go, not matched by old regex)
@@ -1098,6 +1098,9 @@ KNOWN_OPTION_FUNCS: set[str] = {
     # The declared payload rendering (contract §19.10), spelled without a
     # With- prefix beside PayloadSchema, whose sibling it is.
     "PayloadRenderer",
+    # Declared runtime requirements (contract §29): a command references the
+    # requirements it needs.
+    "WithRequires",
 }
 
 
@@ -1199,6 +1202,9 @@ KNOWN_TS_PUBLIC_NAMES: set[str] = {
     # command through the exit step, and the error `app.call()` rejects with
     # when a command ended that way.
     "ExitNow", "ExitError",
+    # Declared runtime requirements (contract §29): the factory that declares
+    # one and the type of the value it returns.
+    "requirement", "Requirement",
 }
 
 # The payload-schema builders (contract §19.5, decision 14), one row per
