@@ -207,10 +207,15 @@ func resolveAtPrefix(flagName, raw string, stdinConsumedBy **string) (string, st
 // When hermetic is true, env var and config resolution are skipped entirely.
 // Returns (kwargs, postGlobalValues, sources, errorString).
 //
+// preGlobalValues carries, for each global that takes many values
+// (repeatable, list or dict), the values its pre-command occurrences produced;
+// when it is given after the command too, the post-command occurrences extend
+// them in command-line order rather than replacing them.
+//
 // preGlobalSpellings carries each global flag's first pre-command occurrence
 // as typed, so a non-repeatable global given before AND after the command is
 // refused like any other repeated flag.
-func parseCommand(cmd *Command, tokens []string, globalFlags []Flag, configData map[string]interface{}, stdinConsumedBy **string, conflictMode string, hermetic bool, infraRoots map[string]string, preGlobalSpellings map[string]string) (map[string]interface{}, map[string]interface{}, map[string]string, *updateState, map[string]bool, string, []string) {
+func parseCommand(cmd *Command, tokens []string, globalFlags []Flag, configData map[string]interface{}, stdinConsumedBy **string, conflictMode string, hermetic bool, infraRoots map[string]string, preGlobalSpellings map[string]string, preGlobalValues map[string]interface{}) (map[string]interface{}, map[string]interface{}, map[string]string, *updateState, map[string]bool, string, []string) {
 	// Build flag lookup maps over the command's WHOLE scope tree (contract
 	// §24.3): whether `--target` consumes the next argv element is decided
 	// before any choice is elected, which is why sibling scopes may reuse a name
@@ -487,6 +492,24 @@ func parseCommand(cmd *Command, tokens []string, globalFlags []Flag, configData 
 		seen[o.name] = o.spelling
 	}
 	cliByFlag := make(map[*Flag]interface{})
+	// A global that takes many values and is given on both sides of the
+	// command collects every occurrence in command-line order: its
+	// post-command occurrences are stored after the pre-command ones, exactly
+	// as if all of them had been typed on one side, so `unique` and a dict's
+	// key rule see the whole line. Only command-line values are seeded; an
+	// env or config value is a source, not an occurrence.
+	for _, o := range occs {
+		f, ok := globalByName[o.name]
+		if !ok || !takesManyValues(f) {
+			continue
+		}
+		if _, seeded := cliByFlag[f]; seeded {
+			continue
+		}
+		if pre, ok := preGlobalValues[f.Name]; ok {
+			cliByFlag[f] = copyCollectedValue(pre)
+		}
+	}
 	for _, o := range occs {
 		if o.kind == occUnset {
 			continue
@@ -1470,6 +1493,22 @@ func storeDictValue(cliByFlag map[*Flag]interface{}, f *Flag, entries map[string
 		cliByFlag[f] = m
 	}
 	return ""
+}
+
+// copyCollectedValue copies a many-valued flag's collected value (a list or a
+// dict) so that extending it never writes through to the value it came from.
+func copyCollectedValue(v interface{}) interface{} {
+	switch c := v.(type) {
+	case []interface{}:
+		return append([]interface{}(nil), c...)
+	case map[string]interface{}:
+		m := make(map[string]interface{}, len(c))
+		for k, e := range c {
+			m[k] = e
+		}
+		return m
+	}
+	return v
 }
 
 // storeCLIValue records one coerced occurrence, appending for a repeatable flag

@@ -3855,7 +3855,17 @@ func (a *App) doParse(argv []string) parseResult {
 		}
 	}
 
-	kwargs, postGlobalValues, cmdSources, writes, unsets, err, skipped := parseCommand(cmd, cmdRest, a.globalFlags, a.configData, &a.stdinConsumedBy, a.configConflictMode, preScan.hermetic, a.infraRoots, preGlobalSpellings)
+	// The command-line values of every global that takes many values, so one
+	// given after the command too extends them instead of replacing them.
+	preGlobalValues := map[string]interface{}{}
+	for i := range a.globalFlags {
+		f := &a.globalFlags[i]
+		param := flagParamName(f.Name)
+		if takesManyValues(f) && globalSourceMap[param] == "cli" {
+			preGlobalValues[f.Name] = globalValues[param]
+		}
+	}
+	kwargs, postGlobalValues, cmdSources, writes, unsets, err, skipped := parseCommand(cmd, cmdRest, a.globalFlags, a.configData, &a.stdinConsumedBy, a.configConflictMode, preScan.hermetic, a.infraRoots, preGlobalSpellings, preGlobalValues)
 	if err != "" {
 		parts := append([]string{a.Name}, path...)
 		parts = append(parts, cmd.Name)
@@ -3863,8 +3873,9 @@ func (a *App) doParse(argv []string) parseResult {
 	}
 	// Merge global values: post-command globals override pre-command ones. A
 	// global that is not repeatable cannot be in both (parseCommand refused
-	// it); a repeatable one given in both places keeps only the post-command
-	// occurrences.
+	// it); for one that takes many values and is given in both places,
+	// parseCommand's post-command value already holds every occurrence, the
+	// pre-command ones first.
 	for k, v := range postGlobalValues {
 		globalValues[k] = v
 	}

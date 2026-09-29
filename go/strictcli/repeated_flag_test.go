@@ -137,6 +137,33 @@ func TestRepeatableGlobalStillCollects(t *testing.T) {
 	assertRuns(t, repeatedFlagApp(), []string{"--zone", "a", "--zone", "b", "run"}, "zone=a,b")
 }
 
+// A repeatable global given on both sides of the command collects every
+// occurrence in command-line order; it used to keep only the post-command ones.
+func TestRepeatableGlobalCollectsAcrossTheCommand(t *testing.T) {
+	assertRuns(t, repeatedFlagApp(), []string{"--zone", "a", "run", "--zone", "b"}, "zone=a,b")
+	assertRuns(t, repeatedFlagApp(), []string{"--zone=a", "--zone", "b", "run", "--zone", "c", "--zone=d"}, "zone=a,b,c,d")
+	assertRuns(t, repeatedFlagApp(), []string{"run", "--zone", "b"}, "zone=b")
+}
+
+func TestUniqueRepeatableGlobalRefusesADuplicateAcrossTheCommand(t *testing.T) {
+	app := NewApp("myapp", "1.0.0", "test app")
+	app.GlobalFlag(IntFlag("port", "ports", Repeatable(), Unique(true), Optional()))
+	app.Command("run", "run it", func(ctx *Context, args map[string]interface{}) Outcome {
+		ctx.Out("port=" + formatValue(args["port"]))
+		return Exit(0)
+	}, WithEffect(EffectReadOnly))
+	assertRefused(t, app, []string{"--port", "1", "run", "--port", "1"}, "--port: duplicate value '1'")
+	assertRuns(t, app, []string{"--port", "1", "run", "--port", "2"}, "port=1,2")
+}
+
+// Env and config are sources, not occurrences: never joined to the command line.
+func TestRepeatableGlobalAcrossTheCommandIgnoresEnvAndConfig(t *testing.T) {
+	path := writeTestConfigJSON(t, `{"zone": ["from-config"]}`)
+	app := repeatedFlagApp(WithConfig(), WithConfigPath(path))
+	assertRuns(t, app, []string{"--zone", "a", "run", "--zone", "b"}, "zone=a,b")
+	assertRuns(t, repeatedFlagApp(WithConfig(), WithConfigPath(path)), []string{"run", "--zone", "b"}, "zone=b")
+}
+
 func repeatedScopedApp() *App {
 	return simpleApp("send", "send it", "via={via} mode={mode}", WithFlags(
 		ChoiceFlag("via", "delivery channel", Required(),
