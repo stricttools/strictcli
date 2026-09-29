@@ -184,7 +184,8 @@
   },
   "en/typescript-src-help_command.md": {
     "content": "611c8de4eb7f2b131822658e227515f8d8fa11f4f0eb09e004d0dd8f11669fbc",
-    "description": "8d9948f6f472b7600249316169f93a6f4dfe08090957bbcd54ad5a9e9d42a7cb"
+    "description": "8d9948f6f472b7600249316169f93a6f4dfe08090957bbcd54ad5a9e9d42a7cb",
+    "source_docstring": "9eea80f6456eca082dbef3032bf4e5a48e13995c4ecf018a7b4a79d88176b81a"
   },
   "en/typescript-src-index.md": {
     "content": "4354af8de8f0ca341a89d2197f52534f7d1a5f1dfe0080a63b769cbc55409849",
@@ -219,7 +220,8 @@
   },
   "en/typescript-src-names.md": {
     "content": "288e7b3fe75c1c7c960fb0c3aa58adbfd82a0f108c1091114bacb353a66ae8cc",
-    "description": "fa68b8ad675572e9618638e7bc24726fb92c781c4f8d3abdf19e9da2bed9fbe2"
+    "description": "fa68b8ad675572e9618638e7bc24726fb92c781c4f8d3abdf19e9da2bed9fbe2",
+    "source_docstring": "75e41e90efca2fda9cb1950a01e02091c1f032031f4a044138fe1544e2868aae"
   },
   "en/typescript-src-outcome.md": {
     "content": "7674643c266a8c7cb008053ebb7e621563ddf0526f3ad75bf6911ecb3683a6fb",
@@ -238,7 +240,8 @@
   },
   "en/typescript-src-requirements.md": {
     "content": "0e440dc4ef886752d2a9259affcd1e793bac6a03099e6deaaf9c505c902cf9a7",
-    "description": "dcb7eb1e50063fa7597859a45b3d09d5012d71afb638b27f93ad5434f2c6afd8"
+    "description": "dcb7eb1e50063fa7597859a45b3d09d5012d71afb638b27f93ad5434f2c6afd8",
+    "source_docstring": "37160fc5fe85b4fa1cfae26761f90d7dc15d38dc8dab942d0046a290622e058a"
   },
   "en/typescript-src-routing.md": {
     "content": "a638ce01776cd826e44a2b03811db7f4e7355e9666fe914201b2fedc6be1b5ce",
@@ -247,7 +250,8 @@
   },
   "en/typescript-src-schema.md": {
     "content": "ac95201126cfd8a8f21ee4ce580c0c423d5405d032c0cc63ea2f1b5a667fc065",
-    "description": "24004499d1f9019898c3129c9ec9ad7e5a24afd20a4e6efa61400238c86865a0"
+    "description": "24004499d1f9019898c3129c9ec9ad7e5a24afd20a4e6efa61400238c86865a0",
+    "source_docstring": "d1b1d14ce6bb3c00c74a7849b261f393c5257c02c82c04230eb9410f95632d3b"
   },
   "en/typescript-src-scopeparse.md": {
     "content": "5abb34e54f1b65bc3a08fd480dfeded04bd0be23a032262e4e4e2e076da19d70",
