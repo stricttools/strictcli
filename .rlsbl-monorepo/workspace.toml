@@ -8,22 +8,22 @@ name = "go-strictcli"
 name = "ts-strictcli"
 
 [[projects]]
-path = "python/"
+path = "python"
 name = "strictcli"
 releasable = "py-strictcli"
 
 [[projects]]
-path = "go/"
+path = "go"
 name = "go-strictcli"
 releasable = "go-strictcli"
 
 [[projects]]
-path = "typescript/"
+path = "typescript"
 name = "ts-strictcli"
 releasable = "ts-strictcli"
 
 [[projects]]
-path = "conformance/"
+path = "conformance"
 name = "conformance"
 dev_only = true
 releasable = false
