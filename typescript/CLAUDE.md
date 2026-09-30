@@ -22,7 +22,7 @@ Releases go through [rlsbl](https://github.com/stricttools/rlsbl) monorepo relea
   (they land in `.rlsbl-monorepo/releasables/ts-strictcli/changes/unreleased.jsonl`).
 - To release: from the repo root, run `rlsbl monorepo release init`, edit the
   scaffolded release file (bump type, description, and context live in the file),
-  then run `rlsbl monorepo release run --no-allow-dirty --watch --approve-consequential`.
+  then run `rlsbl monorepo release run --watch --approve-consequential`.
 - Never publish or push manually — CI publishes to npm (with provenance) after the
   publish gate confirms CI passed on the release commit.
 
