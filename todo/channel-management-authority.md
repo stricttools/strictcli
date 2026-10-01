@@ -62,3 +62,39 @@ effects regime already owns for mutations; output is the missing half.
 
 Design-bearing but contained: the primitives are small; the migration
 story for existing consumers is per-command and incremental.
+
+## Added later: which stream Info and Debug use
+
+This file predates the `Out` writer and does not name the Info and Debug
+writers. The owner ruled that the question of their stream is recorded here.
+
+- **What the code does.** In plain-text mode Info and Debug write to stdout
+  in all three ports (Go `go/strictcli/context.go`, the `Info` and `Debug`
+  methods; Python `python/strictcli/__init__.py`, `info` and `debug`;
+  TypeScript `typescript/src/context.ts`, `info` and `debug`). `--quiet`
+  hides both; under `--json` both become `diagnostics` entries and nothing
+  reaches stderr. Only Warn and Error write to stderr.
+- **Nobody decided it.** Info was the handler's main output writer before
+  `Out` existed. When `Out` was added (contract §19.10), Info was reclassified
+  as a diagnostic, "what a command reports about itself", but its stream was
+  not revisited. Debug moved from stderr to stdout in §24.6 to match the code,
+  not by a ruling on streams.
+- **The consequence.** A plain-text caller capturing stdout gets progress
+  mixed with results. safegit, after moving all its output onto the writers,
+  shows it: `x=$(safegit --verbose doctor --action diagnose)` captures the
+  `checked: <name> (<duration>)` progress lines before the `[OK]` result lines.
+  git itself keeps progress and advice on stderr. A program cannot route
+  progress to stderr on its own: the only stderr writers prefix `warning: ` or
+  `error: `.
+- **Consumers use Info for both kinds of text.** Some print results through
+  Info (strictexpr prints evaluated values; safegit printed commit results),
+  others progress (cgofree's waiting lines). Moving Info or Debug to stderr
+  would mean sorting every Info call into a result (`Out`) or a report (Info).
+- **What a change would touch.** Each port's `info` and `debug`, the
+  conformance cases that pin their stdout bytes, contract §7.4, §19.10, and
+  §24.6, the docs pages describing the writers, the tests that assert Info on
+  stdout, and the consumers' result-type Info calls.
+
+The proposal above (stderr carries notices and progress) is one answer; the
+alternative is keeping Info and Debug on stdout and stating why in the
+contract.
