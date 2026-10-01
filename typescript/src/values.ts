@@ -68,11 +68,10 @@ export function parseBoolStrict(s: string): boolean {
 	}
 }
 
-// Go strconv.Atoi acceptance: optional sign, decimal digits only (leading
-// zeros allowed, no whitespace, no underscores, no exponent), 64-bit signed
-// bounds. Python additionally accepts digit-group underscores ("1_000"); the
-// conformance suite is silent there, so TS follows the stricter Go side.
-const INT_RE = /^[+-]?[0-9]+$/;
+// An integer value (contract §30): plain ASCII decimal digits with an
+// optional leading minus sign, no leading zero on more than one digit, within
+// the signed 64-bit range.
+const INT_RE = /^-?(?:0|[1-9][0-9]*)$/;
 const INT64_MIN = -(2n ** 63n);
 const INT64_MAX = 2n ** 63n - 1n;
 

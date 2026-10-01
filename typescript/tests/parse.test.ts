@@ -1909,7 +1909,7 @@ test("boundary: empty flag value, dash positional, bare cmd --", async () => {
 	assert.equal((await run(app3, ["cmd", "--"], out3)).stdout, "ok");
 });
 
-test("boundary: int forms 007, +5, overflow, 12abc", async () => {
+test("boundary: int forms 007, +5, overflow, 12abc are refused", async () => {
 	const mk = (out: string[]): AppImpl => {
 		const app = makeApp();
 		app.command(
@@ -1925,15 +1925,13 @@ test("boundary: int forms 007, +5, overflow, 12abc", async () => {
 		);
 		return app;
 	};
-	const out: string[] = [];
 	assert.equal(
-		(await run(mk(out), ["cmd", "--port", "007"], out)).stdout,
-		"port=7",
+		(await run(mk([]), ["cmd", "--port", "007"])).stderr,
+		errOut("--port: expected integer, got '007'", "myapp cmd"),
 	);
-	const out2: string[] = [];
 	assert.equal(
-		(await run(mk(out2), ["cmd", "--port", "+5"], out2)).stdout,
-		"port=5",
+		(await run(mk([]), ["cmd", "--port", "+5"])).stderr,
+		errOut("--port: expected integer, got '+5'", "myapp cmd"),
 	);
 	assert.equal(
 		(await run(mk([]), ["cmd", "--port", "99999999999999999999"])).stderr,
