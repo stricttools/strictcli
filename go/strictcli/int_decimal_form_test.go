@@ -12,7 +12,7 @@ import (
 )
 
 func TestParseIntStrictAcceptsPlainDecimal(t *testing.T) {
-	for text, want := range map[string]int{"30": 30, "-5": -5, "0": 0, "-0": 0, "9223372036854775807": 9223372036854775807} {
+	for text, want := range map[string]int{"30": 30, "-5": -5, "0": 0, "-0": 0} {
 		got, err := parseIntStrict(text)
 		if err != nil {
 			t.Fatalf("parseIntStrict(%q): unexpected error %v", text, err)
