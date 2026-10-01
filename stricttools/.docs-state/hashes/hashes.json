@@ -1,7 +1,7 @@
 {
   "_hash_version": 3,
   "en/architecture.md": {
-    "content": "0fb21188157d57020e2410092c1f3e2930f14071d4d6f647e2cda8b1ac0ba4b4",
+    "content": "81121b2e31d06ec71979fbf3c08364f02b9b028efbbcaf024ada43d3a3e42f62",
     "description": "3e372ac460e45f638e74c88393028c5696fcbc73542e8611e3ddefd1763b377d"
   },
   "en/conformance.md": {
@@ -9,7 +9,7 @@
     "description": "d2782c59b75d72b8ed22c3a788a4fb00e5faa5332c04f96e189a3f0d7c606372"
   },
   "en/flag-system.md": {
-    "content": "29bfac4fb7a6ec5537144acd9132ac66f5089232972cfbe887e232f2f723ebf8",
+    "content": "50e64cc203182922e5c768e7d13b4aadbca4ce17c7b4099bb7b92cc0e8b3e431",
     "description": "ece516407be7f96703fca4e0d360747ee1ece8068b4b65cbd1252a6985cec1bc"
   },
   "en/gen-index.md": {
@@ -17,7 +17,7 @@
     "description": "de421ec712350fd2336eb5ecdb2b218864da7af30526828f1b7c7f55293aa31b"
   },
   "en/go-quickstart.md": {
-    "content": "033c502ce400b496f842bb26cd16c2f310a47093d9ca457d16452239c55200b8",
+    "content": "27dd8ad98d7312517bcae843883a940f7ef5430daeb013e7573de03bf68d7470",
     "description": "bd614fe3e6bb0f2fbb0d588d80396e95e9af2fdf48fb8b2af353987afed2c69a"
   },
   "en/go-strictcli-testdata-noncomparable.md": {
@@ -48,7 +48,7 @@
     "description": "70bfdba9b524dd0d01ed386281d43243f71b63b87c54551fe0ee9f7109ce3e73"
   },
   "en/python-quickstart.md": {
-    "content": "68ff6d2aa07a45f75f7080676edf04305ff1a44fc2d670e7f7528a277a100726",
+    "content": "4d501c9cf7efd0777de04804b5feb651e3d688f7f81df0df75553eb32f84fe42",
     "description": "915895f5b113f7237cfc37fef46503a4fb1048c17d29ddb486fec7da6a522170"
   },
   "en/python-strictcli.md": {
@@ -57,7 +57,7 @@
     "source_docstring": "869d760f17632ede6f9b09aa15d41ddd3e3626fd1471d84ece919e2402507969"
   },
   "en/typescript-quickstart.md": {
-    "content": "b89eac4aa410f29bf721e441b8891f0b9d60e292739db7ebf3da1e57681eaaca",
+    "content": "55f789e3b3f03207ab20056ffebc8995e252c0a5cf9b562b93a577f5df83490e",
     "description": "d058ad408de773be0f57b63f7c7762a5bfa08f3ad429426b9376f098cdd67cda"
   },
   "en/typescript-src-app.md": {
