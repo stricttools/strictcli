@@ -243,6 +243,11 @@ the framework's own commands report through the error writer, the Go runtime gua
 the operating-system level on every platform that allows it, and TypeScript streams a child's
 stdout in arrival order and keeps Node running while a handler waits for a signal.
 
+Amended 2026-10-01 with the owner's ruling on **integer values** (§18.40): an integer the framework
+parses from text is plain decimal digits with an optional leading minus sign, and every other form
+(a plus sign, a leading zero, whitespace, digit separators, non-ASCII digits) is refused. §30 is
+added.
+
 Placement note: this file uses the `.stricttools/docs/history/_*.md` convention established by
 `.stricttools/docs/history/_ts-port-spec.md`. The underscore prefix keeps it off the published docs site --
 selfdoc's `resolve_all_docs` walks `.stricttools/docs/` recursively and treats every non-underscore `.md`
@@ -9975,6 +9980,35 @@ reversible.
      before the handler on every door and in dry mode, ending the command through the early exit of
      §19.9 with exit 1; `ctx.need` / `Need` for the loaded value; a `Requirements:` help section and a
      `requires` command key; no requirements-check command and no MCP tool-schema projection.
+
+### 18.40 Integer values
+
+Items numbered on from §18.39. This section records the owner's ruling behind §30. The second list
+is authored in the §18.3 class: picked by the build because the ruling left it open, each with its
+evidence, and freely reversible.
+
+**The owner's ruling.**
+
+381. **An integer value is plain decimal digits with an optional leading minus sign (§30).** On the
+     command line, from an environment binding, and from config, wherever the framework parses an
+     integer, in all three implementations: `30` and `-5` are accepted; `+30`, `030` (a leading
+     zero, except the single digit `0`), ` 30`, `3_0`, and every other form are refused with a
+     parse error naming the flag and, for an environment value, the variable. Before the ruling Go
+     (`strconv.Atoi`) and TypeScript accepted `+30` and `030`, Python (`int()`) accepted both plus
+     non-ASCII decimal digits, and the conformance suite pinned `007` and `+5` as accepted.
+
+**Authored by the build.**
+
+382. **`-0` is accepted and means `0` (§30).** The ruling's grammar is a minus sign followed by
+     digits under the leading-zero rule, and `0` is the digit string the rule allows; `-0` is
+     therefore inside it. All three implementations already parsed it to `0`.
+383. **No new message (§30).** Every refusal reuses the existing sentence `expected integer, got
+     '<v>'` inside the wrapper its source already prints, so the error catalogs and the parity check
+     are unchanged.
+384. **"From config" means the text the framework parses (§30).** `config set <key> --value <v>`
+     parses its text under the rule. A value a config file stores as a native JSON or TOML integer is
+     typed by that file's own syntax and decoder, which the framework does not re-parse, so TOML's
+     own `+30` or `1_000` integer literals stay the decoder's business.
 ---
 
 ## 19. Machine mode and the envelope
@@ -15329,3 +15363,26 @@ which is not available: <reason>; install it: <install>`. The handler reads a lo
 `ctx.need(r)` / `Need(ctx, r)` / `ctx.need(r)`; asking for one the command did not declare is a hard
 error at the call. Help never loads a requirement: command help shows a `Requirements:` section, and
 the help document a `requires` list of `{name, help, install}` on the command entry.
+
+## 30. Integer values
+
+Recorded at §18.40. This section is normative exactly as §§1-17 are.
+
+An integer the framework parses from text matches `-?(0|[1-9][0-9]*)` over the ASCII digits `0`-`9`
+and lies within the signed 64-bit range. The rule binds every place the framework turns text into an
+`int`, in all three implementations:
+
+- a command-line value of an `int` flag (a scalar, each occurrence of a repeatable or `list[int]`
+  flag, and the value half of a `dict[str, int]` flag's `key=value`), of an `int` positional
+  argument, and of an `int` field in a choice's scope;
+- an environment value bound to such a flag, and each element of a separated list in one;
+- the text `config set <key> --value <v>` writes to an `int` key.
+
+Accepted: `0`, `30`, `-5`, `-0` (which is `0`). Refused: a plus sign (`+30`), a leading zero on more
+than one digit (`030`, `-030`, `00`), surrounding or embedded whitespace (` 30`), digit separators
+(`3_0`), non-ASCII digits, an exponent or a radix prefix (`1e3`, `0x1e`), a lone sign, the empty
+string, and a value outside the signed 64-bit range. A refusal is the existing sentence
+`expected integer, got '<v>'` inside the wrapper its source already prints, such as `--<flag>: ` on
+the command line, `--<flag>: ` with ` (from env var '<VAR>')` after it for an environment value,
+`argument '<name>': ` for a positional argument, and `config set: key '<key>': ` for `config set`. A value a config file stores as
+a native JSON or TOML integer is not text the framework parses and is outside this rule.
