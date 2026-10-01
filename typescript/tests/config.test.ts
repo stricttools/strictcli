@@ -524,6 +524,15 @@ test("config set: unknown key / bad int / bad bool errors", async () => {
 	r = await basicApp().test(["config", "set", "count", "--value", "abc"]);
 	assert.equal(r.exitCode, 1);
 	assert.match(r.stderr, /^error: config set: key 'count': /);
+	// contract §30: plain decimal digits with an optional minus sign only
+	for (const text of ["+30", "030"]) {
+		r = await basicApp().test(["config", "set", "count", "--value", text]);
+		assert.equal(r.exitCode, 1);
+		assert.equal(
+			r.stderr,
+			`error: config set: key 'count': expected integer, got '${text}'\n`,
+		);
+	}
 	const app = createApp({
 		name: "myapp",
 		version: "1.0.0",

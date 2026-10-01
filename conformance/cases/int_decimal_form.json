@@ -1,0 +1,1216 @@
+[
+  {
+    "name": "int decimal form: command line accepts '30'",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "count",
+              "type": "int",
+              "help": "a count",
+              "presence": "required"
+            }
+          ],
+          "handler_prints": "count={count}"
+        }
+      ]
+    },
+    "argv": [
+      "cmd",
+      "--count",
+      "30"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "count=30"
+    }
+  },
+  {
+    "name": "int decimal form: command line accepts '-5'",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "count",
+              "type": "int",
+              "help": "a count",
+              "presence": "required"
+            }
+          ],
+          "handler_prints": "count={count}"
+        }
+      ]
+    },
+    "argv": [
+      "cmd",
+      "--count",
+      "-5"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "count=-5"
+    }
+  },
+  {
+    "name": "int decimal form: command line accepts '0'",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "count",
+              "type": "int",
+              "help": "a count",
+              "presence": "required"
+            }
+          ],
+          "handler_prints": "count={count}"
+        }
+      ]
+    },
+    "argv": [
+      "cmd",
+      "--count",
+      "0"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "count=0"
+    }
+  },
+  {
+    "name": "int decimal form: command line accepts '-0'",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "count",
+              "type": "int",
+              "help": "a count",
+              "presence": "required"
+            }
+          ],
+          "handler_prints": "count={count}"
+        }
+      ]
+    },
+    "argv": [
+      "cmd",
+      "--count",
+      "-0"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "count=0"
+    }
+  },
+  {
+    "name": "int decimal form: command line accepts '9223372036854775807'",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "count",
+              "type": "int",
+              "help": "a count",
+              "presence": "required"
+            }
+          ],
+          "handler_prints": "count={count}"
+        }
+      ]
+    },
+    "argv": [
+      "cmd",
+      "--count",
+      "9223372036854775807"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "count=9223372036854775807"
+    }
+  },
+  {
+    "name": "int decimal form: command line refuses a plus sign ('+30')",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "count",
+              "type": "int",
+              "help": "a count",
+              "presence": "required"
+            }
+          ],
+          "handler_prints": "count={count}"
+        }
+      ]
+    },
+    "argv": [
+      "cmd",
+      "--count",
+      "+30"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: --count: expected integer, got '+30'\ntry 'myapp cmd --help'"
+    }
+  },
+  {
+    "name": "int decimal form: command line refuses a plus sign on zero ('+0')",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "count",
+              "type": "int",
+              "help": "a count",
+              "presence": "required"
+            }
+          ],
+          "handler_prints": "count={count}"
+        }
+      ]
+    },
+    "argv": [
+      "cmd",
+      "--count",
+      "+0"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: --count: expected integer, got '+0'\ntry 'myapp cmd --help'"
+    }
+  },
+  {
+    "name": "int decimal form: command line refuses a leading zero ('030')",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "count",
+              "type": "int",
+              "help": "a count",
+              "presence": "required"
+            }
+          ],
+          "handler_prints": "count={count}"
+        }
+      ]
+    },
+    "argv": [
+      "cmd",
+      "--count",
+      "030"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: --count: expected integer, got '030'\ntry 'myapp cmd --help'"
+    }
+  },
+  {
+    "name": "int decimal form: command line refuses a leading zero after the minus sign ('-030')",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "count",
+              "type": "int",
+              "help": "a count",
+              "presence": "required"
+            }
+          ],
+          "handler_prints": "count={count}"
+        }
+      ]
+    },
+    "argv": [
+      "cmd",
+      "--count",
+      "-030"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: --count: expected integer, got '-030'\ntry 'myapp cmd --help'"
+    }
+  },
+  {
+    "name": "int decimal form: command line refuses a doubled zero ('00')",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "count",
+              "type": "int",
+              "help": "a count",
+              "presence": "required"
+            }
+          ],
+          "handler_prints": "count={count}"
+        }
+      ]
+    },
+    "argv": [
+      "cmd",
+      "--count",
+      "00"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: --count: expected integer, got '00'\ntry 'myapp cmd --help'"
+    }
+  },
+  {
+    "name": "int decimal form: command line refuses a doubled zero after the minus sign ('-00')",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "count",
+              "type": "int",
+              "help": "a count",
+              "presence": "required"
+            }
+          ],
+          "handler_prints": "count={count}"
+        }
+      ]
+    },
+    "argv": [
+      "cmd",
+      "--count",
+      "-00"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: --count: expected integer, got '-00'\ntry 'myapp cmd --help'"
+    }
+  },
+  {
+    "name": "int decimal form: command line refuses a leading space (' 30')",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "count",
+              "type": "int",
+              "help": "a count",
+              "presence": "required"
+            }
+          ],
+          "handler_prints": "count={count}"
+        }
+      ]
+    },
+    "argv": [
+      "cmd",
+      "--count",
+      " 30"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: --count: expected integer, got ' 30'\ntry 'myapp cmd --help'"
+    }
+  },
+  {
+    "name": "int decimal form: command line refuses a digit separator ('3_0')",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "count",
+              "type": "int",
+              "help": "a count",
+              "presence": "required"
+            }
+          ],
+          "handler_prints": "count={count}"
+        }
+      ]
+    },
+    "argv": [
+      "cmd",
+      "--count",
+      "3_0"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: --count: expected integer, got '3_0'\ntry 'myapp cmd --help'"
+    }
+  },
+  {
+    "name": "int decimal form: command line refuses non-ASCII digits ('٣٠')",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "count",
+              "type": "int",
+              "help": "a count",
+              "presence": "required"
+            }
+          ],
+          "handler_prints": "count={count}"
+        }
+      ]
+    },
+    "argv": [
+      "cmd",
+      "--count",
+      "٣٠"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: --count: expected integer, got '٣٠'\ntry 'myapp cmd --help'"
+    }
+  },
+  {
+    "name": "int decimal form: command line refuses fullwidth digits ('３０')",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "count",
+              "type": "int",
+              "help": "a count",
+              "presence": "required"
+            }
+          ],
+          "handler_prints": "count={count}"
+        }
+      ]
+    },
+    "argv": [
+      "cmd",
+      "--count",
+      "３０"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: --count: expected integer, got '３０'\ntry 'myapp cmd --help'"
+    }
+  },
+  {
+    "name": "int decimal form: command line refuses an exponent ('1e3')",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "count",
+              "type": "int",
+              "help": "a count",
+              "presence": "required"
+            }
+          ],
+          "handler_prints": "count={count}"
+        }
+      ]
+    },
+    "argv": [
+      "cmd",
+      "--count",
+      "1e3"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: --count: expected integer, got '1e3'\ntry 'myapp cmd --help'"
+    }
+  },
+  {
+    "name": "int decimal form: command line refuses a radix prefix ('0x1e')",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "count",
+              "type": "int",
+              "help": "a count",
+              "presence": "required"
+            }
+          ],
+          "handler_prints": "count={count}"
+        }
+      ]
+    },
+    "argv": [
+      "cmd",
+      "--count",
+      "0x1e"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: --count: expected integer, got '0x1e'\ntry 'myapp cmd --help'"
+    }
+  },
+  {
+    "name": "int decimal form: command line refuses a lone minus sign ('-')",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "count",
+              "type": "int",
+              "help": "a count",
+              "presence": "required"
+            }
+          ],
+          "handler_prints": "count={count}"
+        }
+      ]
+    },
+    "argv": [
+      "cmd",
+      "--count",
+      "-"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: --count: expected integer, got '-'\ntry 'myapp cmd --help'"
+    }
+  },
+  {
+    "name": "int decimal form: command line refuses a lone plus sign ('+')",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "count",
+              "type": "int",
+              "help": "a count",
+              "presence": "required"
+            }
+          ],
+          "handler_prints": "count={count}"
+        }
+      ]
+    },
+    "argv": [
+      "cmd",
+      "--count",
+      "+"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: --count: expected integer, got '+'\ntry 'myapp cmd --help'"
+    }
+  },
+  {
+    "name": "int decimal form: environment accepts '30'",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "count",
+              "type": "int",
+              "help": "a count",
+              "presence": "default",
+              "default": 1,
+              "env": "MYAPP_COUNT"
+            }
+          ],
+          "handler_prints": "count={count}"
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "env": {
+      "MYAPP_COUNT": "30"
+    },
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "count=30"
+    }
+  },
+  {
+    "name": "int decimal form: environment accepts '-5'",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "count",
+              "type": "int",
+              "help": "a count",
+              "presence": "default",
+              "default": 1,
+              "env": "MYAPP_COUNT"
+            }
+          ],
+          "handler_prints": "count={count}"
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "env": {
+      "MYAPP_COUNT": "-5"
+    },
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "count=-5"
+    }
+  },
+  {
+    "name": "int decimal form: environment refuses '+30' naming the variable",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "count",
+              "type": "int",
+              "help": "a count",
+              "presence": "default",
+              "default": 1,
+              "env": "MYAPP_COUNT"
+            }
+          ],
+          "handler_prints": "count={count}"
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "env": {
+      "MYAPP_COUNT": "+30"
+    },
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: --count: expected integer, got '+30' (from env var 'MYAPP_COUNT')\ntry 'myapp cmd --help'"
+    }
+  },
+  {
+    "name": "int decimal form: environment refuses '030' naming the variable",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "count",
+              "type": "int",
+              "help": "a count",
+              "presence": "default",
+              "default": 1,
+              "env": "MYAPP_COUNT"
+            }
+          ],
+          "handler_prints": "count={count}"
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "env": {
+      "MYAPP_COUNT": "030"
+    },
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: --count: expected integer, got '030' (from env var 'MYAPP_COUNT')\ntry 'myapp cmd --help'"
+    }
+  },
+  {
+    "name": "int decimal form: environment refuses '3_0' naming the variable",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "count",
+              "type": "int",
+              "help": "a count",
+              "presence": "default",
+              "default": 1,
+              "env": "MYAPP_COUNT"
+            }
+          ],
+          "handler_prints": "count={count}"
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "env": {
+      "MYAPP_COUNT": "3_0"
+    },
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: --count: expected integer, got '3_0' (from env var 'MYAPP_COUNT')\ntry 'myapp cmd --help'"
+    }
+  },
+  {
+    "name": "int decimal form: an environment list element refuses a leading zero",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "count",
+              "type": "int",
+              "help": "a count",
+              "presence": "required",
+              "repeatable": true,
+              "unique": false,
+              "env": "COUNTS",
+              "env_separator": ","
+            }
+          ],
+          "handler_prints": "count={count}"
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "env": {
+      "COUNTS": "1,02,3"
+    },
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: --count: expected integer, got '02' (from env var 'COUNTS')\ntry 'myapp cmd --help'"
+    }
+  },
+  {
+    "name": "int decimal form: a list[int] occurrence refuses a plus sign",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "count",
+              "type": "list[int]",
+              "help": "counts",
+              "presence": "required",
+              "unique": false
+            }
+          ],
+          "handler_prints": "count={count}"
+        }
+      ]
+    },
+    "argv": [
+      "cmd",
+      "--count",
+      "1",
+      "--count",
+      "+2"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: --count: expected integer, got '+2'\ntry 'myapp cmd --help'"
+    }
+  },
+  {
+    "name": "int decimal form: a dict[str,int] value refuses a leading zero",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "count",
+              "type": "dict[str,int]",
+              "help": "counts",
+              "presence": "required"
+            }
+          ],
+          "handler_prints": "count={count}"
+        }
+      ]
+    },
+    "argv": [
+      "cmd",
+      "--count",
+      "a=07"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: --count: value for key \"a\": expected integer, got '07'\ntry 'myapp cmd --help'"
+    }
+  },
+  {
+    "name": "int decimal form: a positional argument refuses a leading zero",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "args": [
+            {
+              "name": "count",
+              "help": "a count",
+              "presence": "required",
+              "type": "int"
+            }
+          ],
+          "handler_prints": "count={count}"
+        }
+      ]
+    },
+    "argv": [
+      "cmd",
+      "030"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: argument 'count': expected integer, got '030'\ntry 'myapp cmd --help'"
+    }
+  },
+  {
+    "name": "int decimal form: a positional argument accepts a negative value",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "args": [
+            {
+              "name": "count",
+              "help": "a count",
+              "presence": "required",
+              "type": "int"
+            }
+          ],
+          "handler_prints": "count={count}"
+        }
+      ]
+    },
+    "argv": [
+      "cmd",
+      "--",
+      "-5"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "count=-5"
+    }
+  },
+  {
+    "name": "int decimal form: a global flag refuses a plus sign",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "level",
+          "type": "int",
+          "help": "a level",
+          "presence": "optional"
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run it",
+          "effect": "read_only",
+          "handler_prints": "level={level}"
+        }
+      ]
+    },
+    "argv": [
+      "--level",
+      "+3",
+      "run"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: --level: expected integer, got '+3'\ntry 'myapp --help'"
+    }
+  },
+  {
+    "name": "int decimal form: a scoped flag refuses a leading zero",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "run",
+          "help": "run the job",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver as email",
+                  "flags": [
+                    {
+                      "name": "retries",
+                      "help": "delivery attempts",
+                      "type": "int",
+                      "presence": "optional"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver as text",
+                  "flags": [
+                    {
+                      "name": "phone-number",
+                      "help": "destination number",
+                      "type": "str",
+                      "presence": "optional"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "run",
+      "--via",
+      "email",
+      "--retries",
+      "03"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_contains": "--retries: expected integer, got '03'"
+    }
+  },
+  {
+    "name": "int decimal form: config set refuses '+30'",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "config": true,
+      "config_format": "toml",
+      "config_content": "",
+      "commands": [
+        {
+          "name": "run",
+          "help": "run command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "count",
+              "help": "a count",
+              "presence": "default",
+              "type": "int",
+              "default": 0
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "config",
+      "set",
+      "count",
+      "--value",
+      "+30"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: config set: key 'count': expected integer, got '+30'\n"
+    }
+  },
+  {
+    "name": "int decimal form: config set refuses '030'",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "config": true,
+      "config_format": "toml",
+      "config_content": "",
+      "commands": [
+        {
+          "name": "run",
+          "help": "run command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "count",
+              "help": "a count",
+              "presence": "default",
+              "type": "int",
+              "default": 0
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "config",
+      "set",
+      "count",
+      "--value",
+      "030"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: config set: key 'count': expected integer, got '030'\n"
+    }
+  },
+  {
+    "name": "int decimal form: config set accepts a negative value",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "config": true,
+      "config_format": "toml",
+      "config_content": "",
+      "commands": [
+        {
+          "name": "run",
+          "help": "run command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "count",
+              "help": "a count",
+              "presence": "default",
+              "type": "int",
+              "default": 0
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "config",
+      "set",
+      "count",
+      "--value",
+      "-5"
+    ],
+    "expect": {
+      "exit_code": 0
+    }
+  }
+]

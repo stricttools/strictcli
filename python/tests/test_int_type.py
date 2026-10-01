@@ -181,3 +181,67 @@ def test_int_flag_bad_value_equals_syntax():
     r = app.test(["cmd", "--port=abc"])
     assert r.exit_code == 1
     assert "expected integer" in r.stderr
+
+
+# An integer value is plain decimal digits with an optional leading minus sign
+# (contract §30): every other spelling int() would take is refused, on the
+# command line, from the environment, and in `config set`.
+
+_DECIMAL_ACCEPTED = [("30", 30), ("-5", -5), ("0", 0), ("-0", 0)]
+_DECIMAL_REFUSED = [
+    "+30", "+0", "030", "-030", "00", "-00", " 30", "30 ", "3_0",
+    "٣٠",  # Arabic-Indic digits
+    "３０",  # fullwidth digits
+    "1e3", "0x1e", "-", "+", "",
+]
+
+
+def test_strict_int_accepts_plain_decimal():
+    for text, value in _DECIMAL_ACCEPTED:
+        assert strictcli._strict_int(text) == value
+
+
+@pytest.mark.parametrize("text", _DECIMAL_REFUSED)
+def test_strict_int_refuses_other_forms(text):
+    with pytest.raises(ValueError) as exc:
+        strictcli._strict_int(text)
+    assert str(exc.value) == f"expected integer, got '{text}'"
+
+
+@pytest.mark.parametrize("text", ["+30", "030", "-030", "٣٠"])
+def test_int_flag_refuses_non_decimal_form_on_command_line(text):
+    app = _make_app_with_int_flag()
+    r = app.test(["cmd", "--port", text])
+    assert r.exit_code == 1
+    assert f"error: --port: expected integer, got '{text}'" in r.stderr
+
+
+@pytest.mark.parametrize("text", ["+30", "030"])
+def test_int_flag_refuses_non_decimal_form_from_env(monkeypatch, text):
+    app = strictcli.App(name="test", version="1.0.0", help="test app", env_prefix="MYAPP")
+
+    @app.command("cmd", effect="read_only", help="a command")
+    @strictcli.flag("port", type=int, help="the port", default=80, env="MYAPP_PORT")
+    def cmd(ctx, port):
+        print(f"port={port}")
+
+    monkeypatch.setenv("MYAPP_PORT", text)
+    r = app.test(["cmd"])
+    assert r.exit_code == 1
+    assert f"error: --port: expected integer, got '{text}' (from env var 'MYAPP_PORT')" in r.stderr
+
+
+@pytest.mark.parametrize("text", ["+30", "030"])
+def test_config_set_refuses_non_decimal_int(tmp_path, text):
+    config_file = tmp_path / "config.json"
+    app = strictcli.App(name="testapp", version="1.0.0", help="test app", config=True, config_path=str(config_file))
+
+    @app.command("run", effect="read_only", help="run something")
+    @strictcli.flag("count", type=int, help="how many", default=0)
+    def run(ctx, count):
+        pass
+
+    r = app.test(["config", "set", "count", "--value", text])
+    assert r.exit_code == 1
+    assert f"error: config set: key 'count': expected integer, got '{text}'" in r.stderr
+    assert not config_file.exists()

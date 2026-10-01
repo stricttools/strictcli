@@ -45,11 +45,9 @@ test("parseBoolStrict rejects everything else with the sibling message", () => {
 
 // --- parseIntStrict ---
 
-test("parseIntStrict accepts Go strconv.Atoi forms", () => {
+test("parseIntStrict accepts plain decimal digits with an optional minus sign", () => {
 	assert.equal(parseIntStrict("42"), 42n);
 	assert.equal(parseIntStrict("-7"), -7n);
-	assert.equal(parseIntStrict("007"), 7n); // conformance: boundary leading zeros
-	assert.equal(parseIntStrict("+5"), 5n); // conformance: boundary plus sign
 	assert.equal(parseIntStrict("-0"), 0n);
 	assert.equal(parseIntStrict("0"), 0n);
 	// Signed-64-bit bounds are inclusive.
@@ -65,7 +63,16 @@ test("parseIntStrict rejections carry the sibling message", () => {
 		"",
 		"+",
 		"-",
-		"1_000", // Python-only underscore form; TS follows the stricter Go side
+		"1_000", // digit separators
+		"007", // conformance: boundary leading zeros rejected
+		"+5", // conformance: boundary plus sign rejected
+		"+0",
+		"030",
+		"-030",
+		"00",
+		"-00",
+		"٣٠", // Arabic-Indic digits
+		"３０", // fullwidth digits
 		"1e5",
 		"0x10",
 		"1.0",

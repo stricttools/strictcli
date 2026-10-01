@@ -101,6 +101,16 @@ test("int env values parse strictly with the env-suffixed message", () => {
 			"--port: expected integer, got ' 42 ' (from env var 'MYAPP_PORT')",
 		),
 	);
+	// contract §30: plain decimal digits with an optional minus sign only
+	assert.equal(resolveEnvValue(f, "MYAPP_PORT", "-5", tracker()), -5n);
+	for (const text of ["+30", "030"]) {
+		assert.throws(
+			() => resolveEnvValue(f, "MYAPP_PORT", text, tracker()),
+			parseError(
+				`--port: expected integer, got '${text}' (from env var 'MYAPP_PORT')`,
+			),
+		);
+	}
 });
 
 test("float env values parse strictly with the env-suffixed message", () => {
