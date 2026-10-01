@@ -223,8 +223,9 @@ For non-bool flags, value coercion happens immediately at parse time:
   `@-` reads from stdin, `@@literal` strips the leading `@`).
 - **bool**: `--flag` sets true, `--no-flag` sets false, no raw value accepted
   (`--flag=value` is an error).
-- **int**: strict integer parsing -- no leading/trailing whitespace, no leading
-  zeros (Go), 64-bit signed range. TypeScript uses `bigint` as its int type.
+- **int**: strict integer parsing -- plain decimal digits with an optional
+  leading minus sign (no plus sign, no leading zero, no whitespace, no digit
+  separators), 64-bit signed range. TypeScript uses `bigint` as its int type.
 - **float**: strict float parsing in strictcli canonical form (SCF) -- NaN and
   Inf are rejected, the shortest round-trip representation is used.
 
@@ -1488,8 +1489,10 @@ is no "ignore unknown flags" mode. This prevents silent typo bugs where
 
 ### Strict type parsing
 
-Integer parsing rejects leading whitespace, trailing whitespace, and (in Go)
-leading zeros. Float parsing rejects NaN and Inf. Bool env vars accept only
+Integer parsing accepts only plain ASCII decimal digits with an optional
+leading minus sign, within 64-bit signed bounds: a plus sign, a leading zero
+(`030`; the single digit `0` is fine), whitespace, and digit separators are
+refused. Float parsing rejects NaN and Inf. Bool env vars accept only
 the exact set `1|true|yes` / `0|false|no` (case-insensitive); anything else is
 an error.
 

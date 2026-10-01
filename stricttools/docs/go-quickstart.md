@@ -258,7 +258,7 @@ strictcli.IntFlag("port", "Server port", strictcli.Default(8080))
 strictcli.IntFlag("retries", "Number of retries", strictcli.Required())
 ```
 
-Integers are parsed strictly: no leading/trailing whitespace, 64-bit signed bounds, no leading zeros.
+Integers are parsed strictly: plain decimal digits with an optional leading minus sign, within 64-bit signed bounds. A plus sign, a leading zero (`030`), whitespace, and digit separators are refused.
 
 ### FloatFlag
 

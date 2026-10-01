@@ -160,7 +160,7 @@ eleventh helper.)
 All implementations must:
 
 - Support exactly four types: `str`, `bool`, `int`, `float`.
-- Use strict integer parsing (no leading/trailing whitespace, 64-bit signed bounds, no leading zeros in Go). Float parsing rejects NaN and Inf.
+- Use strict integer parsing: plain ASCII decimal digits with an optional leading minus sign, 64-bit signed bounds; a plus sign, a leading zero (`030`), whitespace, and digit separators are refused (contract §30). Float parsing rejects NaN and Inf.
 - Accept the same boolean env var strings: `1|true|yes` / `0|false|no` (case-insensitive).
 - Produce identical error messages for identical inputs (checked by `check_error_parity.py`) -- one sentence per rule, byte-identical, with each language's own spellings substituted inside it where the message names a spelling (§12.10, §12.12).
 - Export the same API surface (checked by `check_api_surface.py`) -- the same capabilities under each language's own declaration shape, not the same literal spellings.

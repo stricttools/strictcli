@@ -69,8 +69,11 @@ mytool deploy --no-cache       # cache=False
 
 ### Integer flags
 
-Integer flags (`type=int`) use strict parsing with no leading or trailing
-whitespace, no leading zeros (in Go), and 64-bit signed bounds. The value comes
+Integer flags (`type=int`) accept only plain ASCII decimal digits with an
+optional leading minus sign, within 64-bit signed bounds: `30` and `-5` parse,
+while `+30`, `030` (a leading zero; the single digit `0` is fine), ` 30`, and
+`3_0` are refused, on the command line, from an environment variable, and in
+`config set`. The value comes
 from the next token or `--flag=value` syntax. Negative integers like `-7` are
 supported as positional arguments because tokens starting with `-` that do not
 match any declared flag are treated as positional values rather than unknown

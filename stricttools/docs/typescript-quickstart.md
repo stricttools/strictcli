@@ -228,7 +228,7 @@ inference for handler arguments without manual annotations.
 |---------|-----------|----------------|-------|
 | `t.str` | `--name value` | `string` | |
 | `t.bool` | `--cache` / `--no-cache` | `boolean` | Negation via `--no-` prefix; `presence: "optional"` makes it a real tri-state |
-| `t.int` | `--count 42` | `bigint` | Strict parsing: no leading zeros, 64-bit signed bounds |
+| `t.int` | `--count 42` | `bigint` | Strict parsing: plain decimal digits with an optional leading minus sign, 64-bit signed bounds |
 | `t.float` | `--rate 3.14` | `number` | Rejects NaN and Inf |
 | `t.list(t.str)` | `--tag a --tag b` | `string[]` | Repeat the flag for each element |
 | `t.list(t.int)` | `--id 1 --id 2` | `bigint[]` | |
@@ -336,8 +336,9 @@ flags: {
 
 Integers are `bigint` in TypeScript to preserve 64-bit signed integer precision
 without floating-point truncation. Defaults must also be `bigint` literals
-(e.g., `3n`). Strict parsing rejects leading zeros and enforces 64-bit signed
-bounds.
+(e.g., `3n`). Strict parsing accepts only plain decimal digits with an optional
+leading minus sign (a plus sign, a leading zero, whitespace, and digit
+separators are refused) and enforces 64-bit signed bounds.
 
 ```typescript
 flags: {
