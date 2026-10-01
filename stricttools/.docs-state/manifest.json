@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "name": "strictcli",
+  "name": "release-checkout",
   "slug": "strictcli",
   "version": "0.41.1",
   "description": "A CLI framework for the Era of Agents: nothing is inferred, everything is declared. First-class support for Go, Python, and TypeScript",
@@ -12888,7 +12888,7 @@
     }
   ],
   "posts": [],
-  "last_gen": "2026-10-01T00:53:23.599667+00:00",
+  "last_gen": "2026-10-01T17:37:21.583822+00:00",
   "theme": "minimal",
   "vocabulary": {
     "accepted": [
