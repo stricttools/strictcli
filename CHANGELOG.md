@@ -2,6 +2,21 @@
 
 # py-strictcli
 
+## 0.45.0
+
+Integer values accept only plain decimal digits with an optional leading minus sign: a plus sign and leading zeros are refused.
+
+<details>
+<summary>Context</summary>
+
+The owner ruled one integer form for all three implementations, wherever the framework parses an integer from text (the command line, an environment binding, and config set): 30 and -5 parse, while +30, 030, whitespace, digit separators, and every other form are refused with the existing expected-integer error. Before, Go and TypeScript accepted +30 and 030, and Python also accepted non-ASCII digits. This is breaking, which in 0.x is a minor.
+
+</details>
+
+### Breaking
+
+- [strictcli] **Integer values refuse a plus sign, leading zeros, and non-ASCII digits.** An `int` flag, positional argument, environment value, or `config set` value now accepts only plain ASCII decimal digits with an optional leading minus sign: `30` and `-5` parse, while `+30`, `030`, `-030`, and digits such as `٣٠` are refused with `expected integer, got '<value>'` (naming the variable for an environment value). Write `30` instead.
+
 ## 0.44.0
 
 Framework-owned exits and output, --json interface_version 3 with a stdout guard, check values with failing-checks, declared runtime requirements, help and version commands, and stricter flag and naming rules.
