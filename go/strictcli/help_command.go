@@ -127,7 +127,7 @@ func (a *App) parseHelpCommand(args []string) (helpRequest, string) {
 
 // parseHelpDepth accepts an integer of at least 1 in plain decimal form.
 func parseHelpDepth(v string) (int, bool) {
-	if v == "" || v[0] == '+' || (len(v) > 1 && v[0] == '0') {
+	if !isPlainDecimal(v) {
 		return 0, false
 	}
 	n, err := strconv.Atoi(v)

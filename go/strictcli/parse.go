@@ -1021,14 +1021,33 @@ func parseBoolStrict(s string) (bool, error) {
 	}
 }
 
-// parseIntStrict parses a string as an integer with strict validation.
-// Uses strconv.Atoi which rejects leading/trailing whitespace.
+// parseIntStrict parses a string as an integer (contract §30): plain ASCII
+// decimal digits with an optional leading minus sign, no leading zero on more
+// than one digit, within int64. strconv.Atoi alone would also take "+30" and
+// "030", so the form is checked before it runs.
 func parseIntStrict(s string) (int, error) {
+	if !isPlainDecimal(s) {
+		return 0, errExpectedInteger(s)
+	}
 	intVal, err := strconv.Atoi(s)
 	if err != nil {
 		return 0, errExpectedInteger(s)
 	}
 	return intVal, nil
+}
+
+// isPlainDecimal reports whether s matches -?(0|[1-9][0-9]*) over ASCII digits.
+func isPlainDecimal(s string) bool {
+	digits := strings.TrimPrefix(s, "-")
+	if digits == "" || (len(digits) > 1 && digits[0] == '0') {
+		return false
+	}
+	for i := 0; i < len(digits); i++ {
+		if digits[i] < '0' || digits[i] > '9' {
+			return false
+		}
+	}
+	return true
 }
 
 // parseFloatStrictValue parses a string as float64 with strict validation:
