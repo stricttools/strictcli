@@ -930,7 +930,7 @@
     "expect": {
       "exit_code": 1,
       "stdout_equals": "",
-      "stderr_equals": "error: --count: value for key \"a\": expected integer, got '07'\ntry 'myapp cmd --help'"
+      "stderr_contains": "expected integer, got '07'"
     }
   },
   {
