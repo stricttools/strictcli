@@ -4993,26 +4993,28 @@ def _strict_bool(s: str) -> bool:
     raise ValueError(f"expected boolean, got '{s}'")
 
 
-def _strict_int(s: str) -> int:
-    """Parse an integer string strictly -- no leading/trailing whitespace allowed.
+_PLAIN_DECIMAL = re.compile(r"-?(?:0|[1-9][0-9]*)")
 
-    Python's int() silently strips whitespace; Go's strconv.Atoi does not.
-    This matches Go's stricter behavior. Additionally, the result is
-    range-checked to fit in a signed 64-bit integer, matching Go's int/int64.
+
+def _is_plain_decimal(s: str) -> bool:
+    """Whether ``s`` matches ``-?(0|[1-9][0-9]*)`` over ASCII digits."""
+    return _PLAIN_DECIMAL.fullmatch(s) is not None
+
+
+def _strict_int(s: str) -> int:
+    """Parse an integer string strictly (contract §30).
+
+    Accepted: plain ASCII decimal digits with an optional leading minus sign,
+    no leading zero on more than one digit, within the signed 64-bit range.
+    int() alone would also take surrounding whitespace, a plus sign, leading
+    zeros, '_' separators, and non-ASCII digits, so the form is checked first.
 
     All errors raise ValueError with the same message format as Go's
     parseIntStrict: "expected integer, got '<value>'".
     """
-    if s != s.strip():
+    if not _is_plain_decimal(s):
         raise ValueError(f"expected integer, got '{s}'")
-    # Python's int() accepts PEP 515 underscore digit separators ('1_000');
-    # Go's strconv and the TypeScript parser reject them. Reject to match canon.
-    if "_" in s:
-        raise ValueError(f"expected integer, got '{s}'")
-    try:
-        n = int(s)
-    except ValueError:
-        raise ValueError(f"expected integer, got '{s}'") from None
+    n = int(s)
     if n < -(2**63) or n > 2**63 - 1:
         raise ValueError(f"expected integer, got '{s}'")
     return n
@@ -18526,9 +18528,7 @@ class _HelpRequest:
 
 
 def _parse_help_depth(value: str) -> int | None:
-    if not value or value[0] == "+" or (len(value) > 1 and value[0] == "0"):
-        return None
-    if not value.isdigit() or not value.isascii():
+    if not _is_plain_decimal(value):
         return None
     n = int(value)
     return n if n >= 1 else None
