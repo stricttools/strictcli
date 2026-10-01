@@ -4401,6 +4401,11 @@
         },
         {
           "level": 3,
+          "text": "`_is_plain_decimal`",
+          "anchor": "_is_plain_decimal"
+        },
+        {
+          "level": 3,
           "text": "`_strict_int`",
           "anchor": "_strict_int"
         },
@@ -12883,7 +12888,7 @@
     }
   ],
   "posts": [],
-  "last_gen": "2026-09-29T17:18:03.837370+00:00",
+  "last_gen": "2026-10-01T00:53:23.599667+00:00",
   "theme": "minimal",
   "vocabulary": {
     "accepted": [
