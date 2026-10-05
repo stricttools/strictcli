@@ -1502,6 +1502,28 @@ func errEffectTimedOut(name string, method string, argv string, timeout string) 
 	return fmt.Sprintf("command %q: effects.%s timed out: %s was killed after %s", name, method, argv, timeout)
 }
 
+func errEffectHTTPTimedOut(name string, httpMethod string, url string, timeout string) string {
+	return fmt.Sprintf("command %q: effects.http timed out: %s %s did not complete within %s", name, httpMethod, url, timeout)
+}
+
+func errEffectGrantOnDeclaredRead(name string, grant string, method string, opt string) string {
+	return fmt.Sprintf("command %q: grant '%s' cannot be used on effects.%s declared with option '%s' (a declared read changes nothing)", name, grant, method, opt)
+}
+
+func errEffectRedactEmptyValue(name string, method string) string {
+	return fmt.Sprintf("command %q: effects.%s option 'redact' was given an empty value", name, method)
+}
+
+func errEffectRedactNoValues(name string, method string) string {
+	return fmt.Sprintf("command %q: effects.%s option 'redact' was given no values", name, method)
+}
+
+func errEffectModeNotPermission(name string, method string, mode string) string {
+	return fmt.Sprintf("command %q: effects.%s option 'mode' must hold permission bits only, got %s", name, method, mode)
+}
+
+const errHTTPClientNil = "WithHTTPClient: the client must not be nil"
+
 // ---------------------------------------------------------------------------
 // effects.go — effect argument type guards and handle availability
 //

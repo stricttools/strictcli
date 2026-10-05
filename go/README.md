@@ -506,7 +506,7 @@ where the eight recorded operations (`Run`, `Spawn`, `Write`, `Mkdir`, `Remove`,
 would-do log.
 
 Each method takes trailing `EffectOption` values, and an option a method does not
-accept is a call-time error. Two options bound how a child process runs:
+accept is a call-time error. These options bound how a child process runs:
 
 - `strictcli.Stdin(data)` (on `Run` and `Spawn`) writes `data` to the child's
   stdin and then closes it. Pass secrets this way, never in argv: argv is visible
@@ -516,17 +516,75 @@ accept is a call-time error. Two options bound how a child process runs:
   verbose output contains it.
   It combines with `Stream(true)`: stdin is independent of where the child's
   output goes.
-- `strictcli.Timeout(d)` (on `Run` and `Spawned.Wait`) kills the child once `d`
-  has passed and returns an error naming the command and the timeout, such as
-  `effects.run timed out: sleep 30 was killed after 30s`. A non-positive `d` is
-  refused at the call. Dry mode renders it on the log line (`(timeout: 30s)`)
-  and in the record (`timeout`).
+- `strictcli.Timeout(d)` (on `Run`, `Spawned.Wait`, and `HTTP`) bounds the
+  call. A run or a Wait kills the child once `d` has passed and returns an
+  error naming the command and the timeout, such as
+  `effects.run timed out: sleep 30 was killed after 30s`; an HTTP request is
+  abandoned and returns `effects.http timed out: GET <url> did not complete
+  within 30s`. A non-positive `d` is refused at the call. Dry mode renders it
+  on the log line (`(timeout: 30s)`) and in the record (`timeout`).
 
 ```go
 _, err := ctx.Effects().Run([]any{"ssh", "mac", "sudo", "-S", "true"},
     strictcli.Stdin([]byte(password+"\n")),
     strictcli.Timeout(30*time.Second))
 ```
+
+Every outside-world effect goes through `ctx.Effects()`, reads included, so a
+dry run shows everything a command would change and a test can intercept
+everything it touches. A read is declared per call, never inferred:
+
+- `strictcli.Read()` (on `HTTP`) declares that the request changes nothing on
+  the server. A declared read is legal in a read-only command, is never
+  written to the would-do log or the effect record, and is sent for real under
+  `--dry-run`. Without `Read()` every request is a recorded mutation, whatever
+  its HTTP method: a `GET` is not assumed to be safe.
+- `strictcli.Observe()` (on `Run`) declares the same of a subprocess. It means
+  what an argv matching the app's `WithProcObserveAllowlist` prefixes means;
+  the allowlist declares it for a whole family of argv, `Observe()` for one
+  call.
+
+In a dry run, a declared read or an observe made after a mutation has been
+recorded is not performed: it returns a stale brand (`«stale: GET <url>»`),
+because what it would read depends on changes that did not happen. Neither
+may carry a grant (`UseGrant`): a grant labels a change, and a read makes none.
+
+Live HTTP requests go through the client declared with
+`strictcli.WithHTTPClient(client)` on `NewApp`, on every path that dispatches a
+command, which is how a test points a command at an
+`httptest` server or a recording transport. Without it the framework uses its
+own client, whose timeout is 60 seconds; it never uses `http.DefaultClient`. A
+nil client is refused at registration.
+
+```go
+app := strictcli.NewApp("infra", "0.1.0", "manage the zones",
+    strictcli.WithHTTPClient(srv.Client()))
+...
+resp, err := ctx.Effects().HTTP("GET", zonesURL, strictcli.Read(),
+    strictcli.Timeout(10*time.Second))
+```
+
+These options keep secrets and file permissions under control:
+
+- `strictcli.Redact(values...)` (on every method, and on `Spawned.Wait`)
+  replaces every occurrence of each value with `«redacted»` wherever the
+  framework renders the effect: the detail (argv, path, or URL), the
+  `resource` and `skip_if_current` tokens, the would-do log, the effect record,
+  the `--json` document, a stale brand, and every error the call returns,
+  including errors from the operating system or the HTTP client. Use it when a
+  provider puts its API key in the query string:
+  `net: GET https://api.example/zones?key=«redacted»`. An empty value, or
+  `Redact()` with no values, is refused at the call. A redacted error still
+  answers `errors.Is` for the error it replaced, but does not unwrap to it.
+  An HTTP request body is never rendered either way: the would-do log and the
+  record (`body_bytes`) show only its byte count, as in
+  `net: POST https://api.example/zones (body: 214 bytes, content withheld)`.
+- `strictcli.Mode(mode)` (on `Write`) sets the file's permission bits. The file
+  has that mode once `Write` returns, whether it was created or already
+  existed, and the mode is set before any content is written. A mode with bits
+  outside `os.ModePerm` is refused at the call. Dry mode renders it as
+  `write: key.pem (1675 bytes) (mode: 0600)` and the record carries `mode`.
+  Without it, a new file gets `0644` and an existing file keeps its mode.
 
 Four flag names are owned by the framework and cannot be declared at any level
 (global flags, command flags, flag sets, and a choice's scope at any depth).

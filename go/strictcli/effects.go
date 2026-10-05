@@ -216,16 +216,19 @@ func (s Spawned) PID() int {
 	return s.pid
 }
 
-// Wait waits for the child and returns its Completed result. It honours
-// Check(bool) and Timeout(d) and nothing else: with the default true a nonzero
-// exit is an error, mirroring run's opt-out; with a Timeout the child is killed
-// once d has passed and Wait returns an error naming it. Calling Wait on an unsettled Spawned is
-// extraction and truncates.
-func (s Spawned) Wait(opts ...EffectOption) (Completed, error) {
+// Wait waits for the child and returns its Completed result. It honors
+// Check(bool), Timeout(d), and Redact(values...) and nothing else: with the
+// default true a nonzero exit is an error, mirroring run's opt-out; with a
+// Timeout the child is killed once d has passed and Wait returns an error
+// naming it; Redact applies to the errors Wait returns. Calling Wait on an
+// unsettled Spawned is extraction and truncates.
+func (s Spawned) Wait(opts ...EffectOption) (_ Completed, err error) {
 	if !s.settled {
 		panic(s.truncate())
 	}
-	o, err := parseEffectOptions(s.cmdPath, "spawn", opts, acceptedWait)
+	var o effectOpts
+	defer func() { err = o.scrubErr(err) }()
+	o, err = parseEffectOptions(s.cmdPath, "spawn", opts, acceptedWait)
 	if err != nil {
 		return Completed{}, err
 	}
@@ -529,21 +532,64 @@ func Stdin(data []byte) EffectOption {
 	return EffectOption{name: "stdin", value: data}
 }
 
-// Timeout bounds a run, or a Spawned's Wait: once d has passed, the child is
-// killed and the call returns an error naming the command and the timeout. A
-// non-positive d is a call-time hard error.
+// Timeout bounds a run, a Spawned's Wait, or one HTTP request. On a run or a
+// Wait, once d has passed the child is killed and the call returns an error
+// naming the command and the timeout; on HTTP, the request is abandoned and the
+// call returns an error naming the request and the timeout. A non-positive d is
+// a call-time hard error.
 func Timeout(d time.Duration) EffectOption {
 	return EffectOption{name: "timeout", value: d}
+}
+
+// Read declares that an HTTP request changes nothing on the server. A declared
+// read is legal in a read_only command, is never written to the effect log, and
+// is performed for real under --dry-run, the same as an observe. After a
+// mutation has been recorded in a dry run it is not performed and returns a
+// stale brand instead, because what it would read depends on effects that did
+// not happen. It never carries a grant. The framework never infers a read from
+// the HTTP method: without Read, every request is a recorded mutation.
+func Read() EffectOption {
+	return EffectOption{name: "read", value: true}
+}
+
+// Observe declares that a run changes nothing. It means what an argv matching
+// the app's proc_observe_allowlist means: legal in a read_only command, never
+// written to the effect log, performed for real under --dry-run (a stale brand
+// once a mutation has been recorded), and never carrying a grant.
+func Observe() EffectOption {
+	return EffectOption{name: "observe", value: true}
+}
+
+// Redact replaces every occurrence of each value with «redacted» wherever the
+// framework renders this effect: the detail (argv, path, or URL), the resource
+// and skip_if_current tokens, the would-do log, the effect record, a stale
+// brand, and every error the call returns. An empty value, or no value at all,
+// is a call-time hard error. A redacted error still answers errors.Is for the
+// error it replaced, but does not unwrap to it, since that one carries the
+// value.
+func Redact(values ...string) EffectOption {
+	return EffectOption{name: "redact", value: append([]string(nil), values...)}
+}
+
+// Mode sets the permission bits of the file a Write produces. The file has
+// that mode once Write returns, whether Write created it or it already
+// existed, and the mode is set before any content is written. A mode with any
+// bit outside os.ModePerm is a call-time hard error. Dry mode renders it on
+// the log line (mode: 0600) and in the record (mode). Without Mode, a file
+// Write creates gets 0644 and an existing file keeps its mode.
+func Mode(mode os.FileMode) EffectOption {
+	return EffectOption{name: "mode", value: mode}
 }
 
 // The accepted option set per method (§2.5.2). Every method also accepts the
 // three common options of §2.3.
 var (
-	acceptedRun   = optionSet("cwd", "env", "check", "stream", "stdin", "timeout", "resource", "skip_if_current", "grant")
-	acceptedSpawn = optionSet("cwd", "env", "stdin", "resource", "skip_if_current", "grant")
-	acceptedPath  = optionSet("resource", "skip_if_current", "grant")
-	acceptedHTTP  = optionSet("body", "headers", "check", "resource", "skip_if_current", "grant")
-	acceptedWait  = optionSet("check", "timeout")
+	acceptedRun   = optionSet("cwd", "env", "check", "stream", "stdin", "timeout", "observe", "redact", "resource", "skip_if_current", "grant")
+	acceptedSpawn = optionSet("cwd", "env", "stdin", "redact", "resource", "skip_if_current", "grant")
+	acceptedPath  = optionSet("redact", "resource", "skip_if_current", "grant")
+	acceptedWrite = optionSet("mode", "redact", "resource", "skip_if_current", "grant")
+	acceptedHTTP  = optionSet("body", "headers", "check", "timeout", "read", "redact", "resource", "skip_if_current", "grant")
+	acceptedWait  = optionSet("check", "timeout", "redact")
 )
 
 func optionSet(names ...string) map[string]bool {
@@ -567,8 +613,16 @@ type effectOpts struct {
 	headers       map[string]string
 	stdin         []byte
 	timeout       time.Duration
+	mode          os.FileMode
+	read          bool
+	observe       bool
+	// redactor replaces every Redact value with redactedMarker; nil when the
+	// call declares none.
+	redactor *strings.Replacer
 
 	hasStdin         bool
+	hasBody          bool
+	hasMode          bool
 	hasResource      bool
 	hasSkipIfCurrent bool
 	hasGrant         bool
@@ -580,6 +634,7 @@ type effectOpts struct {
 // declare-everything cannot have.
 func parseEffectOptions(cmdPath, method string, opts []EffectOption, accepted map[string]bool) (effectOpts, error) {
 	resolved := effectOpts{check: true}
+	var redact []string
 	for _, o := range opts {
 		name := o.name
 		if !accepted[name] {
@@ -605,6 +660,29 @@ func parseEffectOptions(cmdPath, method string, opts []EffectOption, accepted ma
 			resolved.hasGrant = true
 		case "body":
 			resolved.body = o.value.([]byte)
+			resolved.hasBody = true
+		case "read":
+			resolved.read = true
+		case "observe":
+			resolved.observe = true
+		case "redact":
+			values := o.value.([]string)
+			if len(values) == 0 {
+				return resolved, errors.New(errEffectRedactNoValues(cmdPath, method))
+			}
+			for _, v := range values {
+				if v == "" {
+					return resolved, errors.New(errEffectRedactEmptyValue(cmdPath, method))
+				}
+			}
+			redact = append(redact, values...)
+		case "mode":
+			m := o.value.(os.FileMode)
+			if m&^os.ModePerm != 0 {
+				return resolved, errors.New(errEffectModeNotPermission(cmdPath, method, m.String()))
+			}
+			resolved.mode = m
+			resolved.hasMode = true
 		case "stdin":
 			resolved.stdin = o.value.([]byte)
 			resolved.hasStdin = true
@@ -621,8 +699,58 @@ func parseEffectOptions(cmdPath, method string, opts []EffectOption, accepted ma
 			resolved.headers[o.key] = o.value.(string)
 		}
 	}
+	if len(redact) > 0 {
+		resolved.redactor = newRedactor(redact)
+	}
 	return resolved, nil
 }
+
+// redactedMarker replaces every Redact value.
+const redactedMarker = "«redacted»"
+
+// newRedactor replaces the longest values first, so a value that contains
+// another is hidden whole.
+func newRedactor(values []string) *strings.Replacer {
+	sorted := append([]string(nil), values...)
+	sort.SliceStable(sorted, func(i, j int) bool { return len(sorted[i]) > len(sorted[j]) })
+	pairs := make([]string, 0, 2*len(sorted))
+	for _, v := range sorted {
+		pairs = append(pairs, v, redactedMarker)
+	}
+	return strings.NewReplacer(pairs...)
+}
+
+// scrub applies the call's Redact values to text the framework renders.
+func (o effectOpts) scrub(text string) string {
+	if o.redactor == nil {
+		return text
+	}
+	return o.redactor.Replace(text)
+}
+
+// scrubErr applies the call's Redact values to an error the call returns.
+func (o effectOpts) scrubErr(err error) error {
+	if err == nil || o.redactor == nil {
+		return err
+	}
+	msg := o.redactor.Replace(err.Error())
+	if msg == err.Error() {
+		return err
+	}
+	return &redactedError{msg: msg, orig: err}
+}
+
+// redactedError is an error whose message had Redact values replaced. It
+// answers errors.Is for the error it replaced but does not unwrap to it, since
+// that error's message carries the values.
+type redactedError struct {
+	msg  string
+	orig error
+}
+
+func (r *redactedError) Error() string { return r.msg }
+
+func (r *redactedError) Is(target error) bool { return errors.Is(r.orig, target) }
 
 // --- the structured effect log --------------------------------------------
 
@@ -636,8 +764,14 @@ type effectRecord struct {
 	hasBytes bool
 	// stdinBytes is the length of a Stdin option's data. The data itself is
 	// never stored here: a record is echoed, and stdin carries secrets.
-	stdinBytes    int
-	hasStdin      bool
+	stdinBytes int
+	hasStdin   bool
+	// bodyBytes is the length of an HTTP Body; like stdin, the content is
+	// never stored here.
+	bodyBytes     int
+	hasBody       bool
+	mode          os.FileMode
+	hasMode       bool
 	timeout       time.Duration
 	resource      string
 	skipIfCurrent string
@@ -660,6 +794,12 @@ func (r effectRecord) toMap() map[string]interface{} {
 	if r.hasStdin {
 		m["stdin_bytes"] = r.stdinBytes
 	}
+	if r.hasBody {
+		m["body_bytes"] = r.bodyBytes
+	}
+	if r.hasMode {
+		m["mode"] = octalMode(int64(r.mode))
+	}
 	if r.timeout > 0 {
 		m["timeout"] = r.timeout.String()
 	}
@@ -680,6 +820,12 @@ func (r effectRecord) render() string {
 	line := fmt.Sprintf("%d. %s: %s", r.seq, r.verb, r.detail)
 	if r.hasStdin {
 		line += fmt.Sprintf(" (stdin: %d bytes, content withheld)", r.stdinBytes)
+	}
+	if r.hasBody {
+		line += fmt.Sprintf(" (body: %d bytes, content withheld)", r.bodyBytes)
+	}
+	if r.hasMode {
+		line += fmt.Sprintf(" (mode: %s)", octalMode(int64(r.mode)))
 	}
 	if r.timeout > 0 {
 		line += fmt.Sprintf(" (timeout: %s)", r.timeout)
@@ -778,7 +924,10 @@ type Effects struct {
 	allowlist        [][]string
 	grants           map[string]Grant
 	mutationRecorded bool
-	trace            traceIdentity
+	// httpClient sends every live HTTP request: the app's WithHTTPClient
+	// client, or defaultHTTPClient.
+	httpClient *http.Client
+	trace      traceIdentity
 	// The human stream RenderLog writes to, and the mode that makes it a
 	// no-op (contract §19.7).
 	out  io.Writer
@@ -875,15 +1024,16 @@ func newEffects(cmd *Command, cmdPath string, dryRun bool, log *effectLog, allow
 		grants[g.Name] = g
 	}
 	return &Effects{
-		cmd:       cmd,
-		cmdPath:   cmdPath,
-		dryRun:    dryRun,
-		log:       log,
-		allowlist: allowlist,
-		grants:    grants,
-		trace:     trace,
-		out:       out,
-		json:      json,
+		cmd:        cmd,
+		cmdPath:    cmdPath,
+		dryRun:     dryRun,
+		log:        log,
+		allowlist:  allowlist,
+		grants:     grants,
+		httpClient: defaultHTTPClient,
+		trace:      trace,
+		out:        out,
+		json:       json,
 	}
 }
 
@@ -1025,14 +1175,18 @@ func (e *Effects) record(spec recordSpec) effectRecord {
 		seq:           e.log.nextSeq(),
 		kind:          spec.kind,
 		verb:          spec.verb,
-		detail:        spec.detail,
+		detail:        spec.opts.scrub(spec.detail),
 		nbytes:        spec.nbytes,
 		hasBytes:      spec.hasBytes,
 		stdinBytes:    len(spec.opts.stdin),
 		hasStdin:      spec.opts.hasStdin,
+		bodyBytes:     len(spec.opts.body),
+		hasBody:       spec.opts.hasBody,
+		mode:          spec.opts.mode,
+		hasMode:       spec.opts.hasMode,
 		timeout:       spec.opts.timeout,
-		resource:      spec.opts.resource,
-		skipIfCurrent: spec.opts.skipIfCurrent,
+		resource:      spec.opts.scrub(spec.opts.resource),
+		skipIfCurrent: spec.opts.scrub(spec.opts.skipIfCurrent),
 		recorded:      spec.recorded,
 	}
 	if spec.grant != nil {
@@ -1048,6 +1202,12 @@ func (e *Effects) brandFor(seq int) string {
 	return fmt.Sprintf("«step %d output»", seq)
 }
 
+// octalMode renders a mode as leading-zero octal, the form Chmod's detail and
+// Write's Mode share.
+func octalMode(mode int64) string {
+	return "0" + strconv.FormatInt(mode, 8)
+}
+
 func (e *Effects) staleBrand(descr string) string {
 	return fmt.Sprintf("«stale: %s»", descr)
 }
@@ -1056,8 +1216,10 @@ func (e *Effects) staleBrand(descr string) string {
 
 // Run runs a subprocess to completion (PROC_MUTATE), or performs an observe
 // when the argv matches an app-level proc_observe_allowlist prefix.
-func (e *Effects) Run(argv []interface{}, opts ...EffectOption) (Completed, error) {
-	o, err := parseEffectOptions(e.cmdPath, "run", opts, acceptedRun)
+func (e *Effects) Run(argv []interface{}, opts ...EffectOption) (_ Completed, err error) {
+	var o effectOpts
+	defer func() { err = o.scrubErr(err) }()
+	o, err = parseEffectOptions(e.cmdPath, "run", opts, acceptedRun)
 	if err != nil {
 		return Completed{}, err
 	}
@@ -1065,21 +1227,25 @@ func (e *Effects) Run(argv []interface{}, opts ...EffectOption) (Completed, erro
 	if err != nil {
 		return Completed{}, err
 	}
+	shown := o.scrub(joined)
 
-	if e.isObserve(ops) {
+	if o.observe || e.isObserve(ops) {
 		// An observe changes nothing: it is legal in a read_only command, never
 		// written to the would-do log, and never carries a grant.
 		if o.hasGrant {
+			if o.observe {
+				return Completed{}, errors.New(errEffectGrantOnDeclaredRead(e.cmdPath, o.grant, "run", "observe"))
+			}
 			return Completed{}, errors.New(errEffectGrantOnObserve(e.cmdPath, o.grant))
 		}
 		if e.dryRun && e.mutationRecorded {
-			return Completed{brand: e.staleBrand(joined), log: e.log, cmdPath: e.cmdPath}, nil
+			return Completed{brand: e.staleBrand(shown), log: e.log, cmdPath: e.cmdPath}, nil
 		}
-		return e.execRun(ops, joined, o, "run")
+		return e.execRun(ops, shown, o, "run")
 	}
 
 	if e.cmd.Effect == EffectReadOnly {
-		return Completed{}, errors.New(errEffectRunNotAllowlisted(e.cmdPath, joined))
+		return Completed{}, errors.New(errEffectRunNotAllowlisted(e.cmdPath, shown))
 	}
 	declared, err := e.checkGrant(ProcMutate, o.grant, o.hasGrant)
 	if err != nil {
@@ -1091,15 +1257,17 @@ func (e *Effects) Run(argv []interface{}, opts ...EffectOption) (Completed, erro
 		return Completed{brand: e.brandFor(rec.seq), log: e.log, cmdPath: e.cmdPath}, nil
 	}
 	e.record(recordSpec{kind: ProcMutate, verb: "run", detail: joined, opts: o, grant: declared, recorded: false})
-	return e.execRun(ops, joined, o, "run")
+	return e.execRun(ops, shown, o, "run")
 }
 
 // Spawn starts a subprocess without waiting (PROC_SPAWN).
 //
 // Spawning is itself an effect: a dry run RECORDS the spawn instead of
 // performing it, which is why no cross-process mode token exists.
-func (e *Effects) Spawn(argv []interface{}, opts ...EffectOption) (Spawned, error) {
-	o, err := parseEffectOptions(e.cmdPath, "spawn", opts, acceptedSpawn)
+func (e *Effects) Spawn(argv []interface{}, opts ...EffectOption) (_ Spawned, err error) {
+	var o effectOpts
+	defer func() { err = o.scrubErr(err) }()
+	o, err = parseEffectOptions(e.cmdPath, "spawn", opts, acceptedSpawn)
 	if err != nil {
 		return Spawned{}, err
 	}
@@ -1122,6 +1290,9 @@ func (e *Effects) Spawn(argv []interface{}, opts ...EffectOption) (Spawned, erro
 	if err != nil {
 		return Spawned{}, err
 	}
+	// The argv a Spawned carries is the one its errors and the exit step's
+	// diagnostic name, so it is the redacted one.
+	joined = o.scrub(joined)
 	cmd := exec.Command(settled[0], settled[1:]...)
 	cmd.Dir = o.cwd
 	cmd.Env = traceChildEnv(mergedEnv(o.env), e.trace)
@@ -1190,8 +1361,10 @@ func (e *Effects) settleChildren() []string {
 }
 
 // Write writes bytes to a path (FILE_WRITE).
-func (e *Effects) Write(path interface{}, content interface{}, opts ...EffectOption) (Unsettled, error) {
-	o, err := parseEffectOptions(e.cmdPath, "write", opts, acceptedPath)
+func (e *Effects) Write(path interface{}, content interface{}, opts ...EffectOption) (_ Unsettled, err error) {
+	var o effectOpts
+	defer func() { err = o.scrubErr(err) }()
+	o, err = parseEffectOptions(e.cmdPath, "write", opts, acceptedWrite)
 	if err != nil {
 		return Unsettled{}, err
 	}
@@ -1224,10 +1397,33 @@ func (e *Effects) Write(path interface{}, content interface{}, opts ...EffectOpt
 	if err != nil {
 		return Unsettled{}, err
 	}
-	if err := os.WriteFile(target, data, 0o644); err != nil {
+	if o.hasMode {
+		err = writeFileWithMode(target, data, o.mode)
+	} else {
+		err = os.WriteFile(target, data, 0o644)
+	}
+	if err != nil {
 		return Unsettled{}, err
 	}
 	return Unsettled{brand: fmt.Sprintf("«step %d output»", rec.seq), log: e.log, cmdPath: e.cmdPath}, nil
+}
+
+// writeFileWithMode writes data to path, leaving it with mode whether it was
+// created or already existed. The mode is set before the content is written.
+func writeFileWithMode(path string, data []byte, mode os.FileMode) error {
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, mode)
+	if err != nil {
+		return err
+	}
+	if err := f.Chmod(mode); err != nil {
+		f.Close()
+		return err
+	}
+	if _, err := f.Write(data); err != nil {
+		f.Close()
+		return err
+	}
+	return f.Close()
 }
 
 // Mkdir creates a directory, parents included; an already-existing directory is
@@ -1245,8 +1441,10 @@ func (e *Effects) Remove(path interface{}, opts ...EffectOption) (Unsettled, err
 }
 
 // Rename moves/renames a path (FILE_WRITE).
-func (e *Effects) Rename(src interface{}, dst interface{}, opts ...EffectOption) (Unsettled, error) {
-	o, err := parseEffectOptions(e.cmdPath, "rename", opts, acceptedPath)
+func (e *Effects) Rename(src interface{}, dst interface{}, opts ...EffectOption) (_ Unsettled, err error) {
+	var o effectOpts
+	defer func() { err = o.scrubErr(err) }()
+	o, err = parseEffectOptions(e.cmdPath, "rename", opts, acceptedPath)
 	if err != nil {
 		return Unsettled{}, err
 	}
@@ -1287,8 +1485,10 @@ func (e *Effects) Rename(src interface{}, dst interface{}, opts ...EffectOption)
 
 // Chmod changes a path's mode (FILE_WRITE). The mode renders in the log as
 // leading-zero octal.
-func (e *Effects) Chmod(path interface{}, mode int, opts ...EffectOption) (Unsettled, error) {
-	o, err := parseEffectOptions(e.cmdPath, "chmod", opts, acceptedPath)
+func (e *Effects) Chmod(path interface{}, mode int, opts ...EffectOption) (_ Unsettled, err error) {
+	var o effectOpts
+	defer func() { err = o.scrubErr(err) }()
+	o, err = parseEffectOptions(e.cmdPath, "chmod", opts, acceptedPath)
 	if err != nil {
 		return Unsettled{}, err
 	}
@@ -1296,7 +1496,7 @@ func (e *Effects) Chmod(path interface{}, mode int, opts ...EffectOption) (Unset
 	if err != nil {
 		return Unsettled{}, err
 	}
-	detail := fmt.Sprintf("%s 0%s", pathOp.rendered, strconv.FormatInt(int64(mode), 8))
+	detail := fmt.Sprintf("%s %s", pathOp.rendered, octalMode(int64(mode)))
 	declared, err := e.authorize("chmod", FileWrite, o.grant, o.hasGrant)
 	if err != nil {
 		return Unsettled{}, err
@@ -1319,9 +1519,12 @@ func (e *Effects) Chmod(path interface{}, mode int, opts ...EffectOption) (Unset
 	return Unsettled{brand: fmt.Sprintf("«step %d output»", rec.seq), log: e.log, cmdPath: e.cmdPath}, nil
 }
 
-// HTTP performs a network request (NET_MUTATE).
-func (e *Effects) HTTP(method string, url interface{}, opts ...EffectOption) (Response, error) {
-	o, err := parseEffectOptions(e.cmdPath, "http", opts, acceptedHTTP)
+// HTTP performs a network request (NET_MUTATE), or a declared read when the
+// call carries Read().
+func (e *Effects) HTTP(method string, url interface{}, opts ...EffectOption) (_ Response, err error) {
+	var o effectOpts
+	defer func() { err = o.scrubErr(err) }()
+	o, err = parseEffectOptions(e.cmdPath, "http", opts, acceptedHTTP)
 	if err != nil {
 		return Response{}, err
 	}
@@ -1330,6 +1533,22 @@ func (e *Effects) HTTP(method string, url interface{}, opts ...EffectOption) (Re
 		return Response{}, err
 	}
 	detail := fmt.Sprintf("%s %s", method, urlOp.rendered)
+
+	if o.read {
+		// A declared read changes nothing: it is legal in a read_only command,
+		// never written to the would-do log, and never carries a grant.
+		if o.hasGrant {
+			return Response{}, errors.New(errEffectGrantOnDeclaredRead(e.cmdPath, o.grant, "http", "read"))
+		}
+		if e.dryRun && e.mutationRecorded {
+			return Response{brand: e.staleBrand(o.scrub(detail)), log: e.log, cmdPath: e.cmdPath}, nil
+		}
+		target, err := e.settled(urlOp, "http", "url")
+		if err != nil {
+			return Response{}, err
+		}
+		return e.execHTTP(method, target, o)
+	}
 	declared, err := e.authorize("http", NetMutate, o.grant, o.hasGrant)
 	if err != nil {
 		return Response{}, err
@@ -1349,8 +1568,10 @@ func (e *Effects) HTTP(method string, url interface{}, opts ...EffectOption) (Re
 
 // --- shared execution paths -----------------------------------------------
 
-func (e *Effects) pathEffect(verb string, path interface{}, opts []EffectOption, perform func(string) error) (Unsettled, error) {
-	o, err := parseEffectOptions(e.cmdPath, verb, opts, acceptedPath)
+func (e *Effects) pathEffect(verb string, path interface{}, opts []EffectOption, perform func(string) error) (_ Unsettled, err error) {
+	var o effectOpts
+	defer func() { err = o.scrubErr(err) }()
+	o, err = parseEffectOptions(e.cmdPath, verb, opts, acceptedPath)
 	if err != nil {
 		return Unsettled{}, err
 	}
@@ -1507,25 +1728,51 @@ func (e *Effects) execRun(ops []operand, joined string, o effectOpts, method str
 	return Completed{settled: true, exitCode: code, stdout: out, stderr: errText}, nil
 }
 
+// defaultHTTPClientTimeout bounds every request sent through the framework's
+// own client, so a request that never answers cannot hang a command forever.
+const defaultHTTPClientTimeout = 60 * time.Second
+
+// defaultHTTPClient is the client of an app that declares none through
+// WithHTTPClient.
+var defaultHTTPClient = &http.Client{Timeout: defaultHTTPClientTimeout}
+
 func (e *Effects) execHTTP(method, url string, o effectOpts) (Response, error) {
 	var reqBody io.Reader
 	if o.body != nil {
 		reqBody = bytes.NewReader(o.body)
 	}
-	req, err := http.NewRequest(method, url, reqBody)
+	reqCtx := context.Background()
+	if o.timeout > 0 {
+		var cancel context.CancelFunc
+		reqCtx, cancel = context.WithTimeout(reqCtx, o.timeout)
+		defer cancel()
+	}
+	timedOut := func() error {
+		if o.timeout > 0 && errors.Is(reqCtx.Err(), context.DeadlineExceeded) {
+			return errors.New(errEffectHTTPTimedOut(e.cmdPath, method, o.scrub(url), o.timeout.String()))
+		}
+		return nil
+	}
+	req, err := http.NewRequestWithContext(reqCtx, method, url, reqBody)
 	if err != nil {
 		return Response{}, err
 	}
 	for k, v := range o.headers {
 		req.Header.Set(k, v)
 	}
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := e.httpClient.Do(req)
 	if err != nil {
+		if te := timedOut(); te != nil {
+			return Response{}, te
+		}
 		return Response{}, err
 	}
 	defer resp.Body.Close()
 	payload, err := io.ReadAll(resp.Body)
 	if err != nil {
+		if te := timedOut(); te != nil {
+			return Response{}, te
+		}
 		return Response{}, err
 	}
 	headers := make(map[string]string, len(resp.Header))
@@ -1535,7 +1782,7 @@ func (e *Effects) execHTTP(method, url string, o effectOpts) (Response, error) {
 		}
 	}
 	if o.check && (resp.StatusCode < 200 || resp.StatusCode > 299) {
-		return Response{}, errors.New(errEffectHTTPFailed(e.cmdPath, method, url, resp.StatusCode))
+		return Response{}, errors.New(errEffectHTTPFailed(e.cmdPath, method, o.scrub(url), resp.StatusCode))
 	}
 	return Response{settled: true, status: resp.StatusCode, body: payload, headers: headers}, nil
 }
@@ -1720,7 +1967,7 @@ func readConfirmLine(r io.Reader) (string, error) {
 // itself is reset by beginDispatch, which runs earlier so pre-handler
 // CACHE_WRITEs (coverage shards) land in the same dispatch's log.
 func (a *App) armEffects(cmd *Command, cmdPath string, dryRun bool, out io.Writer) *Effects {
-	return newEffects(cmd, cmdPath, dryRun, a.effects, a.procObserveAllowlist,
+	e := newEffects(cmd, cmdPath, dryRun, a.effects, a.procObserveAllowlist,
 		traceIdentity{
 			app:                  a.Name,
 			version:              a.Version,
@@ -1733,6 +1980,10 @@ func (a *App) armEffects(cmd *Command, cmdPath string, dryRun bool, out io.Write
 			approveConsequential: a.lastApproveConsequential,
 			effect:               cmd.Effect,
 		}, out, a.lastJSON)
+	if a.httpClient != nil {
+		e.httpClient = a.httpClient
+	}
+	return e
 }
 
 // beginDispatch starts a new dispatch: it resets the structured effect log.

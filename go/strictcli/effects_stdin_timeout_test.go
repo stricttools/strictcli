@@ -114,11 +114,8 @@ func TestStdinAndTimeoutAreRefusedWhereNotAccepted(t *testing.T) {
 			return err
 		},
 			`command "go": effects.spawn does not accept option 'timeout'`},
-		{"http/timeout", func(e *Effects) error {
-			_, err := e.HTTP("GET", "https://x.test", Timeout(time.Second))
-			return err
-		},
-			`command "go": effects.http does not accept option 'timeout'`},
+		{"rename/timeout", func(e *Effects) error { _, err := e.Rename("a", "b", Timeout(time.Second)); return err },
+			`command "go": effects.rename does not accept option 'timeout'`},
 		{"remove/timeout", func(e *Effects) error { _, err := e.Remove("p", Timeout(time.Second)); return err },
 			`command "go": effects.remove does not accept option 'timeout'`},
 	}

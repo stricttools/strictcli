@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -509,6 +510,10 @@ type App struct {
 	// the would-do log.
 	procObserveAllowlist [][]string
 
+	// httpClient performs every live effects.HTTP request. nil means the
+	// framework's own client (defaultHTTPClient), never http.DefaultClient.
+	httpClient *http.Client
+
 	// effects is the structured effect log for the most recent dispatch.
 	// Populated in BOTH modes: recorded entries in dry mode, executed entries
 	// (with recorded: false) in live mode, plus framework-blessed CACHE_WRITEs.
@@ -705,6 +710,21 @@ func WithProcObserveAllowlist(prefixes [][]string) AppOption {
 			}
 			a.procObserveAllowlist = append(a.procObserveAllowlist, append([]string{}, prefix...))
 		}
+	}
+}
+
+// WithHTTPClient declares the client every live ctx.Effects().HTTP request is
+// sent through, on every path that dispatches a command. It is
+// how a test points the effects at an httptest server or a recording
+// transport. Without it the framework uses its own client, whose Timeout is
+// defaultHTTPClientTimeout; it never uses http.DefaultClient. A nil client is
+// a registration-time panic.
+func WithHTTPClient(client *http.Client) AppOption {
+	return func(a *App) {
+		if client == nil {
+			panic(errHTTPClientNil)
+		}
+		a.httpClient = client
 	}
 }
 
