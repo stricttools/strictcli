@@ -518,6 +518,29 @@ func Body(body []byte) EffectOption {
 	return EffectOption{name: "body", value: body}
 }
 
+// BodyFile sets an HTTP request body streamed from the regular file at path:
+// the file is read while the request is sent, never into memory first, so a
+// large upload costs no more memory than a small one. The file's size when the
+// call is made is the request's Content-Length. It cannot be combined with
+// Body. Dry mode renders the path and the byte count, never the content.
+func BodyFile(path string) EffectOption {
+	return EffectOption{name: "body_file", value: bodyFileSpec{path: path, whole: true}}
+}
+
+// BodyFileRange is BodyFile for the length bytes of the file starting at
+// offset, which must lie inside the file; the Content-Length is length.
+func BodyFileRange(path string, offset, length int64) EffectOption {
+	return EffectOption{name: "body_file", value: bodyFileSpec{path: path, offset: offset, length: length}}
+}
+
+// bodyFileSpec is a BodyFile or BodyFileRange option before it is resolved
+// against the file.
+type bodyFileSpec struct {
+	path           string
+	offset, length int64
+	whole          bool
+}
+
 // Header adds one HTTP request header. Repeat it for several headers.
 func Header(name, value string) EffectOption {
 	return EffectOption{name: "headers", key: name, value: value}
@@ -588,7 +611,7 @@ var (
 	acceptedSpawn = optionSet("cwd", "env", "stdin", "redact", "resource", "skip_if_current", "grant")
 	acceptedPath  = optionSet("redact", "resource", "skip_if_current", "grant")
 	acceptedWrite = optionSet("mode", "redact", "resource", "skip_if_current", "grant")
-	acceptedHTTP  = optionSet("body", "headers", "check", "timeout", "read", "redact", "resource", "skip_if_current", "grant")
+	acceptedHTTP  = optionSet("body", "body_file", "headers", "check", "timeout", "read", "redact", "resource", "skip_if_current", "grant")
 	acceptedWait  = optionSet("check", "timeout", "redact")
 )
 
@@ -610,18 +633,24 @@ type effectOpts struct {
 	skipIfCurrent string
 	grant         string
 	body          []byte
-	headers       map[string]string
-	stdin         []byte
-	timeout       time.Duration
-	mode          os.FileMode
-	read          bool
-	observe       bool
+	// bodyFile, bodyOffset, and bodyLength are a resolved BodyFile or
+	// BodyFileRange: the bytes the request streams from the file.
+	bodyFile   string
+	bodyOffset int64
+	bodyLength int64
+	headers    map[string]string
+	stdin      []byte
+	timeout    time.Duration
+	mode       os.FileMode
+	read       bool
+	observe    bool
 	// redactor replaces every Redact value with redactedMarker; nil when the
 	// call declares none.
 	redactor *strings.Replacer
 
 	hasStdin         bool
 	hasBody          bool
+	hasBodyFile      bool
 	hasMode          bool
 	hasResource      bool
 	hasSkipIfCurrent bool
@@ -661,6 +690,13 @@ func parseEffectOptions(cmdPath, method string, opts []EffectOption, accepted ma
 		case "body":
 			resolved.body = o.value.([]byte)
 			resolved.hasBody = true
+		case "body_file":
+			if resolved.hasBodyFile {
+				return resolved, errors.New(errEffectBodyFileRepeated(cmdPath, method))
+			}
+			if err := resolved.resolveBodyFile(cmdPath, method, o.value.(bodyFileSpec)); err != nil {
+				return resolved, err
+			}
 		case "read":
 			resolved.read = true
 		case "observe":
@@ -699,10 +735,34 @@ func parseEffectOptions(cmdPath, method string, opts []EffectOption, accepted ma
 			resolved.headers[o.key] = o.value.(string)
 		}
 	}
+	if resolved.hasBody && resolved.hasBodyFile {
+		return resolved, errors.New(errEffectBodyFileWithBody(cmdPath, method))
+	}
 	if len(redact) > 0 {
 		resolved.redactor = newRedactor(redact)
 	}
 	return resolved, nil
+}
+
+// resolveBodyFile checks a BodyFile or BodyFileRange against the file as it is
+// when the call is made: a regular file that holds the whole range.
+func (o *effectOpts) resolveBodyFile(cmdPath, method string, spec bodyFileSpec) error {
+	info, err := os.Stat(spec.path)
+	if err != nil {
+		return errors.New(errEffectBodyFileUnusable(cmdPath, method, err.Error()))
+	}
+	if !info.Mode().IsRegular() {
+		return errors.New(errEffectBodyFileUnusable(cmdPath, method, spec.path+" is not a regular file"))
+	}
+	if spec.whole {
+		spec.offset, spec.length = 0, info.Size()
+	} else if spec.length < 1 {
+		return errors.New(errEffectBodyFileLengthNotPositive(cmdPath, method, spec.length))
+	} else if spec.offset < 0 || spec.offset+spec.length > info.Size() {
+		return errors.New(errEffectBodyFileRangeOutside(cmdPath, method, spec.path, spec.offset, spec.length, info.Size()))
+	}
+	o.bodyFile, o.bodyOffset, o.bodyLength, o.hasBodyFile = spec.path, spec.offset, spec.length, true
+	return nil
 }
 
 // redactedMarker replaces every Redact value.
@@ -768,8 +828,14 @@ type effectRecord struct {
 	hasStdin   bool
 	// bodyBytes is the length of an HTTP Body; like stdin, the content is
 	// never stored here.
-	bodyBytes     int
-	hasBody       bool
+	bodyBytes int
+	hasBody   bool
+	// bodyFile and bodyOffset are where a streamed body comes from;
+	// bodyFileBytes is its length.
+	bodyFile      string
+	bodyOffset    int64
+	bodyFileBytes int64
+	hasBodyFile   bool
 	mode          os.FileMode
 	hasMode       bool
 	timeout       time.Duration
@@ -797,6 +863,11 @@ func (r effectRecord) toMap() map[string]interface{} {
 	if r.hasBody {
 		m["body_bytes"] = r.bodyBytes
 	}
+	if r.hasBodyFile {
+		m["body_bytes"] = r.bodyFileBytes
+		m["body_file"] = r.bodyFile
+		m["body_offset"] = r.bodyOffset
+	}
 	if r.hasMode {
 		m["mode"] = octalMode(int64(r.mode))
 	}
@@ -823,6 +894,13 @@ func (r effectRecord) render() string {
 	}
 	if r.hasBody {
 		line += fmt.Sprintf(" (body: %d bytes, content withheld)", r.bodyBytes)
+	}
+	if r.hasBodyFile {
+		line += fmt.Sprintf(" (body: %d bytes from %s", r.bodyFileBytes, r.bodyFile)
+		if r.bodyOffset != 0 {
+			line += fmt.Sprintf(" at offset %d", r.bodyOffset)
+		}
+		line += ")"
 	}
 	if r.hasMode {
 		line += fmt.Sprintf(" (mode: %s)", octalMode(int64(r.mode)))
@@ -1193,6 +1271,10 @@ func (e *Effects) record(spec recordSpec) effectRecord {
 		hasStdin:      spec.opts.hasStdin,
 		bodyBytes:     len(spec.opts.body),
 		hasBody:       spec.opts.hasBody,
+		bodyFile:      spec.opts.scrub(spec.opts.bodyFile),
+		bodyOffset:    spec.opts.bodyOffset,
+		bodyFileBytes: spec.opts.bodyLength,
+		hasBodyFile:   spec.opts.hasBodyFile,
 		mode:          spec.opts.mode,
 		hasMode:       spec.opts.hasMode,
 		timeout:       spec.opts.timeout,
@@ -1752,6 +1834,14 @@ func (e *Effects) execHTTP(method, url string, o effectOpts) (Response, error) {
 	if o.body != nil {
 		reqBody = bytes.NewReader(o.body)
 	}
+	if o.hasBodyFile {
+		f, err := os.Open(o.bodyFile)
+		if err != nil {
+			return Response{}, errors.New(errEffectBodyFileUnusable(e.cmdPath, "http", err.Error()))
+		}
+		defer f.Close()
+		reqBody = io.NewSectionReader(f, o.bodyOffset, o.bodyLength)
+	}
 	reqCtx := context.Background()
 	if o.timeout > 0 {
 		var cancel context.CancelFunc
@@ -1767,6 +1857,10 @@ func (e *Effects) execHTTP(method, url string, o effectOpts) (Response, error) {
 	req, err := http.NewRequestWithContext(reqCtx, method, url, reqBody)
 	if err != nil {
 		return Response{}, err
+	}
+	if o.hasBodyFile {
+		// A section reader is not a type net/http sizes itself.
+		req.ContentLength = o.bodyLength
 	}
 	for k, v := range o.headers {
 		req.Header.Set(k, v)

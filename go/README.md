@@ -564,6 +564,19 @@ resp, err := ctx.Effects().HTTP("GET", zonesURL, strictcli.Read(),
     strictcli.Timeout(10*time.Second))
 ```
 
+An upload streams its body from disk instead of holding it in memory:
+
+- `strictcli.BodyFile(path)` (on `HTTP`) sends the regular file at `path` as
+  the request body, read while the request is sent; its size when the call is
+  made is the `Content-Length`. `strictcli.BodyFileRange(path, offset, length)`
+  sends the `length` bytes starting at `offset`, as a multipart upload's parts
+  need. Either is refused at the call when the file is missing or not regular,
+  when the range is not inside the file, when it is given twice, or when it is
+  combined with `Body`. Dry mode renders the path and byte count, never the
+  content: `net: PUT https://upload.example/part (body: 5242880 bytes from
+  app.ipa at offset 10485760)`, and the record carries `body_file`,
+  `body_offset`, and `body_bytes`.
+
 These options keep secrets and file permissions under control:
 
 - `strictcli.Redact(values...)` (on every method, and on `Spawned.Wait`)

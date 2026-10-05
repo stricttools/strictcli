@@ -1494,6 +1494,26 @@ func errEffectOptionNotAccepted(name string, method string, opt string) string {
 	return fmt.Sprintf("command %q: effects.%s does not accept option '%s'", name, method, opt)
 }
 
+func errEffectBodyFileWithBody(name string, method string) string {
+	return fmt.Sprintf("command %q: effects.%s option 'body_file' cannot be combined with 'body'", name, method)
+}
+
+func errEffectBodyFileRepeated(name string, method string) string {
+	return fmt.Sprintf("command %q: effects.%s option 'body_file' is given more than once", name, method)
+}
+
+func errEffectBodyFileUnusable(name string, method string, reason string) string {
+	return fmt.Sprintf("command %q: effects.%s option 'body_file': %s", name, method, reason)
+}
+
+func errEffectBodyFileLengthNotPositive(name string, method string, length int64) string {
+	return fmt.Sprintf("command %q: effects.%s option 'body_file': the length must be positive, got %d", name, method, length)
+}
+
+func errEffectBodyFileRangeOutside(name string, method string, path string, offset, length, size int64) string {
+	return fmt.Sprintf("command %q: effects.%s option 'body_file': bytes %d+%d are outside the %d-byte file %s", name, method, offset, length, size, path)
+}
+
 func errEffectTimeoutNotPositive(name string, method string, timeout string) string {
 	return fmt.Sprintf("command %q: effects.%s option 'timeout' must be a positive duration, got %s", name, method, timeout)
 }
