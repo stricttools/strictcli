@@ -1073,7 +1073,7 @@ KNOWN_OPTION_FUNCS: set[str] = {
     "WithTestCoverageDir", "WithTestCoverage",
     # Effects regime (contract §1.2, §6.1, §6.2, §10.2). The per-effect-call
     # EffectOption constructors (Resource, SkipIfCurrent, UseGrant, Cwd,
-    # EffectEnv, Check, Stream, Body, Header) are not CmdOption/AppOption
+    # EffectEnv, Check, Stream, Stdin, Timeout, Body, Header) are not CmdOption/AppOption
     # constructors and so are not part of this catalog.
     "WithEffect", "WithConsequential", "WithGrants", "WithForwarding",
     "WithProcObserveAllowlist", "WithDryRunUnsupported",

@@ -712,6 +712,18 @@ SIGNATURE_STATUS: dict[str, dict[str, str]] = {
         "go": "excluded:Go's WithProcObserveAllowlist takes [][]string; a non-string element is a compile error",
     },
 
+    # -- Effects regime: the Timeout effect option exists in Go only. The
+    #    Python and TypeScript implementations are paused and do not receive
+    #    the Stdin and Timeout options --
+    "command *: effects.* option 'timeout' must be a positive duration, got *": {
+        "python": "excluded:The Timeout effect option is Go-only; the Python implementation is paused",
+        "typescript": "excluded:The Timeout effect option is Go-only; the TypeScript implementation is paused",
+    },
+    'command *: effects.* timed out: * was killed after *': {
+        "python": "excluded:The Timeout effect option is Go-only; the Python implementation is paused",
+        "typescript": "excluded:The Timeout effect option is Go-only; the TypeScript implementation is paused",
+    },
+
     # =======================================================================
     # The retired test-coverage boolean (contract §12.12)
     #
