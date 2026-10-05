@@ -1494,6 +1494,14 @@ func errEffectOptionNotAccepted(name string, method string, opt string) string {
 	return fmt.Sprintf("command %q: effects.%s does not accept option '%s'", name, method, opt)
 }
 
+func errEffectTimeoutNotPositive(name string, method string, timeout string) string {
+	return fmt.Sprintf("command %q: effects.%s option 'timeout' must be a positive duration, got %s", name, method, timeout)
+}
+
+func errEffectTimedOut(name string, method string, argv string, timeout string) string {
+	return fmt.Sprintf("command %q: effects.%s timed out: %s was killed after %s", name, method, argv, timeout)
+}
+
 // ---------------------------------------------------------------------------
 // effects.go — effect argument type guards and handle availability
 //

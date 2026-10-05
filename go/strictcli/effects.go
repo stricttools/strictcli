@@ -19,6 +19,7 @@ package strictcli
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -29,6 +30,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"syscall"
 	"time"
 	"unicode/utf8"
@@ -215,8 +217,9 @@ func (s Spawned) PID() int {
 }
 
 // Wait waits for the child and returns its Completed result. It honours
-// Check(bool) and nothing else: with the default true a nonzero exit is an
-// error, mirroring run's opt-out. Calling Wait on an unsettled Spawned is
+// Check(bool) and Timeout(d) and nothing else: with the default true a nonzero
+// exit is an error, mirroring run's opt-out; with a Timeout the child is killed
+// once d has passed and Wait returns an error naming it. Calling Wait on an unsettled Spawned is
 // extraction and truncates.
 func (s Spawned) Wait(opts ...EffectOption) (Completed, error) {
 	if !s.settled {
@@ -228,6 +231,22 @@ func (s Spawned) Wait(opts ...EffectOption) (Completed, error) {
 	}
 	// A captured child's stdout is drained no later than its Wait (§19.11).
 	s.child.markWaited()
+	if o.timeout > 0 {
+		timer := time.NewTimer(o.timeout)
+		select {
+		case <-s.child.exited:
+			timer.Stop()
+		case <-timer.C:
+			if !s.child.hasExited() {
+				killErr := s.child.signal(os.Kill)
+				s.child.reap()
+				if killErr != nil {
+					return Completed{}, killErr
+				}
+				return Completed{}, errors.New(errEffectTimedOut(s.cmdPath, "spawn", s.argv, o.timeout.String()))
+			}
+		}
+	}
 	s.child.reap()
 	waitErr := s.child.waitErr
 	var exitErr *exec.ExitError
@@ -289,6 +308,10 @@ type spawnedChild struct {
 // childTermGrace is how long a child the exit step sent SIGTERM gets before
 // SIGKILL.
 const childTermGrace = time.Second
+
+// timeoutWaitDelay is how long a run killed by its Timeout waits for its
+// output pipes to close (a grandchild may hold them) before Run returns.
+const timeoutWaitDelay = time.Second
 
 func startChildReaper(cmd *exec.Cmd, argv string, drained chan struct{}) *spawnedChild {
 	c := &spawnedChild{cmd: cmd, argv: argv, exited: make(chan struct{}), drained: drained}
@@ -497,14 +520,30 @@ func Header(name, value string) EffectOption {
 	return EffectOption{name: "headers", key: name, value: value}
 }
 
+// Stdin writes data to a run or spawn child's stdin, then closes it. It is the
+// way to hand a child a secret: argv is visible to every process on the
+// machine, stdin is not. The content is never echoed anywhere the framework
+// renders an effect: the would-do log and the effect record show only its
+// byte count, and no error or verbose output contains it.
+func Stdin(data []byte) EffectOption {
+	return EffectOption{name: "stdin", value: data}
+}
+
+// Timeout bounds a run, or a Spawned's Wait: once d has passed, the child is
+// killed and the call returns an error naming the command and the timeout. A
+// non-positive d is a call-time hard error.
+func Timeout(d time.Duration) EffectOption {
+	return EffectOption{name: "timeout", value: d}
+}
+
 // The accepted option set per method (§2.5.2). Every method also accepts the
 // three common options of §2.3.
 var (
-	acceptedRun   = optionSet("cwd", "env", "check", "stream", "resource", "skip_if_current", "grant")
-	acceptedSpawn = optionSet("cwd", "env", "resource", "skip_if_current", "grant")
+	acceptedRun   = optionSet("cwd", "env", "check", "stream", "stdin", "timeout", "resource", "skip_if_current", "grant")
+	acceptedSpawn = optionSet("cwd", "env", "stdin", "resource", "skip_if_current", "grant")
 	acceptedPath  = optionSet("resource", "skip_if_current", "grant")
 	acceptedHTTP  = optionSet("body", "headers", "check", "resource", "skip_if_current", "grant")
-	acceptedWait  = optionSet("check")
+	acceptedWait  = optionSet("check", "timeout")
 )
 
 func optionSet(names ...string) map[string]bool {
@@ -526,7 +565,10 @@ type effectOpts struct {
 	grant         string
 	body          []byte
 	headers       map[string]string
+	stdin         []byte
+	timeout       time.Duration
 
+	hasStdin         bool
 	hasResource      bool
 	hasSkipIfCurrent bool
 	hasGrant         bool
@@ -563,6 +605,15 @@ func parseEffectOptions(cmdPath, method string, opts []EffectOption, accepted ma
 			resolved.hasGrant = true
 		case "body":
 			resolved.body = o.value.([]byte)
+		case "stdin":
+			resolved.stdin = o.value.([]byte)
+			resolved.hasStdin = true
+		case "timeout":
+			d := o.value.(time.Duration)
+			if d <= 0 {
+				return resolved, errors.New(errEffectTimeoutNotPositive(cmdPath, method, d.String()))
+			}
+			resolved.timeout = d
 		case "headers":
 			if resolved.headers == nil {
 				resolved.headers = map[string]string{}
@@ -577,12 +628,17 @@ func parseEffectOptions(cmdPath, method string, opts []EffectOption, accepted ma
 
 // effectRecord is one entry in the structured effect log (§14.2).
 type effectRecord struct {
-	seq           int
-	kind          string
-	verb          string
-	detail        string
-	nbytes        int
-	hasBytes      bool
+	seq      int
+	kind     string
+	verb     string
+	detail   string
+	nbytes   int
+	hasBytes bool
+	// stdinBytes is the length of a Stdin option's data. The data itself is
+	// never stored here: a record is echoed, and stdin carries secrets.
+	stdinBytes    int
+	hasStdin      bool
+	timeout       time.Duration
 	resource      string
 	skipIfCurrent string
 	grant         string
@@ -601,6 +657,12 @@ func (r effectRecord) toMap() map[string]interface{} {
 	if r.hasBytes {
 		m["bytes"] = r.nbytes
 	}
+	if r.hasStdin {
+		m["stdin_bytes"] = r.stdinBytes
+	}
+	if r.timeout > 0 {
+		m["timeout"] = r.timeout.String()
+	}
 	if r.resource != "" {
 		m["resource"] = r.resource
 	}
@@ -616,6 +678,12 @@ func (r effectRecord) toMap() map[string]interface{} {
 // render renders this record as a would-do log line (without the indent).
 func (r effectRecord) render() string {
 	line := fmt.Sprintf("%d. %s: %s", r.seq, r.verb, r.detail)
+	if r.hasStdin {
+		line += fmt.Sprintf(" (stdin: %d bytes, content withheld)", r.stdinBytes)
+	}
+	if r.timeout > 0 {
+		line += fmt.Sprintf(" (timeout: %s)", r.timeout)
+	}
 	if r.grant != "" {
 		line += fmt.Sprintf(" (granted: %s — %s)", r.grant, r.grantReason)
 	}
@@ -960,6 +1028,9 @@ func (e *Effects) record(spec recordSpec) effectRecord {
 		detail:        spec.detail,
 		nbytes:        spec.nbytes,
 		hasBytes:      spec.hasBytes,
+		stdinBytes:    len(spec.opts.stdin),
+		hasStdin:      spec.opts.hasStdin,
+		timeout:       spec.opts.timeout,
 		resource:      spec.opts.resource,
 		skipIfCurrent: spec.opts.skipIfCurrent,
 		recorded:      spec.recorded,
@@ -1054,6 +1125,9 @@ func (e *Effects) Spawn(argv []interface{}, opts ...EffectOption) (Spawned, erro
 	cmd := exec.Command(settled[0], settled[1:]...)
 	cmd.Dir = o.cwd
 	cmd.Env = traceChildEnv(mergedEnv(o.env), e.trace)
+	if o.hasStdin {
+		cmd.Stdin = bytes.NewReader(o.stdin)
+	}
 	cmd.Stderr = os.Stderr
 	target, capture := e.streamTarget()
 	if capture == nil {
@@ -1361,9 +1435,31 @@ func (e *Effects) execRun(ops []operand, joined string, o effectOpts, method str
 	if err != nil {
 		return Completed{}, err
 	}
-	cmd := exec.Command(argv[0], argv[1:]...)
+	runCtx := context.Background()
+	if o.timeout > 0 {
+		var cancel context.CancelFunc
+		runCtx, cancel = context.WithTimeout(runCtx, o.timeout)
+		defer cancel()
+	}
+	cmd := exec.CommandContext(runCtx, argv[0], argv[1:]...)
 	cmd.Dir = o.cwd
 	cmd.Env = traceChildEnv(mergedEnv(o.env), e.trace)
+	if o.hasStdin {
+		cmd.Stdin = bytes.NewReader(o.stdin)
+	}
+	var timedOut atomic.Bool
+	if o.timeout > 0 {
+		cmd.Cancel = func() error {
+			err := cmd.Process.Kill()
+			if err == nil {
+				timedOut.Store(true)
+			}
+			return err
+		}
+		// A grandchild holding the child's output pipes open would keep Run
+		// waiting past the kill; this bounds that wait.
+		cmd.WaitDelay = timeoutWaitDelay
+	}
 
 	var outBuf, errBuf bytes.Buffer
 	var capture *childCapture
@@ -1384,6 +1480,9 @@ func (e *Effects) execRun(ops []operand, joined string, o effectOpts, method str
 	runErr := cmd.Run()
 	if capture != nil {
 		capture.close()
+	}
+	if timedOut.Load() {
+		return Completed{}, errors.New(errEffectTimedOut(e.cmdPath, method, joined, o.timeout.String()))
 	}
 	var exitErr *exec.ExitError
 	if runErr != nil && !errors.As(runErr, &exitErr) {

@@ -557,7 +557,7 @@ func TestInapplicableOptionIsACallTimeError(t *testing.T) {
 	}
 }
 
-func TestWaitAcceptsOnlyCheck(t *testing.T) {
+func TestWaitAcceptsOnlyCheckAndTimeout(t *testing.T) {
 	s := Spawned{settled: true, cmdPath: "go"}
 	_, err := s.Wait(Resource("r"))
 	want := `command "go": effects.spawn does not accept option 'resource'`

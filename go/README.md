@@ -505,6 +505,29 @@ where the eight recorded operations (`Run`, `Spawn`, `Write`, `Mkdir`, `Remove`,
 `Rename`, `Chmod`, `HTTP`) are recorded rather than performed and rendered as a
 would-do log.
 
+Each method takes trailing `EffectOption` values, and an option a method does not
+accept is a call-time error. Two options bound how a child process runs:
+
+- `strictcli.Stdin(data)` (on `Run` and `Spawn`) writes `data` to the child's
+  stdin and then closes it. Pass secrets this way, never in argv: argv is visible
+  to every process on the machine. The content is never echoed: the would-do
+  log and the effect record (`stdin_bytes`) show only its byte count, as in
+  `run: sudo -S true (stdin: 23 bytes, content withheld)`, and no error or
+  verbose output contains it.
+  It combines with `Stream(true)`: stdin is independent of where the child's
+  output goes.
+- `strictcli.Timeout(d)` (on `Run` and `Spawned.Wait`) kills the child once `d`
+  has passed and returns an error naming the command and the timeout, such as
+  `effects.run timed out: sleep 30 was killed after 30s`. A non-positive `d` is
+  refused at the call. Dry mode renders it on the log line (`(timeout: 30s)`)
+  and in the record (`timeout`).
+
+```go
+_, err := ctx.Effects().Run([]any{"ssh", "mac", "sudo", "-S", "true"},
+    strictcli.Stdin([]byte(password+"\n")),
+    strictcli.Timeout(30*time.Second))
+```
+
 Four flag names are owned by the framework and cannot be declared at any level
 (global flags, command flags, flag sets, and a choice's scope at any depth).
 They arrive on the context, never in `kwargs`:
