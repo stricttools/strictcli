@@ -724,6 +724,34 @@ SIGNATURE_STATUS: dict[str, dict[str, str]] = {
         "typescript": "excluded:The Timeout effect option is Go-only; the TypeScript implementation is paused",
     },
 
+    # -- Effects regime: declared reads (Read, Observe), Redact, Mode, the HTTP
+    #    Timeout, and WithHTTPClient exist in Go only. The Python and
+    #    TypeScript implementations are paused and do not receive them --
+    'command *: effects.http timed out: * * did not complete within *': {
+        "python": "excluded:The Timeout effect option on HTTP is Go-only; the Python implementation is paused",
+        "typescript": "excluded:The Timeout effect option on HTTP is Go-only; the TypeScript implementation is paused",
+    },
+    'command *: grant * cannot be used on effects.* declared with option * (a declared read changes nothing)': {
+        "python": "excluded:Declaring a read with the Read and Observe effect options is Go-only; the Python implementation is paused",
+        "typescript": "excluded:Declaring a read with the Read and Observe effect options is Go-only; the TypeScript implementation is paused",
+    },
+    "command *: effects.* option 'redact' was given an empty value": {
+        "python": "excluded:The Redact effect option is Go-only; the Python implementation is paused",
+        "typescript": "excluded:The Redact effect option is Go-only; the TypeScript implementation is paused",
+    },
+    "command *: effects.* option 'redact' was given no values": {
+        "python": "excluded:The Redact effect option is Go-only; the Python implementation is paused",
+        "typescript": "excluded:The Redact effect option is Go-only; the TypeScript implementation is paused",
+    },
+    "command *: effects.* option 'mode' must hold permission bits only, got *": {
+        "python": "excluded:The Mode effect option is Go-only; the Python implementation is paused",
+        "typescript": "excluded:The Mode effect option is Go-only; the TypeScript implementation is paused",
+    },
+    'WithHTTPClient: the client must not be nil': {
+        "python": "excluded:WithHTTPClient is Go-only; the Python implementation is paused",
+        "typescript": "excluded:WithHTTPClient is Go-only; the TypeScript implementation is paused",
+    },
+
     # =======================================================================
     # The retired test-coverage boolean (contract §12.12)
     #

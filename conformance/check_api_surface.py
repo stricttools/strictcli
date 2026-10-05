@@ -1073,10 +1073,15 @@ KNOWN_OPTION_FUNCS: set[str] = {
     "WithTestCoverageDir", "WithTestCoverage",
     # Effects regime (contract §1.2, §6.1, §6.2, §10.2). The per-effect-call
     # EffectOption constructors (Resource, SkipIfCurrent, UseGrant, Cwd,
-    # EffectEnv, Check, Stream, Stdin, Timeout, Body, Header) are not CmdOption/AppOption
-    # constructors and so are not part of this catalog.
+    # EffectEnv, Check, Stream, Stdin, Timeout, Read, Observe, Redact, Mode,
+    # Body, Header) are not CmdOption/AppOption constructors and so are not
+    # part of this catalog.
     "WithEffect", "WithConsequential", "WithGrants", "WithForwarding",
     "WithProcObserveAllowlist", "WithDryRunUnsupported",
+    # The client every live effects.HTTP request is sent through. Go-only:
+    # the Python and TypeScript implementations are paused and do not
+    # receive it.
+    "WithHTTPClient",
     # The programmatic channel's consent (contract §8.5). It is a CallOption,
     # not a CmdOption/AppOption -- Go's Call takes its kwargs as a map, so
     # consent rides a variadic option where Python uses a keyword-only argument
