@@ -14,23 +14,12 @@ import (
 // except through the framework. The framework's own writes (the --json
 // document, the document writer, an owns-stdout command's streamed child
 // stdout) go to the saved real stdout; any byte that reaches the redirected
-// stdout fails the run at the exit step.
+// stdout fails the run at the exit step. The guard is armed on Run alone: Test
+// changes nothing process-wide, so its calls can run at the same time.
 
 // guardExcerptBytes is how many of the stray bytes the failure diagnostic
 // quotes.
 const guardExcerptBytes = 4096
-
-// guardKind selects how the redirect is made.
-type guardKind int
-
-const (
-	// guardFD redirects file descriptor 1 (App.Run), with os.Stdout pointing
-	// at the redirected descriptor for the handler's duration.
-	guardFD guardKind = iota
-	// guardSwap replaces the os.Stdout variable (App.Test, whose stdout is
-	// already a capture pipe installed the same way).
-	guardSwap
-)
 
 // stdoutGuard is one armed redirect.
 type stdoutGuard struct {
@@ -55,15 +44,17 @@ type strayStdout struct {
 	head  []byte
 }
 
-// startStdoutGuard arms the redirect. stdout is the dispatch's stdout writer
-// before the redirect; for guardSwap it stays the framework's route.
-func startStdoutGuard(kind guardKind, stdout io.Writer) *stdoutGuard {
+// startStdoutGuard arms the redirect of the process stdout, which only Run,
+// owning the process, does. It redirects file descriptor 1, with os.Stdout
+// pointing at the redirected descriptor for the handler's duration; on a
+// platform with no descriptor redirect it replaces the os.Stdout variable.
+func startStdoutGuard() *stdoutGuard {
 	r, w, err := os.Pipe()
 	if err != nil {
 		panic("strictcli: the runtime guard could not create its pipe: " + err.Error())
 	}
 	g := &stdoutGuard{r: r, drained: make(chan struct{})}
-	if kind == guardFD && fdRedirectSupported {
+	if fdRedirectSupported {
 		realOut, undo, err := redirectStdoutFD(w)
 		if err != nil {
 			panic("strictcli: the runtime guard could not redirect stdout: " + err.Error())
@@ -75,7 +66,7 @@ func startStdoutGuard(kind guardKind, stdout io.Writer) *stdoutGuard {
 	} else {
 		saved := os.Stdout
 		os.Stdout = w
-		g.real = stdout
+		g.real = saved
 		g.undo = func() {
 			os.Stdout = saved
 			w.Close()

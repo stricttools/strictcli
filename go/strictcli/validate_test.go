@@ -31,7 +31,7 @@ func TestValidateRunsOnASuppliedValue(t *testing.T) {
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d: stderr=%q", r.ExitCode, r.Stderr)
 	}
-	if r.Stdout != "port=8080" {
+	if r.Stdout != "port=8080\n" {
 		t.Fatalf("expected 'port=8080', got %q", r.Stdout)
 	}
 	r = app.Test([]string{"cmd", "--port", "0"})
@@ -50,7 +50,7 @@ func TestValidateNeverRunsOnTheDeclaredDefault(t *testing.T) {
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d: stderr=%q", r.ExitCode, r.Stderr)
 	}
-	if r.Stdout != "port=-5" {
+	if r.Stdout != "port=-5\n" {
 		t.Fatalf("expected 'port=-5', got %q", r.Stdout)
 	}
 }
@@ -77,7 +77,7 @@ func TestValidateNeverRunsOnTheDeclaredListDefault(t *testing.T) {
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d: stderr=%q", r.ExitCode, r.Stderr)
 	}
-	if r.Stdout != "port=-5,-7" {
+	if r.Stdout != "port=-5,-7\n" {
 		t.Fatalf("expected 'port=-5,-7', got %q", r.Stdout)
 	}
 	// A supplied occurrence is validated.
@@ -96,7 +96,7 @@ func TestValidateNeverRunsOnAnInfraDefault(t *testing.T) {
 	app := NewApp("myapp", "1.0.0", "test app",
 		WithInfraRoot("MYAPP_HOME", "/var/lib/myapp"))
 	app.Command("run", "run it", func(ctx *Context, kwargs map[string]interface{}) Outcome {
-		fmt.Printf("db=%v", kwargs["db"])
+		ctx.Out(fmt.Sprintf("db=%v", kwargs["db"]))
 		return Exit(0)
 	}, WithFlags(
 		StringFlag("db", "db path", Default(RelativeToRoot("MYAPP_HOME", "db.sqlite")),
@@ -108,7 +108,7 @@ func TestValidateNeverRunsOnAnInfraDefault(t *testing.T) {
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d: stderr=%q", r.ExitCode, r.Stderr)
 	}
-	if r.Stdout != "db=/var/lib/myapp/db.sqlite" {
+	if r.Stdout != "db=/var/lib/myapp/db.sqlite\n" {
 		t.Fatalf("expected the resolved infra default, got %q", r.Stdout)
 	}
 }
@@ -118,7 +118,7 @@ func TestValidateRunsOnAnEnvSuppliedValue(t *testing.T) {
 	// token carried it -- and the declared default it overrode was not.
 	app := NewApp("myapp", "1.0.0", "test app")
 	app.Command("cmd", "a command", func(ctx *Context, kwargs map[string]interface{}) Outcome {
-		fmt.Printf("port=%v", kwargs["port"])
+		ctx.Out(fmt.Sprintf("port=%v", kwargs["port"]))
 		return Exit(0)
 	}, WithFlags(
 		IntFlag("port", "the port", Default(-5), Env("MYAPP_PORT"), positiveInt()),
@@ -152,7 +152,7 @@ func TestValidateNeverRunsOnAbsence(t *testing.T) {
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d; stderr=%q", r.ExitCode, r.Stderr)
 	}
-	if r.Stdout != "name=None" {
+	if r.Stdout != "name=None\n" {
 		t.Fatalf("expected 'name=None', got %q", r.Stdout)
 	}
 	// Passed value still validated.

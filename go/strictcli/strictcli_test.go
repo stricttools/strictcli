@@ -23,7 +23,7 @@ func simpleApp(cmdName, cmdHelp, handlerPrints string, opts ...CmdOption) *App {
 		if ctx.JSON() {
 			ctx.Out(out)
 		} else {
-			fmt.Print(out)
+			ctx.Out(out)
 		}
 		return Exit(0)
 	}, append(opts, WithEffect(EffectReadOnly))...)
@@ -142,11 +142,11 @@ func TestShortHelpFlag(t *testing.T) {
 func TestMultipleCommands(t *testing.T) {
 	app := NewApp("myapp", "1.0.0", "test app")
 	app.Command("start", "start service", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Print("started")
+		ctx.Out("started")
 		return Exit(0)
 	}, WithEffect(EffectReadOnly))
 	app.Command("stop", "stop service", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Print("stopped")
+		ctx.Out("stopped")
 		return Exit(0)
 	}, WithEffect(EffectReadOnly))
 	r := app.Test([]string{"stop"})
@@ -478,7 +478,7 @@ func TestEnvStrFlag(t *testing.T) {
 
 	app := NewApp("myapp", "1.0.0", "test app", WithEnvPrefix("MYAPP"))
 	app.Command("cmd", "a command", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Print("target=" + formatValue(args["target"]))
+		ctx.Out("target=" + formatValue(args["target"]))
 		return Exit(0)
 	}, WithFlags(StringFlag("target", "the target", Default("fallback"), Env("MYAPP_TARGET"))), WithEffect(EffectReadOnly))
 
@@ -497,7 +497,7 @@ func TestEnvCLIOverrides(t *testing.T) {
 
 	app := NewApp("myapp", "1.0.0", "test app", WithEnvPrefix("MYAPP"))
 	app.Command("cmd", "a command", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Print("target=" + formatValue(args["target"]))
+		ctx.Out("target=" + formatValue(args["target"]))
 		return Exit(0)
 	}, WithFlags(StringFlag("target", "the target", Default("fallback"), Env("MYAPP_TARGET"))), WithEffect(EffectReadOnly))
 
@@ -515,7 +515,7 @@ func TestEnvBoolTrue(t *testing.T) {
 		os.Setenv("MYAPP_VERBOSE", val)
 		app := NewApp("myapp", "1.0.0", "test app", WithEnvPrefix("MYAPP"))
 		app.Command("cmd", "a command", func(ctx *Context, args map[string]interface{}) Outcome {
-			fmt.Print("loud=" + formatValue(args["loud"]))
+			ctx.Out("loud=" + formatValue(args["loud"]))
 			return Exit(0)
 		}, WithFlags(BoolFlag("loud", "be loud", Env("MYAPP_VERBOSE"), Default(false))), WithEffect(EffectReadOnly))
 
@@ -535,7 +535,7 @@ func TestEnvBoolFalse(t *testing.T) {
 		os.Setenv("MYAPP_VERBOSE", val)
 		app := NewApp("myapp", "1.0.0", "test app", WithEnvPrefix("MYAPP"))
 		app.Command("cmd", "a command", func(ctx *Context, args map[string]interface{}) Outcome {
-			fmt.Print("loud=" + formatValue(args["loud"]))
+			ctx.Out("loud=" + formatValue(args["loud"]))
 			return Exit(0)
 		}, WithFlags(BoolFlag("loud", "be loud", Env("MYAPP_VERBOSE"), Default(false))), WithEffect(EffectReadOnly))
 
@@ -573,7 +573,7 @@ func TestEnvIntFlag(t *testing.T) {
 
 	app := NewApp("myapp", "1.0.0", "test app", WithEnvPrefix("MYAPP"))
 	app.Command("cmd", "a command", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Print("port=" + formatValue(args["port"]))
+		ctx.Out("port=" + formatValue(args["port"]))
 		return Exit(0)
 	}, WithFlags(IntFlag("port", "the port", Default(80), Env("MYAPP_PORT"))), WithEffect(EffectReadOnly))
 
@@ -895,7 +895,7 @@ func TestRepeatableEnv(t *testing.T) {
 
 	app := NewApp("myapp", "1.0.0", "test app", WithEnvPrefix("MYAPP"))
 	app.Command("cmd", "a command", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Print("tags=" + formatValue(args["tag"]))
+		ctx.Out("tags=" + formatValue(args["tag"]))
 		return Exit(0)
 	}, WithFlags(StringFlag("tag", "a tag", Repeatable(), Unique(false), Env("MYAPP_TAG"), EnvSeparator(","), Default([]interface{}{}))), WithEffect(EffectReadOnly))
 
@@ -920,7 +920,7 @@ func TestGroupDispatch(t *testing.T) {
 	app := NewApp("myapp", "1.0.0", "test app")
 	g := app.Group("config", "manage configuration")
 	g.Command("show", "display config", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Print("showing config")
+		ctx.Out("showing config")
 		return Exit(0)
 	}, WithEffect(EffectReadOnly))
 	r := app.Test([]string{"config", "show"})
@@ -936,7 +936,7 @@ func TestGroupCommandWithFlags(t *testing.T) {
 	app := NewApp("myapp", "1.0.0", "test app")
 	g := app.Group("config", "manage configuration")
 	g.Command("set", "set a config value", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Printf("%s=%s", args["key"], args["value"])
+		ctx.Out(fmt.Sprintf("%s=%s", args["key"], args["value"]))
 		return Exit(0)
 	}, WithFlags(
 		StringFlag("key", "config key", Required()),
@@ -989,7 +989,7 @@ func makeGroupHelpApp() *App {
 	g.Command("shell", "raw shell",
 		nil,
 		WithPassthrough(func(ctx *Context, name string, args []string, globals map[string]interface{}) int {
-			fmt.Println(name + ":" + strings.Join(args, ","))
+			ctx.Out(name + ":" + strings.Join(args, ","))
 			return 0
 		}),
 		WithEffect(EffectReadOnly))
@@ -1325,7 +1325,7 @@ func TestPrefixedFalseEnvVar(t *testing.T) {
 
 	app := NewApp("myapp", "1.0.0", "test app")
 	app.Command("cmd", "a command", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Print("target=" + formatValue(args["target"]))
+		ctx.Out("target=" + formatValue(args["target"]))
 		return Exit(0)
 	}, WithFlags(StringFlag("target", "the target", Default("fallback"), Env("SPECIAL"), Prefixed(false))), WithEffect(EffectReadOnly))
 
@@ -1344,7 +1344,7 @@ func TestEnvChoicesValid(t *testing.T) {
 
 	app := NewApp("myapp", "1.0.0", "test app", WithEnvPrefix("MYAPP"))
 	app.Command("cmd", "a command", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Print("format=" + formatValue(args["format"]))
+		ctx.Out("format=" + formatValue(args["format"]))
 		return Exit(0)
 	}, WithFlags(StringFlag("format", "output format", Default("text"), Env("MYAPP_FORMAT"), Choices(Ch("text", ""), Ch("json", "")))), WithEffect(EffectReadOnly))
 
@@ -1838,7 +1838,7 @@ func TestDeprecatedSubcommandExitsWithError(t *testing.T) {
 func TestNormalAndDeprecatedCoexist(t *testing.T) {
 	app := NewApp("myapp", "1.0.0", "test app")
 	app.Command("run", "run something", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Print("running")
+		ctx.Out("running")
 		return Exit(0)
 	}, WithEffect(EffectReadOnly))
 	app.Deprecated("deploy", "use 'run' instead")
@@ -1901,7 +1901,7 @@ func TestImpliesEnvTrigger(t *testing.T) {
 
 	app := NewApp("myapp", "1.0.0", "test app", WithEnvPrefix("MYAPP"))
 	app.Command("cmd", "a command", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Print("fast=" + formatValue(args["fast"]) + " embeddings=" + formatValue(args["embeddings"]))
+		ctx.Out("fast=" + formatValue(args["fast"]) + " embeddings=" + formatValue(args["embeddings"]))
 		return Exit(0)
 	}, WithFlags(
 		BoolFlag("fast", "enable fast mode", Env("MYAPP_FAST"), Default(false)),
@@ -2085,7 +2085,7 @@ func TestHelpAfterFlags(t *testing.T) {
 func TestHelpNotAfterSeparator(t *testing.T) {
 	app := NewApp("myapp", "1.0.0", "test app")
 	app.Command("cmd", "a command", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Print(args["items"])
+		ctx.Out(fmt.Sprint(args["items"]))
 		return Exit(0)
 	}, WithArgs(NewArg("items", "items to process", Variadic(), ArgOptional())), WithEffect(EffectReadOnly))
 	r := app.Test([]string{"cmd", "--", "--help"})
@@ -2142,7 +2142,7 @@ func TestFloatFlagEnv(t *testing.T) {
 
 	app := NewApp("myapp", "1.0.0", "test app", WithEnvPrefix("MYAPP"))
 	app.Command("cmd", "a command", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Print("rate=" + formatValue(args["rate"]))
+		ctx.Out("rate=" + formatValue(args["rate"]))
 		return Exit(0)
 	}, WithFlags(FloatFlag("rate", "the rate", Default(1.0), Env("MYAPP_RATE"))), WithEffect(EffectReadOnly))
 
@@ -2243,7 +2243,7 @@ func TestFloatFlagRejectWhitespace(t *testing.T) {
 func TestFloatFlagRepeatable(t *testing.T) {
 	app := NewApp("myapp", "1.0.0", "test app")
 	app.Command("cmd", "a command", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Print("vals=" + formatValue(args["val"]))
+		ctx.Out("vals=" + formatValue(args["val"]))
 		return Exit(0)
 	}, WithFlags(FloatFlag("val", "a value", Repeatable(), Unique(false), Default([]interface{}{}))), WithEffect(EffectReadOnly))
 
@@ -2276,11 +2276,11 @@ func make3LevelApp() *App {
 	dns := app.Group("dns", "manage DNS")
 	zone := dns.Group("zone", "manage DNS zones")
 	zone.Command("list", "list all zones", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Print("listing zones")
+		ctx.Out("listing zones")
 		return Exit(0)
 	}, WithEffect(EffectReadOnly))
 	zone.Command("create", "create a zone", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Printf("creating zone %s", args["name"])
+		ctx.Out(fmt.Sprintf("creating zone %s", args["name"]))
 		return Exit(0)
 	}, WithFlags(StringFlag("name", "zone name", Required())), WithEffect(EffectReadOnly))
 	return app
@@ -2293,7 +2293,7 @@ func make4LevelApp() *App {
 	g2 := g1.Group("level2", "second level")
 	g3 := g2.Group("level3", "third level")
 	g3.Command("action", "do the thing", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Print("action executed")
+		ctx.Out("action executed")
 		return Exit(0)
 	}, WithEffect(EffectReadOnly))
 	return app
@@ -2486,12 +2486,12 @@ func TestDeepNestingMixedGroupsAndCommands(t *testing.T) {
 	app := NewApp("mix", "1.0.0", "mixed app")
 	grp := app.Group("infra", "infrastructure")
 	grp.Command("status", "show status", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Print("status ok")
+		ctx.Out("status ok")
 		return Exit(0)
 	}, WithEffect(EffectReadOnly))
 	sub := grp.Group("network", "network management")
 	sub.Command("list", "list networks", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Print("networks listed")
+		ctx.Out("networks listed")
 		return Exit(0)
 	}, WithEffect(EffectReadOnly))
 
@@ -2537,7 +2537,7 @@ func TestDeepNestingDeprecatedInSubgroup(t *testing.T) {
 	dns := app.Group("dns", "manage DNS")
 	zone := dns.Group("zone", "manage zones")
 	zone.Command("list", "list zones", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Print("listing")
+		ctx.Out("listing")
 		return Exit(0)
 	}, WithEffect(EffectReadOnly))
 	zone.Deprecated("dump", "use 'list' instead")
@@ -2571,9 +2571,9 @@ func TestDeepNestingGlobalFlags(t *testing.T) {
 	zone := dns.Group("zone", "manage zones")
 	zone.Command("list", "list zones", func(ctx *Context, args map[string]interface{}) Outcome {
 		if args["loud"].(bool) {
-			fmt.Print("loud listing")
+			ctx.Out("loud listing")
 		} else {
-			fmt.Print("normal listing")
+			ctx.Out("normal listing")
 		}
 		return Exit(0)
 	}, WithEffect(EffectReadOnly))
@@ -2770,7 +2770,7 @@ func TestConfigPrecedence(t *testing.T) {
 
 	app := NewApp("testapp", "1.0.0", "test app", WithConfig())
 	app.Command("serve", "start server", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Printf("port=%d", args["port"])
+		ctx.Out(fmt.Sprintf("port=%d", args["port"]))
 		return Exit(0)
 	}, WithFlags(
 		IntFlag("port", "port number", Env("TESTAPP_PORT"), Default(8080)),
@@ -2818,7 +2818,7 @@ func TestConfigInvalidJSON(t *testing.T) {
 
 	app := NewApp("testapp", "1.0.0", "test app", WithConfig())
 	app.Command("serve", "start server", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Printf("port=%d", args["port"])
+		ctx.Out(fmt.Sprintf("port=%d", args["port"]))
 		return Exit(0)
 	}, WithFlags(
 		IntFlag("port", "port number", Default(8080)),
@@ -3355,7 +3355,7 @@ func TestAtPrefixFileBasic(t *testing.T) {
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d: stderr=%q", r.ExitCode, r.Stderr)
 	}
-	if r.Stdout != "hello world" {
+	if r.Stdout != "hello world\n" {
 		t.Fatalf("expected 'hello world', got %q", r.Stdout)
 	}
 }
@@ -3370,7 +3370,7 @@ func TestAtPrefixFileMultiline(t *testing.T) {
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d: stderr=%q", r.ExitCode, r.Stderr)
 	}
-	if r.Stdout != "line1\nline2\nline3" {
+	if r.Stdout != "line1\nline2\nline3\n" {
 		t.Fatalf("expected 'line1\\nline2\\nline3', got %q", r.Stdout)
 	}
 }
@@ -3385,7 +3385,7 @@ func TestAtPrefixFileEmpty(t *testing.T) {
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d: stderr=%q", r.ExitCode, r.Stderr)
 	}
-	if r.Stdout != "><" {
+	if r.Stdout != "><\n" {
 		t.Fatalf("expected '><', got %q", r.Stdout)
 	}
 }
@@ -3400,7 +3400,7 @@ func TestAtPrefixFileTrailingWhitespace(t *testing.T) {
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d: stderr=%q", r.ExitCode, r.Stderr)
 	}
-	if r.Stdout != ">hello<" {
+	if r.Stdout != ">hello<\n" {
 		t.Fatalf("expected '>hello<', got %q", r.Stdout)
 	}
 }
@@ -3423,7 +3423,7 @@ func TestAtPrefixStdin(t *testing.T) {
 	if result.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d: stderr=%q", result.ExitCode, result.Stderr)
 	}
-	if result.Stdout != "from stdin" {
+	if result.Stdout != "from stdin\n" {
 		t.Fatalf("expected 'from stdin', got %q", result.Stdout)
 	}
 }
@@ -3435,7 +3435,7 @@ func TestAtPrefixEscapeSingle(t *testing.T) {
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d: stderr=%q", r.ExitCode, r.Stderr)
 	}
-	if r.Stdout != "@foo" {
+	if r.Stdout != "@foo\n" {
 		t.Fatalf("expected '@foo', got %q", r.Stdout)
 	}
 }
@@ -3447,7 +3447,7 @@ func TestAtPrefixEscapeDouble(t *testing.T) {
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d: stderr=%q", r.ExitCode, r.Stderr)
 	}
-	if r.Stdout != "@@" {
+	if r.Stdout != "@@\n" {
 		t.Fatalf("expected '@@', got %q", r.Stdout)
 	}
 }
@@ -3497,7 +3497,7 @@ func TestAtPrefixStdinDuplicate(t *testing.T) {
 
 	app := NewApp("myapp", "1.0.0", "test app")
 	app.Command("greet", "say hello", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Print(args["msg"])
+		ctx.Out(fmt.Sprint(args["msg"]))
 		return Exit(0)
 	}, WithFlags(
 		StringFlag("msg", "message", Required()),
@@ -3526,7 +3526,7 @@ func TestAtPrefixStdinDuplicateGlobalAndCommand(t *testing.T) {
 	app := NewApp("myapp", "1.0.0", "test app")
 	app.GlobalFlag(StringFlag("token", "auth token", Required()))
 	app.Command("greet", "say hello", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Print(args["msg"])
+		ctx.Out(fmt.Sprint(args["msg"]))
 		return Exit(0)
 	}, WithFlags(StringFlag("msg", "message", Required())), WithEffect(EffectReadOnly))
 
@@ -3564,7 +3564,7 @@ func TestAtPrefixEnvVar(t *testing.T) {
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d: stderr=%q", r.ExitCode, r.Stderr)
 	}
-	if r.Stdout != "env value" {
+	if r.Stdout != "env value\n" {
 		t.Fatalf("expected 'env value', got %q", r.Stdout)
 	}
 }
@@ -3579,7 +3579,7 @@ func TestAtPrefixEnvVarEscape(t *testing.T) {
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d: stderr=%q", r.ExitCode, r.Stderr)
 	}
-	if r.Stdout != "@literal" {
+	if r.Stdout != "@literal\n" {
 		t.Fatalf("expected '@literal', got %q", r.Stdout)
 	}
 }
@@ -3591,14 +3591,14 @@ func TestAtPrefixGlobalFlag(t *testing.T) {
 	app := NewApp("myapp", "1.0.0", "test app")
 	app.GlobalFlag(StringFlag("token", "auth token", Required()))
 	app.Command("greet", "say hello", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Print(args["token"])
+		ctx.Out(fmt.Sprint(args["token"]))
 		return Exit(0)
 	}, WithEffect(EffectReadOnly))
 	r := app.Test([]string{"--token", "@" + tmpFile, "greet"})
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d: stderr=%q", r.ExitCode, r.Stderr)
 	}
-	if r.Stdout != "secret-token" {
+	if r.Stdout != "secret-token\n" {
 		t.Fatalf("expected 'secret-token', got %q", r.Stdout)
 	}
 }
@@ -3613,7 +3613,7 @@ func TestAtPrefixEqualsForm(t *testing.T) {
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d: stderr=%q", r.ExitCode, r.Stderr)
 	}
-	if r.Stdout != "equals-value" {
+	if r.Stdout != "equals-value\n" {
 		t.Fatalf("expected 'equals-value', got %q", r.Stdout)
 	}
 }
@@ -3628,7 +3628,7 @@ func TestAtPrefixShortForm(t *testing.T) {
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d: stderr=%q", r.ExitCode, r.Stderr)
 	}
-	if r.Stdout != "short-value" {
+	if r.Stdout != "short-value\n" {
 		t.Fatalf("expected 'short-value', got %q", r.Stdout)
 	}
 }
@@ -3640,7 +3640,7 @@ func TestAtPrefixDefaultNotResolved(t *testing.T) {
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d: stderr=%q", r.ExitCode, r.Stderr)
 	}
-	if r.Stdout != "@not-a-file" {
+	if r.Stdout != "@not-a-file\n" {
 		t.Fatalf("expected '@not-a-file', got %q", r.Stdout)
 	}
 }
@@ -3669,14 +3669,14 @@ func TestAtPrefixGlobalFlagEnv(t *testing.T) {
 	app := NewApp("myapp", "1.0.0", "test app")
 	app.GlobalFlag(StringFlag("token", "auth token", Env("TEST_TOKEN_AT"), Prefixed(false), Required()))
 	app.Command("greet", "say hello", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Print(args["token"])
+		ctx.Out(fmt.Sprint(args["token"]))
 		return Exit(0)
 	}, WithEffect(EffectReadOnly))
 	r := app.Test([]string{"greet"})
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d: stderr=%q", r.ExitCode, r.Stderr)
 	}
-	if r.Stdout != "env-token" {
+	if r.Stdout != "env-token\n" {
 		t.Fatalf("expected 'env-token', got %q", r.Stdout)
 	}
 }
@@ -3688,14 +3688,14 @@ func TestAtPrefixGlobalEqualsForm(t *testing.T) {
 	app := NewApp("myapp", "1.0.0", "test app")
 	app.GlobalFlag(StringFlag("token", "auth token", Required()))
 	app.Command("greet", "say hello", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Print(args["token"])
+		ctx.Out(fmt.Sprint(args["token"]))
 		return Exit(0)
 	}, WithEffect(EffectReadOnly))
 	r := app.Test([]string{"--token=@" + tmpFile, "greet"})
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d: stderr=%q", r.ExitCode, r.Stderr)
 	}
-	if r.Stdout != "global-eq" {
+	if r.Stdout != "global-eq\n" {
 		t.Fatalf("expected 'global-eq', got %q", r.Stdout)
 	}
 }
@@ -3726,8 +3726,8 @@ func TestTomlConfigLoading(t *testing.T) {
 
 	app := NewApp("tomlapp", "1.0.0", "test app", WithConfig(), WithConfigFormat("toml"))
 	app.Command("run", "run something", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Printf("loud=%v debug=%v rate=%v threshold=%v",
-			args["loud"], args["debug"], args["rate"], args["threshold"])
+		ctx.Out(fmt.Sprintf("loud=%v debug=%v rate=%v threshold=%v",
+			args["loud"], args["debug"], args["rate"], args["threshold"]))
 		return Exit(0)
 	}, WithFlags(
 		IntFlag("loud", "verbosity level", Default(0)),
@@ -4035,8 +4035,8 @@ func TestConfigSetRoundTripTyped(t *testing.T) {
 	buildApp := func() *App {
 		app := NewApp("rtapp", "1.0.0", "test app", WithConfig())
 		app.Command("show", "show values", func(ctx *Context, args map[string]interface{}) Outcome {
-			fmt.Printf("count=%d loud=%t rate=%.2f name=%s",
-				args["count"], args["loud"], args["rate"], args["name"])
+			ctx.Out(fmt.Sprintf("count=%d loud=%t rate=%.2f name=%s",
+				args["count"], args["loud"], args["rate"], args["name"]))
 			return Exit(0)
 		}, WithFlags(
 			IntFlag("count", "a count", Default(0)),
@@ -4067,7 +4067,7 @@ func TestConfigSetRoundTripTyped(t *testing.T) {
 	if r.ExitCode != 0 {
 		t.Fatalf("show: exit %d, stderr=%q", r.ExitCode, r.Stderr)
 	}
-	expected := "count=7 loud=true rate=2.50 name=hello"
+	expected := "count=7 loud=true rate=2.50 name=hello\n"
 	if r.Stdout != expected {
 		t.Errorf("expected %q, got %q", expected, r.Stdout)
 	}
@@ -4102,7 +4102,7 @@ func TestTomlConfigPrecedence(t *testing.T) {
 
 	app := NewApp("tomlprecapp", "1.0.0", "test app", WithConfig(), WithConfigFormat("toml"))
 	app.Command("serve", "start server", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Printf("port=%d", args["port"])
+		ctx.Out(fmt.Sprintf("port=%d", args["port"]))
 		return Exit(0)
 	}, WithFlags(
 		IntFlag("port", "port number", Env("TOMLPREC_PORT"), Default(8080)),
@@ -4149,7 +4149,7 @@ func TestTomlConfigInvalidToml(t *testing.T) {
 
 	app := NewApp("tomlbadapp", "1.0.0", "test app", WithConfig(), WithConfigFormat("toml"))
 	app.Command("serve", "start server", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Printf("port=%d", args["port"])
+		ctx.Out(fmt.Sprintf("port=%d", args["port"]))
 		return Exit(0)
 	}, WithFlags(
 		IntFlag("port", "port number", Default(8080)),
@@ -4375,7 +4375,7 @@ func TestTomlConfigEmptyFile(t *testing.T) {
 
 	app := NewApp("tomlemptyapp", "1.0.0", "test app", WithConfig(), WithConfigFormat("toml"))
 	app.Command("run", "run something", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Printf("port=%d", args["port"])
+		ctx.Out(fmt.Sprintf("port=%d", args["port"]))
 		return Exit(0)
 	}, WithFlags(
 		IntFlag("port", "port number", Default(8080)),
@@ -5017,7 +5017,7 @@ func TestUniqueGlobalFlag(t *testing.T) {
 	app := NewApp("myapp", "1.0.0", "test app")
 	app.GlobalFlag(StringFlag("tag", "a tag", Repeatable(), Unique(true), Default([]interface{}{})))
 	app.Command("cmd", "a command", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Print("tags=" + formatValue(args["tag"]))
+		ctx.Out("tags=" + formatValue(args["tag"]))
 		return Exit(0)
 	}, WithEffect(EffectReadOnly))
 	// Distinct values should succeed
@@ -5051,7 +5051,7 @@ func TestConfigArrayForRepeatableString(t *testing.T) {
 	})
 	app := NewApp("arrstrapp", "1.0.0", "test app", WithConfig())
 	app.Command("run", "run something", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Print("val=" + formatValue(args["tags"]))
+		ctx.Out("val=" + formatValue(args["tags"]))
 		return Exit(0)
 	}, WithFlags(StringFlag("tags", "the tags", Repeatable(), Unique(false), Default([]interface{}{}))), WithEffect(EffectReadOnly))
 	r := app.Test([]string{"run"})
@@ -5071,7 +5071,7 @@ func TestConfigArrayForRepeatableInt(t *testing.T) {
 	})
 	app := NewApp("arrintapp", "1.0.0", "test app", WithConfig())
 	app.Command("run", "run something", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Print("val=" + formatValue(args["nums"]))
+		ctx.Out("val=" + formatValue(args["nums"]))
 		return Exit(0)
 	}, WithFlags(IntFlag("nums", "the nums", Repeatable(), Unique(false), Default([]interface{}{}))), WithEffect(EffectReadOnly))
 	r := app.Test([]string{"run"})
@@ -5091,7 +5091,7 @@ func TestConfigArrayForRepeatableFloat(t *testing.T) {
 	})
 	app := NewApp("arrfloatapp", "1.0.0", "test app", WithConfig())
 	app.Command("run", "run something", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Print("val=" + formatValue(args["rates"]))
+		ctx.Out("val=" + formatValue(args["rates"]))
 		return Exit(0)
 	}, WithFlags(FloatFlag("rates", "the rates", Repeatable(), Unique(false), Default([]interface{}{}))), WithEffect(EffectReadOnly))
 	r := app.Test([]string{"run"})
@@ -5168,7 +5168,7 @@ func TestConfigEmptyArray(t *testing.T) {
 	})
 	app := NewApp("arremptyapp", "1.0.0", "test app", WithConfig())
 	app.Command("run", "run something", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Print("val=" + formatValue(args["tags"]))
+		ctx.Out("val=" + formatValue(args["tags"]))
 		return Exit(0)
 	}, WithFlags(StringFlag("tags", "the tags", Repeatable(), Unique(false), Default([]interface{}{}))), WithEffect(EffectReadOnly))
 	r := app.Test([]string{"run"})
@@ -5179,7 +5179,7 @@ func TestConfigEmptyArray(t *testing.T) {
 		t.Fatalf("expected val= in stdout, got %q", r.Stdout)
 	}
 	// Empty array should produce empty string from formatValue
-	if r.Stdout != "val=" {
+	if r.Stdout != "val=\n" {
 		t.Fatalf("expected exactly 'val=', got %q", r.Stdout)
 	}
 }
@@ -5192,7 +5192,7 @@ func TestConfigSingleElementArray(t *testing.T) {
 	})
 	app := NewApp("arroneapp", "1.0.0", "test app", WithConfig())
 	app.Command("run", "run something", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Print("val=" + formatValue(args["tags"]))
+		ctx.Out("val=" + formatValue(args["tags"]))
 		return Exit(0)
 	}, WithFlags(StringFlag("tags", "the tags", Repeatable(), Unique(false), Default([]interface{}{}))), WithEffect(EffectReadOnly))
 	r := app.Test([]string{"run"})
@@ -5212,7 +5212,7 @@ func TestConfigArrayPrecedenceCLIWins(t *testing.T) {
 	})
 	app := NewApp("arrprecapp", "1.0.0", "test app", WithConfig())
 	app.Command("run", "run something", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Print("val=" + formatValue(args["tags"]))
+		ctx.Out("val=" + formatValue(args["tags"]))
 		return Exit(0)
 	}, WithFlags(StringFlag("tags", "the tags", Repeatable(), Unique(false), Default([]interface{}{}))), WithEffect(EffectReadOnly))
 	r := app.Test([]string{"run", "--tags", "x", "--tags", "y"})
@@ -5256,7 +5256,7 @@ func TestConfigUniqueNoDuplicates(t *testing.T) {
 	})
 	app := NewApp("cfguniqokapp", "1.0.0", "test app", WithConfig())
 	app.Command("run", "run something", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Print("val=" + formatValue(args["tags"]))
+		ctx.Out("val=" + formatValue(args["tags"]))
 		return Exit(0)
 	}, WithFlags(StringFlag("tags", "the tags", Repeatable(), Unique(true), Default([]interface{}{}))), WithEffect(EffectReadOnly))
 	r := app.Test([]string{"run"})
@@ -5355,7 +5355,7 @@ func TestEnvSeparatorSplitsValue(t *testing.T) {
 
 	app := NewApp("myapp", "1.0.0", "test app")
 	app.Command("cmd", "a command", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Print("tags=" + formatValue(args["tag"]))
+		ctx.Out("tags=" + formatValue(args["tag"]))
 		return Exit(0)
 	}, WithFlags(StringFlag("tag", "a tag", Repeatable(), Unique(false), Env("TAGS"), Prefixed(false), EnvSeparator(","), Default([]interface{}{}))), WithEffect(EffectReadOnly))
 
@@ -5374,7 +5374,7 @@ func TestEnvSeparatorEscapedSeparator(t *testing.T) {
 
 	app := NewApp("myapp", "1.0.0", "test app")
 	app.Command("cmd", "a command", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Print("tags=" + formatValue(args["tag"]))
+		ctx.Out("tags=" + formatValue(args["tag"]))
 		return Exit(0)
 	}, WithFlags(StringFlag("tag", "a tag", Repeatable(), Unique(false), Env("TAGS"), Prefixed(false), EnvSeparator(","), Default([]interface{}{}))), WithEffect(EffectReadOnly))
 
@@ -5393,7 +5393,7 @@ func TestEnvSeparatorSingleValue(t *testing.T) {
 
 	app := NewApp("myapp", "1.0.0", "test app")
 	app.Command("cmd", "a command", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Print("tags=" + formatValue(args["tag"]))
+		ctx.Out("tags=" + formatValue(args["tag"]))
 		return Exit(0)
 	}, WithFlags(StringFlag("tag", "a tag", Repeatable(), Unique(false), Env("TAGS"), Prefixed(false), EnvSeparator(","), Default([]interface{}{}))), WithEffect(EffectReadOnly))
 
@@ -5412,7 +5412,7 @@ func TestEnvSeparatorIntCoercion(t *testing.T) {
 
 	app := NewApp("myapp", "1.0.0", "test app")
 	app.Command("cmd", "a command", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Print("counts=" + formatValue(args["count"]))
+		ctx.Out("counts=" + formatValue(args["count"]))
 		return Exit(0)
 	}, WithFlags(IntFlag("count", "a count", Repeatable(), Unique(false), Env("COUNTS"), Prefixed(false), EnvSeparator(","), Default([]interface{}{}))), WithEffect(EffectReadOnly))
 
@@ -5467,7 +5467,7 @@ func TestEnvSeparatorUniqueNoDuplicate(t *testing.T) {
 
 	app := NewApp("myapp", "1.0.0", "test app")
 	app.Command("cmd", "a command", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Print("tags=" + formatValue(args["tag"]))
+		ctx.Out("tags=" + formatValue(args["tag"]))
 		return Exit(0)
 	}, WithFlags(StringFlag("tag", "a tag", Repeatable(), Unique(true), Env("TAGS"), Prefixed(false), EnvSeparator(","), Default([]interface{}{}))), WithEffect(EffectReadOnly))
 
@@ -5486,7 +5486,7 @@ func TestEnvSeparatorCliOverridesEnv(t *testing.T) {
 
 	app := NewApp("myapp", "1.0.0", "test app")
 	app.Command("cmd", "a command", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Print("tags=" + formatValue(args["tag"]))
+		ctx.Out("tags=" + formatValue(args["tag"]))
 		return Exit(0)
 	}, WithFlags(StringFlag("tag", "a tag", Repeatable(), Unique(false), Env("TAGS"), Prefixed(false), EnvSeparator(","), Default([]interface{}{}))), WithEffect(EffectReadOnly))
 
@@ -5505,7 +5505,7 @@ func TestEnvSeparatorColonSeparator(t *testing.T) {
 
 	app := NewApp("myapp", "1.0.0", "test app")
 	app.Command("cmd", "a command", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Print("paths=" + formatValue(args["path"]))
+		ctx.Out("paths=" + formatValue(args["path"]))
 		return Exit(0)
 	}, WithFlags(StringFlag("path", "a path", Repeatable(), Unique(false), Env("PATHS"), Prefixed(false), EnvSeparator(":"), Default([]interface{}{}))), WithEffect(EffectReadOnly))
 
@@ -5525,7 +5525,7 @@ func TestEnvSeparatorGlobalFlag(t *testing.T) {
 	app := NewApp("myapp", "1.0.0", "test app")
 	app.GlobalFlag(StringFlag("tag", "a tag", Repeatable(), Unique(false), Env("TAGS"), Prefixed(false), EnvSeparator(","), Default([]interface{}{})))
 	app.Command("cmd", "a command", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Print("tags=" + formatValue(args["tag"]))
+		ctx.Out("tags=" + formatValue(args["tag"]))
 		return Exit(0)
 	}, WithEffect(EffectReadOnly))
 
@@ -5544,7 +5544,7 @@ func TestEnvSeparatorFloatCoercion(t *testing.T) {
 
 	app := NewApp("myapp", "1.0.0", "test app")
 	app.Command("cmd", "a command", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Print("rates=" + formatValue(args["rate"]))
+		ctx.Out("rates=" + formatValue(args["rate"]))
 		return Exit(0)
 	}, WithFlags(FloatFlag("rate", "a rate", Repeatable(), Unique(false), Env("RATES"), Prefixed(false), EnvSeparator(","), Default([]interface{}{}))), WithEffect(EffectReadOnly))
 
@@ -5602,7 +5602,7 @@ func TestEnvSeparatorAtPrefixPerElement(t *testing.T) {
 
 	app := NewApp("myapp", "1.0.0", "test app")
 	app.Command("cmd", "a command", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Print("tag=" + formatValue(args["tag"]))
+		ctx.Out("tag=" + formatValue(args["tag"]))
 		return Exit(0)
 	}, WithFlags(StringFlag("tag", "a tag", Repeatable(), Unique(false), Env("TAGS"), Prefixed(false), EnvSeparator(","), Default([]interface{}{}))), WithEffect(EffectReadOnly))
 
@@ -5997,7 +5997,7 @@ func TestRepeatableDefaultApplied(t *testing.T) {
 	// BUG: currently receives [] (empty slice)
 	app := NewApp("myapp", "1.0.0", "test app")
 	app.Command("cmd", "a command", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Print("tags=" + formatValue(args["tag"]))
+		ctx.Out("tags=" + formatValue(args["tag"]))
 		return Exit(0)
 	}, WithFlags(StringFlag("tag", "a tag", Repeatable(), Unique(false), Default([]interface{}{"a", "b"}))), WithEffect(EffectReadOnly))
 
@@ -6005,7 +6005,7 @@ func TestRepeatableDefaultApplied(t *testing.T) {
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d: stderr=%q", r.ExitCode, r.Stderr)
 	}
-	if r.Stdout != "tags=a,b" {
+	if r.Stdout != "tags=a,b\n" {
 		t.Fatalf("expected stdout 'tags=a,b', got %q", r.Stdout)
 	}
 }
@@ -6014,7 +6014,7 @@ func TestRepeatableDefaultOverriddenByCLI(t *testing.T) {
 	// CLI values completely replace the default
 	app := NewApp("myapp", "1.0.0", "test app")
 	app.Command("cmd", "a command", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Print("tags=" + formatValue(args["tag"]))
+		ctx.Out("tags=" + formatValue(args["tag"]))
 		return Exit(0)
 	}, WithFlags(StringFlag("tag", "a tag", Repeatable(), Unique(false), Default([]interface{}{"a", "b"}))), WithEffect(EffectReadOnly))
 
@@ -6022,7 +6022,7 @@ func TestRepeatableDefaultOverriddenByCLI(t *testing.T) {
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d: stderr=%q", r.ExitCode, r.Stderr)
 	}
-	if r.Stdout != "tags=x,y" {
+	if r.Stdout != "tags=x,y\n" {
 		t.Fatalf("expected stdout 'tags=x,y', got %q", r.Stdout)
 	}
 }
@@ -6034,7 +6034,7 @@ func TestRepeatableDefaultOverriddenByEnv(t *testing.T) {
 
 	app := NewApp("myapp", "1.0.0", "test app", WithEnvPrefix("MYAPP"))
 	app.Command("cmd", "a command", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Print("tags=" + formatValue(args["tag"]))
+		ctx.Out("tags=" + formatValue(args["tag"]))
 		return Exit(0)
 	}, WithFlags(StringFlag("tag", "a tag", Repeatable(), Unique(false), Env("MYAPP_TAG"), EnvSeparator(","), Default([]interface{}{"a", "b"}))), WithEffect(EffectReadOnly))
 
@@ -6042,7 +6042,7 @@ func TestRepeatableDefaultOverriddenByEnv(t *testing.T) {
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d: stderr=%q", r.ExitCode, r.Stderr)
 	}
-	if r.Stdout != "tags=fromenv1,fromenv2" {
+	if r.Stdout != "tags=fromenv1,fromenv2\n" {
 		t.Fatalf("expected stdout 'tags=fromenv1,fromenv2', got %q", r.Stdout)
 	}
 }
@@ -6052,7 +6052,7 @@ func TestRepeatableDefaultGlobalFlag(t *testing.T) {
 	app := NewApp("myapp", "1.0.0", "test app")
 	app.GlobalFlag(StringFlag("tag", "a tag", Repeatable(), Unique(false), Default([]interface{}{"x", "y"})))
 	app.Command("cmd", "a command", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Print("tags=" + formatValue(args["tag"]))
+		ctx.Out("tags=" + formatValue(args["tag"]))
 		return Exit(0)
 	}, WithEffect(EffectReadOnly))
 
@@ -6060,7 +6060,7 @@ func TestRepeatableDefaultGlobalFlag(t *testing.T) {
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d: stderr=%q", r.ExitCode, r.Stderr)
 	}
-	if r.Stdout != "tags=x,y" {
+	if r.Stdout != "tags=x,y\n" {
 		t.Fatalf("expected stdout 'tags=x,y', got %q", r.Stdout)
 	}
 }
@@ -6071,7 +6071,7 @@ func TestRepeatableDefaultNotMutated(t *testing.T) {
 	app := NewApp("myapp", "1.0.0", "test app")
 	app.Command("cmd", "a command", func(ctx *Context, args map[string]interface{}) Outcome {
 		vals := args["tag"].([]interface{})
-		fmt.Print("tags=" + formatValue(vals))
+		ctx.Out("tags=" + formatValue(vals))
 		// Attempt to mutate the slice
 		if len(vals) > 0 {
 			vals[0] = "MUTATED"
@@ -6083,7 +6083,7 @@ func TestRepeatableDefaultNotMutated(t *testing.T) {
 	if r1.ExitCode != 0 {
 		t.Fatalf("run 1: expected exit 0, got %d: stderr=%q", r1.ExitCode, r1.Stderr)
 	}
-	if r1.Stdout != "tags=a,b" {
+	if r1.Stdout != "tags=a,b\n" {
 		t.Fatalf("run 1: expected stdout 'tags=a,b', got %q", r1.Stdout)
 	}
 
@@ -6091,7 +6091,7 @@ func TestRepeatableDefaultNotMutated(t *testing.T) {
 	if r2.ExitCode != 0 {
 		t.Fatalf("run 2: expected exit 0, got %d: stderr=%q", r2.ExitCode, r2.Stderr)
 	}
-	if r2.Stdout != "tags=a,b" {
+	if r2.Stdout != "tags=a,b\n" {
 		t.Fatalf("run 2: expected stdout 'tags=a,b', got %q (mutation leaked)", r2.Stdout)
 	}
 }
@@ -6179,11 +6179,11 @@ func TestRepeatableDefaultIntCoercedToFloat(t *testing.T) {
 		vals := args["rate"].([]interface{})
 		for _, v := range vals {
 			if _, ok := v.(float64); !ok {
-				fmt.Printf("not float64: %T\n", v)
+				ctx.Out(fmt.Sprintf("not float64: %T\n", v))
 				return Exit(1)
 			}
 		}
-		fmt.Print("ok")
+		ctx.Out("ok")
 		return Exit(0)
 	}, WithFlags(FloatFlag("rate", "a rate", Repeatable(), Unique(false), Default([]interface{}{1, 2}))), WithEffect(EffectReadOnly))
 
@@ -6191,7 +6191,7 @@ func TestRepeatableDefaultIntCoercedToFloat(t *testing.T) {
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d: stderr=%q stdout=%q", r.ExitCode, r.Stderr, r.Stdout)
 	}
-	if r.Stdout != "ok" {
+	if r.Stdout != "ok\n" {
 		t.Fatalf("expected 'ok', got %q", r.Stdout)
 	}
 }
@@ -6199,7 +6199,7 @@ func TestRepeatableDefaultIntCoercedToFloat(t *testing.T) {
 func TestRepeatableDefaultValid(t *testing.T) {
 	app := NewApp("test", "1.0.0", "test app")
 	app.Command("cmd", "a command", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Print("tags=" + formatValue(args["tag"]))
+		ctx.Out("tags=" + formatValue(args["tag"]))
 		return Exit(0)
 	}, WithFlags(StringFlag("tag", "a tag", Repeatable(), Unique(false), Default([]interface{}{"x", "y"}))), WithEffect(EffectReadOnly))
 
@@ -6207,7 +6207,7 @@ func TestRepeatableDefaultValid(t *testing.T) {
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d: stderr=%q", r.ExitCode, r.Stderr)
 	}
-	if r.Stdout != "tags=x,y" {
+	if r.Stdout != "tags=x,y\n" {
 		t.Fatalf("expected 'tags=x,y', got %q", r.Stdout)
 	}
 }
@@ -6440,7 +6440,7 @@ func TestTagContractSatisfied(t *testing.T) {
 	app := NewApp("myapp", "1.0.0", "test app")
 	app.TagContract("json", "as-json")
 	app.Command("cmd", "a command", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Print("ok")
+		ctx.Out("ok")
 		return Exit(0)
 	}, WithTags("json"), WithFlags(BoolFlag("as-json", "output json", Default(false))), WithEffect(EffectReadOnly))
 	r := app.Test([]string{"cmd", "--as-json"})
@@ -6498,7 +6498,7 @@ func TestTagContractUntaggedCommandNotChecked(t *testing.T) {
 	app.TagContract("json", "as-json")
 	// Command has no tags -- should not be affected by the contract
 	app.Command("cmd", "a command", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Print("ok")
+		ctx.Out("ok")
 		return Exit(0)
 	}, WithEffect(EffectReadOnly))
 	r := app.Test([]string{"cmd"})
@@ -7021,7 +7021,7 @@ func TestArgTypeInt(t *testing.T) {
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d; stderr=%q", r.ExitCode, r.Stderr)
 	}
-	if r.Stdout != "val=42" {
+	if r.Stdout != "val=42\n" {
 		t.Fatalf("expected 'val=42', got %q", r.Stdout)
 	}
 }
@@ -7045,7 +7045,7 @@ func TestArgTypeFloat(t *testing.T) {
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d; stderr=%q", r.ExitCode, r.Stderr)
 	}
-	if r.Stdout != "val=3.14" {
+	if r.Stdout != "val=3.14\n" {
 		t.Fatalf("expected 'val=3.14', got %q", r.Stdout)
 	}
 }
@@ -7093,7 +7093,7 @@ func TestArgTypeBool(t *testing.T) {
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d; stderr=%q", r.ExitCode, r.Stderr)
 	}
-	if r.Stdout != "val=true" {
+	if r.Stdout != "val=true\n" {
 		t.Fatalf("expected 'val=true', got %q", r.Stdout)
 	}
 }
@@ -7118,7 +7118,7 @@ func TestArgTypeBoolCaseInsensitive(t *testing.T) {
 		if r.ExitCode != 0 {
 			t.Fatalf("value %q: expected exit 0, got %d; stderr=%q", val, r.ExitCode, r.Stderr)
 		}
-		if r.Stdout != "val=true" {
+		if r.Stdout != "val=true\n" {
 			t.Fatalf("value %q: expected 'val=true', got %q", val, r.Stdout)
 		}
 	}
@@ -7127,7 +7127,7 @@ func TestArgTypeBoolCaseInsensitive(t *testing.T) {
 		if r.ExitCode != 0 {
 			t.Fatalf("value %q: expected exit 0, got %d; stderr=%q", val, r.ExitCode, r.Stderr)
 		}
-		if r.Stdout != "val=false" {
+		if r.Stdout != "val=false\n" {
 			t.Fatalf("value %q: expected 'val=false', got %q", val, r.Stdout)
 		}
 	}
@@ -7141,7 +7141,7 @@ func TestArgStrDefaultType(t *testing.T) {
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d", r.ExitCode)
 	}
-	if r.Stdout != "val=42" {
+	if r.Stdout != "val=42\n" {
 		t.Fatalf("expected 'val=42', got %q", r.Stdout)
 	}
 }
@@ -7153,7 +7153,7 @@ func TestArgChoicesStr(t *testing.T) {
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d; stderr=%q", r.ExitCode, r.Stderr)
 	}
-	if r.Stdout != "val=prod" {
+	if r.Stdout != "val=prod\n" {
 		t.Fatalf("expected 'val=prod', got %q", r.Stdout)
 	}
 }
@@ -7177,7 +7177,7 @@ func TestArgChoicesInt(t *testing.T) {
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d; stderr=%q", r.ExitCode, r.Stderr)
 	}
-	if r.Stdout != "val=2" {
+	if r.Stdout != "val=2\n" {
 		t.Fatalf("expected 'val=2', got %q", r.Stdout)
 	}
 }
@@ -7271,7 +7271,7 @@ func TestVariadicTypedArg(t *testing.T) {
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d; stderr=%q", r.ExitCode, r.Stderr)
 	}
-	if r.Stdout != "vals=1,2,3" {
+	if r.Stdout != "vals=1,2,3\n" {
 		t.Fatalf("expected 'vals=1,2,3', got %q", r.Stdout)
 	}
 }
@@ -7453,7 +7453,7 @@ func TestArgIntNegativeValue(t *testing.T) {
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d; stderr=%q", r.ExitCode, r.Stderr)
 	}
-	if r.Stdout != "val=-7" {
+	if r.Stdout != "val=-7\n" {
 		t.Fatalf("expected 'val=-7', got %q", r.Stdout)
 	}
 }
@@ -7493,7 +7493,7 @@ func TestArgChoicesFloat(t *testing.T) {
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d; stderr=%q", r.ExitCode, r.Stderr)
 	}
-	if r.Stdout != "val=2.5" {
+	if r.Stdout != "val=2.5\n" {
 		t.Fatalf("expected 'val=2.5', got %q", r.Stdout)
 	}
 }
@@ -7521,7 +7521,7 @@ func TestArgMixedTypedAndStr(t *testing.T) {
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d; stderr=%q", r.ExitCode, r.Stderr)
 	}
-	if r.Stdout != "name=hello count=5" {
+	if r.Stdout != "name=hello count=5\n" {
 		t.Fatalf("expected 'name=hello count=5', got %q", r.Stdout)
 	}
 }
@@ -7534,7 +7534,7 @@ func TestArgIntWithOptionalDefault(t *testing.T) {
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d; stderr=%q", r.ExitCode, r.Stderr)
 	}
-	if r.Stdout != "val=3000" {
+	if r.Stdout != "val=3000\n" {
 		t.Fatalf("expected 'val=3000', got %q", r.Stdout)
 	}
 	// Without value: should use default
@@ -7542,7 +7542,7 @@ func TestArgIntWithOptionalDefault(t *testing.T) {
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d; stderr=%q", r.ExitCode, r.Stderr)
 	}
-	if r.Stdout != "val=8080" {
+	if r.Stdout != "val=8080\n" {
 		t.Fatalf("expected 'val=8080', got %q", r.Stdout)
 	}
 }
@@ -7605,14 +7605,14 @@ func TestHiddenCommandNotInHelp(t *testing.T) {
 func TestHiddenCommandStillRoutable(t *testing.T) {
 	app := NewApp("myapp", "1.0.0", "test app")
 	app.Command("secret", "A secret command", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Print("secret-executed")
+		ctx.Out("secret-executed")
 		return Exit(0)
 	}, WithHidden(), WithEffect(EffectReadOnly))
 	r := app.Test([]string{"secret"})
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d; stderr=%q", r.ExitCode, r.Stderr)
 	}
-	if r.Stdout != "secret-executed" {
+	if r.Stdout != "secret-executed\n" {
 		t.Fatalf("expected 'secret-executed', got %q", r.Stdout)
 	}
 }
@@ -7645,14 +7645,14 @@ func TestHiddenGroupStillRoutable(t *testing.T) {
 	grp := app.Group("secret-group", "A hidden group")
 	grp.Hidden = true
 	grp.Command("sub", "A subcommand", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Print("hidden-group-cmd")
+		ctx.Out("hidden-group-cmd")
 		return Exit(0)
 	}, WithEffect(EffectReadOnly))
 	r := app.Test([]string{"secret-group", "sub"})
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d; stderr=%q", r.ExitCode, r.Stderr)
 	}
-	if r.Stdout != "hidden-group-cmd" {
+	if r.Stdout != "hidden-group-cmd\n" {
 		t.Fatalf("expected 'hidden-group-cmd', got %q", r.Stdout)
 	}
 }
@@ -7939,7 +7939,7 @@ func TestConfigMissingViaWithConfigPathIsSoft(t *testing.T) {
 
 	app := NewApp("testapp", "1.0.0", "test app", WithConfig(), WithConfigPath("/nonexistent/path/config.json"))
 	app.Command("run", "run it", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Printf("ok")
+		ctx.Out(fmt.Sprintf("ok"))
 		return Exit(0)
 	}, WithFlags(
 		StringFlag("name", "a name", Default("default")),
@@ -7962,7 +7962,7 @@ func TestConfigMissingXDGIsSoft(t *testing.T) {
 	// No config file written -- XDG path doesn't exist
 	app := NewApp("testapp", "1.0.0", "test app", WithConfig())
 	app.Command("run", "run it", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Printf("ok")
+		ctx.Out(fmt.Sprintf("ok"))
 		return Exit(0)
 	}, WithFlags(
 		StringFlag("name", "a name", Default("default")),
@@ -8048,7 +8048,7 @@ func TestConfigConflictModeDefault(t *testing.T) {
 
 	app := NewApp("testapp", "1.0.0", "test app", WithConfig())
 	app.Command("run", "run it", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Printf("name=%s", args["name"])
+		ctx.Out(fmt.Sprintf("name=%s", args["name"]))
 		return Exit(0)
 	}, WithFlags(
 		StringFlag("name", "a name", Default("")),
@@ -8072,7 +8072,7 @@ func TestConfigConflictModeErrorCLI(t *testing.T) {
 
 	app := NewApp("testapp", "1.0.0", "test app", WithConfig(), WithConfigConflictMode("error"))
 	app.Command("run", "run it", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Printf("name=%s", args["name"])
+		ctx.Out(fmt.Sprintf("name=%s", args["name"]))
 		return Exit(0)
 	}, WithFlags(
 		StringFlag("name", "a name", Default("")),
@@ -8099,7 +8099,7 @@ func TestConfigConflictModeErrorEnv(t *testing.T) {
 
 	app := NewApp("testapp", "1.0.0", "test app", WithConfig(), WithConfigConflictMode("error"))
 	app.Command("run", "run it", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Printf("name=%s", args["name"])
+		ctx.Out(fmt.Sprintf("name=%s", args["name"]))
 		return Exit(0)
 	}, WithFlags(
 		StringFlag("name", "a name", Default(""), Env("TESTAPP_NAME"), Prefixed(false)),
@@ -8126,7 +8126,7 @@ func TestConfigConflictModeImpliedExcluded(t *testing.T) {
 
 	app := NewApp("testapp", "1.0.0", "test app", WithConfig(), WithConfigConflictMode("error"))
 	app.Command("run", "run it", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Printf("loud=%v", args["loud"])
+		ctx.Out(fmt.Sprintf("loud=%v", args["loud"]))
 		return Exit(0)
 	}, WithFlags(
 		BoolFlag("debug", "enable debug", Default(false)),
@@ -8182,7 +8182,7 @@ func TestConflictErrorIdenticalScalarPasses(t *testing.T) {
 
 	app := NewApp("testapp", "1.0.0", "test app", WithConfig(), WithConfigConflictMode("error"))
 	app.Command("run", "run it", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Printf("target=%s", args["target"])
+		ctx.Out(fmt.Sprintf("target=%s", args["target"]))
 		return Exit(0)
 	}, WithFlags(StringFlag("target", "a target", Default("default-val"))), WithEffect(EffectReadOnly))
 
@@ -8220,7 +8220,7 @@ func TestConflictPerFlagCliWinsBeatsAppError(t *testing.T) {
 
 	app := NewApp("testapp", "1.0.0", "test app", WithConfig(), WithConfigConflictMode("error"))
 	app.Command("run", "run it", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Printf("target=%s", args["target"])
+		ctx.Out(fmt.Sprintf("target=%s", args["target"]))
 		return Exit(0)
 	}, WithFlags(StringFlag("target", "a target", Default("default-val"), ConflictMode("cli-wins"))), WithEffect(EffectReadOnly))
 

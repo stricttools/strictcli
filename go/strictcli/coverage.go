@@ -15,8 +15,9 @@ import (
 // Each Test() or Call() invocation appends one JSONL line to the process's
 // shard file (named "<pid>.jsonl"). Uniqueness across concurrent writers comes
 // from the PID and O_APPEND; one shard per process is sufficient, so there is
-// no per-write shard counter.
-func (a *App) recordCoverage(cmdPath string) {
+// no per-write shard counter. The line is one write, so calls running at the
+// same time in one process never interleave inside a line.
+func (a *invocation) recordCoverage(cmdPath string) {
 	if a.coverageShardPath == "" {
 		return
 	}
@@ -30,9 +31,8 @@ func (a *App) recordCoverage(cmdPath string) {
 	}
 	defer f.Close()
 	data, _ := json.Marshal(map[string]string{"command": cmdPath})
-	f.Write(data)
-	f.Write([]byte("\n"))
-	a.recordCacheWrite(path)
+	f.Write(append(data, '\n'))
+	a.effects.recordCacheWrite(path)
 }
 
 // collectAllCommandPaths enumerates all non-deprecated leaf command paths
@@ -79,7 +79,7 @@ func (a *App) collectAllCommandPaths() map[string]bool {
 // deliberately regenerated (e.g. by removing it and re-running the suite),
 // because the union never removes a command.
 func (a *App) testCoverageProvider() []CheckSpec {
-	impl := func(ctx CheckContext, reporter *ErrorReporter) CheckOutcome {
+	impl := func(ctx CheckContext, reporter *ErrorReporter, cacheWrites *effectLog) CheckOutcome {
 		coverageDir := a.coverageDir
 		manifestPath := a.coverageManifestPath
 
@@ -171,7 +171,9 @@ func (a *App) testCoverageProvider() []CheckSpec {
 			if !bytes.Equal(existing, newContent) {
 				os.MkdirAll(filepath.Dir(manifestPath), 0o755)
 				os.WriteFile(manifestPath, newContent, 0o644)
-				a.recordCacheWrite(manifestPath)
+				if cacheWrites != nil {
+					cacheWrites.recordCacheWrite(manifestPath)
+				}
 			}
 		}
 
@@ -197,8 +199,10 @@ func (a *App) testCoverageProvider() []CheckSpec {
 		return reporter.Passed(fmt.Sprintf("all %d commands have test coverage", len(allCommands)))
 	}
 
-	return []CheckSpec{
-		NewErrorCheckSpec(CheckSpecMeta{
+	// Built as NewErrorCheckSpec builds a spec, except that the impl also
+	// receives the dispatch's effect log for its manifest CACHE_WRITE.
+	return []CheckSpec{{
+		meta: CheckSpecMeta{
 			Name:         "cli-test-coverage",
 			Tags:         []string{"test"},
 			Severity:     "error",
@@ -206,6 +210,10 @@ func (a *App) testCoverageProvider() []CheckSpec {
 			Pure:         true,
 			NeedsNetwork: false,
 			DependsOn:    []string{},
-		}, impl),
-	}
+		},
+		impl: func(ctx CheckContext, cacheWrites *effectLog) CheckOutcome {
+			return impl(ctx, &ErrorReporter{}, cacheWrites)
+		},
+		implForm: "error",
+	}}
 }

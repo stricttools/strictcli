@@ -134,7 +134,7 @@ func newInfraDepApp(cs ...Constraint) *App {
 	app := NewApp("myapp", "1.0.0", "test app",
 		WithInfraRoot("MYAPP_HOME", "/var/lib/myapp"))
 	app.Command("run", "run it", func(ctx *Context, kwargs map[string]interface{}) Outcome {
-		fmt.Printf("db=%v cache=%v", kwargs["db"], kwargs["cache"])
+		ctx.Out(fmt.Sprintf("db=%v cache=%v", kwargs["db"], kwargs["cache"]))
 		return Exit(0)
 	}, WithFlags(
 		StringFlag("db", "db path", Default(RelativeToRoot("MYAPP_HOME", "db.sqlite"))),
@@ -152,7 +152,7 @@ func TestInfraDefaultIsNotPresentForAllOrNone(t *testing.T) {
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d: stderr=%q", r.ExitCode, r.Stderr)
 	}
-	if r.Stdout != "db=/var/lib/myapp/db.sqlite cache=<nil>" {
+	if r.Stdout != "db=/var/lib/myapp/db.sqlite cache=<nil>\n" {
 		t.Fatalf("unexpected stdout %q", r.Stdout)
 	}
 }

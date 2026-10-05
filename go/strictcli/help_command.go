@@ -503,7 +503,7 @@ func (a *App) versionDocument() (string, error) {
 
 // dispatchFrameworkCommand handles `help` and `version` as the first command
 // word. ok is false when rest names neither.
-func (a *App) dispatchFrameworkCommand(rest []string) (parseResult, bool) {
+func (a *invocation) dispatchFrameworkCommand(rest []string) (parseResult, bool) {
 	if len(rest) == 0 {
 		return parseResult{}, false
 	}
@@ -514,8 +514,8 @@ func (a *App) dispatchFrameworkCommand(rest []string) (parseResult, bool) {
 		if err != "" {
 			return parseResult{parseErr: err, commandPrefix: prefix}, true
 		}
-		if !a.lastJSON || req.own {
-			if a.lastJSON {
+		if !a.reserved.json || req.own {
+			if a.reserved.json {
 				return parseResult{parseErr: errHelpTextOnly(prefix + " --json"), commandPrefix: prefix}, true
 			}
 			return parseResult{helpText: a.helpText(req)}, true
@@ -529,17 +529,17 @@ func (a *App) dispatchFrameworkCommand(rest []string) (parseResult, bool) {
 		prefix := a.Name + " " + versionCommandName
 		for _, tok := range rest[1:] {
 			if tok == "--help" || tok == "-h" {
-				if a.lastJSON {
+				if a.reserved.json {
 					return parseResult{parseErr: errHelpTextOnly(a.Name + " " + helpCommandName + " --json"), commandPrefix: prefix}, true
 				}
-				return parseResult{helpText: formatVersionOwnPage(a)}, true
+				return parseResult{helpText: formatVersionOwnPage(a.App)}, true
 			}
 		}
 		if len(rest) > 1 {
 			return parseResult{parseErr: errVersionArgs(rest[1]), commandPrefix: prefix}, true
 		}
-		if !a.lastJSON {
-			return parseResult{versionText: formatVersion(a)}, true
+		if !a.reserved.json {
+			return parseResult{versionText: formatVersion(a.App)}, true
 		}
 		doc, err := a.versionDocument()
 		if err != nil {

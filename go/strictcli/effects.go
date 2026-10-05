@@ -932,9 +932,10 @@ type Effects struct {
 	// no-op (contract §19.7).
 	out  io.Writer
 	json bool
-	// childStdout routes a streamed child's stdout (§19.11); nil on the
-	// programmatic door, where a child inherits the process stdout.
-	childStdout *childStdoutRoute
+	// childStreams routes a streamed child's stdout (§19.11) and its stderr;
+	// nil on the programmatic door, where a child inherits the process
+	// streams.
+	childStreams *childStreamRoute
 
 	// children is every child started through Spawn in this dispatch, in
 	// spawn order, for the exit step to settle (§19.11's box). Spawn may be
@@ -943,29 +944,31 @@ type Effects struct {
 	children   []*spawnedChild
 }
 
-// childStdoutRoute decides where the stdout of a child run through Spawn or
-// Run(Stream(true)) goes (contract §19.11): captured into the envelope's
-// `output` member in machine mode; on an owns-stdout command, the framework's
-// real stdout in both modes, as part of the document; otherwise the process
-// stdout, as before.
-type childStdoutRoute struct {
+// childStreamRoute decides where the output of a child run through Spawn or
+// Run(Stream(true)) goes. Its stdout (contract §19.11) is captured into the
+// envelope's `output` member in machine mode; otherwise it goes to the
+// dispatch's stdout, which on an owns-stdout command is part of the document.
+// Its stderr goes to the dispatch's stderr. The dispatch's streams are the
+// process streams on Run and the call's own capture on Test.
+type childStreamRoute struct {
 	machine    bool
 	ownsStdout bool
-	// stdout is the framework's route to the real stdout: the saved
+	// stdout is the framework's route to the dispatch's stdout: the saved
 	// descriptor while the runtime guard is armed.
 	stdout io.Writer
+	stderr io.Writer
 	output *outputMember
 }
 
-// bindChildStdout installs the dispatch's child-stdout route.
-func (e *Effects) bindChildStdout(r childStdoutRoute) {
-	e.childStdout = &r
+// bindChildStreams installs the dispatch's child-stream route.
+func (e *Effects) bindChildStreams(r childStreamRoute) {
+	e.childStreams = &r
 }
 
 // streamTarget returns the writer a streamed child's stdout goes to, or a
 // capture when it must be read into the `output` member.
 func (e *Effects) streamTarget() (io.Writer, *childCapture) {
-	r := e.childStdout
+	r := e.childStreams
 	switch {
 	case r == nil:
 		return os.Stdout, nil
@@ -974,8 +977,16 @@ func (e *Effects) streamTarget() (io.Writer, *childCapture) {
 	case r.machine:
 		return nil, &childCapture{out: r.output}
 	default:
-		return os.Stdout, nil
+		return r.stdout, nil
 	}
+}
+
+// stderrTarget returns the writer a streamed child's stderr goes to.
+func (e *Effects) stderrTarget() io.Writer {
+	if e.childStreams == nil {
+		return os.Stderr
+	}
+	return e.childStreams.stderr
 }
 
 // Recorded returns the records recorded so far in this dispatch (contract
@@ -1299,7 +1310,7 @@ func (e *Effects) Spawn(argv []interface{}, opts ...EffectOption) (_ Spawned, er
 	if o.hasStdin {
 		cmd.Stdin = bytes.NewReader(o.stdin)
 	}
-	cmd.Stderr = os.Stderr
+	cmd.Stderr = e.stderrTarget()
 	target, capture := e.streamTarget()
 	if capture == nil {
 		cmd.Stdout = target
@@ -1693,7 +1704,7 @@ func (e *Effects) execRun(ops []operand, joined string, o effectOpts, method str
 		} else {
 			cmd.Stdout = target
 		}
-		cmd.Stderr = os.Stderr
+		cmd.Stderr = e.stderrTarget()
 	} else {
 		cmd.Stdout = &outBuf
 		cmd.Stderr = &errBuf
@@ -1895,7 +1906,7 @@ func (a *App) SetConfirmIO(io *ConfirmIO) {
 //
 // A consequential PASSTHROUGH is not exempt: the framework knows LESS about
 // what is about to happen, not more.
-func (a *App) confirmConsequential(cmd *Command, cmdPath string) {
+func (a *invocation) confirmConsequential(cmd *Command, cmdPath string) {
 	interactive, in := stdinIsInteractive(), io.Reader(os.Stdin)
 	if a.confirmIO != nil {
 		interactive, in = a.confirmIO.IsInteractive(), a.confirmIO.In
@@ -1920,11 +1931,11 @@ const (
 	confirmDeclined
 )
 
-func (a *App) confirmDecision(cmd *Command, cmdPath string, interactive bool, in io.Reader, prompt io.Writer) confirmOutcome {
+func (a *invocation) confirmDecision(cmd *Command, cmdPath string, interactive bool, in io.Reader, prompt io.Writer) confirmOutcome {
 	if !cmd.Consequential {
 		return confirmProceed
 	}
-	if a.lastDryRun || a.lastApproveConsequential {
+	if a.reserved.dryRun || a.reserved.approveConsequential {
 		return confirmProceed
 	}
 	if !interactive {
@@ -1963,10 +1974,10 @@ func readConfirmLine(r io.Reader) (string, error) {
 // armEffects arms the effects handle for one dispatch (the runtime seal).
 //
 // Called at EVERY newContext site that dispatches a handler, so there is no path
-// on which ctx.Effects() is missing or a carrier escapes unpoisoned. The log
-// itself is reset by beginDispatch, which runs earlier so pre-handler
-// CACHE_WRITEs (coverage shards) land in the same dispatch's log.
-func (a *App) armEffects(cmd *Command, cmdPath string, dryRun bool, out io.Writer) *Effects {
+// on which ctx.Effects() is missing or a carrier escapes unpoisoned. The log is
+// the invocation's own, created with it, so pre-handler CACHE_WRITEs (coverage
+// shards) land in the same dispatch's log.
+func (a *invocation) armEffects(cmd *Command, cmdPath string, dryRun bool, out io.Writer) *Effects {
 	e := newEffects(cmd, cmdPath, dryRun, a.effects, a.procObserveAllowlist,
 		traceIdentity{
 			app:                  a.Name,
@@ -1974,21 +1985,16 @@ func (a *App) armEffects(cmd *Command, cmdPath string, dryRun bool, out io.Write
 			command:              cmdPath,
 			hasCommand:           true,
 			dryRun:               dryRun,
-			machineMode:          a.lastJSON,
-			quiet:                a.lastQuiet,
-			verbose:              a.lastVerbose,
-			approveConsequential: a.lastApproveConsequential,
+			machineMode:          a.reserved.json,
+			quiet:                a.reserved.quiet,
+			verbose:              a.reserved.verbose,
+			approveConsequential: a.reserved.approveConsequential,
 			effect:               cmd.Effect,
-		}, out, a.lastJSON)
+		}, out, a.reserved.json)
 	if a.httpClient != nil {
 		e.httpClient = a.httpClient
 	}
 	return e
-}
-
-// beginDispatch starts a new dispatch: it resets the structured effect log.
-func (a *App) beginDispatch() {
-	a.effects = &effectLog{}
 }
 
 // recordCacheWrite records a framework-blessed CACHE_WRITE.
@@ -1997,12 +2003,9 @@ func (a *App) beginDispatch() {
 // manifest. CACHE_WRITEs have no public method,
 // never appear in the would-do log, never trip read-only enforcement, and
 // EXECUTE even in dry mode -- which is why they always carry recorded: false.
-func (a *App) recordCacheWrite(path string) {
-	if a.effects == nil {
-		a.effects = &effectLog{}
-	}
-	a.effects.append(effectRecord{
-		seq:      a.effects.nextCacheSeq(),
+func (l *effectLog) recordCacheWrite(path string) {
+	l.append(effectRecord{
+		seq:      l.nextCacheSeq(),
 		kind:     CacheWrite,
 		verb:     "cache",
 		detail:   path,
@@ -2010,33 +2013,21 @@ func (a *App) recordCacheWrite(path string) {
 	})
 }
 
-// EffectLog returns the structured effect records of the most recent dispatch.
+// EffectLog returns the structured effect records of the most recently
+// finished dispatch.
 //
-// Public API (contract §14.3's amendment). It is the envelope's source (§19.3),
-// so it is part of the surface consumers may rely on and it is in the
-// api-surface catalog rather than excluded from it. The records are populated
-// in both modes, so a live run's effects read as readily as a dry run's.
+// Public API (contract §14.3's amendment). It carries the same records as the
+// envelope's preview (§19.3), so it is part of the surface consumers may rely
+// on and it is in the api-surface catalog rather than excluded from it. The
+// records are populated in both modes, so a live run's effects read as readily
+// as a dry run's. Dispatches running at the same time each write their own log;
+// the one that finishes last is the one returned here.
 func (a *App) EffectLog() []map[string]interface{} {
-	if a.effects == nil {
+	a.lastEffectsMu.Lock()
+	log := a.lastEffects
+	a.lastEffectsMu.Unlock()
+	if log == nil {
 		return []map[string]interface{}{}
 	}
-	return a.effects.toList()
-}
-
-// renderWouldDoLog renders the would-do log for the most recent dispatch.
-func (a *App) renderWouldDoLog() string {
-	if a.effects == nil {
-		return dryRunHeader
-	}
-	return a.effects.render()
-}
-
-// wouldDoSeq is the would-do number the preview reached: the number the next
-// rendered effect would have taken. It is the step the truncation error and the
-// aborted-preview marker both name.
-func (a *App) wouldDoSeq() int {
-	if a.effects == nil {
-		return 1
-	}
-	return a.effects.nextSeq()
+	return log.toList()
 }

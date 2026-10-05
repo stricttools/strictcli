@@ -31,6 +31,12 @@ type RunChecksOptions struct {
 // nothing to the exit code (a consumer renders them as e.g.
 // "would run: <name> (impure)").
 func (a *App) RunChecks(ctx CheckContext, opts RunChecksOptions) ([]CheckRunResult, []string, int, error) {
+	return a.runSelectedChecks(ctx, opts, nil)
+}
+
+// runSelectedChecks is RunChecks for a run that belongs to a dispatch, whose
+// effect log (cacheWrites) receives the CACHE_WRITEs of framework-owned checks.
+func (a *App) runSelectedChecks(ctx CheckContext, opts RunChecksOptions, cacheWrites *effectLog) ([]CheckRunResult, []string, int, error) {
 	if !a.checksEnabled {
 		return nil, nil, 0, errChecksNotEnabled()
 	}
@@ -61,7 +67,7 @@ func (a *App) RunChecks(ctx CheckContext, opts RunChecksOptions) ([]CheckRunResu
 		return nil, nil, 0, err
 	}
 
-	results, impureListed, exitCode := runChecks(a.checkDefs, order, ctx, values, opts.PureOnly)
+	results, impureListed, exitCode := runChecks(a.checkDefs, order, ctx, values, opts.PureOnly, cacheWrites)
 	return results, impureListed, exitCode, nil
 }
 

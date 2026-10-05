@@ -267,9 +267,15 @@ type checkDef struct {
 	// impl is the wrapped runner installed at registration time. It constructs
 	// the appropriate reporter and invokes the user's function. nil until
 	// registered via RegisterErrorCheck/RegisterWarnCheck.
-	impl     func(CheckContext) CheckOutcome
+	impl     checkImpl
 	implForm string // "error" or "warn" -- the registration form, for the severity cross-check
 }
+
+// checkImpl runs one check. cacheWrites is the effect log of the dispatch the
+// check run belongs to, where a framework-owned check records its CACHE_WRITEs;
+// nil when the run belongs to no dispatch (RunChecks called directly). A
+// consumer's check never sees it: registration wraps the consumer's function.
+type checkImpl func(ctx CheckContext, cacheWrites *effectLog) CheckOutcome
 
 // kebabNameRe is the naming rule's pattern: lowercase kebab-case, no leading,
 // trailing or doubled hyphen. isKebabName adds the two-character minimum.

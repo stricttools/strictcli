@@ -3,6 +3,7 @@ package strictcli
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -153,33 +154,81 @@ func TestTheRendererRegistrationRefusals(t *testing.T) {
 
 // --- the runtime guard (§19.12) ---------------------------------------------
 
-func TestAStrayPrintlnUnderJSONFailsTheRun(t *testing.T) {
-	app := outApp(func(ctx *Context, kwargs map[string]interface{}) Outcome {
-		ctx.Warn("slow disk")
-		ctx.Out("done")
-		fmt.Println("stray")
-		return Exit(0)
-	})
-	r := app.Test([]string{"--json", "cmd"})
-	want := envelopeV3("cmd", 1, "null", `"done\n"`, `[{"level":"warn","message":"slow disk"},{"level":"error","message":"stdout written outside the framework: 6 bytes: \"stray\\n\""}]`)
-	if r.ExitCode != 1 || r.Stdout != want || r.Stderr != "" {
-		t.Fatalf("exit=%d stdout=%q\nwant       %q", r.ExitCode, r.Stdout, want)
+// guardRunHelperEnv names the scenario TestGuardRunHelper runs in a child test
+// process. The guard is armed on Run alone, and Run ends the process, so each
+// guard scenario runs in a process of its own.
+const guardRunHelperEnv = "STRICTCLI_GUARD_RUN_HELPER"
+
+func TestGuardRunHelper(t *testing.T) {
+	scenario := os.Getenv(guardRunHelperEnv)
+	if scenario == "" {
+		t.Skip("helper process only")
 	}
-	// Human mode redirects nothing.
-	if r := app.Test([]string{"cmd"}); r.ExitCode != 0 || r.Stdout != "done\nstray\n" {
-		t.Fatalf("exit=%d stdout=%q", r.ExitCode, r.Stdout)
+	var handler func(ctx *Context, kwargs map[string]interface{}) Outcome
+	switch scenario {
+	case "println", "println-test-human":
+		handler = func(ctx *Context, kwargs map[string]interface{}) Outcome {
+			ctx.Warn("slow disk")
+			ctx.Out("done")
+			fmt.Println("stray")
+			return Exit(0)
+		}
+	case "nonzero":
+		handler = func(ctx *Context, kwargs map[string]interface{}) Outcome {
+			os.Stdout.WriteString(strings.Repeat("a", 5000))
+			return Exit(4)
+		}
+	default:
+		t.Fatalf("unknown scenario %q", scenario)
+	}
+	app := outApp(handler)
+	if scenario == "println-test-human" {
+		// Test captures only what goes through the framework; the stray line
+		// reaches the process stdout before the captured result is printed.
+		r := app.Test([]string{"cmd"})
+		fmt.Printf("captured=%q exit=%d\n", r.Stdout, r.ExitCode)
+		os.Exit(0)
+	}
+	os.Args = []string{"myapp", "--json", "cmd"}
+	app.Run()
+}
+
+// runGuardScenario runs one TestGuardRunHelper scenario and returns its stdout
+// and exit status.
+func runGuardScenario(t *testing.T, scenario string) (string, int) {
+	t.Helper()
+	cmd := exec.Command(os.Args[0], "-test.run=^TestGuardRunHelper$")
+	cmd.Env = append(os.Environ(), guardRunHelperEnv+"="+scenario)
+	out, err := cmd.Output()
+	code := 0
+	if exitErr, ok := err.(*exec.ExitError); ok {
+		code = exitErr.ExitCode()
+	} else if err != nil {
+		t.Fatalf("helper process: %v", err)
+	}
+	return string(out), code
+}
+
+func TestAStrayPrintlnUnderJSONFailsTheRun(t *testing.T) {
+	stdout, code := runGuardScenario(t, "println")
+	want := envelopeV3("cmd", 1, "null", `"done\n"`, `[{"level":"warn","message":"slow disk"},{"level":"error","message":"stdout written outside the framework: 6 bytes: \"stray\\n\""}]`)
+	if code != 1 || stdout != want {
+		t.Fatalf("exit=%d stdout=%q\nwant       %q", code, stdout, want)
+	}
+}
+
+func TestTestCapturesOnlyWhatGoesThroughTheFramework(t *testing.T) {
+	stdout, code := runGuardScenario(t, "println-test-human")
+	if want := "stray\ncaptured=\"done\\n\" exit=0\n"; code != 0 || stdout != want {
+		t.Fatalf("exit=%d stdout=%q\nwant       %q", code, stdout, want)
 	}
 }
 
 func TestTheGuardKeepsANonzeroCodeAndQuotesTheFirst4096Bytes(t *testing.T) {
-	app := outApp(func(ctx *Context, kwargs map[string]interface{}) Outcome {
-		os.Stdout.WriteString(strings.Repeat("a", 5000))
-		return Exit(4)
-	})
-	r := app.Test([]string{"--json", "cmd"})
+	stdout, code := runGuardScenario(t, "nonzero")
 	diag := fmt.Sprintf(`stdout written outside the framework: 5000 bytes: \"%s\"`, strings.Repeat("a", 4096))
-	if want := envelopeV3("cmd", 4, "null", "null", `[{"level":"error","message":"`+diag+`"}]`); r.ExitCode != 4 || r.Stdout != want {
-		t.Fatalf("exit=%d stdout=%q", r.ExitCode, r.Stdout)
+	if want := envelopeV3("cmd", 4, "null", "null", `[{"level":"error","message":"`+diag+`"}]`); code != 4 || stdout != want {
+		t.Fatalf("exit=%d stdout=%q", code, stdout)
 	}
 }
 

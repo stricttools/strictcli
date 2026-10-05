@@ -254,14 +254,14 @@ func mintCheckAbort(name string, r interface{}) CheckOutcome {
 // runCheckImpl invokes one check impl, containing a panic as that check's own
 // failure. One broken check must not abort the whole run: every other selected
 // check still executes, and the run still fails because this check failed.
-func runCheckImpl(name string, impl func(CheckContext) CheckOutcome, ctx CheckContext) (o CheckOutcome, aborted bool) {
+func runCheckImpl(name string, impl checkImpl, ctx CheckContext, cacheWrites *effectLog) (o CheckOutcome, aborted bool) {
 	defer func() {
 		if r := recover(); r != nil {
 			o = mintCheckAbort(name, r)
 			aborted = true
 		}
 	}()
-	return impl(ctx), false
+	return impl(ctx, cacheWrites), false
 }
 
 // runChecks executes checks in order, skipping dependents of failed checks.
@@ -283,7 +283,7 @@ func runCheckImpl(name string, impl func(CheckContext) CheckOutcome, ctx CheckCo
 // either. The failed-dependency cascade takes precedence over the listing: a
 // genuinely failed (executed) pure dependency still cascade-skips its dependents
 // as usual.
-func runChecks(checkDefs map[string]*checkDef, order []string, ctx CheckContext, values map[string]resolvedCheckValue, pureOnly bool) ([]CheckRunResult, []string, int) {
+func runChecks(checkDefs map[string]*checkDef, order []string, ctx CheckContext, values map[string]resolvedCheckValue, pureOnly bool, cacheWrites *effectLog) ([]CheckRunResult, []string, int) {
 	results := make([]CheckRunResult, 0, len(order))
 	// Track checks whose dependents should be cascade-skipped. Cascade keys
 	// ONLY on a derived FAIL (Gated: an error-severity problem present) or a
@@ -351,7 +351,7 @@ func runChecks(checkDefs map[string]*checkDef, order []string, ctx CheckContext,
 
 		// Run the check, capturing wall-clock duration around the impl call only.
 		start := time.Now()
-		o, aborted := runCheckImpl(name, def.impl, ctx)
+		o, aborted := runCheckImpl(name, def.impl, ctx, cacheWrites)
 		durationMs := time.Since(start).Milliseconds()
 		// Belt-and-braces: an impl must return a reporter-minted outcome. A
 		// contained abort mints its own, so the assertion only reaches values

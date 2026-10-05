@@ -107,11 +107,13 @@ func (a *App) invoke(commandPath string, kwargs map[string]interface{}, opts ...
 	// paths have no TTY contract and a prompt there would hang the caller. The
 	// requirement itself is honoured above, and the caller's consent is
 	// delivered to the handler on the Context.
-	a.beginDispatch()
+	inv := a.newInvocation()
+	inv.reserved = reservedFlags{approveConsequential: co.approveConsequential}
+	defer inv.publishEffects()
 
 	// Record test-coverage hit (command-level only).
 	if a.coverageShardPath != "" {
-		a.recordCoverage(commandPath)
+		inv.recordCoverage(commandPath)
 	}
 
 	// Handle passthrough commands
@@ -156,8 +158,8 @@ func (a *App) invoke(commandPath string, kwargs map[string]interface{}, opts ...
 			}
 		}
 		ctx := newContext(io.Discard, io.Discard, nil, a.infraAccess(false),
-			reservedFlags{approveConsequential: co.approveConsequential},
-			a.armEffects(cmd, commandPath, false, nil))
+			inv.reserved,
+			inv.armEffects(cmd, commandPath, false, nil))
 		ctx.bindCommand(cmd)
 		code, truncErr, early := a.invokeSealed(ctx, func() int {
 			loadRequirements(ctx, cmd, commandPath)
@@ -397,8 +399,8 @@ func (a *App) invoke(commandPath string, kwargs map[string]interface{}, opts ...
 	// discarded -- the machine payload flows back through the Context, not
 	// stdout.
 	ctx := newContext(io.Discard, io.Discard, sources, a.infraAccess(false),
-		reservedFlags{approveConsequential: co.approveConsequential},
-		a.armEffects(cmd, commandPath, false, nil))
+		inv.reserved,
+		inv.armEffects(cmd, commandPath, false, nil))
 	ctx.bindCommand(cmd)
 	ctx.writes = writes
 	ctx.unsets = unsets

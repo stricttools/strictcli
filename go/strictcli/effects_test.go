@@ -1044,24 +1044,24 @@ func TestConfirmDecisionGrammar(t *testing.T) {
 	plain := &Command{Name: "build", Effect: EffectMutating}
 	readOnly := &Command{Name: "status", Effect: EffectReadOnly}
 
-	if got := app.confirmDecision(readOnly, "status", true, strings.NewReader(""), discardWriter()); got != confirmProceed {
+	if got := app.newInvocation().confirmDecision(readOnly, "status", true, strings.NewReader(""), discardWriter()); got != confirmProceed {
 		t.Fatal("read_only commands never prompt")
 	}
-	if got := app.confirmDecision(plain, "build", false, strings.NewReader(""), discardWriter()); got != confirmProceed {
+	if got := app.newInvocation().confirmDecision(plain, "build", false, strings.NewReader(""), discardWriter()); got != confirmProceed {
 		t.Fatal("a mutating command that is not consequential never prompts")
 	}
-	if got := app.confirmDecision(grave, "deploy", false, strings.NewReader(""), discardWriter()); got != confirmNonInteractive {
+	if got := app.newInvocation().confirmDecision(grave, "deploy", false, strings.NewReader(""), discardWriter()); got != confirmNonInteractive {
 		t.Fatal("a non-TTY stdin must produce the non-interactive outcome")
 	}
 	proceed := []string{"y\n", "Y\n", "y"}
 	for _, in := range proceed {
-		if got := app.confirmDecision(grave, "deploy", true, strings.NewReader(in), discardWriter()); got != confirmProceed {
+		if got := app.newInvocation().confirmDecision(grave, "deploy", true, strings.NewReader(in), discardWriter()); got != confirmProceed {
 			t.Fatalf("%q must proceed", in)
 		}
 	}
 	decline := []string{"\n", "n\n", "yes\n", "Yes\n", "", "no\n"}
 	for _, in := range decline {
-		if got := app.confirmDecision(grave, "deploy", true, strings.NewReader(in), discardWriter()); got != confirmDeclined {
+		if got := app.newInvocation().confirmDecision(grave, "deploy", true, strings.NewReader(in), discardWriter()); got != confirmDeclined {
 			t.Fatalf("%q must decline", in)
 		}
 	}
@@ -1070,12 +1070,13 @@ func TestConfirmDecisionGrammar(t *testing.T) {
 func TestConfirmIsSkippedByApprovalAndByDryRun(t *testing.T) {
 	app := NewApp("app", "1.0.0", "h")
 	grave := &Command{Name: "deploy", Effect: EffectMutating, Consequential: true}
-	app.lastApproveConsequential = true
-	if got := app.confirmDecision(grave, "deploy", false, strings.NewReader(""), discardWriter()); got != confirmProceed {
+	inv := app.newInvocation()
+	inv.reserved.approveConsequential = true
+	if got := inv.confirmDecision(grave, "deploy", false, strings.NewReader(""), discardWriter()); got != confirmProceed {
 		t.Fatal("--approve-consequential must skip the prompt and the non-TTY error")
 	}
-	app.lastApproveConsequential, app.lastDryRun = false, true
-	if got := app.confirmDecision(grave, "deploy", false, strings.NewReader(""), discardWriter()); got != confirmProceed {
+	inv.reserved.approveConsequential, inv.reserved.dryRun = false, true
+	if got := inv.confirmDecision(grave, "deploy", false, strings.NewReader(""), discardWriter()); got != confirmProceed {
 		t.Fatal("--dry-run must skip the prompt")
 	}
 }
@@ -1083,7 +1084,7 @@ func TestConfirmIsSkippedByApprovalAndByDryRun(t *testing.T) {
 func TestConfirmPromptIsByteExact(t *testing.T) {
 	app := NewApp("app", "1.0.0", "h")
 	var buf strings.Builder
-	app.confirmDecision(&Command{Name: "run", Effect: EffectMutating, Consequential: true}, "release.run", true,
+	app.newInvocation().confirmDecision(&Command{Name: "run", Effect: EffectMutating, Consequential: true}, "release.run", true,
 		strings.NewReader("y\n"), &buf)
 	want := "about to run consequential command 'release.run'. Proceed? [y/N] "
 	if buf.String() != want {
@@ -1094,11 +1095,11 @@ func TestConfirmPromptIsByteExact(t *testing.T) {
 func TestConsequentialPassthroughIsNotExemptFromConfirm(t *testing.T) {
 	app := NewApp("app", "1.0.0", "h")
 	pt := &Command{Name: "pt", Effect: EffectMutating, Passthrough: true, Consequential: true}
-	if got := app.confirmDecision(pt, "pt", false, strings.NewReader(""), discardWriter()); got != confirmNonInteractive {
+	if got := app.newInvocation().confirmDecision(pt, "pt", false, strings.NewReader(""), discardWriter()); got != confirmNonInteractive {
 		t.Fatal("a consequential passthrough prompts like any other consequential command")
 	}
 	plain := &Command{Name: "pt", Effect: EffectMutating, Passthrough: true}
-	if got := app.confirmDecision(plain, "pt", false, strings.NewReader(""), discardWriter()); got != confirmProceed {
+	if got := app.newInvocation().confirmDecision(plain, "pt", false, strings.NewReader(""), discardWriter()); got != confirmProceed {
 		t.Fatal("a mutating passthrough that is not consequential never prompts")
 	}
 }
@@ -1330,9 +1331,9 @@ func TestCacheWritesAreNeverInTheWouldDoLog(t *testing.T) {
 		ctx.Effects().Mkdir("d")
 		return Exit(0)
 	})
-	app.beginDispatch()
-	app.recordCacheWrite("/tmp/.strictcli/schema.json")
-	rendered := app.renderWouldDoLog()
+	inv := app.newInvocation()
+	inv.effects.recordCacheWrite("/tmp/.strictcli/schema.json")
+	rendered := inv.effects.render()
 	if strings.Contains(rendered, "cache") {
 		t.Fatalf("cache writes must never appear in the would-do log, got %q", rendered)
 	}

@@ -40,6 +40,12 @@ type Context struct {
 	writes *updateState
 	unsets map[string]bool
 
+	// configData is the config file's data this dispatch's parse loaded, and
+	// configParseErr the parse error it hit instead; the config commands read
+	// both. Empty on the programmatic door, which loads no config.
+	configData     map[string]interface{}
+	configParseErr string
+
 	// The diagnostics this dispatch emitted, in emission order (contract
 	// §19.2). In machine mode the writers below record here instead of
 	// writing: what they were asked to say rides the envelope. Outside machine

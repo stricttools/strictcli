@@ -428,7 +428,6 @@ type App struct {
 	configEnabled       bool
 	configPathOverride  string
 	configFormat        string
-	configData          map[string]interface{}
 	configFields        map[string]*ConfigField
 	configFieldOrder    []string
 	frameworkFields     map[string]*ConfigField
@@ -449,17 +448,15 @@ type App struct {
 	// Check-provider hook state. Providers populate the registry lazily at the
 	// first registry read (materialization), memoized per cwd. See
 	// check_provider.go for the mechanics.
-	checkProviders          []func() []CheckSpec
+	checkProviders []func() []CheckSpec
+	// providerMu serializes materialization, so dispatches running at the same
+	// time materialize once.
+	providerMu              sync.Mutex
 	providerMaterialized    bool            // true once providers ran for providerMaterializedCwd
 	providerMaterializedCwd string          // os.Getwd() at last materialization
 	providerSourcedNames    map[string]bool // def names added by providers (dropped on re-materialization)
 
-	stdinConsumedBy *string           // tracks which flag consumed stdin via @-
-	tagContracts    map[string]string // tag name -> required flag name
-
-	// configParseErr stores a config parse error for config show to pick up.
-	// Set when a config subcommand is routed and the config file was malformed.
-	configParseErr string
+	tagContracts map[string]string // tag name -> required flag name
 
 	// configConflictMode controls whether config+cli and config+env overlaps
 	// are hard errors. Valid values: "cli-wins" (default), "error".
@@ -514,20 +511,11 @@ type App struct {
 	// framework's own client (defaultHTTPClient), never http.DefaultClient.
 	httpClient *http.Client
 
-	// effects is the structured effect log for the most recent dispatch.
-	// Populated in BOTH modes: recorded entries in dry mode, executed entries
-	// (with recorded: false) in live mode, plus framework-blessed CACHE_WRITEs.
-	effects *effectLog
-
-	// The framework-owned reserved quartet, extracted by the position-aware
-	// pre-scan and delivered on the Context (never as handler kwargs).
-	lastDryRun               bool
-	lastApproveConsequential bool
-	lastQuiet                bool
-	lastVerbose              bool
-	// Machine mode (contract §19.1), delivered on the Context like the
-	// quartet: extracted by the pre-scan, never a handler kwarg.
-	lastJSON bool
+	// lastEffects is the structured effect log of the most recently finished
+	// dispatch, the one EffectLog returns. Each dispatch writes its own log
+	// (invocation.effects) and publishes it here when it finishes.
+	lastEffectsMu sync.Mutex
+	lastEffects   *effectLog
 
 	// exitHook runs immediately before Run's terminal os.Exit. Test-only
 	// surface; see SetExitHook.
@@ -2245,7 +2233,7 @@ func (a *App) registerCheckImpl(name, form string, run func(CheckContext) CheckO
 		}
 		panic(errCheckSeverityMismatch(name, def.severity, used, want))
 	}
-	def.impl = run
+	def.impl = func(ctx CheckContext, _ *effectLog) CheckOutcome { return run(ctx) }
 	def.implForm = form
 }
 
@@ -2751,7 +2739,8 @@ func (a *App) Run() {
 		os.Exit(1)
 	}
 	argv := os.Args[1:]
-	pr := a.doParse(argv)
+	inv := a.newInvocation()
+	pr := inv.doParse(argv)
 
 	if pr.helpText != "" {
 		fmt.Println(pr.helpText)
@@ -2764,7 +2753,7 @@ func (a *App) Run() {
 	if pr.frameworkDoc != "" {
 		fmt.Fprint(os.Stdout, pr.frameworkDoc)
 		command := pr.frameworkCommand
-		a.emitEnvelope(nil, os.Stderr, &command, 0, a.lastDryRun, nil, nil)
+		a.emitEnvelope(nil, os.Stderr, &command, 0, inv.reserved.dryRun, nil, nil)
 		os.Exit(0)
 	}
 	if pr.lintFrameworkUse {
@@ -2785,35 +2774,36 @@ func (a *App) Run() {
 			prefix = a.Name
 		}
 		fmt.Fprintf(os.Stderr, "try '%s --help'\n", prefix)
-		a.emitPreDispatchEnvelope(os.Stdout)
+		inv.emitPreDispatchEnvelope(os.Stdout)
 		os.Exit(1)
 	}
-
-	a.beginDispatch()
-	reserved := a.reservedFlagState()
 
 	// The confirm protocol fires only on the real CLI path -- and a mutating
 	// PASSTHROUGH is not exempt. It runs before the handler, so outside the
 	// runtime guard and the signal handling.
-	a.confirmConsequential(pr.cmd, pr.cmdPath)
-	code, _ := a.dispatchCLI(pr, reserved, os.Stdout, os.Stderr, guardFD, true)
+	inv.confirmConsequential(pr.cmd, pr.cmdPath)
+	code, _ := inv.dispatchCLI(pr, os.Stdout, os.Stderr, true)
+	inv.publishEffects()
 	a.runExitHook()
 	os.Exit(code)
 }
 
 // dispatchCLI runs the resolved command's handler on the argv door (Run and
-// Test): the runtime guard in machine mode (§19.12), the signal handling on
-// the CLI path (§19.13), and the one exit step.
-func (a *App) dispatchCLI(pr parseResult, reserved reservedFlags, stdout, stderr io.Writer, kind guardKind, handleSignals bool) (int, *Context) {
+// Test) and owns the one exit step. ownsProcess is true on Run alone, which
+// owns the process's streams and signals: only there does it arm the runtime
+// guard in machine mode (§19.12) and the signal handling (§19.13). Test
+// changes nothing process-wide, so calls running at the same time stay apart.
+func (a *invocation) dispatchCLI(pr parseResult, stdout, stderr io.Writer, ownsProcess bool) (int, *Context) {
+	reserved := a.reserved
 	var guard *stdoutGuard
 	realStdout := stdout
-	if reserved.json {
-		guard = startStdoutGuard(kind, stdout)
+	if ownsProcess && reserved.json {
+		guard = startStdoutGuard()
 		realStdout = guard.real
 	}
 	ctx := a.newDispatchContext(realStdout, stderr, pr, reserved)
 	var sig *signalWatch
-	if handleSignals {
+	if ownsProcess {
 		sig = watchSignals(ctx)
 	}
 	code := a.runSealed(sealedRun{
@@ -2837,24 +2827,27 @@ func (a *App) dispatchCLI(pr parseResult, reserved reservedFlags, stdout, stderr
 
 // newDispatchContext builds the one Context a dispatch runs on, arming the
 // runtime seal and carrying the command's payload declaration.
-func (a *App) newDispatchContext(stdout, stderr io.Writer, pr parseResult, reserved reservedFlags) *Context {
+func (a *invocation) newDispatchContext(stdout, stderr io.Writer, pr parseResult, reserved reservedFlags) *Context {
 	ctx := newContext(stdout, stderr, pr.sources, a.infraAccess(pr.hermetic),
 		reserved, a.armEffects(pr.cmd, pr.cmdPath, reserved.dryRun, stdout))
 	ctx.bindCommand(pr.cmd)
-	ctx.effects.bindChildStdout(childStdoutRoute{
+	ctx.effects.bindChildStreams(childStreamRoute{
 		machine:    reserved.json,
 		ownsStdout: pr.cmd.OwnsStdout,
 		stdout:     stdout,
+		stderr:     stderr,
 		output:     ctx.output,
 	})
 	ctx.writes = pr.writes
 	ctx.unsets = pr.unsets
+	ctx.configData = a.configData
+	ctx.configParseErr = a.configParseErr
 	// The write set's human rendering: ONE unnumbered line between the log's
 	// header and its first effect, in dry mode only (contract §3.2's amendment,
 	// §27.5). It takes no sequence number -- the counter is contiguous over
 	// rendered EFFECTS, and a write set is not one -- and a live run's write set
 	// rides the envelope instead.
-	if pr.writes != nil && reserved.dryRun && a.effects != nil {
+	if pr.writes != nil && reserved.dryRun {
 		a.effects.writeSetLine = pr.writes.logLine()
 	}
 	// Every conditional binding this run did not consult is NAMED, one line per
@@ -2867,17 +2860,6 @@ func (a *App) newDispatchContext(stdout, stderr io.Writer, pr parseResult, reser
 		ctx.Debug(line)
 	}
 	return ctx
-}
-
-// reservedFlagState snapshots the framework-owned quartet for one dispatch.
-func (a *App) reservedFlagState() reservedFlags {
-	return reservedFlags{
-		dryRun:               a.lastDryRun,
-		approveConsequential: a.lastApproveConsequential,
-		quiet:                a.lastQuiet,
-		verbose:              a.lastVerbose,
-		json:                 a.lastJSON,
-	}
 }
 
 // sealedRun is what one handler call's exit step needs to know.
@@ -2935,7 +2917,7 @@ type dispatchEnding struct {
 // running, before it releases the guard and the signal handling. A handler that
 // calls os.Exit is outside this guarantee and outside Go: the process is gone
 // before any deferred function runs.
-func (a *App) runSealed(run sealedRun, fn func() int) (code int) {
+func (a *invocation) runSealed(run sealedRun, fn func() int) (code int) {
 	defer func() {
 		r := handlerUnwind(run.ctx, recover())
 		end := dispatchEnding{code: code}
@@ -2988,11 +2970,11 @@ func (a *App) runSealed(run sealedRun, fn func() int) (code int) {
 //
 // The parse error's own text stays on stderr: it does not go through the
 // context writers, so it is not one of the diagnostics the envelope carries.
-func (a *App) emitPreDispatchEnvelope(stdout io.Writer) {
-	if !a.lastJSON {
+func (a *invocation) emitPreDispatchEnvelope(stdout io.Writer) {
+	if !a.reserved.json {
 		return
 	}
-	a.emitEnvelope(nil, stdout, nil, 1, a.lastDryRun, nil, nil)
+	a.emitEnvelope(nil, stdout, nil, 1, a.reserved.dryRun, nil, nil)
 }
 
 // interfaceVersion is the envelope contract's own version (§19.2). Changed only
@@ -3067,7 +3049,7 @@ type previewError struct {
 // log, truncation error and abort marker: those texts become the envelope's
 // preview and preview_error members (§19.1, §19.3), and stdout carries exactly
 // one document.
-func (a *App) finishDispatch(run sealedRun, end dispatchEnding) int {
+func (a *invocation) finishDispatch(run sealedRun, end dispatchEnding) int {
 	ctx := run.ctx
 	code := end.code
 	switch {
@@ -3116,7 +3098,7 @@ func (a *App) finishDispatch(run sealedRun, end dispatchEnding) int {
 		if run.ownsStdout {
 			dest = run.stderr
 		}
-		a.emitEnvelope(ctx, dest, &run.cmdPath, code, run.dryRun, a.EffectLog(),
+		a.emitEnvelope(ctx, dest, &run.cmdPath, code, run.dryRun, a.effects.toList(),
 			a.buildPreviewError(run.cmdPath, run.dryRun, end.trunc, end.aborted))
 		return code
 	}
@@ -3130,7 +3112,7 @@ func (a *App) finishDispatch(run sealedRun, end dispatchEnding) int {
 // finishHumanStream writes what the human stream owes at the end of a run: the
 // declared payload rendering (§19.10), then the would-do log (§3.5), or the
 // truncation's own log and error, or the log and the abort marker.
-func (a *App) finishHumanStream(run sealedRun, end dispatchEnding) {
+func (a *invocation) finishHumanStream(run sealedRun, end dispatchEnding) {
 	if end.trunc != nil {
 		// The truncation path ends the preview for its own pinned reason: it
 		// renders the log it already has and its own error, and never goes
@@ -3151,10 +3133,10 @@ func (a *App) finishHumanStream(run sealedRun, end dispatchEnding) {
 	// log in the stream; re-emitting it here would duplicate it. A claim that
 	// never rendered falls through and is rendered (§19.7).
 	if !a.effects.seamSuppressed() {
-		fmt.Fprintln(run.stdout, a.renderWouldDoLog())
+		fmt.Fprintln(run.stdout, a.effects.render())
 	}
 	if end.aborted {
-		fmt.Fprintln(run.stderr, errDryRunAborted(a.wouldDoSeq(), run.cmdPath))
+		fmt.Fprintln(run.stderr, errDryRunAborted(a.effects.nextSeq(), run.cmdPath))
 	}
 }
 
@@ -3180,7 +3162,7 @@ func validateEmittedPayload(ctx *Context) {
 // The abort branch is dry-mode-only, exactly as the human stream's marker is:
 // the message says "dry-run preview ends at step N", which is not a true
 // sentence about a live run.
-func (a *App) buildPreviewError(cmdPath string, dryRun bool, trunc *dryRunTruncation, aborted bool) *previewError {
+func (a *invocation) buildPreviewError(cmdPath string, dryRun bool, trunc *dryRunTruncation, aborted bool) *previewError {
 	if trunc != nil {
 		brand := trunc.brand
 		return &previewError{
@@ -3192,7 +3174,7 @@ func (a *App) buildPreviewError(cmdPath string, dryRun bool, trunc *dryRunTrunca
 		}
 	}
 	if aborted && dryRun {
-		step := a.wouldDoSeq()
+		step := a.effects.nextSeq()
 		return &previewError{
 			Kind:    "aborted",
 			Step:    step,
@@ -3251,7 +3233,15 @@ func (a *App) emitEnvelope(ctx *Context, stdout io.Writer, command *string, exit
 	fmt.Fprint(stdout, buf.String())
 }
 
-// Test runs the CLI with the given argv, capturing output and exit code.
+// Test runs the CLI with the given argv in-process and returns what the call
+// wrote, its exit code, and its payload.
+//
+// Test changes nothing process-wide: the call's output is captured in its own
+// streams (the handler's writers and every child's stdout and stderr), and it
+// installs neither the runtime guard nor signal handling. Calls running at the
+// same time, on one App or on several, therefore share nothing. A byte a
+// handler writes to os.Stdout directly is outside the capture and reaches the
+// process stdout; the framework-use lint refuses such writes.
 func (a *App) Test(argv []string) Result {
 	if errMsg := a.validateCheckRegistrations(); errMsg != "" {
 		return Result{Stderr: "error: " + errMsg + "\n", ExitCode: 1}
@@ -3262,7 +3252,8 @@ func (a *App) Test(argv []string) Result {
 	if errMsg := a.validateConfigFieldBindings(); errMsg != "" {
 		return Result{Stderr: "error: " + errMsg + "\n", ExitCode: 1}
 	}
-	pr := a.doParse(argv)
+	inv := a.newInvocation()
+	pr := inv.doParse(argv)
 
 	if pr.helpText != "" {
 		return Result{Stdout: pr.helpText + "\n", ExitCode: 0}
@@ -3273,7 +3264,7 @@ func (a *App) Test(argv []string) Result {
 	if pr.frameworkDoc != "" {
 		var stderr bytes.Buffer
 		command := pr.frameworkCommand
-		a.emitEnvelope(nil, &stderr, &command, 0, a.lastDryRun, nil, nil)
+		a.emitEnvelope(nil, &stderr, &command, 0, inv.reserved.dryRun, nil, nil)
 		return Result{Stdout: pr.frameworkDoc, Stderr: stderr.String(), ExitCode: 0}
 	}
 	if pr.lintFrameworkUse {
@@ -3293,65 +3284,48 @@ func (a *App) Test(argv []string) Result {
 		}
 		stderr := fmt.Sprintf("error: %s\ntry '%s --help'\n", pr.parseErr, prefix)
 		var stdout bytes.Buffer
-		a.emitPreDispatchEnvelope(&stdout)
+		inv.emitPreDispatchEnvelope(&stdout)
 		return Result{Stdout: stdout.String(), Stderr: stderr, ExitCode: 1}
 	}
 
-	a.beginDispatch()
-
 	// Record test-coverage hit (command-level only).
 	if a.coverageShardPath != "" && pr.cmdPath != "" {
-		a.recordCoverage(pr.cmdPath)
+		inv.recordCoverage(pr.cmdPath)
 	}
 
-	// Capture stdout/stderr from handler
-	oldStdout := os.Stdout
-	oldStderr := os.Stderr
-
-	stdoutR, stdoutW, _ := os.Pipe()
-	stderrR, stderrW, _ := os.Pipe()
-	os.Stdout = stdoutW
-	os.Stderr = stderrW
-
-	// Drain both pipes concurrently while the handler runs. A handler that
-	// emits more than the OS pipe buffer (~64KB) would otherwise block on write
-	// (nothing reading) or have its output truncated by a fixed-size read. Using
-	// unbounded io.Copy into bytes.Buffer captures arbitrarily large output.
+	// The call's own capture streams. They are pipes rather than buffers so a
+	// child's stdout and stderr are handed a file descriptor, as on Run, and
+	// both are drained concurrently while the handler runs: a handler that
+	// emits more than the OS pipe buffer would otherwise block on write.
+	stdoutR, stdoutW, err := os.Pipe()
+	if err != nil {
+		panic("strictcli: Test could not create its stdout capture pipe: " + err.Error())
+	}
+	stderrR, stderrW, err := os.Pipe()
+	if err != nil {
+		panic("strictcli: Test could not create its stderr capture pipe: " + err.Error())
+	}
 	var stdoutBuf, stderrBuf bytes.Buffer
 	var drainWG sync.WaitGroup
 	drainWG.Add(2)
 	go func() { defer drainWG.Done(); io.Copy(&stdoutBuf, stdoutR) }()
 	go func() { defer drainWG.Done(); io.Copy(&stderrBuf, stderrR) }()
 
-	// Context is constructed unconditionally for every dispatch, writing to the
-	// capture pipes. Test() behaves as if --approve-consequential were passed:
-	// it never prompts.
-	//
-	// The runtime guard applies here as on Run (§19.12), by replacing the
-	// os.Stdout variable the capture above already replaced; Test installs no
-	// signal handling (§19.13): an in-process caller owns its own process's
-	// signals.
-	reserved := a.reservedFlagState()
-	exitCode, ctx := a.dispatchCLI(pr, reserved, stdoutW, stderrW, guardSwap, false)
-	resultData := ctx.payload
+	// Test behaves as if --approve-consequential were passed: it never prompts.
+	exitCode, ctx := inv.dispatchCLI(pr, stdoutW, stderrW, false)
+	inv.publishEffects()
 
 	stdoutW.Close()
 	stderrW.Close()
-
-	// Wait for both drain goroutines to finish consuming the pipes, then close
-	// the read ends.
 	drainWG.Wait()
 	stdoutR.Close()
 	stderrR.Close()
-
-	os.Stdout = oldStdout
-	os.Stderr = oldStderr
 
 	return Result{
 		Stdout:   stdoutBuf.String(),
 		Stderr:   stderrBuf.String(),
 		ExitCode: exitCode,
-		Data:     resultData,
+		Data:     ctx.payload,
 	}
 }
 
@@ -3676,21 +3650,17 @@ func (a *App) scanCommandRegionQuartet(
 
 // doParse parses argv and returns a parseResult.
 // Exactly one of: (cmd+kwargs), helpText, versionText, or parseErr will be non-zero.
-func (a *App) doParse(argv []string) parseResult {
-	// Reset stdin tracking for each parse invocation
-	a.stdinConsumedBy = nil
-
-	// Machine mode is not known until the pre-scan below runs, so the flag
-	// starts false on every parse: a stale value from an earlier run must
-	// never decide what this one emits.
-	a.lastJSON = false
-
+//
+// It runs once per invocation, which starts with no reserved flags, no
+// consumed stdin, and no config data, so nothing from an earlier run can
+// decide what this one emits.
+func (a *invocation) doParse(argv []string) parseResult {
 	// App-level --help/-h and --version/-v (no global flags present)
 	if len(argv) == 0 || (len(argv) == 1 && (argv[0] == "--help" || argv[0] == "-h")) {
-		return parseResult{helpText: formatAppHelp(a)}
+		return parseResult{helpText: formatAppHelp(a.App)}
 	}
 	if len(argv) == 1 && (argv[0] == "--version" || argv[0] == "-v") {
-		return parseResult{versionText: formatVersion(a)}
+		return parseResult{versionText: formatVersion(a.App)}
 	}
 
 	// Position-aware pre-scan: intercept --dump-schema, --mcp, --config, --hermetic
@@ -3702,11 +3672,7 @@ func (a *App) doParse(argv []string) parseResult {
 	// ctx. This runs BEFORE the pre-scan's own exits so every parse error from
 	// here on knows whether the run is in machine mode and can emit the
 	// envelope the mode owes it (§19.2).
-	a.lastDryRun = preScan.reserved.dryRun
-	a.lastApproveConsequential = preScan.reserved.approveConsequential
-	a.lastQuiet = preScan.reserved.quiet
-	a.lastVerbose = preScan.reserved.verbose
-	a.lastJSON = preScan.reserved.json
+	a.reserved = preScan.reserved
 
 	if preScan.dumpSchema {
 		return parseResult{parseErr: errDumpSchemaRemoved(a.Name + " " + helpCommandName + " --json")}
@@ -3766,16 +3732,16 @@ func (a *App) doParse(argv []string) parseResult {
 	// text only: under --json the refusal names the command that prints the
 	// machine form.
 	if len(rest) == 0 || (len(rest) == 1 && (rest[0] == "--help" || rest[0] == "-h")) {
-		if a.lastJSON {
+		if a.reserved.json {
 			return parseResult{parseErr: errHelpTextOnly(a.Name + " " + helpCommandName + " --json")}
 		}
-		return parseResult{helpText: formatAppHelp(a)}
+		return parseResult{helpText: formatAppHelp(a.App)}
 	}
 	if len(rest) == 1 && (rest[0] == "--version" || rest[0] == "-v") {
-		if a.lastJSON {
+		if a.reserved.json {
 			return parseResult{parseErr: errVersionTextOnly(a.Name + " " + versionCommandName + " --json")}
 		}
-		return parseResult{versionText: formatVersion(a)}
+		return parseResult{versionText: formatVersion(a.App)}
 	}
 
 	// The framework's own commands, help and version, as the first word.
@@ -3793,10 +3759,10 @@ func (a *App) doParse(argv []string) parseResult {
 
 	// Handle help at group level
 	if route.helpAtGroup {
-		if a.lastJSON {
+		if a.reserved.json {
 			return parseResult{parseErr: errHelpTextOnly(a.helpLine(append(append([]string{}, route.path...), "--json")...))}
 		}
-		return parseResult{helpText: formatGroupHelp(a, route.lastGroup, route.path)}
+		return parseResult{helpText: formatGroupHelp(a.App, route.lastGroup, route.path)}
 	}
 
 	// Command was resolved — handle help, passthrough, and parsing
@@ -3813,10 +3779,10 @@ func (a *App) doParse(argv []string) parseResult {
 		if len(path) > 0 {
 			prefix = strings.Join(path, " ") + " "
 		}
-		if a.lastJSON {
+		if a.reserved.json {
 			return parseResult{parseErr: errHelpTextOnly(a.helpLine(append(append([]string{}, path...), cmd.Name, "--json")...))}
 		}
-		return parseResult{helpText: formatCommandHelp(a, cmd, prefix)}
+		return parseResult{helpText: formatCommandHelp(a.App, cmd, prefix)}
 	}
 
 	// A command that declares dry_run_supported=false refuses --dry-run here,
@@ -4010,7 +3976,7 @@ func (a *App) preCommandGlobalSpellings(argv []string) (map[string]string, strin
 // after the command name are handled by parseCommand instead.
 // When hermetic is true, env var and config resolution are skipped entirely.
 // Returns (globalValues map, globalSources map, remaining argv, error string).
-func (a *App) extractGlobalFlags(argv []string, hermetic bool) (map[string]interface{}, map[string]string, []string, string) {
+func (a *invocation) extractGlobalFlags(argv []string, hermetic bool) (map[string]interface{}, map[string]string, []string, string) {
 	globalValues := make(map[string]interface{})
 	globalSources := make(map[string]string)
 	if len(a.globalFlags) == 0 {

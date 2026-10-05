@@ -1299,7 +1299,7 @@ func TestConfigFlagSelectsFile(t *testing.T) {
 
 	app := NewApp("testapp", "1.0.0", "test app", WithConfig())
 	app.Command("serve", "start server", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Printf("port=%d", args["port"])
+		ctx.Out(fmt.Sprintf("port=%d", args["port"]))
 		return Exit(0)
 	}, WithFlags(
 		IntFlag("port", "port number", Default(8080)),
@@ -1323,7 +1323,7 @@ func TestConfigFlagEqualsForm(t *testing.T) {
 
 	app := NewApp("testapp", "1.0.0", "test app", WithConfig())
 	app.Command("serve", "start server", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Printf("port=%d", args["port"])
+		ctx.Out(fmt.Sprintf("port=%d", args["port"]))
 		return Exit(0)
 	}, WithFlags(
 		IntFlag("port", "port number", Default(8080)),
@@ -1352,7 +1352,7 @@ func TestConfigFlagOverridesConstructedPath(t *testing.T) {
 
 	app := NewApp("testapp", "1.0.0", "test app", WithConfig(), WithConfigPath(constructedPath))
 	app.Command("serve", "start server", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Printf("port=%d", args["port"])
+		ctx.Out(fmt.Sprintf("port=%d", args["port"]))
 		return Exit(0)
 	}, WithFlags(
 		IntFlag("port", "port number", Default(8080)),
@@ -1477,7 +1477,7 @@ func TestNoDefaultConfigPath(t *testing.T) {
 
 	app := NewApp("testapp", "1.0.0", "test app", WithConfig(), WithNoDefaultConfigPath())
 	app.Command("serve", "start server", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Printf("port=%d", args["port"])
+		ctx.Out(fmt.Sprintf("port=%d", args["port"]))
 		return Exit(0)
 	}, WithFlags(
 		IntFlag("port", "port number", Default(8080)),
@@ -1503,7 +1503,7 @@ func TestNoDefaultConfigPathWithConfigFlag(t *testing.T) {
 
 	app := NewApp("testapp", "1.0.0", "test app", WithConfig(), WithNoDefaultConfigPath())
 	app.Command("serve", "start server", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Printf("port=%d", args["port"])
+		ctx.Out(fmt.Sprintf("port=%d", args["port"]))
 		return Exit(0)
 	}, WithFlags(
 		IntFlag("port", "port number", Default(8080)),

@@ -706,7 +706,7 @@ func TestDoubleEntry_DeclaredButNotRegistered(t *testing.T) {
 	app := NewApp("testapp", "1.0.0", "test app", WithChecks(checksPath))
 	dropBuiltinCheckProviders(app)
 	app.Command("greet", "say hello", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Print("hello")
+		ctx.Out("hello")
 		return Exit(0)
 	}, WithEffect(EffectReadOnly))
 
@@ -734,7 +734,7 @@ func TestDoubleEntry_AllRegistered_NoError(t *testing.T) {
 	app := NewApp("testapp", "1.0.0", "test app", WithChecks(checksPath))
 	dropBuiltinCheckProviders(app)
 	app.Command("greet", "say hello", func(ctx *Context, args map[string]interface{}) Outcome {
-		fmt.Print("hello")
+		ctx.Out("hello")
 		return Exit(0)
 	}, WithEffect(EffectReadOnly))
 	app.RegisterErrorCheck("lint-code", func(ctx CheckContext, _ *ErrorReporter) CheckOutcome {
@@ -770,7 +770,7 @@ func makeCheckDefs(defs map[string]struct {
 			fast:      true,
 			pure:      true,
 			dependsOn: d.dependsOn,
-			impl:      d.impl,
+			impl:      func(c CheckContext, _ *effectLog) CheckOutcome { return d.impl(c) },
 		}
 	}
 	return result
@@ -794,7 +794,7 @@ func TestRunChecks_SinglePass(t *testing.T) {
 	})
 
 	ctx := &testCheckContext{root: "/tmp/test"}
-	results, _, exitCode := runChecks(defs, []string{"check-a"}, ctx, nil, false)
+	results, _, exitCode := runChecks(defs, []string{"check-a"}, ctx, nil, false, nil)
 
 	if exitCode != 0 {
 		t.Fatalf("expected exit code 0, got %d", exitCode)
@@ -825,7 +825,7 @@ func TestRunChecks_SingleFail(t *testing.T) {
 	})
 
 	ctx := &testCheckContext{root: "/tmp/test"}
-	results, _, exitCode := runChecks(defs, []string{"check-a"}, ctx, nil, false)
+	results, _, exitCode := runChecks(defs, []string{"check-a"}, ctx, nil, false, nil)
 
 	if exitCode != 1 {
 		t.Fatalf("expected exit code 1, got %d", exitCode)
@@ -869,7 +869,7 @@ func TestRunChecks_DependencyChain_Pass(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	results, _, exitCode := runChecks(defs, order, ctx, nil, false)
+	results, _, exitCode := runChecks(defs, order, ctx, nil, false, nil)
 
 	if exitCode != 0 {
 		t.Fatalf("expected exit code 0, got %d", exitCode)
@@ -911,7 +911,7 @@ func TestRunChecks_DependencyFailure_Skip(t *testing.T) {
 
 	ctx := &testCheckContext{root: "/tmp/test"}
 	// Order: check-b first, then check-a
-	results, _, exitCode := runChecks(defs, []string{"check-b", "check-a"}, ctx, nil, false)
+	results, _, exitCode := runChecks(defs, []string{"check-b", "check-a"}, ctx, nil, false, nil)
 
 	if exitCode != 1 {
 		t.Fatalf("expected exit code 1, got %d", exitCode)
@@ -966,7 +966,7 @@ func TestRunChecks_TransitiveSkip(t *testing.T) {
 	})
 
 	ctx := &testCheckContext{root: "/tmp/test"}
-	results, _, exitCode := runChecks(defs, []string{"check-c", "check-b", "check-a"}, ctx, nil, false)
+	results, _, exitCode := runChecks(defs, []string{"check-c", "check-b", "check-a"}, ctx, nil, false, nil)
 
 	if exitCode != 1 {
 		t.Fatalf("expected exit code 1, got %d", exitCode)
@@ -1164,7 +1164,7 @@ func TestRunChecks_WarnExitsNonzero(t *testing.T) {
 	ctx := &testCheckContext{root: "/tmp/test"}
 
 	// A warning makes the run exit 1.
-	_, _, exitCode := runChecks(defs, []string{"check-a"}, ctx, nil, false)
+	_, _, exitCode := runChecks(defs, []string{"check-a"}, ctx, nil, false, nil)
 	if exitCode != 1 {
 		t.Fatalf("expected exit code 1 for a warning, got %d", exitCode)
 	}
@@ -1235,7 +1235,7 @@ func TestRunChecks_WarnDependency_RunsDependent(t *testing.T) {
 	})
 
 	ctx := &testCheckContext{root: "/tmp/test"}
-	results, _, exitCode := runChecks(defs, []string{"check-b", "check-a"}, ctx, nil, false)
+	results, _, exitCode := runChecks(defs, []string{"check-b", "check-a"}, ctx, nil, false, nil)
 
 	if exitCode != 1 {
 		t.Fatalf("expected exit code 1 (a warning), got %d", exitCode)
@@ -1286,7 +1286,7 @@ func TestRunChecks_WarnDependency_TransitiveDependentsRun(t *testing.T) {
 	})
 
 	ctx := &testCheckContext{root: "/tmp/test"}
-	results, _, exitCode := runChecks(defs, []string{"check-c", "check-b", "check-a"}, ctx, nil, false)
+	results, _, exitCode := runChecks(defs, []string{"check-c", "check-b", "check-a"}, ctx, nil, false, nil)
 
 	if exitCode != 1 {
 		t.Fatalf("expected exit code 1 (a warning), got %d", exitCode)
@@ -1328,7 +1328,7 @@ func TestRunChecks_WarnDependency_Runs(t *testing.T) {
 	})
 
 	ctx := &testCheckContext{root: "/tmp/test"}
-	results, _, exitCode := runChecks(defs, []string{"check-b", "check-a"}, ctx, nil, false)
+	results, _, exitCode := runChecks(defs, []string{"check-b", "check-a"}, ctx, nil, false, nil)
 
 	if exitCode != 1 {
 		t.Fatalf("expected exit code 1 (a warning), got %d", exitCode)
@@ -2228,7 +2228,7 @@ func TestRunChecks_ExplicitSkip_ExitZero(t *testing.T) {
 	})
 
 	ctx := &testCheckContext{root: "/tmp/test"}
-	results, _, exitCode := runChecks(defs, []string{"check-a"}, ctx, nil, false)
+	results, _, exitCode := runChecks(defs, []string{"check-a"}, ctx, nil, false, nil)
 
 	if exitCode != 0 {
 		t.Fatalf("expected exit code 0 for explicit skip, got %d", exitCode)
@@ -2269,7 +2269,7 @@ func TestRunChecks_ExplicitSkip_NoCascade(t *testing.T) {
 	})
 
 	ctx := &testCheckContext{root: "/tmp/test"}
-	results, _, exitCode := runChecks(defs, []string{"check-a", "check-b"}, ctx, nil, false)
+	results, _, exitCode := runChecks(defs, []string{"check-a", "check-b"}, ctx, nil, false, nil)
 
 	if exitCode != 0 {
 		t.Fatalf("expected exit code 0, got %d", exitCode)
@@ -3090,7 +3090,7 @@ func TestRunChecks_NonMintedOutcome_Panics(t *testing.T) {
 	defs := map[string]*checkDef{
 		"check-a": {
 			name: "check-a", tags: []string{"fast"}, severity: "error", dependsOn: []string{},
-			impl: func(ctx CheckContext) CheckOutcome { return CheckOutcome{} },
+			impl: func(ctx CheckContext, _ *effectLog) CheckOutcome { return CheckOutcome{} },
 		},
 	}
 	defer func() {
@@ -3102,7 +3102,7 @@ func TestRunChecks_NonMintedOutcome_Panics(t *testing.T) {
 			t.Fatalf("unexpected panic: %v", r)
 		}
 	}()
-	runChecks(defs, []string{"check-a"}, &testCheckContext{root: emptyProjectRoot}, nil, false)
+	runChecks(defs, []string{"check-a"}, &testCheckContext{root: emptyProjectRoot}, nil, false, nil)
 }
 
 // checkAborted is a panic value with an Error() method, standing in for a
@@ -3116,18 +3116,18 @@ func TestRunChecks_PanickingImpl_FailsOnlyItself(t *testing.T) {
 		"check-a": {
 			name: "check-a", tags: []string{"fast"}, severity: "error", fast: true, pure: true,
 			dependsOn: []string{},
-			impl: func(ctx CheckContext) CheckOutcome {
+			impl: func(ctx CheckContext, _ *effectLog) CheckOutcome {
 				panic(checkAborted{msg: "boom"})
 			},
 		},
 		"check-b": {
 			name: "check-b", tags: []string{"fast"}, severity: "error", fast: true, pure: true,
 			dependsOn: []string{},
-			impl:      func(ctx CheckContext) CheckOutcome { return passOutcome("b ok") },
+			impl:      func(ctx CheckContext, _ *effectLog) CheckOutcome { return passOutcome("b ok") },
 		},
 	}
 	results, _, exitCode := runChecks(defs, []string{"check-a", "check-b"},
-		&testCheckContext{root: emptyProjectRoot}, nil, false)
+		&testCheckContext{root: emptyProjectRoot}, nil, false, nil)
 
 	if exitCode != 1 {
 		t.Fatalf("expected exit code 1, got %d", exitCode)
@@ -3158,16 +3158,16 @@ func TestRunChecks_PanickingImpl_CascadeSkipsDependents(t *testing.T) {
 		"check-a": {
 			name: "check-a", tags: []string{"fast"}, severity: "error", fast: true, pure: true,
 			dependsOn: []string{},
-			impl:      func(ctx CheckContext) CheckOutcome { panic(checkAborted{msg: "boom"}) },
+			impl:      func(ctx CheckContext, _ *effectLog) CheckOutcome { panic(checkAborted{msg: "boom"}) },
 		},
 		"check-b": {
 			name: "check-b", tags: []string{"fast"}, severity: "error", fast: true, pure: true,
 			dependsOn: []string{"check-a"},
-			impl:      func(ctx CheckContext) CheckOutcome { return passOutcome("b ok") },
+			impl:      func(ctx CheckContext, _ *effectLog) CheckOutcome { return passOutcome("b ok") },
 		},
 	}
 	results, _, exitCode := runChecks(defs, []string{"check-a", "check-b"},
-		&testCheckContext{root: emptyProjectRoot}, nil, false)
+		&testCheckContext{root: emptyProjectRoot}, nil, false, nil)
 
 	if exitCode != 1 {
 		t.Fatalf("expected exit code 1, got %d", exitCode)
@@ -3183,11 +3183,11 @@ func TestRunChecks_PanickingWarnCheck_StillFails(t *testing.T) {
 		"check-a": {
 			name: "check-a", tags: []string{"fast"}, severity: "warn", fast: true, pure: true,
 			dependsOn: []string{},
-			impl:      func(ctx CheckContext) CheckOutcome { panic(checkAborted{msg: "boom"}) },
+			impl:      func(ctx CheckContext, _ *effectLog) CheckOutcome { panic(checkAborted{msg: "boom"}) },
 		},
 	}
 	results, _, exitCode := runChecks(defs, []string{"check-a"},
-		&testCheckContext{root: emptyProjectRoot}, nil, false)
+		&testCheckContext{root: emptyProjectRoot}, nil, false, nil)
 
 	if exitCode != 1 {
 		t.Fatalf("expected exit code 1, got %d", exitCode)
@@ -3253,14 +3253,14 @@ func TestRunChecks_ErrorCheckOnlyWarns_NoCascade(t *testing.T) {
 	defs := map[string]*checkDef{
 		"check-a": {
 			name: "check-a", tags: []string{"fast"}, severity: "error", dependsOn: []string{},
-			impl: func(ctx CheckContext) CheckOutcome { return warnOutcome("soft issue") },
+			impl: func(ctx CheckContext, _ *effectLog) CheckOutcome { return warnOutcome("soft issue") },
 		},
 		"check-b": {
 			name: "check-b", tags: []string{"fast"}, severity: "error", dependsOn: []string{"check-a"},
-			impl: func(ctx CheckContext) CheckOutcome { bRan = true; return passOutcome("ok") },
+			impl: func(ctx CheckContext, _ *effectLog) CheckOutcome { bRan = true; return passOutcome("ok") },
 		},
 	}
-	results, _, exitCode := runChecks(defs, []string{"check-a", "check-b"}, &testCheckContext{root: emptyProjectRoot}, nil, false)
+	results, _, exitCode := runChecks(defs, []string{"check-a", "check-b"}, &testCheckContext{root: emptyProjectRoot}, nil, false, nil)
 	if !bRan {
 		t.Fatal("dependent must run when dependency only warned")
 	}

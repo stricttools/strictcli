@@ -2,7 +2,6 @@ package strictcli
 
 import (
 	"encoding/json"
-	"fmt"
 	"testing"
 )
 
@@ -28,7 +27,7 @@ func claimedApp(claim, render, prints bool) *App {
 			ctx.Effects().RenderLog()
 		}
 		if prints {
-			fmt.Println("summary")
+			ctx.Out("summary")
 		}
 		return Exit(0)
 	}, WithEffect(EffectMutating))
@@ -91,7 +90,7 @@ func effectlessApp() *App {
 	app := NewApp("app", "1.0.0", "app")
 	app.Command("build", "build", func(ctx *Context, kwargs map[string]interface{}) Outcome {
 		ctx.Effects().RenderLog()
-		fmt.Println("summary")
+		ctx.Out("summary")
 		return Exit(0)
 	}, WithEffect(EffectMutating))
 	return app

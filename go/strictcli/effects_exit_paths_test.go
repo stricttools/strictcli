@@ -163,16 +163,16 @@ func TestOsExitFromAHandlerSkipsTheWouldDoLog(t *testing.T) {
 
 // --- the seam itself (runSealed owns every render) --------------------------
 
-// sealedFixture arms one dispatch and returns the effects handle plus the app,
-// so a test can drive runSealed directly.
-func sealedFixture(t *testing.T, dryRun bool) (*App, *Effects) {
+// sealedFixture arms one dispatch and returns the effects handle plus the
+// invocation, so a test can drive runSealed directly.
+func sealedFixture(t *testing.T, dryRun bool) (*invocation, *Effects) {
 	t.Helper()
 	app := NewApp("app", "1.0.0", "seam fixture")
 	app.Command("go", "h", func(ctx *Context, kwargs map[string]interface{}) Outcome {
 		return Exit(0)
 	}, WithEffect(EffectMutating))
-	app.beginDispatch()
-	return app, app.armEffects(app.commands["go"], "go", dryRun, nil)
+	inv := app.newInvocation()
+	return inv, inv.armEffects(app.commands["go"], "go", dryRun, nil)
 }
 
 func TestRunSealedRendersTheLogOnANormalReturn(t *testing.T) {

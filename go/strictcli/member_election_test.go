@@ -1,7 +1,6 @@
 package strictcli
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 )
@@ -176,7 +175,7 @@ func TestMemberA5ConfigDoesNotElect(t *testing.T) {
 	makeApp := func() *App {
 		app := NewApp("testapp", "1.0.0", "test app", WithConfig())
 		app.Command("fetch", "fetch data", func(ctx *Context, args map[string]interface{}) Outcome {
-			fmt.Print("src=" + formatValue(args["src"]))
+			ctx.Out("src=" + formatValue(args["src"]))
 			return Exit(0)
 		}, WithFlags(MemberChoiceFlag("src", "where to read from", Required(),
 			MemberChoice(StringFlag("file", "read from file", Required()), "read from a file"),

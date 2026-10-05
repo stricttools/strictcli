@@ -828,8 +828,8 @@ func (a *App) registerConfigGroup() {
 	// If the config file is malformed, shows the parse error instead of values.
 	registerFrameworkSubcommand(grp, "show", "Show every flag and config field with its effective value and where that value came from, resolved through the precedence chain environment variable, then config file, then declared default. Declared infrastructure roots, handshake and connection environment variables are listed too. Choose --plain for an aligned human-readable table; the framework-owned --json yields the same information as a machine-readable object carrying each entry's type, default and help text.", EffectReadOnly, func(ctx *Context, args map[string]interface{}) Outcome {
 		// If there was a config parse error, show it instead of values
-		if a.configParseErr != "" {
-			ctx.Error(a.configParseErr)
+		if ctx.configParseErr != "" {
+			ctx.Error(ctx.configParseErr)
 			return Exit(1)
 		}
 		// --json is framework-owned (contract §19.1): the object below is this
@@ -837,7 +837,7 @@ func (a *App) registerConfigGroup() {
 		// UNCONDITIONALLY (§19.4). Instance validation lives at the emission
 		// seam, so a config value machine mode could not carry -- a float above
 		// 2^53 -- costs the human rendering nothing.
-		configData := a.configData
+		configData := ctx.configData
 		allFlags := a.collectAllFlags()
 		colliding := a.collidingConfigFields()
 
@@ -1051,7 +1051,7 @@ func (a *App) registerConfigGroup() {
 			return Exit(code)
 		}
 		// Read existing config (use the already-loaded data from parse time)
-		existing := a.configData
+		existing := ctx.configData
 
 		// Look up the key against registered flags and config fields
 		allFlags := a.collectAllFlags()

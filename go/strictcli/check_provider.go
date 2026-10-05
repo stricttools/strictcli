@@ -49,7 +49,7 @@ type CheckSpecMeta struct {
 // declared severity forbids.
 type CheckSpec struct {
 	meta     CheckSpecMeta
-	impl     func(CheckContext) CheckOutcome
+	impl     checkImpl
 	implForm string // "error" or "warn" -- bound by the constructor
 }
 
@@ -60,7 +60,7 @@ type CheckSpec struct {
 func NewErrorCheckSpec(meta CheckSpecMeta, impl func(CheckContext, *ErrorReporter) CheckOutcome) CheckSpec {
 	return CheckSpec{
 		meta: meta,
-		impl: func(ctx CheckContext) CheckOutcome {
+		impl: func(ctx CheckContext, _ *effectLog) CheckOutcome {
 			r := &ErrorReporter{}
 			return impl(ctx, r)
 		},
@@ -74,7 +74,7 @@ func NewErrorCheckSpec(meta CheckSpecMeta, impl func(CheckContext, *ErrorReporte
 func NewWarnCheckSpec(meta CheckSpecMeta, impl func(CheckContext, *WarnReporter) CheckOutcome) CheckSpec {
 	return CheckSpec{
 		meta: meta,
-		impl: func(ctx CheckContext) CheckOutcome {
+		impl: func(ctx CheckContext, _ *effectLog) CheckOutcome {
 			r := &WarnReporter{}
 			return impl(ctx, r)
 		},
@@ -105,6 +105,8 @@ func (a *App) RegisterCheckProvider(provider func() []CheckSpec) {
 // for tests and long-lived singletons. It does NOT unregister the providers
 // themselves.
 func (a *App) ResetCheckProviderCache() {
+	a.providerMu.Lock()
+	defer a.providerMu.Unlock()
 	a.dropProviderSourcedDefs()
 	a.providerMaterialized = false
 	a.providerMaterializedCwd = ""
@@ -120,6 +122,8 @@ func (a *App) materializeCheckProviders() {
 	if len(a.checkProviders) == 0 {
 		return
 	}
+	a.providerMu.Lock()
+	defer a.providerMu.Unlock()
 	cwd, _ := os.Getwd()
 	if a.providerMaterialized && a.providerMaterializedCwd == cwd {
 		return

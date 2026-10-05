@@ -194,7 +194,7 @@ func TestObserveWithAGrantIsRefused(t *testing.T) {
 
 func TestTheDefaultHTTPClientIsNotTheStdlibDefaultAndHasATimeout(t *testing.T) {
 	app := effectsApp(EffectMutating, func(ctx *Context) Outcome { return Exit(0) })
-	e := app.armEffects(app.commands["go"], "go", false, nil)
+	e := app.newInvocation().armEffects(app.commands["go"], "go", false, nil)
 	if e.httpClient == nil || e.httpClient == http.DefaultClient || e.httpClient.Timeout <= 0 {
 		t.Fatalf("expected the framework's own client with a finite timeout, got %#v", e.httpClient)
 	}

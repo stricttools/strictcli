@@ -19,7 +19,7 @@ func TestFlagOptionalChoicesNotPassed(t *testing.T) {
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d; stderr=%q", r.ExitCode, r.Stderr)
 	}
-	if r.Stdout != "format=None" {
+	if r.Stdout != "format=None\n" {
 		t.Fatalf("expected 'format=None', got %q", r.Stdout)
 	}
 }
@@ -31,7 +31,7 @@ func TestFlagOptionalChoicesPassedValid(t *testing.T) {
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d; stderr=%q", r.ExitCode, r.Stderr)
 	}
-	if r.Stdout != "format=json" {
+	if r.Stdout != "format=json\n" {
 		t.Fatalf("expected 'format=json', got %q", r.Stdout)
 	}
 }
@@ -56,7 +56,7 @@ func TestArgOptionalChoicesNotPassed(t *testing.T) {
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d; stderr=%q", r.ExitCode, r.Stderr)
 	}
-	if r.Stdout != "env=None" {
+	if r.Stdout != "env=None\n" {
 		t.Fatalf("expected 'env=None', got %q", r.Stdout)
 	}
 }
@@ -69,7 +69,7 @@ func TestArgOptionalChoicesPassedValid(t *testing.T) {
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d; stderr=%q", r.ExitCode, r.Stderr)
 	}
-	if r.Stdout != "env=prod" {
+	if r.Stdout != "env=prod\n" {
 		t.Fatalf("expected 'env=prod', got %q", r.Stdout)
 	}
 }
@@ -123,7 +123,7 @@ func TestUnelectedScopeChoicesNotValidated(t *testing.T) {
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d; stderr=%q", r.ExitCode, r.Stderr)
 	}
-	if r.Stdout != "mode=output[value:out.txt]" {
+	if r.Stdout != "mode=output[value:out.txt]\n" {
 		t.Fatalf("expected 'mode=output[value:out.txt]', got %q", r.Stdout)
 	}
 }

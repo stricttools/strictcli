@@ -310,7 +310,7 @@ func TestScopedSubFlagTakesAllThreePresences(t *testing.T) {
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d; stderr=%q", r.ExitCode, r.Stderr)
 	}
-	if r.Stdout != "via=email[cc:<nil> retries:3 subject:hi]" {
+	if r.Stdout != "via=email[cc:<nil> retries:3 subject:hi]\n" {
 		t.Fatalf("got %q", r.Stdout)
 	}
 }
@@ -331,7 +331,7 @@ func TestOptionalScalarsDeliverNil(t *testing.T) {
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d; stderr=%q", r.ExitCode, r.Stderr)
 	}
-	if r.Stdout != "s=None i=None f=None b=None" {
+	if r.Stdout != "s=None i=None f=None b=None\n" {
 		t.Fatalf("got %q", r.Stdout)
 	}
 }
@@ -354,7 +354,7 @@ func TestOptionalBoolIsRealTristate(t *testing.T) {
 		if r.ExitCode != 0 {
 			t.Fatalf("%s: expected exit 0, got %d; stderr=%q", tc.argv, r.ExitCode, r.Stderr)
 		}
-		if r.Stdout != tc.want {
+		if r.Stdout != tc.want+"\n" {
 			t.Fatalf("%s: got %q, want %q", tc.argv, r.Stdout, tc.want)
 		}
 	}
@@ -477,7 +477,7 @@ func TestVariadicArgPresence(t *testing.T) {
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d; stderr=%q", r.ExitCode, r.Stderr)
 	}
-	if r.Stdout != "items=" {
+	if r.Stdout != "items=\n" {
 		t.Fatalf("an optional variadic delivers the empty list, got %q", r.Stdout)
 	}
 }
@@ -495,7 +495,7 @@ func TestRequiredSatisfiedByEnv(t *testing.T) {
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d; stderr=%q", r.ExitCode, r.Stderr)
 	}
-	if r.Stdout != "level=42" {
+	if r.Stdout != "level=42\n" {
 		t.Fatalf("got %q", r.Stdout)
 	}
 }
@@ -530,7 +530,7 @@ func TestRequiredSatisfiedByImplication(t *testing.T) {
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d; stderr=%q", r.ExitCode, r.Stderr)
 	}
-	if r.Stdout != "loud=true verbose_out=true" {
+	if r.Stdout != "loud=true verbose_out=true\n" {
 		t.Fatalf("got %q", r.Stdout)
 	}
 	// Without it, the required error fires normally.
@@ -588,7 +588,7 @@ func TestAllOrNoneWithADefaultedMemberStaysVacuous(t *testing.T) {
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d; stderr=%q", r.ExitCode, r.Stderr)
 	}
-	if r.Stdout != "cert=c.pem key=k.pem" {
+	if r.Stdout != "cert=c.pem key=k.pem\n" {
 		t.Fatalf("got %q", r.Stdout)
 	}
 	r = newApp().Test([]string{"cmd", "--cert", "mine.pem"})
@@ -618,7 +618,7 @@ func TestImpliesTriggerNeverFiresFromItsOwnDefault(t *testing.T) {
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d; stderr=%q", r.ExitCode, r.Stderr)
 	}
-	if r.Stdout != "release=true signed=None" {
+	if r.Stdout != "release=true signed=None\n" {
 		t.Fatalf("a defaulted trigger must not fire; got %q", r.Stdout)
 	}
 	// Supplying the very same value on the command line DOES fire it: the
@@ -627,7 +627,7 @@ func TestImpliesTriggerNeverFiresFromItsOwnDefault(t *testing.T) {
 	if r.ExitCode != 0 {
 		t.Fatalf("expected exit 0, got %d; stderr=%q", r.ExitCode, r.Stderr)
 	}
-	if r.Stdout != "release=true signed=true" {
+	if r.Stdout != "release=true signed=true\n" {
 		t.Fatalf("a provided trigger must fire; got %q", r.Stdout)
 	}
 }
