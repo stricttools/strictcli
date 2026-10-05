@@ -439,7 +439,9 @@ already nonzero, and an `error` diagnostic names them --
 `stdout written outside the framework: <n> bytes: "<the first 4096 bytes>"`, the
 excerpt as a JSON string. The declared routes to stdout in machine mode are the
 `payload` and `output` members, and `ctx.document()` on a command that owns
-stdout.
+stdout. In Go the guard is armed by `Run()` alone: `Test()` changes nothing
+process-wide, so calls can run at the same time, and it captures only what goes
+through the framework.
 
 ## Source provenance
 

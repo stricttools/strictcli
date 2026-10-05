@@ -197,11 +197,13 @@ call.
 
 ### Machine mode keeps stdout to one document
 
-Under `--json`, stdout carries only the `--json` document. The framework
-redirects the process stdout while the handler runs; anything written to it
-directly -- a stray `fmt.Println` -- fails the run with exit status 1 (unless
-the command already failed) and an `error` diagnostic
-`stdout written outside the framework: <n> bytes: "<first 4096 bytes>"`.
+Under `--json`, stdout carries only the `--json` document. When the program
+runs through `app.Run()`, the framework redirects the process stdout while the
+handler runs; anything written to it directly -- a stray `fmt.Println` -- fails
+the run with exit status 1 (unless the command already failed) and an `error`
+diagnostic `stdout written outside the framework: <n> bytes: "<first 4096 bytes>"`.
+`app.Test()` changes nothing process-wide, so it arms no such redirect (see
+Testing).
 
 
 `Get[T]` panics if the key is absent, nil, or the wrong type. `GetOpt[T]` returns
@@ -1426,6 +1428,15 @@ func TestGreet(t *testing.T) {
 ```
 
 The `Result` struct contains `Stdout`, `Stderr`, `ExitCode`, and `Data` (the machine payload the handler supplied through `ctx.Payload`).
+
+`app.Test()` changes nothing process-wide: each call captures its own output --
+what the handler writes through `ctx` and the stdout and stderr of every child it
+runs through `ctx.Effects()` -- and installs neither the stdout redirect nor
+signal handling. Calls may therefore run at the same time, on one app or on
+several: a test can run a long-lived command in one goroutine while it tests
+another command. `app.EffectLog()` returns the effects of the most recently
+finished call. A byte a handler writes to `os.Stdout` directly is not captured;
+`--lint-framework-use` refuses such writes.
 
 ## Linting the program for framework bypasses
 

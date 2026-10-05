@@ -10761,6 +10761,26 @@ absent, plus an `error` diagnostic `process exit called outside the framework wi
 > children (§19.11's box), not when the handler returns, so a child the exit step kills is still
 > inside the span while it dies.
 
+> **Amendment (2026-10-05, owner ruling): in Go the guard applies to `Run()` alone, and `Test()`
+> captures per call.** A guard redirects the process stdout, which is shared by every goroutine,
+> so a `Test()` that arms it cannot run beside another `Test()`: a test that runs a long-lived
+> command in one goroutine while it tests another command in a second would see each call's bytes
+> in the other's result. Go's `Test()` therefore changes nothing process-wide:
+>
+> - it arms neither the guard nor signal handling (§19.13 already excluded the latter);
+> - the call's output is captured in streams of its own: everything the handler writes through
+>   the framework's writers, and the stdout and stderr of every child run through `Spawn` or a
+>   streamed `Run`, which go to the dispatch's streams instead of the process's;
+> - the state a dispatch writes -- the reserved flags, the consumed-stdin record, the loaded
+>   config data, and the effect log -- belongs to that dispatch, not to the app, so calls running
+>   at the same time on one app share nothing they change. `EffectLog()` returns the log of the
+>   most recently finished dispatch.
+>
+> A byte a handler writes to the process stdout directly is outside a `Test()` capture: it reaches
+> the process stdout, and the run is not failed for it. The framework-use lint (§28) refuses such
+> writes in a program's own source. The guard and its failure are unchanged on `Run()`, which owns
+> the process. The Python and TypeScript rows are unchanged.
+
 ### 19.13 Signals
 
 *(Added 2026-09-26, §18.37 item 342.)* On the CLI dispatch path -- `run()` / `Run()` -- strictcli
