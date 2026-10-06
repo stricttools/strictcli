@@ -5,7 +5,7 @@
  *
  * Parity sources: go/strictcli/config.go and the Python config sections;
  * where they diverge, Python is the ground truth (per the port convention),
- * pinned by conformance/cases/config*.json. Subcommand output strings that
+ * pinned by go/strictcli/testdata/cases/config*.json. Subcommand output strings that
  * are inline fmt/f-strings in BOTH siblings stay inline here too (the
  * values.ts precedent); genuinely new templates (TOML 1.0 gate, app-level
  * config option validation) live in errors.ts.

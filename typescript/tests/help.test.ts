@@ -1,6 +1,6 @@
 /**
  * Help rendering tests, byte-pinned against the conformance suite: every
- * expected string below is a `stdout_equals` value from conformance/cases/
+ * expected string below is a `stdout_equals` value from go/strictcli/testdata/cases/
  * (help.json, nesting.json, env.json, choices.json, int_type.json,
  * repeatable.json, mutex.json, global_flags.json, flag_sets.json,
  * passthrough.json) plus a trailing newline, or -- for app-level sections

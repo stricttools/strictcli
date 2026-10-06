@@ -3,7 +3,7 @@
  * system, lazy materialization memoized per cwd, the reset hook, and the
  * runtime guards (severity mismatch, duplicate names, non-CheckSpec values).
  *
- * GROUND TRUTH: expectations derived from conformance/cases/providers.json
+ * GROUND TRUTH: expectations derived from go/strictcli/testdata/cases/providers.json
  * plus Python register_check_provider / _materialize_check_providers
  * semantics (2026-07-19).
  */

@@ -1,6 +1,6 @@
 /**
  * Parse-pipeline tests. Expected outputs are derived from the conformance
- * suite (conformance/cases/*.json) -- each test names its source case where
+ * suite (go/strictcli/testdata/cases/*.json) -- each test names its source case where
  * one exists. The mini-runner below is the smallest seam over doParse:
  * argv in, exact stdout/stderr/exit out. The full run()/test() surface is
  * covered in app_run.test.ts.

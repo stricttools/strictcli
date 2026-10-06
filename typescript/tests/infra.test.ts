@@ -4,7 +4,7 @@
  * validation), hermetic immunity, and the help "Infrastructure:" section.
  * Byte expectations were captured from the Go implementation (help section)
  * and the Python implementation (marker repr, registration errors) -- the
- * unit-level pins for conformance/cases/infra_env.json and the relevant
+ * unit-level pins for go/strictcli/testdata/cases/infra_env.json and the relevant
  * hermetic.json semantics.
  */
 

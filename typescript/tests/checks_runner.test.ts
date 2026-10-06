@@ -5,7 +5,7 @@
  *
  * GROUND TRUTH: byte-level expectations captured on 2026-07-19 from the
  * Python implementation (scratchpad pychecks.py / pychecks2.py) and
- * cross-checked against conformance/cases/checks.json + check_purity.json.
+ * cross-checked against go/strictcli/testdata/cases/checks.json + check_purity.json.
  */
 
 import { strict as assert } from "node:assert";

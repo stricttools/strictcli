@@ -6,7 +6,7 @@
  * GROUND TRUTH: byte-level expectations were captured on 2026-07-19 by
  * running the Python implementation over the same mirror app (scratchpad
  * pychecks.py); durations are normalized before comparison since they are
- * wall-clock. Cross-checked against conformance/cases/checks.json +
+ * wall-clock. Cross-checked against go/strictcli/testdata/cases/checks.json +
  * check_notes.json + check_purity.json.
  */
 

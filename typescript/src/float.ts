@@ -1,7 +1,7 @@
 /**
  * Strictcli canonical float form (SCF), the shortest-round-trip float
  * formatting shared byte-for-byte with the Python and Go implementations. It
- * is pinned by the committed conformance/float_vectors.json and matches
+ * is pinned by the committed go/strictcli/testdata/float_vectors.json and matches
  * go/strictcli/float.go formatFloatCanonical and Python
  * _format_float_canonical exactly.
  *

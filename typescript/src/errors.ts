@@ -2197,7 +2197,7 @@ export function errPayloadAlreadySet(name: string): string {
  * subset (§19.5). `path` names the position inside the declared literal
  * (rooted at payload_schema) and `detail` names the violated rule; both are
  * byte-identical across the three implementations, pinned by
- * conformance/payload_schema_vectors.json.
+ * go/strictcli/testdata/payload_schema_vectors.json.
  */
 export function errPayloadSchemaInvalid(
 	name: string,

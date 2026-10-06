@@ -270,9 +270,9 @@ context as `ctx.dryRun`, `ctx.approveConsequential`, `ctx.quiet` and
 
 strictcli is developed in the [stricttools/strictcli](https://github.com/stricttools/strictcli)
 monorepo alongside first-class **Python** (PyPI: `strictcli`) and **Go**
-implementations. All implementations are kept byte-identical in behavior — same
-error messages, same help output, same parsing rules — enforced by a shared
-cross-language conformance suite.
+implementations. All implementations were built to identical behavior — same
+error messages, same help output, same parsing rules. Go is the maintained
+implementation; this one and Python are paused.
 
 ## License
 

@@ -14,7 +14,7 @@
  * the catalog conformance/check_error_parity.py extracts, and it carries the
  * two OUTER templates (errPayloadSchemaInvalid, errPayloadInvalid). The details
  * are pinned across implementations by the shared vectors at
- * conformance/payload_schema_vectors.json instead.
+ * go/strictcli/testdata/payload_schema_vectors.json instead.
  *
  * JavaScript's own hazard is closed here by construction: every property test
  * goes through `Object.hasOwn` and every key enumeration through
@@ -742,7 +742,7 @@ export function validatePayloadValue(
 // rejected at registration exactly as a hand-written literal would be.
 //
 // The one-to-one mapping onto the closed subset is pinned across the three
-// implementations by conformance/payload_schema_builders.json.
+// implementations by go/strictcli/testdata/payload_schema_builders.json.
 // ---------------------------------------------------------------------------
 
 /** `{"type": ...}` -- one name, or a list of them for nullability. */

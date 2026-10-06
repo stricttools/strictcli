@@ -5,7 +5,7 @@
  * Each test chdirs into a fresh temp directory and declares that directory as
  * the app's source-tree root, so the relative paths below and the derived
  * coverage paths name the same files. Expectations derive from
- * conformance/cases/test_coverage.json and go/strictcli/coverage.go /
+ * go/strictcli/testdata/cases/test_coverage.json and go/strictcli/coverage.go /
  * Python _test_coverage_provider.
  */
 

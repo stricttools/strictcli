@@ -1,7 +1,7 @@
 /**
  * Help rendering at app/group/command levels, byte-identical to the siblings
  * (Go help.go and Python's _format_app_help/_format_group_help family). The
- * output is pinned by conformance/cases/help.json plus the help expectations
+ * output is pinned by go/strictcli/testdata/cases/help.json plus the help expectations
  * scattered across the other case files.
  *
  * Sibling divergences resolved here:
