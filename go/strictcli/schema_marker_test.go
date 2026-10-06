@@ -79,7 +79,7 @@ func TestHelpDocumentWritesNoFile(t *testing.T) {
 	if !strings.HasPrefix(r.Stdout, "{\n  \"schema_version\": 2,") {
 		t.Fatalf("stdout = %q, want the help document", r.Stdout)
 	}
-	if _, err := os.Stat(filepath.Join(tmpDir, ".strictcli")); err == nil {
+	if _, err := os.Stat(filepath.Join(tmpDir, ".strictmetadata")); err == nil {
 		t.Fatalf("help --json wrote a file")
 	}
 }

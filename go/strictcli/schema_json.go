@@ -12,7 +12,7 @@ import (
 // The dumped schema's ordered document and its byte canon (effects contract
 // §25.8, §25.9).
 //
-// A committed `.strictcli/schema.json` must be DUMPER-INDEPENDENT: a repository
+// A committed `.strictmetadata/.cli-schema/schema.json` must be DUMPER-INDEPENDENT: a repository
 // whose file is written sometimes by a Go binary and sometimes by a Python one
 // must see a diff exactly when something changed. Two things make that true and
 // neither is `encoding/json`'s: keys are emitted in a DECLARED order (a Go map
