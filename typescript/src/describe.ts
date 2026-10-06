@@ -439,7 +439,7 @@ export const SURFACE = {
 				"name",
 				"noDefaultConfigPath",
 				"procObserveAllowlist",
-				"testCoverageDir",
+				"sourceTreeRoot",
 				"version",
 			],
 		},

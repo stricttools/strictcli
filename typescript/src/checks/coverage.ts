@@ -1,8 +1,9 @@
 /**
  * CLI test-coverage instrumentation: per-process shard files recording which
  * commands app.test() exercised, plus the built-in cli-test-coverage
- * provider. Both live under the directory the app declares through
- * `testCoverageDir`, never under the process's working directory, so a
+ * provider. Both live in the coverage directory under the source-tree root the
+ * app declares through `sourceTreeRoot`, never under the process's working
+ * directory, so a
  * consumer running an installed CLI from anywhere touches nothing. The
  * provider merges the committed manifest and shard files into the covered set
  * and compares it against the app's full command surface.
@@ -22,31 +23,37 @@ import {
 } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import type { AppImpl, GroupImpl } from "../app.js";
+import {
+	COVERAGE_DIR_REL,
+	COVERAGE_MANIFEST_NAME,
+	COVERAGE_SHARDS_NAME,
+} from "./coverage_layout.js";
 import type { CheckSpec } from "./provider.js";
 import { errorCheckSpec } from "./provider.js";
 
 /**
- * Enables test-coverage instrumentation on an app, from the DECLARED
- * directory: `coverage/` and `test-coverage.json` sit inside it, and both the
- * recorder and the check provider use the absolute paths derived from it, so a
- * chdir between construction and dispatch cannot move either.
+ * Enables test-coverage instrumentation on an app, from the coverage
+ * directory under the DECLARED source-tree root: `shards/` and
+ * `manifest.json` sit inside it, and both the recorder and the check provider
+ * use the absolute paths derived from it, so a chdir between construction and
+ * dispatch cannot move either.
  *
- * A declared directory that does not exist leaves the app uninstrumented: no
+ * A coverage directory that does not exist leaves the app uninstrumented: no
  * paths, no provider, no writes anywhere. That is the installed distribution,
- * whose declared path names a source checkout that is not there.
+ * whose declared root is not a source checkout.
  *
- * Only the PATHS are computed here. The coverage/ subdirectory is created
+ * Only the PATHS are computed here. The shards/ subdirectory is created
  * lazily by recordCoverage, immediately before the first shard write: shards
  * are written only on the test-harness paths (test() and call()), so a plain
- * CLI invocation leaves no coverage/ behind.
+ * CLI invocation leaves no shards/ behind.
  */
-export function initTestCoverage(app: AppImpl, declaredDir: string): void {
-	const root = resolve(declaredDir);
+export function initTestCoverage(app: AppImpl, sourceTreeRoot: string): void {
+	const root = resolve(sourceTreeRoot, ...COVERAGE_DIR_REL.split("/"));
 	if (!isDir(root)) {
 		return;
 	}
-	app.coverageDir = join(root, "coverage");
-	app.coverageManifestPath = join(root, "test-coverage.json");
+	app.coverageDir = join(root, COVERAGE_SHARDS_NAME);
+	app.coverageManifestPath = join(root, COVERAGE_MANIFEST_NAME);
 	// One shard per process (append semantics); uniqueness across concurrent
 	// writers comes from the PID, so there is no per-write shard counter.
 	app.coverageShardPath = join(app.coverageDir, `${process.pid}.jsonl`);
@@ -123,10 +130,10 @@ function shardNames(coverageDir: string): string[] {
 
 /**
  * The built-in check provider for cli-test-coverage, auto-registered when the
- * app declares a coverage directory that exists. The verdict is derived from
- * committed state: the covered set is the union of the committed manifest
- * (test-coverage.json in that directory) and any per-process shard files
- * merged from its coverage/ subdirectory. Every live registered command path
+ * coverage directory under the declared source-tree root exists. The verdict
+ * is derived from committed state: the covered set is the union of the
+ * committed manifest (manifest.json in that directory) and any per-process
+ * shard files merged from its shards/ subdirectory. Every live registered command path
  * (minus the injected check command) must be present in that union to pass;
  * otherwise the check fails naming each uncovered command.
  *

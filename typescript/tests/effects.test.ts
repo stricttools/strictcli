@@ -36,13 +36,14 @@ function tmp(): string {
 }
 
 /**
- * Creates the directory an app declares through testCoverageDir and returns
- * its absolute path -- the option takes effect only when it already exists.
+ * Creates the coverage directory under dir and returns dir, the source-tree
+ * root an app declares -- coverage turns on only when that directory exists.
  */
-function declaredCoverageDir(dir: string): string {
-	const declared = join(dir, ".strictcli");
-	mkdirSync(declared, { recursive: true });
-	return declared;
+function declaredSourceTreeRoot(dir: string): string {
+	mkdirSync(join(dir, ".strictmetadata", ".cli-test-coverage"), {
+		recursive: true,
+	});
+	return dir;
 }
 
 /** An app with one mutating command whose handler is the test body. */
@@ -1005,7 +1006,7 @@ test("effects: a coverage shard is a CACHE_WRITE that executes even in dry mode"
 			name: "t",
 			version: "1",
 			help: "h",
-			testCoverageDir: declaredCoverageDir(dir),
+			sourceTreeRoot: declaredSourceTreeRoot(dir),
 		});
 		app.command(defineReadOnlyCommand("look", { help: "h", handler: () => 0 }));
 		const r = await app.test(["--dry-run", "look"]);
@@ -1035,7 +1036,7 @@ test("effects: a CACHE_WRITE never consumes a would-do number", async () => {
 			name: "t",
 			version: "1",
 			help: "h",
-			testCoverageDir: declaredCoverageDir(dir),
+			sourceTreeRoot: declaredSourceTreeRoot(dir),
 		});
 		app.command(
 			defineMutatingCommand("rel", {
@@ -1072,7 +1073,7 @@ test("effects: a CACHE_WRITE never shifts the truncation step", async () => {
 			name: "t",
 			version: "1",
 			help: "h",
-			testCoverageDir: declaredCoverageDir(dir),
+			sourceTreeRoot: declaredSourceTreeRoot(dir),
 		});
 		app.command(
 			defineMutatingCommand("rel", {
@@ -1106,7 +1107,7 @@ test("effects: a CACHE_WRITE never trips read-only enforcement", async () => {
 			name: "t",
 			version: "1",
 			help: "h",
-			testCoverageDir: declaredCoverageDir(dir),
+			sourceTreeRoot: declaredSourceTreeRoot(dir),
 		});
 		app.command(defineReadOnlyCommand("look", { help: "h", handler: () => 0 }));
 		// A read_only command whose dispatch writes a coverage shard: no error.

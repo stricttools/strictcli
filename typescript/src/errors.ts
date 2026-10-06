@@ -17,6 +17,7 @@
  * - Go error-typed parameters become errStr: string (the message text).
  */
 
+import { COVERAGE_DIR_REL } from "./checks/coverage_layout.js";
 import { PDETAIL_MAGNITUDE } from "./payload_schema.js";
 
 /** Thrown for registration-time validation failures (Go: panic / Python: ValueError). */
@@ -601,13 +602,14 @@ export function errChecksTomlAppMismatch(
 }
 
 /**
- * The retired boolean option's refusal (contract §12.12: one sentence, each
- * language's own spellings inside it -- `testCoverage` / `testCoverageDir`
- * here, `test_coverage` / `test_coverage_dir` in Python, `WithTestCoverage` /
- * `WithTestCoverageDir` in Go).
+ * A retired test-coverage option's refusal (contract §12.12: one sentence,
+ * each language's own spellings inside it -- `testCoverage` /
+ * `testCoverageDir` / `sourceTreeRoot` here, `test_coverage` /
+ * `test_coverage_dir` / `source_tree_root` in Python, `WithTestCoverage` /
+ * `WithTestCoverageDir` / `WithSourceTreeRoot` in Go).
  */
-export function errTestCoverageBooleanRetired(): string {
-	return "testCoverage is not accepted; declare the directory holding coverage/ and test-coverage.json with testCoverageDir";
+export function errCoverageOptionRetired(option: string): string {
+	return `${option} is not accepted; declare the source-tree root with sourceTreeRoot, which keeps test coverage in ${COVERAGE_DIR_REL}/ under it`;
 }
 
 // ---------------------------------------------------------------------------

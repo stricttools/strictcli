@@ -100,6 +100,7 @@ import {
 	errConnectionEnvWithoutURLFlag,
 	errConnectionEnvWithPerFlagEnv,
 	errConnectionURLFlagUnbound,
+	errCoverageOptionRetired,
 	errDeprecatedAlreadyRegistered,
 	errDeprecatedCollidesCommand,
 	errDeprecatedCollidesGroup,
@@ -123,7 +124,6 @@ import {
 	errProcObserveAllowlistEmptyPrefix,
 	errProcObserveAllowlistNotStrings,
 	errTagContractViolation,
-	errTestCoverageBooleanRetired,
 	RegistrationError,
 } from "./errors.js";
 import { ExitNow, ProcessExitCalled } from "./exits.js";
@@ -218,14 +218,16 @@ export interface AppSpec {
 	/** Enables the check system with inline checks.toml text. */
 	readonly checksEmbed?: string;
 	/**
-	 * The directory holding this app's coverage state: `coverage/` (per-process
-	 * shard files) and `test-coverage.json` (the committed manifest). Declared,
-	 * never discovered. Absent means coverage is off. A declared directory that
-	 * does not exist at construction also means off -- no check registered, no
-	 * paths computed, nothing created -- which is the installed distribution,
-	 * whose declared path names a source checkout that is not there.
+	 * The root of the app's source tree, the checkout its tests run in. The
+	 * app's coverage state lives under it, in `.strictmetadata/.cli-test-coverage/`:
+	 * `shards/` (per-process shard files, never committed) and `manifest.json`
+	 * (the committed manifest). Declared, never discovered. Absent means
+	 * coverage is off. A root without that coverage directory at construction
+	 * also means off -- no check registered, no paths computed, nothing
+	 * created -- which is the installed distribution, whose root is not a
+	 * source checkout.
 	 */
-	readonly testCoverageDir?: string;
+	readonly sourceTreeRoot?: string;
 	/**
 	 * Argv PREFIXES that make an `effects.run` an OBSERVE: it executes even in
 	 * dry mode, returns a real value, is never written to the would-do log, and
@@ -892,11 +894,11 @@ export class AppImpl implements App {
 	readonly checksEmbed: string | undefined;
 	readonly checks: ChecksState = newChecksState();
 	// Test-coverage instrumentation state (checks/coverage.ts). All three paths
-	// are absolute and sit under the DECLARED directory, and they stay
-	// undefined when that directory is absent -- which is what turns the whole
+	// are absolute and sit under the DECLARED root's coverage directory, and
+	// they stay undefined when that directory is absent -- which is what turns the whole
 	// mechanism off (sibling parity: Go's empty coverageShardPath, Python's
 	// None _coverage_shard_path).
-	readonly testCoverageDir: string | undefined;
+	readonly sourceTreeRoot: string | undefined;
 	/** App-level observe allowlist, validated and frozen at construction. */
 	readonly procObserveAllowlist: readonly (readonly string[])[];
 	/** The structured effect log of the most recent dispatch. */
@@ -1035,9 +1037,12 @@ export class AppImpl implements App {
 		this.checksPath = spec.checksPath;
 		this.checksEmbed = spec.checksEmbed;
 		if ("testCoverage" in spec) {
-			throw new RegistrationError(errTestCoverageBooleanRetired());
+			throw new RegistrationError(errCoverageOptionRetired("testCoverage"));
 		}
-		this.testCoverageDir = spec.testCoverageDir;
+		if ("testCoverageDir" in spec) {
+			throw new RegistrationError(errCoverageOptionRetired("testCoverageDir"));
+		}
+		this.sourceTreeRoot = spec.sourceTreeRoot;
 		this.procObserveAllowlist = validateProcObserveAllowlist(
 			spec.procObserveAllowlist,
 		);
@@ -1061,11 +1066,11 @@ export class AppImpl implements App {
 			this.loadChecks(this.checksEmbed);
 		}
 
-		// Test-coverage instrumentation: the declared directory's derived paths
-		// (its coverage/ subdirectory is created lazily on the first shard
-		// write) and the built-in cli-test-coverage provider.
-		if (this.testCoverageDir !== undefined) {
-			initTestCoverage(this, this.testCoverageDir);
+		// Test-coverage instrumentation: the paths derived from the declared
+		// root's coverage directory (its shards/ subdirectory is created lazily
+		// on the first shard write) and the built-in cli-test-coverage provider.
+		if (this.sourceTreeRoot !== undefined) {
+			initTestCoverage(this, this.sourceTreeRoot);
 		}
 	}
 
