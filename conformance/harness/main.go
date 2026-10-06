@@ -121,8 +121,8 @@ func main() {
 	if v, ok := appDef["checks_toml"]; ok {
 		appOpts = append(appOpts, strictcli.WithChecksEmbed([]byte(v.(string))))
 	}
-	if v, ok := appDef["test_coverage_dir"]; ok {
-		appOpts = append(appOpts, strictcli.WithTestCoverageDir(v.(string)))
+	if v, ok := appDef["source_tree_root"]; ok {
+		appOpts = append(appOpts, strictcli.WithSourceTreeRoot(v.(string)))
 	}
 	if v, ok := appDef["proc_observe_allowlist"]; ok {
 		var prefixes [][]string
@@ -303,7 +303,7 @@ func main() {
 
 	_, hasToml := appDef["checks_toml"]
 	_, hasProviders := appDef["providers"]
-	_, hasTestCoverage := appDef["test_coverage_dir"]
+	_, hasTestCoverage := appDef["source_tree_root"]
 	if hasToml || hasProviders || hasTestCoverage {
 		app.SetCheckContext(func() strictcli.CheckContext {
 			return &testCheckCtx{}
@@ -322,7 +322,7 @@ func main() {
 	}
 
 	// Pre-test argv lists: run app.Test() for each before the main app.Run().
-	// Used by test_coverage_dir conformance cases to generate shard files before
+	// Used by source_tree_root conformance cases to generate shard files before
 	// the check command runs.
 	if v, ok := appDef["pre_test"]; ok {
 		for _, item := range v.([]interface{}) {

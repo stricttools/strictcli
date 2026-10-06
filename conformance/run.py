@@ -896,8 +896,8 @@ def _run_case(case: dict, target: str) -> tuple[bool, list[str], subprocess.Comp
         extra_env["CONFORMANCE_EFFECT_LOG"] = effect_log_path
         cleanup_paths = list(cleanup_paths) + [effect_log_path]
 
-    # A test_coverage_dir case needs a writable temp dir: the declared directory
-    # is a path relative to it, and the shard files are written underneath.
+    # A source_tree_root case needs a writable temp dir: the declared root is a
+    # path relative to it, and the shard files are written underneath.
     proj_dir = None
     if case.get("project_root_not_a_work_tree", False):
         # The one fixture root that is deliberately NOT a repository. The
@@ -906,24 +906,31 @@ def _run_case(case: dict, target: str) -> tuple[bool, list[str], subprocess.Comp
         # from nowhere else.
         proj_dir = tempfile.mkdtemp(prefix="strictcli_loose_")
         run_cwd = proj_dir
-    elif "test_coverage_dir" in app_def:
+    elif "source_tree_root" in app_def:
         proj_dir = tempfile.mkdtemp(prefix="strictcli_cov_")
         _init_fixture_repo(proj_dir)
         run_cwd = proj_dir
-        # The runner creates the fixture root and NOTHING below it, so the
-        # declared path itself carries the existence fact a case is pinning:
-        # "." names the fixture root (present, so the app instruments), and any
-        # other value names a directory that is absent (so it does not).
+        # The runner creates the fixture root and the coverage directory under
+        # it (.strictmetadata/.cli-test-coverage/), so the declared root
+        # carries the existence fact a case is pinning: "." names the fixture
+        # root (its coverage directory present, so the app instruments), and
+        # any other value names a root that is absent (so it does not).
+        os.makedirs(
+            os.path.join(proj_dir, ".strictmetadata", ".cli-test-coverage"),
+        )
         #
         # Seed a committed coverage manifest so the check can be exercised on
         # the empty-shard path. Target-agnostic: the same seeded file is read by
         # all three implementations.
         seed_manifest = app_def.get("coverage_manifest")
         if seed_manifest is not None:
-            declared_dir = os.path.join(proj_dir, app_def["test_coverage_dir"])
-            os.makedirs(declared_dir, exist_ok=True)
+            coverage_dir = os.path.join(
+                proj_dir, app_def["source_tree_root"],
+                ".strictmetadata", ".cli-test-coverage",
+            )
+            os.makedirs(coverage_dir, exist_ok=True)
             with open(
-                os.path.join(declared_dir, "test-coverage.json"),
+                os.path.join(coverage_dir, "manifest.json"),
                 "w",
                 encoding="utf-8",
             ) as mf:

@@ -5,7 +5,7 @@
       "name": "testapp",
       "version": "1.0.0",
       "help": "test",
-      "test_coverage_dir": ".",
+      "source_tree_root": ".",
       "commands": [
         {
           "name": "deploy",
@@ -55,7 +55,7 @@
       "name": "testapp",
       "version": "1.0.0",
       "help": "test",
-      "test_coverage_dir": ".",
+      "source_tree_root": ".",
       "commands": [
         {
           "name": "deploy",
@@ -109,7 +109,7 @@
       "name": "testapp",
       "version": "1.0.0",
       "help": "test",
-      "test_coverage_dir": ".",
+      "source_tree_root": ".",
       "commands": [
         {
           "name": "deploy",
@@ -152,12 +152,12 @@
     }
   },
   {
-    "name": "test-coverage: zero coverage state skips (declared dir present, no manifest, no shards)",
+    "name": "test-coverage: zero coverage state skips (coverage directory present, no manifest, no shards)",
     "app": {
       "name": "testapp",
       "version": "1.0.0",
       "help": "test",
-      "test_coverage_dir": ".",
+      "source_tree_root": ".",
       "commands": [
         {
           "name": "deploy",
@@ -196,12 +196,12 @@
     }
   },
   {
-    "name": "test-coverage: a declared directory that does not exist registers no check",
+    "name": "test-coverage: a declared root without a coverage directory registers no check",
     "app": {
       "name": "testapp",
       "version": "1.0.0",
       "help": "test",
-      "test_coverage_dir": "no-such-directory",
+      "source_tree_root": "no-such-directory",
       "commands": [
         {
           "name": "deploy",

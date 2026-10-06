@@ -385,9 +385,9 @@
           },
           "description": "Check providers registered via register_check_provider / RegisterCheckProvider. Each element is one provider (a list of the specs it returns). Providers have no TOML, so every spec carries its declarative meta inline."
         },
-        "test_coverage_dir": {
+        "source_tree_root": {
           "type": "string",
-          "description": "The directory holding the app's coverage state -- coverage/ (shard files) and test-coverage.json (the manifest) -- as a path relative to the fixture root the case runs in. \".\" names the fixture root itself, which always exists; any other value names a directory the runner never creates, which is how a case declares the absent-directory state that registers no cli-test-coverage check."
+          "description": "The app's source-tree root, whose .strictmetadata/.cli-test-coverage/ holds the coverage state -- shards/ (shard files) and manifest.json (the manifest) -- as a path relative to the fixture root the case runs in. \".\" names the fixture root itself, under which the runner always creates the coverage directory; any other value names a root the runner never creates, which is how a case declares the absent-directory state that registers no cli-test-coverage check."
         },
         "pre_test": {
           "type": "array",
@@ -397,7 +397,7 @@
               "type": "string"
             }
           },
-          "description": "List of argv lists to run via app.test() before the main app.run(). Used by test_coverage_dir cases to generate shard files."
+          "description": "List of argv lists to run via app.test() before the main app.run(). Used by source_tree_root cases to generate shard files."
         },
         "pre_call": {
           "type": "array",
@@ -433,7 +433,7 @@
           "items": {
             "type": "string"
           },
-          "description": "Committed coverage manifest to seed at test-coverage.json inside the declared test_coverage_dir before the app runs. Used to exercise the deterministic manifest-union verdict on the empty-shard path (no pre_test)."
+          "description": "Committed coverage manifest to seed at .strictmetadata/.cli-test-coverage/manifest.json under the declared source_tree_root before the app runs. Used to exercise the deterministic manifest-union verdict on the empty-shard path (no pre_test)."
         },
         "tag_contracts": {
           "type": "object",

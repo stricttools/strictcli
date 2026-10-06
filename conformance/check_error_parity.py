@@ -753,29 +753,31 @@ SIGNATURE_STATUS: dict[str, dict[str, str]] = {
     },
 
     # =======================================================================
-    # The retired test-coverage boolean (contract §12.12)
+    # The retired test-coverage options (contract §12.12)
     #
-    # The refusal names the option that replaced it, so it carries a
+    # The refusal names the option that replaced them, so it carries a
     # per-language spelling for the same reason the presence family below does:
     # one sentence, each language's own spellings inside it. Each
-    # implementation's red-green test asserts its own line -- Python
-    # tests/test_coverage.py TestRetiredBooleanRefused, Go
-    # coverage_test.go TestCoverageRetiredBooleanRefused, TypeScript
-    # checks_coverage.test.ts "the retired boolean is refused naming the
-    # directory option".
+    # implementation's red-green tests assert its own lines -- Python
+    # tests/test_coverage.py TestRetiredBooleanRefused, Go coverage_test.go
+    # TestCoverageRetiredBooleanRefused and
+    # TestCoverageRetiredDirectoryOptionRefused, TypeScript
+    # checks_coverage.test.ts "the retired boolean is refused naming the root
+    # option" and "the retired directory option is refused naming the root
+    # option".
     # =======================================================================
 
-    'test_coverage is not accepted; declare the directory holding coverage/ and test-coverage.json with test_coverage_dir': {
-        "go": "excluded:one sentence in three spellings (contract §12.12); Go carries the WithTestCoverage/WithTestCoverageDir line and asserts it in coverage_test.go",
-        "typescript": "excluded:one sentence in three spellings (contract §12.12); TypeScript carries the testCoverage/testCoverageDir line and asserts it in checks_coverage.test.ts",
+    '* is not accepted; declare the source-tree root with source_tree_root, which keeps test coverage in */ under it': {
+        "go": "excluded:one sentence in three spellings (contract §12.12); Go carries the WithSourceTreeRoot line and asserts it in coverage_test.go",
+        "typescript": "excluded:one sentence in three spellings (contract §12.12); TypeScript carries the sourceTreeRoot line and asserts it in checks_coverage.test.ts",
     },
-    'WithTestCoverage is not accepted; declare the directory holding coverage/ and test-coverage.json with WithTestCoverageDir': {
-        "python": "excluded:one sentence in three spellings (contract §12.12); Python carries the test_coverage/test_coverage_dir line and asserts it in tests/test_coverage.py",
-        "typescript": "excluded:one sentence in three spellings (contract §12.12); TypeScript carries the testCoverage/testCoverageDir line and asserts it in checks_coverage.test.ts",
+    '* is not accepted; declare the source-tree root with WithSourceTreeRoot, which keeps test coverage in */ under it': {
+        "python": "excluded:one sentence in three spellings (contract §12.12); Python carries the source_tree_root line and asserts it in tests/test_coverage.py",
+        "typescript": "excluded:one sentence in three spellings (contract §12.12); TypeScript carries the sourceTreeRoot line and asserts it in checks_coverage.test.ts",
     },
-    'testCoverage is not accepted; declare the directory holding coverage/ and test-coverage.json with testCoverageDir': {
-        "python": "excluded:one sentence in three spellings (contract §12.12); Python carries the test_coverage/test_coverage_dir line and asserts it in tests/test_coverage.py",
-        "go": "excluded:one sentence in three spellings (contract §12.12); Go carries the WithTestCoverage/WithTestCoverageDir line and asserts it in coverage_test.go",
+    '* is not accepted; declare the source-tree root with sourceTreeRoot, which keeps test coverage in */ under it': {
+        "python": "excluded:one sentence in three spellings (contract §12.12); Python carries the source_tree_root line and asserts it in tests/test_coverage.py",
+        "go": "excluded:one sentence in three spellings (contract §12.12); Go carries the WithSourceTreeRoot line and asserts it in coverage_test.go",
     },
 
     # =======================================================================
