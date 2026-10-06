@@ -11,6 +11,18 @@ import (
 	"strings"
 )
 
+// The test-coverage layout, relative to the source-tree root an app declares
+// with WithSourceTreeRoot. This is the one place the layout is spelled.
+const (
+	// coverageDirRel is the coverage directory, in slash form.
+	coverageDirRel = ".strictmetadata/.cli-test-coverage"
+	// coverageManifestName is the committed manifest inside it.
+	coverageManifestName = "manifest.json"
+	// coverageShardsName is the uncommitted per-process shard directory
+	// inside it.
+	coverageShardsName = "shards"
+)
+
 // recordCoverage appends a coverage record for the resolved command path.
 // Each Test() or Call() invocation appends one JSONL line to the process's
 // shard file (named "<pid>.jsonl"). Uniqueness across concurrent writers comes
@@ -58,18 +70,19 @@ func (a *App) collectAllCommandPaths() map[string]bool {
 }
 
 // testCoverageProvider is the built-in check provider for cli-test-coverage.
-// Auto-registered when WithTestCoverageDir() names a directory that exists.
+// Auto-registered when the coverage directory under the root WithSourceTreeRoot
+// declares exists.
 //
 // The verdict is derived from committed state: the covered set is the union of
-// the committed manifest (test-coverage.json in the declared directory) and any
-// per-process shard files merged from its coverage/ subdirectory. Every live
+// the committed manifest (manifest.json in the coverage directory) and any
+// per-process shard files merged from its shards/ subdirectory. Every live
 // registered command path (minus the injected check command) must be present in
 // that union to pass; otherwise the check fails naming each uncovered command.
 //
 // Because the verdict reads the committed manifest, it is deterministic on every
 // machine -- a machine that never ran the suite (no local shards) still gets a
-// stable verdict from the committed manifest alone. Both the coverage dir and
-// the manifest path sit under the DECLARED directory, so the check evaluated
+// stable verdict from the committed manifest alone. Both the shards dir and
+// the manifest path sit under the DECLARED root, so the check evaluated
 // from any cwd reads the app's own repo state.
 //
 // The manifest is rewritten as the monotonic union of its prior contents and

@@ -403,11 +403,14 @@ func errChecksTomlAppMismatch(appName string, expected string) string {
 	return fmt.Sprintf("checks.toml: app %q does not match app name %q", appName, expected)
 }
 
-// errTestCoverageBooleanRetired is the retired boolean option's refusal
+// errCoverageOptionRetired is the refusal of a retired test-coverage option
 // (contract §12.12: one sentence, each language's own spellings inside it --
-// WithTestCoverage / WithTestCoverageDir here, test_coverage /
-// test_coverage_dir in Python, testCoverage / testCoverageDir in TypeScript).
-const errTestCoverageBooleanRetired = "WithTestCoverage is not accepted; declare the directory holding coverage/ and test-coverage.json with WithTestCoverageDir"
+// WithTestCoverage / WithTestCoverageDir / WithSourceTreeRoot here,
+// test_coverage / test_coverage_dir / source_tree_root in Python,
+// testCoverage / testCoverageDir / sourceTreeRoot in TypeScript).
+func errCoverageOptionRetired(option string) string {
+	return fmt.Sprintf("%s is not accepted; declare the source-tree root with WithSourceTreeRoot, which keeps test coverage in %s/ under it", option, coverageDirRel)
+}
 
 // ---------------------------------------------------------------------------
 // strictcli.go — check registration

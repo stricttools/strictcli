@@ -490,15 +490,16 @@ type App struct {
 	connectionEnvs  map[string]string // env var -> help
 	connectionOrder []string          // env var names in declaration order
 
-	// Test-coverage instrumentation. When the declared directory exists, every
-	// Test() and Call() invocation records the resolved command path to
-	// per-process shard files so a check can verify that every command in the
-	// surface has been exercised. The three derived paths stay empty when the
-	// declared directory is absent, which is what turns the whole mechanism off.
-	testCoverageDir      string // the declared directory, as given
-	coverageShardPath    string // "<declared>/coverage/<pid>.jsonl"
-	coverageDir          string // "<declared>/coverage"
-	coverageManifestPath string // "<declared>/test-coverage.json"
+	// Test-coverage instrumentation. When the coverage directory under the
+	// declared source-tree root exists, every Test() and Call() invocation
+	// records the resolved command path to per-process shard files so a check
+	// can verify that every command in the surface has been exercised. The
+	// three derived paths stay empty when that directory is absent, which is
+	// what turns the whole mechanism off.
+	sourceTreeRoot       string // the declared root, as given
+	coverageShardPath    string // "<coverage dir>/shards/<pid>.jsonl"
+	coverageDir          string // "<coverage dir>/shards"
+	coverageManifestPath string // "<coverage dir>/manifest.json"
 
 	// The effects regime. procObserveAllowlist is app-level observe
 	// authorization: a list of argv PREFIXES, matched element-wise by string
@@ -716,22 +717,33 @@ func WithHTTPClient(client *http.Client) AppOption {
 	}
 }
 
-// WithTestCoverageDir declares the directory holding this app's coverage
-// state: coverage/ (per-process shard files) and test-coverage.json (the
-// committed manifest). Every Test() and Call() invocation records the resolved
-// command path to the process's shard file (<dir>/coverage/<pid>.jsonl), whose
-// directory is created on the first such record and never at construction -- a
-// plain CLI run writes no shard and leaves no directory. A built-in
-// cli-test-coverage check (auto-registered via the provider mechanism) merges
-// shards and hard-FAILs listing every command with zero coverage.
+// WithSourceTreeRoot declares the root of the app's source tree, the checkout
+// its tests run in. The app's test-coverage state lives in the coverage
+// directory under it, .strictmetadata/.cli-test-coverage/: shards/ (per-process
+// shard files, never committed) and manifest.json (the committed manifest).
+// Every Test() and Call() invocation records the resolved command path to the
+// process's shard file (shards/<pid>.jsonl), whose directory is created on the
+// first such record and never at construction -- a plain CLI run writes no
+// shard and leaves no directory. A built-in cli-test-coverage check
+// (auto-registered via the provider mechanism) merges shards and hard-FAILs
+// listing every command with zero coverage.
 //
-// The directory decides everything. Undeclared means coverage is off. A
-// declared directory that does not exist at construction also means off -- no
-// check registered, no paths computed, nothing created. That is the installed
-// distribution, whose declared path names a source checkout that is not there.
+// The coverage directory decides everything. An undeclared root means coverage
+// is off. A coverage directory that does not exist at construction also means
+// off -- no check registered, no paths computed, nothing created. That is the
+// installed distribution, whose declared root is not a source checkout.
+func WithSourceTreeRoot(path string) AppOption {
+	return func(a *App) {
+		a.sourceTreeRoot = path
+	}
+}
+
+// WithTestCoverageDir is the retired option that named the coverage directory
+// itself. It has no accepted spelling: applying it is a registration-time panic
+// naming the option that replaced it.
 func WithTestCoverageDir(path string) AppOption {
 	return func(a *App) {
-		a.testCoverageDir = path
+		panic(errCoverageOptionRetired("WithTestCoverageDir"))
 	}
 }
 
@@ -739,7 +751,7 @@ func WithTestCoverageDir(path string) AppOption {
 // applying it is a registration-time panic naming the option that replaced it.
 func WithTestCoverage() AppOption {
 	return func(a *App) {
-		panic(errTestCoverageBooleanRetired)
+		panic(errCoverageOptionRetired("WithTestCoverage"))
 	}
 }
 
@@ -2159,21 +2171,21 @@ func NewApp(name, version, help string, opts ...AppOption) *App {
 		}
 	}
 	// Test-coverage instrumentation: register the built-in provider, but only
-	// when the DECLARED directory exists. An app installed elsewhere finds it
-	// absent and stays uninstrumented: no provider, no paths, no writes
-	// anywhere -- in particular not into whatever directory the consumer
-	// happened to start the CLI from.
-	if a.testCoverageDir != "" {
-		root, err := filepath.Abs(a.testCoverageDir)
+	// when the coverage directory under the DECLARED root exists. An app
+	// installed elsewhere finds it absent and stays uninstrumented: no
+	// provider, no paths, no writes anywhere -- in particular not into
+	// whatever directory the consumer happened to start the CLI from.
+	if a.sourceTreeRoot != "" {
+		root, err := filepath.Abs(filepath.Join(a.sourceTreeRoot, filepath.FromSlash(coverageDirRel)))
 		if err == nil {
 			if info, statErr := os.Stat(root); statErr == nil && info.IsDir() {
-				// Only the PATHS are computed here. The coverage directory
-				// itself is created lazily by recordCoverage, immediately
-				// before the first shard write: shards are written only on the
+				// Only the PATHS are computed here. The shards directory is
+				// created lazily by recordCoverage, immediately before the
+				// first shard write: shards are written only on the
 				// test-harness paths (Test and Call), so a plain CLI invocation
-				// leaves no coverage/ behind.
-				a.coverageDir = filepath.Join(root, "coverage")
-				a.coverageManifestPath = filepath.Join(root, "test-coverage.json")
+				// leaves no shards/ behind.
+				a.coverageDir = filepath.Join(root, coverageShardsName)
+				a.coverageManifestPath = filepath.Join(root, coverageManifestName)
 				a.coverageShardPath = filepath.Join(a.coverageDir, fmt.Sprintf("%d.jsonl", os.Getpid()))
 				a.RegisterCheckProvider(a.testCoverageProvider)
 			}
