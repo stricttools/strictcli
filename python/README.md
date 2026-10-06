@@ -542,7 +542,7 @@ Every flag and arg entry carries a `value_schema`: a real JSON Schema fragment f
 
 ### Check system
 
-First-class check/validation framework with double-entry security. Enabled via `checks_path=` pointing to a TOML file.
+First-class check/validation framework with double-entry security. Enabled via `checks_path=` naming the app's check list, a TOML file shipped inside the app's own package as package data (for example `Path(__file__).parent / "data" / "checks.toml"`). There is no standard folder and no default path.
 
 ```python
 app = strictcli.App("myapp", version="1.0.0", help="My app", checks_path="checks.toml")
