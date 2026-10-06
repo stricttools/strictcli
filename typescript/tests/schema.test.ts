@@ -1921,7 +1921,7 @@ test("v2: a config field entry carries a fragment and keeps `required`", () => {
 // ---------------------------------------------------------------------------
 // The byte canon (§25.8)
 //
-// The committed .strictcli/schema.json must be DUMPER-INDEPENDENT: a repository
+// The committed .strictmetadata/.cli-schema/schema.json must be DUMPER-INDEPENDENT: a repository
 // whose file is written sometimes by one implementation and sometimes by
 // another must see a diff exactly when something changed.
 // ---------------------------------------------------------------------------

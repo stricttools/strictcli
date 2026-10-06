@@ -443,7 +443,7 @@ test("a project is named by the nearest package.json above the entry", () => {
 		() => projectIdForEntry(join(bare, "cli.js")),
 		/^Error: cannot determine project_id: no package\.json above /,
 	);
-	assert.equal(existsSync(join(dir, ".strictcli")), false);
+	assert.equal(existsSync(join(dir, ".strictmetadata")), false);
 });
 
 test("an unreadable or nameless package.json is refused naming it", () => {

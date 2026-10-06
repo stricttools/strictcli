@@ -905,9 +905,9 @@ export class AppImpl implements App {
 	effectLogState: EffectLog = new EffectLog();
 	/** Absolute shard-file path (<coverageDir>/<pid>.jsonl, append semantics). */
 	coverageShardPath: string | undefined;
-	/** Absolute .strictcli/coverage/ directory. */
+	/** Absolute shards/ directory inside the coverage directory. */
 	coverageDir: string | undefined;
-	/** Absolute .strictcli/test-coverage.json manifest path. */
+	/** Absolute manifest.json path inside the coverage directory. */
 	coverageManifestPath: string | undefined;
 
 	constructor(spec: AppSpec) {

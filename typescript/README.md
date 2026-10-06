@@ -220,7 +220,7 @@ context as `ctx.dryRun`, `ctx.approveConsequential`, `ctx.quiet` and
   `help` and `version` commands, reserved at every level of the command tree:
   `help <command> --<flag>` prints one flag's help, `help --depth 2` the command
   tree, and `help --json` a machine-readable JSON description of the app's full
-  structure, at `schema_version: 2` (a committed `.strictcli/schema.json` is that
+  structure, at `schema_version: 2` (a committed `.strictmetadata/.cli-schema/schema.json` is that
   output redirected into the file).
 - **Names** — command, group, flag, choice, constraint, tag, check, hook, grant,
   update resource, and requirement names are lowercase kebab-case of at least

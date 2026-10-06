@@ -2761,7 +2761,7 @@ export function errMemberShortOnPayloadChoice(sel: string, c: string): string {
  *
  * The published `value_schema` fragment carries a declaration's choices as a
  * JSON Schema `enum`, and a reader that parses JSON numbers as IEEE-754
- * doubles -- which every reader of a `.strictcli/schema.json` is entitled to
+ * doubles -- which every reader of a `.strictmetadata/.cli-schema/schema.json` is entitled to
  * be -- reads back a DIFFERENT integer. The framework refuses the declaration
  * rather than publishing a fragment it already knows will be misread.
  *

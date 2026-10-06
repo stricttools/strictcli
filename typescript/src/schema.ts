@@ -13,7 +13,7 @@
  * are sorted because no implementation retains a declaration order for them.
  *
  * The byte canon makes a committed copy dumper-independent: a repository
- * whose `.strictcli/schema.json` is written sometimes by this implementation
+ * whose `.strictmetadata/.cli-schema/schema.json` is written sometimes by this implementation
  * and sometimes by the Python or Go one must see a diff exactly when something
  * changed. Numbers are the one place TypeScript needs its own writer -- bigint
  * values are bare integer tokens and floats are SCF tokens, neither of which
