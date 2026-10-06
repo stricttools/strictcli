@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	tomledit "github.com/smm-h/go-toml-edit"
+	tomledit "github.com/stricttools/go-toml-edit"
 )
 
 // CheckContext provides project context to check implementations.

@@ -10,7 +10,7 @@ import (
 	"regexp"
 	"strings"
 
-	tomledit "github.com/smm-h/go-toml-edit"
+	tomledit "github.com/stricttools/go-toml-edit"
 )
 
 // nestedGet looks up a dot-separated key in a nested map.
