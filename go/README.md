@@ -666,7 +666,7 @@ Keys are emitted in a declared order at every depth, and the document is written
 
 ### Check system
 
-First-class check/validation framework with double-entry security. Enabled via `WithChecks(path)` pointing to a TOML file.
+First-class check/validation framework with double-entry security. Enabled via `WithChecks(path)` naming the app's check list, a TOML file, or `WithChecksEmbed(data)` with its bytes. The check list is the app's own package data: an installed binary has no source tree to read it from, so embed it from the package's own directory with `go:embed`. There is no standard folder and no default path.
 
 ```go
 app := strictcli.NewApp("myapp", "1.0.0", "My app", strictcli.WithChecks("checks.toml"))
