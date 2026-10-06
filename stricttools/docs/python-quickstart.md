@@ -1481,7 +1481,7 @@ that records it, or, in a checkout, the nearest `pyproject.toml`'s
 `[project] name`. A committed schema file is the output redirected into it:
 
 ```
-$ mytool help --json > .strictcli/schema.json
+$ mkdir -p .strictmetadata/.cli-schema && mytool help --json > .strictmetadata/.cli-schema/schema.json
 ```
 
 `app.dump_schema_dict()` returns the same document without `project_id`, in-process.
@@ -1721,5 +1721,5 @@ $ deploy-tool service restart --name api --approve-consequential
 Restarting api (timeout: 30s)
 
 $ deploy-tool config show
-$ deploy-tool help --json > .strictcli/schema.json
+$ mkdir -p .strictmetadata/.cli-schema && deploy-tool help --json > .strictmetadata/.cli-schema/schema.json
 ```

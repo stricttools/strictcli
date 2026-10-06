@@ -1486,7 +1486,7 @@ byte. An address prunes it to one group, command, or flag. `project_id` is the
 committed schema file is the output redirected into it:
 
 ```bash
-mytool help --json > .strictcli/schema.json
+mkdir -p .strictmetadata/.cli-schema && mytool help --json > .strictmetadata/.cli-schema/schema.json
 ```
 
 `app.dumpSchemaDict()` returns the same document without `project_id`, in-process.

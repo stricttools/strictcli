@@ -707,13 +707,13 @@ Tag names follow the naming rule. Tag contracts (`TagContract` in Go,
 have a specific flag; this is validated at `Run`/`Test` time across the entire
 command tree.
 
-## The schema format (`.strictcli/schema.json`)
+## The schema format (`.strictmetadata/.cli-schema/schema.json`)
 
 `help --json` prints the help document on every strictcli app: a JSON document
 describing the entire CLI surface -- every command, group, flag, positional
 argument, constraint, and config field -- on stdout, with the `--json`
 document on stderr, the rule for a command that owns stdout. It writes no file:
-a committed `.strictcli/schema.json` is `<app> help --json` redirected into it,
+a committed `.strictmetadata/.cli-schema/schema.json` is `<app> help --json` redirected into it,
 and external tools like rlsbl compare that file against the program during
 release to verify that no flags or commands were silently removed.
 
@@ -1010,7 +1010,7 @@ in that choice's `flags` array.
 
 ### The byte canon
 
-A committed `.strictcli/schema.json` must be **dumper-independent**: a repository
+A committed `.strictmetadata/.cli-schema/schema.json` must be **dumper-independent**: a repository
 whose file is written sometimes by a Go binary and sometimes by a Python one must
 see a diff exactly when something changed. The `schema-parity` conformance check
 therefore compares **bytes**, with no normalization layer.

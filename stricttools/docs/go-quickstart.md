@@ -1358,7 +1358,7 @@ main module path from the program's build information, so an installed binary
 names its own project. A committed schema file is the output redirected into it:
 
 ```
-$ mytool help --json > .strictcli/schema.json
+$ mkdir -p .strictmetadata/.cli-schema && mytool help --json > .strictmetadata/.cli-schema/schema.json
 ```
 
 `app.DumpSchemaDict()` returns the same document without `project_id`, in-process.
@@ -1572,5 +1572,5 @@ $ deploy-tool service restart --name api --approve-consequential
 Restarting api (timeout: 30s)
 
 $ deploy-tool config show
-$ deploy-tool help --json > .strictcli/schema.json
+$ mkdir -p .strictmetadata/.cli-schema && deploy-tool help --json > .strictmetadata/.cli-schema/schema.json
 ```
