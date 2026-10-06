@@ -528,7 +528,7 @@ without either flag is a hard error rather than a hang. Declaring
 
 `help` and `version` are framework commands on every app, reserved at every level of the command tree. `mytool help deploy` prints what `mytool deploy --help` prints, `mytool help deploy --target` prints that one flag's lines, `mytool help --depth 2` lists the command tree two levels deep, and `mytool version` prints what `--version` prints. `--help` and `--version` stay text only.
 
-`mytool help --json` prints the help document: the full CLI structure (commands, flags, args, groups, checks) at `schema_version: 2`, with `project_id` naming the project that holds the module that constructed the App. A committed `.strictcli/schema.json` is that output redirected into the file; `--dump-schema` is refused naming `help --json`. Every command entry carries its `effect`; `consequential`, `dry_run_supported` and `dry_run_unsupported_reason` are emitted only when declared.
+`mytool help --json` prints the help document: the full CLI structure (commands, flags, args, groups, checks) at `schema_version: 2`, with `project_id` naming the project that holds the module that constructed the App. A committed `.strictmetadata/.cli-schema/schema.json` is that output redirected into the file; `--dump-schema` is refused naming `help --json`. Every command entry carries its `effect`; `consequential`, `dry_run_supported` and `dry_run_unsupported_reason` are emitted only when declared.
 
 ### Names
 

@@ -251,7 +251,7 @@ def test_dump_schema_is_refused_naming_the_help_document():
 def test_help_json_writes_no_file(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     _ok(_app(), "help", "--json")
-    assert not (tmp_path / ".strictcli").exists()
+    assert list(tmp_path.iterdir()) == []
 
 
 def test_a_project_is_named_by_the_nearest_pyproject(tmp_path):
