@@ -1,8 +1,9 @@
 // Package strictcli: A CLI framework for the Era of Agents: nothing is inferred, everything is declared. First-class support for Go, Python, and TypeScript.
 //
-// This is the Go implementation of strictcli. The Python and TypeScript
-// implementations are held to identical behavior -- same semantics, same help
-// bytes, same schema, same error sentences -- by one shared conformance suite.
+// This is the Go implementation of strictcli, the maintained one. The Python
+// and TypeScript implementations were built to identical behavior -- same
+// semantics, same help bytes, same schema, same error sentences -- and are
+// paused.
 package strictcli
 
 import (
@@ -3202,7 +3203,7 @@ func (a *invocation) buildPreviewError(cmdPath string, dryRun bool, trunc *dryRu
 // (§19.2).
 //
 // Field order follows §19.2's table (the struct's field order): optional and
-// for readability only, since conformance compares parsed structures. The
+// for readability only, since the behavior cases compare parsed structures. The
 // encoder disables HTML escaping so the bytes follow §19.5's regime -- plain
 // UTF-8, escaping only what JSON mandates -- and the write does not go through
 // the quiet-suppressible writers, so --quiet has no mechanism by which to

@@ -1473,8 +1473,8 @@ func errEffectGrantOnObserve(name string, grant string) string {
 // effects.go — effect failure and parameter rejection (parse-time)
 //
 // Contract §12.8. These reach a handler's effect call through argv like any
-// parse-time error, so they share that category and are coverage-checked by
-// conformance cases.
+// parse-time error, so they share that category and are covered by behavior
+// cases.
 // ---------------------------------------------------------------------------
 
 func errEffectRunFailed(name string, method string, argv string, code int) string {
@@ -1588,8 +1588,7 @@ func errPayloadAlreadySet(name string) string {
 // errPayloadSchemaInvalid fires at registration when a declared payload schema
 // leaves the closed subset (§19.5). path names the position inside the
 // declared literal (rooted at payload_schema) and detail names the violated
-// rule; both are byte-identical across the three implementations, pinned by
-// conformance/payload_schema_vectors.json.
+// rule; both are pinned by testdata/payload_schema_vectors.json.
 func errPayloadSchemaInvalid(name, path, detail string) string {
 	return fmt.Sprintf("command %q: payload schema is invalid at %s: %s", name, path, detail)
 }
@@ -2191,7 +2190,7 @@ const errLintFrameworkUseArgs = "--lint-framework-use takes no other arguments"
 // ---------------------------------------------------------------------------
 // lint_framework_use.go — scan refusals and finding messages
 //
-// A conformance case cannot reach a program's source tree, so these take the
+// A behavior case cannot reach a program's source tree, so these take the
 // registration-time category. Each language-specific spelling (a manifest file
 // name, a Context method, the early-exit call) is an interpolated parameter,
 // so the three catalogs carry one signature per template.

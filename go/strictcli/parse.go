@@ -944,7 +944,7 @@ func validateAndBuildKwargs(cmd *Command, store *sourcedStore, positionals posit
 // validateChoices checks a resolved flag or arg value against its choices
 // list, returning an error message or "" if valid. isArg selects the message
 // prefix ("argument 'name':" instead of "--name:"); the two message templates
-// live in errors.go so conformance/check_error_parity.py can extract them.
+// live in errors.go with every other message.
 // A nil val is exempt from validation: nil only arises from an Optional() /
 // ArgOptional() declaration or an unelected mutex member, all meaning "not
 // passed" -- a CLI-supplied value is never nil. Absence is never matched

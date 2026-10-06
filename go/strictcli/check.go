@@ -141,9 +141,7 @@ func (r *reporterCore) Note(text string) {
 // Warn mints a warn-severity problem. Non-empty text is required.
 //
 // Reporter validation messages are worded identically to the Python
-// implementation (method-agnostic phrasing, no "Warn:"/"warn:" prefix) so the
-// two implementations are byte-for-byte in parity -- see conformance/
-// check_error_parity.py, which scans these panics.
+// implementation (method-agnostic phrasing, no "Warn:"/"warn:" prefix).
 func (r *reporterCore) Warn(text string) {
 	if strings.TrimSpace(text) == "" {
 		panic(errProblemTextEmpty)

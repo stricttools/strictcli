@@ -6,7 +6,7 @@ releasable `go-strictcli`.
 ## Development
 
 - `go test ./strictcli/... -race` from this directory.
-- Run the conformance suite after changes: `cd ../conformance && python run.py --target go`.
+- The JSON behavior cases in `strictcli/testdata/cases/` run as part of that suite (`TestCases`).
 - CI (`ci-router.yml` at the repo root) runs the full Go test suite on every push touching `go/**`.
 
 ## Release workflow

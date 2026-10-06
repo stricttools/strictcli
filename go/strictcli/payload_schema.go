@@ -11,11 +11,10 @@ package strictcli
 //     here rather than shipping a wrong shape.
 //
 // Every detail string in this file is byte-identical to the Python and
-// TypeScript validators'. They live here rather than in errors.go on purpose:
-// errors.go is the catalog conformance/check_error_parity.py extracts, and it
-// carries the two OUTER templates (errPayloadSchemaInvalid, errPayloadInvalid).
-// The details are pinned across implementations by the shared vectors at
-// conformance/payload_schema_vectors.json instead.
+// TypeScript validators'. errors.go carries the two OUTER templates
+// (errPayloadSchemaInvalid, errPayloadInvalid); the details are pinned by the
+// vectors at testdata/payload_schema_vectors.json, which the Python and
+// TypeScript suites replay too.
 //
 // Go's one structural asymmetry, deliberate: a Go handler's natural payload is
 // a typed struct or a typed slice, and encoding/json's tags are the only thing
@@ -662,8 +661,8 @@ func validatePayloadValue(value interface{}, schema map[string]interface{}) *pay
 //
 // None of them validates anything: an unknown type name written through
 // SchemaType is rejected at registration exactly as a hand-written literal
-// would be. The one-to-one mapping onto the closed subset is pinned across the
-// three implementations by conformance/payload_schema_builders.json.
+// would be. The one-to-one mapping onto the closed subset is pinned by
+// testdata/payload_schema_builders.json.
 // ---------------------------------------------------------------------------
 
 // SchemaType builds {"type": ...}: one name, or a list of them for

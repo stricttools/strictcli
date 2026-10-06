@@ -1984,7 +1984,7 @@ type ConfirmIO struct {
 // in the other two implementations are package-internal (TypeScript's
 // setConfirmIO is never re-exported from index.ts; Python's is the
 // underscore-named App._set_confirm_io), but Go has no package-private
-// visibility that another package -- the conformance harness above all -- can
+// visibility that another package -- the case harness above all -- can
 // still reach, so this one is exported and documented as test-only.
 func (a *App) SetConfirmIO(io *ConfirmIO) {
 	a.confirmIO = io

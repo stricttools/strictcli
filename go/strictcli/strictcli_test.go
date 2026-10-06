@@ -30,7 +30,7 @@ func simpleApp(cmdName, cmdHelp, handlerPrints string, opts ...CmdOption) *App {
 	return app
 }
 
-// formatValue formats a value the way conformance tests expect
+// formatValue formats a value the way the behavior cases expect
 func formatValue(v interface{}) string {
 	if v == nil {
 		return "None"

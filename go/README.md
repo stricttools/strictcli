@@ -903,7 +903,7 @@ arg  := strictcli.NewArg(name, help, opts ...ArgOption)
 
 ## See also
 
-- [strictcli monorepo](https://github.com/stricttools/strictcli) -- conformance tests, Python implementation, and project documentation
+- [strictcli monorepo](https://github.com/stricttools/strictcli) -- the Python and TypeScript implementations and project documentation
 - [Python implementation](https://github.com/stricttools/strictcli/tree/main/python) -- same semantics, decorator-based API
 
 ## License
