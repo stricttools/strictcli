@@ -38,7 +38,7 @@ with your language's own spellings inside it. You are not handed a
 lowest-common-denominator API so that three implementations can stay in step.
 You are handed your language's best form, enforced strictly: what strictcli
 makes mandatory, it makes mandatory in the idiom you already write. See
-[.stricttools/docs/language-idioms.md](.stricttools/docs/language-idioms.md).
+[.strictmetadata/docs/language-idioms.md](.strictmetadata/docs/language-idioms.md).
 
 ## Philosophy
 

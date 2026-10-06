@@ -9,7 +9,7 @@ nav_order = 20
 
 > **Status: implemented in all three implementations, shipping with the framework's
 > machine-interface release.** This page is normative and complete. It was written before any code
-> existed -- the convention is the effects contract's own (§19.8 of `.stricttools/docs/history/_effects-contract.md`
+> existed -- the convention is the effects contract's own (§19.8 of `.strictmetadata/docs/history/_effects-contract.md`
 > designs compositional child previews the same way), and writing the specification first is what
 > let three implementations arrive at the same behaviour instead of converging afterwards. The
 > Python, Go and TypeScript implementations now write to the store exactly as described. No
