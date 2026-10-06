@@ -2,7 +2,7 @@
 
 ## Problem
 
-`--dump-schema` output is bloated because every field is emitted even when its value matches the documented default. For the WWW CLI (455 commands, 569 flags, 382 args), this produces a 13,728-line / 418KB schema.json.
+`--dump-schema` output is bloated because every field is emitted even when its value matches the documented default. For a private consumer's CLI (455 commands, 569 flags, 382 args), this produces a 13,728-line / 418KB schema.json.
 
 ## Analysis
 

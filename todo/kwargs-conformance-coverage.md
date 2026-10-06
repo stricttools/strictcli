@@ -2,7 +2,7 @@
 
 ## Problem
 
-The `**kwargs` handler skip feature (added in 0.7.1) allows Python command handlers to accept `**kwargs` without strictcli rejecting them for having unexpected parameters. This is used by WWW's `make_handler` wrapper pattern.
+The `**kwargs` handler skip feature (added in 0.7.1) allows Python command handlers to accept `**kwargs` without strictcli rejecting them for having unexpected parameters. A private consumer uses it in a `make_handler` wrapper pattern.
 
 The feature has Python-only e2e tests but no conformance test cases in `conformance/cases/`. This is reasonable since `**kwargs` is a Python-specific language feature with no Go equivalent — Go doesn't validate handler signatures at all.
 

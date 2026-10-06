@@ -2,14 +2,14 @@
 
 ## Context
 
-strictcli currently supports 2-level nesting: app -> group -> command. Both Python and Go hard-code a 2-token dispatch in their parsers. The WWW project needs 3 levels (app -> service -> group -> command) and cannot migrate without this.
+strictcli currently supports 2-level nesting: app -> group -> command. Both Python and Go hard-code a 2-token dispatch in their parsers. A private consumer needs 3 levels (app -> service -> group -> command) and cannot migrate without this.
 
 ## Problem
 
-- WWW has 12 services, each containing command groups, totaling 300+ commands at 3 levels from the app root
+- That consumer has 12 services, each containing command groups, totaling 300+ commands at 3 levels from the app root
 - 6 Namecheap commands go to 4 levels (can be flattened to 3)
 - The per-service sub-App workaround is architecturally unsound
-- strictcli is the only blocker preventing WWW migration; all other features (type=int, choices, mutex, repeatable, passthrough, global flags) are already supported
+- strictcli is the only blocker preventing that consumer's migration; all other features (type=int, choices, mutex, repeatable, passthrough, global flags) are already supported
 
 ## Proposed solution
 
@@ -64,7 +64,7 @@ Conformance (~50-100 test cases):
 
 ## Consumer
 
-WWW (primary). No other current consumer needs this, but it future-proofs all 10+ consumers.
+A private consumer (primary). No other current consumer needs this, but it future-proofs all 10+ consumers.
 
 ## Effort
 

@@ -12,7 +12,7 @@ RESOLVED: Already works. `app.command("name", help="...")(handler_func)` is vali
 
 ### 2. type=float
 
-4 occurrences in WWW (--sample-rate), also needed by codehome manifests. Trivial to add alongside type=int.
+4 occurrences in a private consumer (--sample-rate), also needed by codehome manifests. Trivial to add alongside type=int.
 
 ### 3. type=Path (pathlib.Path)
 
