@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "name": "release-checkout",
+  "name": "strictcli",
   "slug": "strictcli",
   "version": "0.41.1",
   "description": "A CLI framework for the Era of Agents: nothing is inferred, everything is declared. First-class support for Go, Python, and TypeScript",
@@ -129,8 +129,8 @@
         },
         {
           "level": 2,
-          "text": "The schema format (`.strictcli/schema.json`)",
-          "anchor": "the-schema-format-strictclischemajson"
+          "text": "The schema format (`.strictmetadata/.cli-schema/schema.json`)",
+          "anchor": "the-schema-format-strictmetadatacli-schemaschemajson"
         },
         {
           "level": 3,
@@ -294,165 +294,60 @@
         },
         {
           "level": 2,
-          "text": "Conformance testing",
-          "anchor": "conformance-testing"
+          "text": "Behavior cases",
+          "anchor": "behavior-cases"
         }
       ]
     },
     {
-      "path": "conformance.md",
-      "title": "Cross-Language Conformance",
+      "path": "behavior-cases.md",
+      "title": "Behavior Cases",
       "type": "doc",
       "headings": [
         {
           "level": 1,
-          "text": "Cross-Language Conformance",
-          "anchor": "cross-language-conformance"
+          "text": "Behavior Cases",
+          "anchor": "behavior-cases"
         },
         {
           "level": 2,
-          "text": "What the suite covers",
-          "anchor": "what-the-suite-covers"
-        },
-        {
-          "level": 2,
-          "text": "Guaranteed-identical behaviors",
-          "anchor": "guaranteed-identical-behaviors"
-        },
-        {
-          "level": 2,
-          "text": "How testing works",
-          "anchor": "how-testing-works"
+          "text": "The case format",
+          "anchor": "the-case-format"
         },
         {
           "level": 3,
-          "text": "JSON test cases",
-          "anchor": "json-test-cases"
+          "text": "Expectations",
+          "anchor": "expectations"
         },
         {
-          "level": 4,
+          "level": 3,
           "text": "Line-scripted protocol cases",
           "anchor": "line-scripted-protocol-cases"
         },
         {
-          "level": 4,
-          "text": "Aborting handlers",
-          "anchor": "aborting-handlers"
-        },
-        {
-          "level": 4,
-          "text": "Exits, output writers, and signals",
-          "anchor": "exits-output-writers-and-signals"
-        },
-        {
-          "level": 4,
-          "text": "The `$ANY` wildcard",
-          "anchor": "the-any-wildcard"
-        },
-        {
           "level": 3,
-          "text": "Per-target execution",
-          "anchor": "per-target-execution"
-        },
-        {
-          "level": 3,
-          "text": "Parity mode",
-          "anchor": "parity-mode"
-        },
-        {
-          "level": 3,
-          "text": "Acknowledged divergence",
-          "anchor": "acknowledged-divergence"
-        },
-        {
-          "level": 3,
-          "text": "Target restrictions",
-          "anchor": "target-restrictions"
-        },
-        {
-          "level": 3,
-          "text": "Differential argv fuzzing",
-          "anchor": "differential-argv-fuzzing"
-        },
-        {
-          "level": 3,
-          "text": "Supplementary checks",
-          "anchor": "supplementary-checks"
+          "text": "Handler keys",
+          "anchor": "handler-keys"
         },
         {
           "level": 2,
-          "text": "Running conformance tests",
-          "anchor": "running-conformance-tests"
-        },
-        {
-          "level": 3,
-          "text": "Single target",
-          "anchor": "single-target"
-        },
-        {
-          "level": 3,
-          "text": "Parity mode (all targets, cross-comparison)",
-          "anchor": "parity-mode-all-targets-cross-comparison"
-        },
-        {
-          "level": 3,
-          "text": "With filtering and verbose output",
-          "anchor": "with-filtering-and-verbose-output"
-        },
-        {
-          "level": 3,
-          "text": "Full check gate (all twelve checks)",
-          "anchor": "full-check-gate-all-twelve-checks"
-        },
-        {
-          "level": 3,
-          "text": "Individual supplementary checks",
-          "anchor": "individual-supplementary-checks"
-        },
-        {
-          "level": 3,
-          "text": "Differential fuzzing",
-          "anchor": "differential-fuzzing"
+          "text": "Checks over whole help documents",
+          "anchor": "checks-over-whole-help-documents"
         },
         {
           "level": 2,
-          "text": "Adding a new conformance test case",
-          "anchor": "adding-a-new-conformance-test-case"
-        },
-        {
-          "level": 3,
-          "text": "1. Choose or create a case file",
-          "anchor": "1-choose-or-create-a-case-file"
-        },
-        {
-          "level": 3,
-          "text": "2. Write the case",
-          "anchor": "2-write-the-case"
-        },
-        {
-          "level": 3,
-          "text": "3. Use handler_prints for output",
-          "anchor": "3-use-handler_prints-for-output"
-        },
-        {
-          "level": 3,
-          "text": "4. Validate against the schema",
-          "anchor": "4-validate-against-the-schema"
-        },
-        {
-          "level": 3,
-          "text": "5. Run and verify",
-          "anchor": "5-run-and-verify"
-        },
-        {
-          "level": 3,
-          "text": "6. Handle intentional divergence",
-          "anchor": "6-handle-intentional-divergence"
+          "text": "The trace store's sweeps",
+          "anchor": "the-trace-stores-sweeps"
         },
         {
           "level": 2,
-          "text": "Architecture notes",
-          "anchor": "architecture-notes"
+          "text": "Running the cases",
+          "anchor": "running-the-cases"
+        },
+        {
+          "level": 2,
+          "text": "Adding a case",
+          "anchor": "adding-a-case"
         }
       ]
     },
@@ -1634,8 +1529,48 @@
         },
         {
           "level": 3,
+          "text": "`BodyFile`",
+          "anchor": "bodyfile"
+        },
+        {
+          "level": 3,
+          "text": "`BodyFileRange`",
+          "anchor": "bodyfilerange"
+        },
+        {
+          "level": 3,
           "text": "`Header`",
           "anchor": "header"
+        },
+        {
+          "level": 3,
+          "text": "`Stdin`",
+          "anchor": "stdin"
+        },
+        {
+          "level": 3,
+          "text": "`Timeout`",
+          "anchor": "timeout"
+        },
+        {
+          "level": 3,
+          "text": "`Read`",
+          "anchor": "read"
+        },
+        {
+          "level": 3,
+          "text": "`Observe`",
+          "anchor": "observe"
+        },
+        {
+          "level": 3,
+          "text": "`Redact`",
+          "anchor": "redact"
+        },
+        {
+          "level": 3,
+          "text": "`Mode`",
+          "anchor": "mode"
         },
         {
           "level": 3,
@@ -1821,6 +1756,16 @@
           "level": 3,
           "text": "`WithProcObserveAllowlist`",
           "anchor": "withprocobserveallowlist"
+        },
+        {
+          "level": 3,
+          "text": "`WithHTTPClient`",
+          "anchor": "withhttpclient"
+        },
+        {
+          "level": 3,
+          "text": "`WithSourceTreeRoot`",
+          "anchor": "withsourcetreeroot"
         },
         {
           "level": 3,
@@ -2346,6 +2291,16 @@
           "level": 3,
           "text": "`Response.Header`",
           "anchor": "responseheader"
+        },
+        {
+          "level": 3,
+          "text": "`redactedError.Error`",
+          "anchor": "redactederrorerror"
+        },
+        {
+          "level": 3,
+          "text": "`redactedError.Is`",
+          "anchor": "redactederroris"
         },
         {
           "level": 3,
@@ -5321,8 +5276,8 @@
         },
         {
           "level": 3,
-          "text": "`_msg_test_coverage_boolean_retired`",
-          "anchor": "_msg_test_coverage_boolean_retired"
+          "text": "`_msg_coverage_option_retired`",
+          "anchor": "_msg_coverage_option_retired"
         },
         {
           "level": 3,
@@ -7067,6 +7022,38 @@
       ]
     },
     {
+      "path": "typescript-src-checks-coverage_layout.md",
+      "title": "typescript/src/checks/coverage_layout",
+      "type": "doc",
+      "headings": [
+        {
+          "level": 1,
+          "text": "typescript/src/checks/coverage_layout",
+          "anchor": "typescriptsrccheckscoverage_layout"
+        },
+        {
+          "level": 2,
+          "text": "`typescript/src/checks/coverage_layout`",
+          "anchor": "typescriptsrccheckscoverage_layout"
+        },
+        {
+          "level": 3,
+          "text": "`COVERAGE_DIR_REL`",
+          "anchor": "coverage_dir_rel"
+        },
+        {
+          "level": 3,
+          "text": "`COVERAGE_MANIFEST_NAME`",
+          "anchor": "coverage_manifest_name"
+        },
+        {
+          "level": 3,
+          "text": "`COVERAGE_SHARDS_NAME`",
+          "anchor": "coverage_shards_name"
+        }
+      ]
+    },
+    {
       "path": "typescript-src-checks-effects_bypass.md",
       "title": "typescript/src/checks/effects_bypass",
       "type": "doc",
@@ -8491,8 +8478,8 @@
         },
         {
           "level": 3,
-          "text": "`errTestCoverageBooleanRetired`",
-          "anchor": "errtestcoveragebooleanretired"
+          "text": "`errCoverageOptionRetired`",
+          "anchor": "errcoverageoptionretired"
         },
         {
           "level": 3,
@@ -12888,7 +12875,7 @@
     }
   ],
   "posts": [],
-  "last_gen": "2026-10-01T17:37:21.583822+00:00",
+  "last_gen": "2026-10-06T13:26:09.662193+00:00",
   "theme": "minimal",
   "vocabulary": {
     "accepted": [

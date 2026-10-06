@@ -15,6 +15,7 @@ nav_order = 90
 - [typescript/src/atprefix](../typescript-src-atprefix/)
 - [typescript/src/checks/cmd](../typescript-src-checks-cmd/)
 - [typescript/src/checks/coverage](../typescript-src-checks-coverage/)
+- [typescript/src/checks/coverage_layout](../typescript-src-checks-coverage_layout/)
 - [typescript/src/checks/effects_bypass](../typescript-src-checks-effects_bypass/)
 - [typescript/src/checks/framework](../typescript-src-checks-framework/)
 - [typescript/src/checks/provider](../typescript-src-checks-provider/)

@@ -4,6 +4,10 @@
     "content": "81121b2e31d06ec71979fbf3c08364f02b9b028efbbcaf024ada43d3a3e42f62",
     "description": "3e372ac460e45f638e74c88393028c5696fcbc73542e8611e3ddefd1763b377d"
   },
+  "en/behavior-cases.md": {
+    "content": "0f1ddeb82a584f5b83fd7ffc254da6a0b460be47047d1d1be8bfbb9cd9c1b9c2",
+    "description": "601c07b06deafadbb1eee74bd0be3c691ab728e92fc853b62c2a2c7aa109a653"
+  },
   "en/conformance.md": {
     "content": "9ddfe94910ed061f516505b2e263f4fd2bda368030ece1bcee2a8769ad7a56c6",
     "description": "d2782c59b75d72b8ed22c3a788a4fb00e5faa5332c04f96e189a3f0d7c606372"
@@ -79,6 +83,11 @@
     "content": "b49d8bf91167b6e6ca8f6c9d3598002943866562e31a79c8dbc0659273b792da",
     "description": "3e20686ddad5333619a8270229f5647b6925846f3c5470d281a086d2329795b9",
     "source_docstring": "ba47e92ff77040e7e7b84d606b10bcef0b0f2e691004bde512c61312768fa552"
+  },
+  "en/typescript-src-checks-coverage_layout.md": {
+    "content": "3d6a8543e708eb89387ccad30f97f3eec12808717cf5247b208bcccabe8b10e7",
+    "description": "ae73d9d5d3e235ecd98eef162d88721726fd39c508e41e0a0f559e37e977c6bf",
+    "seed_hash": "ae73d9d5d3e235ecd98eef162d88721726fd39c508e41e0a0f559e37e977c6bf"
   },
   "en/typescript-src-checks-effects_bypass.md": {
     "content": "22088d7632043cdf3a82cbdd445335174e0b615db1203694406eef96574184df",
