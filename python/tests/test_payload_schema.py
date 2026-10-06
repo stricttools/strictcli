@@ -5,7 +5,7 @@ literal and emission-time validation of the value a handler supplies through
 ``ctx.payload``.
 
 The bulk of the coverage is the committed cross-language vector file at
-``conformance/payload_schema_vectors.json``, replayed here and by the Go and
+``go/strictcli/testdata/payload_schema_vectors.json``, replayed here and by the Go and
 TypeScript suites. Every vector pins both the verdict AND the exact error text,
 which is what makes the three validators byte-identical rather than merely
 similarly-strict.
@@ -26,7 +26,7 @@ import strictcli
 
 VECTORS_PATH = (
     Path(__file__).resolve().parents[2]
-    / "conformance"
+    / "go" / "strictcli" / "testdata"
     / "payload_schema_vectors.json"
 )
 
@@ -416,7 +416,7 @@ class TestConfigShowWithAnUnrepresentableConfigValue:
 
 BUILDERS_PATH = (
     Path(__file__).resolve().parents[2]
-    / "conformance"
+    / "go" / "strictcli" / "testdata"
     / "payload_schema_builders.json"
 )
 _BUILDERS = json.loads(BUILDERS_PATH.read_text(encoding="utf-8"))

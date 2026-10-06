@@ -1,0 +1,2361 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$comment": "The 'validate' feature (custom validation callback on flags) is expressed through the closed `validate` vocabulary on a flag entry (a reject list plus a message) rather than as an arbitrary callable: a JSON case cannot carry a function, but it can carry the one shape the conformance corpus needs -- a validator that refuses named values -- and each harness builds the identical callable from it. Richer validators stay in the per-language unit suites.",
+  "title": "strictcli behavior cases",
+  "description": "Array of behavior cases the Go implementation's suite runs (TestCases in go/strictcli/cases_test.go).",
+  "type": "array",
+  "items": {
+    "$ref": "#/$defs/test_case"
+  },
+  "minItems": 1,
+  "$defs": {
+    "test_case": {
+      "type": "object",
+      "required": [
+        "name",
+        "app",
+        "argv",
+        "expect"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Descriptive test name."
+        },
+        "skip_schema_validation": {
+          "type": "boolean",
+          "default": false,
+          "description": "If true, this test case is exempt from schema validation (used for cases that intentionally craft invalid app definitions)."
+        },
+        "project_root_not_a_work_tree": {
+          "type": "boolean",
+          "default": false,
+          "description": "If true, the case runs in a fixture directory that is deliberately not a git work tree. The built-in effects-bypass check reads only repository-owned files and refuses a project root git cannot answer for; this is the only way that refusal is reachable."
+        },
+        "app": {
+          "$ref": "#/$defs/app"
+        },
+        "argv": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Command-line arguments (including the subcommand)."
+        },
+        "env": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Environment variables to set before invoking the app."
+        },
+        "stdin": {
+          "type": "string",
+          "description": "Text piped to the app's stdin. Absent means /dev/null, which is what keeps every other case independent of the operator's terminal; a pipe carrying this text is not a TTY either. Used by the --mcp cases, whose JSON-RPC lines arrive on stdin."
+        },
+        "protocol_script": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/protocol_step"
+          },
+          "description": "A line-scripted request/response exchange with the running app, for protocols whose next request depends on the previous reply -- the MCP loop and its confirmation round-trip above all. The runner sends each step's line, then reads and asserts one reply line, step by step; the child's full streams are still available to the ordinary expect block and to the N-way comparison. Mutually exclusive with 'stdin', which hands the whole input over up front and can only express an exchange that never reacts."
+        },
+        "expect": {
+          "$ref": "#/$defs/expect"
+        }
+      },
+      "not": {
+        "required": [
+          "stdin",
+          "protocol_script"
+        ]
+      }
+    },
+    "protocol_step": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "description": "One step of a line-scripted exchange: send a line, and/or read and assert one reply line. A step with only 'send' does not wait; a step with only 'expect_line' or 'capture' reads without sending.",
+      "properties": {
+        "send": {
+          "type": "string",
+          "description": "The line written to the child's stdin. The terminating newline is added by the runner. A '{{name}}' placeholder splices in a value an earlier step captured, and '{{name|tamper}}' splices it with its FIRST character changed -- which is how a case asserts that an integrity-protected value is actually checked. The first character and not the last, because base64 decoders ignore the trailing bits of a final character that does not fill a byte, so changing the last character of a base64url blob can decode to the identical bytes."
+        },
+        "capture": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "minProperties": 1,
+          "description": "Values to pull out of this step's reply for later steps to splice into what they send, as {name: dotted path into the parsed reply}. This is the only way to script a protocol whose later requests quote something the server minted -- a continuation state blob, say, which is unguessable by construction and different every run. A step carrying 'capture' reads a reply line even when it asserts nothing about it."
+        },
+        "stream": {
+          "enum": [
+            "stdout",
+            "stderr"
+          ],
+          "default": "stdout",
+          "description": "Which of the child's streams the reply line is read from."
+        },
+        "expect_line": {
+          "type": "object",
+          "additionalProperties": false,
+          "minProperties": 1,
+          "description": "Assertions on the one reply line this step reads (its trailing newline stripped). A missing line within the step timeout is a failure, never a hang.",
+          "properties": {
+            "equals": {
+              "type": "string"
+            },
+            "contains": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              ]
+            },
+            "matches": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              ]
+            },
+            "json_equals": {
+              "description": "Parse the line as JSON and compare it structurally against this document -- key order and encoder whitespace are therefore not part of the assertion, which is exactly what makes one expectation serve three different serializers. '$ANY' is the per-field wildcard, for a value that is nondeterministic by construction."
+            },
+            "not_contains": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "minItems": 1
+                }
+              ],
+              "description": "The line must contain none of these substrings."
+            }
+          }
+        }
+      }
+    },
+    "app": {
+      "type": "object",
+      "required": [
+        "name",
+        "version",
+        "help",
+        "commands"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "help": {
+          "type": "string"
+        },
+        "env_prefix": {
+          "type": "string"
+        },
+        "config": {
+          "type": "boolean",
+          "default": false,
+          "description": "If true, enable config file support and auto-register config subcommands."
+        },
+        "config_path": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Override the default config file path. If null, uses XDG_CONFIG_HOME/<app>/config.<format>."
+        },
+        "config_path_relative_to_root": {
+          "type": "object",
+          "required": [
+            "env_var"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "env_var": {
+              "type": "string"
+            },
+            "parts": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "description": "The config path declared as a RelativeToRoot marker (WithConfigPathRelativeToRoot / config_path=RelativeToRoot(...)): the same declaration a flag spells with default_relative_to_root, resolved eagerly at construction through the named infra root. Referencing an undeclared root is a registration-time hard error, which is the state a case spells this key to reach."
+        },
+        "config_format": {
+          "type": "string",
+          "enum": [
+            "json",
+            "toml"
+          ],
+          "default": "json",
+          "description": "Config file format: 'json' or 'toml'."
+        },
+        "global_flags": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/flag"
+          },
+          "description": "Flags declared on the App, parsed before the command name and available to every handler."
+        },
+        "commands": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/command"
+          }
+        },
+        "groups": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/group"
+          }
+        },
+        "checks_path": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Override CWD-based discovery of checks.toml with an explicit path."
+        },
+        "no_default_config_path": {
+          "type": "boolean",
+          "default": false,
+          "description": "If true, the app loads no config unless --config is explicitly passed."
+        },
+        "config_conflict_mode": {
+          "type": "string",
+          "enum": [
+            "cli-wins",
+            "error"
+          ],
+          "default": "cli-wins",
+          "description": "Conflict resolution mode for config values. In 'error' mode, config+cli and config+env overlaps are hard errors."
+        },
+        "infra_root": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Infrastructure location roots: env var name -> default path. Resolved eagerly at construction; immune to --hermetic."
+        },
+        "handshake_env": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Handshake env vars: env var name -> help string. Read live at access time via the infra accessor."
+        },
+        "connection_env": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Connection env vars: env var name -> help string. Hermetic-suppressed, read live at access time, no default."
+        },
+        "confirm_stdin_interactive": {
+          "const": true,
+          "default": false,
+          "description": "Installs the framework's test-only confirm seam (Go App.SetConfirmIO, Python App._set_confirm_io, TypeScript setConfirmIO) so the confirm protocol treats the case's piped stdin as interactive and reads its answer from it. Without this the interactive branch is unreachable from a subprocess -- a pipe is not a TTY in any implementation, so every consequential case would take the non-interactive error branch. It changes WHERE the answer comes from, never WHETHER the protocol runs: there is no bypass here."
+        },
+        "config_content": {
+          "type": "string",
+          "description": "Raw config file content to write before running the test"
+        },
+        "config_content_late": {
+          "type": "string",
+          "description": "Raw config file content to write AFTER app construction but BEFORE app.run(). Tests parse-time config loading vs construction-time."
+        },
+        "checks_toml": {
+          "type": "string",
+          "description": "Raw TOML content to write as .strictcli/checks.toml for check conformance tests."
+        },
+        "checks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/check"
+          },
+          "description": "Check stub definitions for code generation."
+        },
+        "check_values": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "type": "string"
+              },
+              "source": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "value",
+              "source"
+            ],
+            "additionalProperties": false
+          },
+          "description": "The app's check value resolver, as a table: a check named here resolves to this value and source; a check absent from it resolves to no value (its registered severity). The value is not restricted, so a case can hand the framework a value it must refuse."
+        },
+        "providers": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/provider_check"
+            }
+          },
+          "description": "Check providers registered via register_check_provider / RegisterCheckProvider. Each element is one provider (a list of the specs it returns). Providers have no TOML, so every spec carries its declarative meta inline."
+        },
+        "source_tree_root": {
+          "type": "string",
+          "description": "The app's source-tree root, whose .strictmetadata/.cli-test-coverage/ holds the coverage state -- shards/ (shard files) and manifest.json (the manifest) -- as a path relative to the fixture root the case runs in. \".\" names the fixture root itself, under which the runner always creates the coverage directory; any other value names a root the runner never creates, which is how a case declares the absent-directory state that registers no cli-test-coverage check."
+        },
+        "pre_test": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "description": "List of argv lists to run via app.test() before the main app.run(). Used by source_tree_root cases to generate shard files."
+        },
+        "pre_call": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "command"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "Dot-separated command path to invoke programmatically."
+              },
+              "kwargs": {
+                "type": "object",
+                "description": "Pre-typed handler kwargs, keyed by underscored parameter name. A SELECTOR's value is the elected record, spelled as the flat map §25.6 publishes -- the choice's name under the reserved key `choice`, then the fields that scope carries, nested to any depth -- and each harness materializes it in its own language's shape: a choice instance (Python), Elect(<choice>, Fields{...}) (Go), the tagged object itself (TypeScript). A map naming no declared choice is handed over untouched, which is how the record door's wrong-choice refusal gets a covering input. The string \"$undefined\" is a TYPESCRIPT-ONLY sentinel: the TS harness rewrites it to a real `undefined` at a present key, at any depth. JSON has no undefined and TypeScript is the only implementation that has the value, so it is the only way to spell the state §27.6 rules on -- `undefined` is not a second spelling of a nullable property's clear, and it earns the ordinary value refusal where `null` clears. A case using it declares targets: [\"typescript\"]; the sibling harnesses would hand the literal string through."
+              },
+              "approve_consequential": {
+                "type": "boolean",
+                "description": "The caller's explicit consent, spelled per-language (Python keyword-only argument, Go CallOption, TS options object). Absent means no consent, so a consequential command is refused."
+              }
+            }
+          },
+          "description": "Programmatic calls to run via app.call()/App.Call() before the main app.run(). Each prints 'call ok: <command>' to stdout, 'call error: <message>' to stderr when the call is refused, or 'call exit error: <code>: <message>: payload=<json>' to stderr when the command ended through an early exit (<json> is the ExitError's payload in compact sorted-key JSON, null when none). The argv-and-subprocess harness cannot otherwise reach the programmatic channel."
+        },
+        "dump_tools": {
+          "type": "boolean",
+          "description": "Print one 'tool: <name> effect=<effect> consequential=<bool>' line per as_tools()/AsTools() descriptor to stdout before the main app.run(). Pins the exported classification without serializing the whole descriptor, whose JSON shape is language-specific."
+        },
+        "coverage_manifest": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Committed coverage manifest to seed at .strictmetadata/.cli-test-coverage/manifest.json under the declared source_tree_root before the app runs. Used to exercise the deterministic manifest-union verdict on the empty-shard path (no pre_test)."
+        },
+        "tag_contracts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "requires_flag": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "requires_flag"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "config_fields_def": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/config_field_def"
+          },
+          "description": "Config field definitions registered on the app via app.config_field() / app.ConfigField()."
+        },
+        "proc_observe_allowlist": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "description": "App-level observe authorization (effects contract §6.2): argv PREFIXES matched element-wise by string equality. A ctx.effects.run whose argv matches one is an observe -- it executes even in dry mode, returns a real value, and is never written to the would-do log."
+        }
+      }
+    },
+    "check": {
+      "type": "object",
+      "required": [
+        "name"
+      ],
+      "additionalProperties": false,
+      "description": "A check-impl stub for code generation. The registration form (error vs warn) is NOT specified here -- generators derive it from the check's severity in the embedded checks_toml. This object only describes what the impl mints via its reporter -- or, with 'aborts', that it mints nothing and unwinds instead.",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "aborts": {
+          "const": true,
+          "default": false,
+          "description": "The check impl ABORTS instead of returning an outcome: it raises (Python), throws (TypeScript) or panics (Go) a harness-defined type named CheckAborted carrying the identical message 'conformance: check aborted'. The three type names coincide by construction, so the framework's containment line (which names the type) is byte-identical across targets. Only true is declarable, and it excludes mint / message / problems / notes: an aborting impl mints nothing.",
+          "$comment": "The check analog of a command's handler_aborts."
+        },
+        "mint": {
+          "enum": [
+            "passed",
+            "skipped",
+            "found"
+          ],
+          "description": "Which terminal outcome the reporter mints. 'found' requires at least one problem; 'passed'/'skipped' forbid problems."
+        },
+        "message": {
+          "type": "string",
+          "description": "The pass/found message or skip reason passed to reporter.passed/found/skipped."
+        },
+        "problems": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "severity",
+              "text"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "severity": {
+                "enum": [
+                  "error",
+                  "warn"
+                ]
+              },
+              "text": {
+                "type": "string"
+              }
+            }
+          },
+          "description": "Problems the reporter mints before found(). Only valid when mint == 'found'. A warn-severity check may only mint 'warn' problems."
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Verdict-inert informational notes the reporter records via note()/Note(). They surface only under --verbose and in JSON, on any outcome including a pass."
+        }
+      },
+      "if": {
+        "properties": {
+          "aborts": {
+            "const": true
+          }
+        },
+        "required": [
+          "aborts"
+        ]
+      },
+      "then": {
+        "properties": {
+          "mint": false,
+          "message": false,
+          "problems": false,
+          "notes": false
+        }
+      },
+      "else": {
+        "required": [
+          "mint",
+          "message"
+        ]
+      }
+    },
+    "provider_check": {
+      "type": "object",
+      "required": [
+        "name",
+        "tags",
+        "severity",
+        "fast",
+        "pure",
+        "needs_network",
+        "depends_on",
+        "mint",
+        "message"
+      ],
+      "additionalProperties": false,
+      "description": "A provider-sourced check spec. Unlike a TOML-declared check, it carries all eight declarative meta fields inline (providers have no TOML). The impl body (mint/message/problems) mirrors a 'check' def. 'impl_form' selects the constructor (error_check_spec / warn_check_spec); when it differs from 'severity', it pins the materialization-time severity-mismatch hard error.",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "severity": {
+          "enum": [
+            "error",
+            "warn"
+          ]
+        },
+        "fast": {
+          "type": "boolean"
+        },
+        "pure": {
+          "type": "boolean"
+        },
+        "needs_network": {
+          "type": "boolean"
+        },
+        "depends_on": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "scope": {
+          "type": "string"
+        },
+        "impl_form": {
+          "enum": [
+            "error",
+            "warn"
+          ],
+          "description": "Which constructor registers the spec. Defaults to 'severity'. A value differing from 'severity' pins the severity-mismatch hard error."
+        },
+        "mint": {
+          "enum": [
+            "passed",
+            "skipped",
+            "found"
+          ],
+          "description": "Which terminal outcome the reporter mints."
+        },
+        "message": {
+          "type": "string"
+        },
+        "problems": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "severity",
+              "text"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "severity": {
+                "enum": [
+                  "error",
+                  "warn"
+                ]
+              },
+              "text": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Verdict-inert informational notes the reporter records via note()/Note()."
+        }
+      }
+    },
+    "group": {
+      "type": "object",
+      "required": [
+        "name",
+        "help"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "help": {
+          "type": "string"
+        },
+        "hidden": {
+          "type": "boolean",
+          "default": false
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "commands": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/command"
+          }
+        },
+        "groups": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/group"
+          }
+        }
+      }
+    },
+    "command": {
+      "type": "object",
+      "required": [
+        "name",
+        "help"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "help": {
+          "type": "string"
+        },
+        "effect": {
+          "enum": [
+            "read_only",
+            "mutating"
+          ],
+          "description": "The mandatory command classification (effects contract §1.1). Deliberately NOT in the top-level 'required' list: a top-level required applies conjunctively with the deprecated branch's 'then', which would make classification mandatory on deprecated entries too -- the opposite of §1.1's exemption. The 'else' branch below is what makes it mandatory on every non-deprecated entry."
+        },
+        "consequential": {
+          "type": "boolean",
+          "default": false,
+          "description": "Declares that the command's effects are worth interrupting someone for (effects contract §8.1). The framework prompts for exactly these commands and for no others. NOT mandatory -- absence means 'not consequential' -- so it is neither in 'required' nor in the 'else' branch. Declaring it on a read_only command is a registration-time hard error."
+        },
+        "dry_run_supported": {
+          "type": "boolean",
+          "default": true,
+          "description": "Declares whether --dry-run is honored for this command. Only false is declarable: true is the regime's baseline (a mutating command's effects are recorded rather than executed). A command that declares false is saying a preview of it would misrepresent the real run, so the framework refuses --dry-run for it at parse time. NOT mandatory -- absence means supported -- so it is neither in 'required' nor in the 'else' branch. Declaring false on a read_only command is a registration-time hard error, and it requires dry_run_unsupported_reason."
+        },
+        "payload_schema": {
+          "type": "object",
+          "description": "The command's machine payload contract (effects contract §19.5): an inline JSON Schema literal, registered as written, validated at registration over the closed subset, enforced against the payload at emission, and published verbatim in the help document (help --json). Absence means the command cannot produce a payload -- ctx.payload is then a call-time hard error. Most cases leave this key out: the harnesses declare the permissive literal {} for every command whose handler_returns supplies a payload, identically in all three languages. Write it explicitly when the case is ABOUT the declaration -- a non-empty literal published by the schema dump, or a payload validated against real keywords."
+        },
+        "owns_stdout": {
+          "type": "boolean",
+          "default": false,
+          "description": "Declares that this command's stdout IS the artifact (effects contract §19.6): in machine mode stdout carries the command's own document byte-exactly and the envelope moves to stderr, together with every framework diagnostic it carries. Outside machine mode the declaration changes nothing at all. Emitted in the help document only when true; absence means the framework owns stdout, which is the baseline."
+        },
+        "dry_run_unsupported_reason": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Why a dry run of this command would misrepresent the real run. Mandatory when dry_run_supported is false, and illegal without it. Shown in the command's help and repeated in the parse-time refusal."
+        },
+        "update_of": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "resource"
+          ],
+          "description": "The update declaration (contract §27.2), in the registration-level family effect / consequential / dry_run_supported belong to. The case schema follows the DECLARATION side -- ONE record carrying its write mode (§13's amendment box) -- where the help document publishes the two command-entry keys `update_of` and `write_mode`. Declaring it on a read_only command is a registration-time hard error, so an update command is always mutating and §27.1's mutating-default ban reaches every declaration it carries.",
+          "properties": {
+            "resource": {
+              "type": "string",
+              "description": "The name of the thing being updated. Mandatory, matching [a-z][a-z0-9-]* (the constraint-name charset). It is the identifier the at-least-one-property violation prints, and the corpus a later resource round reads. NOT constrained by pattern here: a resource name outside the charset is the covering input for errUpdateResourceCharset."
+            },
+            "write_mode": {
+              "type": "string",
+              "description": "\"sparse\" (only the provided properties are sent; the rest is untouched) or \"full_replace\" (the whole resource is re-sent, the provided properties from this invocation and every other read back). Mandatory on every declaration surface and carrying no default, because a preview must not lie about the most destructive thing the command does. Deliberately typed as a bare string and NOT required here: an absent or out-of-vocabulary write_mode is the covering input for errUpdateWriteModeInvalid, and a case schema that cannot spell the refused declaration cannot test the refusal."
+            },
+            "identity": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "The declared names of the flags and args that name WHICH resource instance is being changed, in declaration order and in the declared (dashed) spelling. Possibly empty. An identity member declares required or optional, may be a positional arg, and may be a token- or member-spelled choice flag; root scope only."
+            },
+            "properties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "The declared names of the flags that name WHAT changes, in declaration order and in the declared (dashed) spelling. At least one -- an empty or absent list is the covering input for errUpdatePropertiesEmpty. A property is a flag (never an arg), never a choice flag, declares presence \"optional\" and nothing else, and lives at root scope: absence IS untouched, and the framework refuses an invocation supplying none of them."
+            }
+          }
+        },
+        "grants": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/grant"
+          },
+          "description": "Per-command grant declarations (effects contract §6.1)."
+        },
+        "forwarding": {
+          "type": "object",
+          "required": [
+            "reason"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "reason": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "description": "Declared forwarding (effects contract §10.2). The reason is mandatory and non-empty."
+        },
+        "handler_effects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/handler_effect"
+          },
+          "description": "Effect calls the generated handler issues, in order, before its return (effects contract §14.4). Runs BEFORE the handler_prints / handler_returns path and does not replace it."
+        },
+        "handler_diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/handler_diagnostic"
+          },
+          "description": "Context diagnostic calls the generated handler issues, in order, after its handler_effects and before the handler_prints / handler_returns path."
+        },
+        "handler_claims_log": {
+          "const": true,
+          "description": "The generated handler calls ctx.effects.recorded() (effects contract §19.7), which CLAIMS the render: the framework's own end-of-dispatch emission is suppressed for the rest of the run. A claim that never renders is re-rendered at the seam, so this key alone changes no output -- it exists to pin exactly that. Runs after handler_effects and before handler_diagnostics / handler_prints.",
+          "default": false
+        },
+        "handler_renders_log": {
+          "const": true,
+          "description": "The generated handler calls ctx.effects.render_log() / RenderLog() / renderLog() (effects contract §19.7), which renders the would-do log in §3.2's exact form at that point in the handler body and claims the render. Runs after handler_effects and before handler_diagnostics / handler_prints, so the log lands AHEAD of the handler's own output. A no-op in machine mode and outside dry mode.",
+          "default": false
+        },
+        "handler_payloads_recorded": {
+          "const": true,
+          "description": "The generated handler calls ctx.payload with the verbs of ctx.effects.recorded() (effects contract §19.7): the records it reads shape its own payload, identically in both modes. The verbs rather than the records themselves, because a payload is emitted exactly as the handler supplied it (§19.2) and three serializers order an object's keys three ways -- an array of strings is the same bytes everywhere. Implies the permissive payload_schema literal {} when the command declares none.",
+          "default": false
+        },
+        "payload_renderer": {
+          "type": "object",
+          "required": [
+            "template"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "template": {
+              "type": "string",
+              "description": "The rendering, with every '{key}' replaced by the payload's top-level member of that name: a string verbatim, an integer in decimal."
+            }
+          },
+          "description": "Declares a payload renderer on the command (effects contract §19.10): Python payload_renderer=, Go PayloadRenderer(fn), TypeScript payloadRenderer:. Each harness builds the same renderer from the template. In human mode the exit step prints the rendering of the supplied payload plus a newline, never hidden by --quiet; under --json only the payload is emitted. Registration requires a payload schema and refuses an owns-stdout command, so a case that is not about those refusals declares payload_schema explicitly."
+        },
+        "handler_signals_self": {
+          "enum": [
+            "SIGINT",
+            "SIGTERM"
+          ],
+          "description": "The generated handler sends the named signal to its own process, then waits (bounded) until its Context reports cancellation -- Python ctx.canceled, Go ctx.Done(), TypeScript ctx.signal (effects contract §19.13) -- and continues. A handler whose context is never canceled aborts with 'conformance: context was not canceled'. Runs after handler_diagnostics and before handler_out."
+        },
+        "handler_out": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "ctx.out / ctx.Out calls the generated handler issues, one per string, in order (effects contract §19.10). Runs after handler_signals_self and before handler_document."
+        },
+        "handler_document": {
+          "type": "string",
+          "description": "UTF-8 bytes the generated handler writes through ctx.document() / ctx.Document() (effects contract §19.6's document-writer amendment). Runs after handler_out and before handler_raw_stdout."
+        },
+        "handler_raw_stdout": {
+          "type": "string",
+          "description": "UTF-8 bytes the generated handler writes to the process stdout directly, outside the framework: Python sys.stdout.write then flush, Go os.Stdout.WriteString, TypeScript process.stdout.write (effects contract §19.12). The language-neutral way to reach the runtime guard. Runs after handler_document and before the terminal step."
+        },
+        "handler_process_exit": {
+          "type": "integer",
+          "description": "The terminal step: the generated handler calls the language's own process exit with this code -- Python os._exit, TypeScript process.exit (effects contract §19.12's trap). Go's os.Exit cannot be trapped, so a case using this key declares targets [\"python\", \"typescript\"]. Excludes handler_exit_now, handler_aborts, handler_returns and handler_prints."
+        },
+        "handler_exit_now": {
+          "type": "object",
+          "required": [
+            "code",
+            "message"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "code": {
+              "type": "integer"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "description": "The terminal step: the generated handler ends the command early (effects contract §19.9) -- Python strictcli.exit_now(code, message), Go strictcli.ExitNow(code, message) called from a helper function the handler calls, TypeScript throw new ExitNow(code, message). Code and message are passed through unchecked, so a case can assert the call-time refusals. Excludes handler_process_exit, handler_aborts, handler_returns and handler_prints."
+        },
+        "hidden": {
+          "type": "boolean",
+          "default": false
+        },
+        "interactive": {
+          "type": "boolean",
+          "default": false
+        },
+        "config_fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "deprecated": {
+          "type": "boolean",
+          "default": false,
+          "description": "If true, this is a deprecated command. It must have deprecated_message and must NOT have handler_prints, handler_exit_code, flags, args, flag_sets, constraints, passthrough, or passthrough_handler_prints."
+        },
+        "deprecated_message": {
+          "type": "string",
+          "description": "Deprecation message shown when the command is invoked or listed in help. Required when deprecated is true."
+        },
+        "handler_prints": {
+          "type": "string",
+          "description": "Template string. {name} is replaced with the value of the arg/flag named 'name'; {source:name} is replaced with the provenance source label via ctx.source(name). A '{provided:name}' reference resolves through ctx.provided(name), rendering 'true' or 'false' (contract §23.6), and an '{unset:name}' reference resolves through ctx.unset(name) the same way (contract §27.6) -- the clear vocabulary's own accessor, and the only way a handler tells a CLEARED property from an untouched one, both of which deliver absence."
+        },
+        "handler_exit_code": {
+          "type": "integer",
+          "default": 0,
+          "description": "The integer value the generated handler returns (as outcome(exit_code=N) / Exit(N)). Used as the process exit code."
+        },
+        "handler_returns": {
+          "type": "object",
+          "required": [
+            "kind"
+          ],
+          "additionalProperties": false,
+          "description": "Pins an explicit handler return (survivor-contract cases). When present, the template-printing path is skipped. 'exit' => outcome(exit_code)/Exit(code); 'data' => ctx.payload(data) then outcome()/Exit(0); 'exit_data' => ctx.payload(data) then outcome(exit_code)/Exit(code); 'none' => return None (Python)/Exit(0) (Go)/return undefined (TypeScript); 'bad' => an invalid return (a hard error on Python and TypeScript; Go's type system makes it unrepresentable, so a 'bad' case must exclude the go target). The data kinds require the command to declare a payload_schema (contract §19.4).",
+          "properties": {
+            "kind": {
+              "enum": [
+                "exit",
+                "data",
+                "exit_data",
+                "none",
+                "bad"
+              ]
+            },
+            "code": {
+              "type": "integer"
+            },
+            "data": {
+              "description": "Structured data payload for data/exit_data kinds. Author with sorted keys so compact JSON is byte-identical across languages."
+            }
+          }
+        },
+        "handler_aborts": {
+          "const": true,
+          "description": "The generated handler ABORTS instead of returning: it raises (Python), throws (TypeScript) or panics (Go) with the identical message 'conformance: handler aborted', after running its handler_effects and handler_diagnostics. This is the language-neutral way to reach the framework's unwinding paths (the aborted-preview marker, effects contract §12.3) -- unlike handler_returns kind 'bad', which Go's Outcome type makes unrepresentable. Only true is declarable, and it excludes handler_returns: an aborting handler has no return.",
+          "default": false
+        },
+        "passthrough": {
+          "type": "boolean",
+          "default": false,
+          "description": "If true, the command is a passthrough command: no flag/arg parsing, handler receives raw args."
+        },
+        "passthrough_handler_prints": {
+          "type": "string",
+          "description": "Template for passthrough handler output. Receives name and raw args. Generated handler prints name:arg1,arg2,..."
+        },
+        "args": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/arg"
+          }
+        },
+        "flags": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/flag"
+          }
+        },
+        "flag_sets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/flag_set"
+          }
+        },
+        "constraints": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/constraint"
+          },
+          "description": "The command's constraint set (contract §26), in declaration order. The pre-§26 `dependencies` key is deleted with the construct it carried."
+        },
+        "handler_param_defaults": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Per-parameter defaults written into the generated Python handler's signature, as {parameter name: literal string default}. The ONLY way a case can spell the re-sentinelization the handler-parameter check refuses (contract §12.12, §23.3) -- a handler bound to an optional flag whose parameter is written `target=\"\"`. Python-only by construction: Go and TypeScript handlers receive one kwargs map / one args object, so there is no per-parameter default to write, which is why cases using this key declare targets: [\"python\"]."
+        },
+        "requires": {
+          "type": "array",
+          "description": "Declared runtime requirements the command references (WithRequires / requires= / requires:). Each is declared once per name for the whole app; its load is scripted: available or not, and the reason it is not.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "help",
+              "install",
+              "available"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "help": {
+                "type": "string"
+              },
+              "install": {
+                "type": "string"
+              },
+              "available": {
+                "type": "boolean",
+                "description": "Whether the requirement's load succeeds."
+              },
+              "reason": {
+                "type": "string",
+                "description": "The load's error text when it is not available."
+              }
+            }
+          }
+        }
+      },
+      "if": {
+        "properties": {
+          "deprecated": {
+            "const": true
+          }
+        },
+        "required": [
+          "deprecated"
+        ]
+      },
+      "then": {
+        "required": [
+          "name",
+          "help",
+          "deprecated",
+          "deprecated_message"
+        ],
+        "properties": {
+          "name": true,
+          "help": true,
+          "deprecated": true,
+          "deprecated_message": true,
+          "handler_prints": false,
+          "handler_exit_code": false,
+          "handler_returns": false,
+          "handler_aborts": false,
+          "handler_effects": false,
+          "handler_diagnostics": false,
+          "handler_claims_log": false,
+          "handler_renders_log": false,
+          "handler_payloads_recorded": false,
+          "effect": false,
+          "consequential": false,
+          "dry_run_supported": false,
+          "dry_run_unsupported_reason": false,
+          "update_of": false,
+          "payload_schema": false,
+          "owns_stdout": false,
+          "grants": false,
+          "forwarding": false,
+          "flags": false,
+          "args": false,
+          "flag_sets": false,
+          "constraints": false,
+          "passthrough": false,
+          "passthrough_handler_prints": false,
+          "tags": false,
+          "hidden": false,
+          "interactive": false,
+          "config_fields": false,
+          "payload_renderer": false,
+          "handler_signals_self": false,
+          "handler_out": false,
+          "handler_document": false,
+          "handler_raw_stdout": false,
+          "handler_process_exit": false,
+          "handler_exit_now": false
+        }
+      },
+      "else": {
+        "required": [
+          "effect"
+        ],
+        "allOf": [
+          {
+            "not": {
+              "required": [
+                "handler_aborts",
+                "handler_returns"
+              ]
+            }
+          },
+          {
+            "not": {
+              "required": [
+                "handler_exit_now",
+                "handler_aborts"
+              ]
+            }
+          },
+          {
+            "not": {
+              "required": [
+                "handler_exit_now",
+                "handler_returns"
+              ]
+            }
+          },
+          {
+            "not": {
+              "required": [
+                "handler_exit_now",
+                "handler_prints"
+              ]
+            }
+          },
+          {
+            "not": {
+              "required": [
+                "handler_process_exit",
+                "handler_aborts"
+              ]
+            }
+          },
+          {
+            "not": {
+              "required": [
+                "handler_process_exit",
+                "handler_returns"
+              ]
+            }
+          },
+          {
+            "not": {
+              "required": [
+                "handler_process_exit",
+                "handler_prints"
+              ]
+            }
+          },
+          {
+            "not": {
+              "required": [
+                "handler_exit_now",
+                "handler_process_exit"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "grant": {
+      "type": "object",
+      "required": [
+        "name",
+        "reason",
+        "kind"
+      ],
+      "additionalProperties": false,
+      "description": "A per-command, per-effect-kind authorization with a mandatory human reason (effects contract §6.1).",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "proc_mutate",
+            "proc_spawn",
+            "file_write",
+            "net_mutate"
+          ]
+        }
+      }
+    },
+    "handler_effect": {
+      "type": "object",
+      "required": [
+        "method"
+      ],
+      "additionalProperties": false,
+      "description": "One effect call the generated handler issues (effects contract §14.4). Each harness materializes this identically: iterate in order, call the named method with EXACTLY the keys the entry declares (no per-method filtering -- a case declaring a key the method does not accept is asserting the error), and keep the returned carrier in a per-run slice indexed by position so forward_from / extract_from can reference it.",
+      "properties": {
+        "method": {
+          "enum": [
+            "run",
+            "spawn",
+            "write",
+            "mkdir",
+            "remove",
+            "rename",
+            "chmod",
+            "http"
+          ]
+        },
+        "argv": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "path": {
+          "type": "string"
+        },
+        "to": {
+          "type": "string"
+        },
+        "mode": {
+          "type": "string"
+        },
+        "content": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        },
+        "http_method": {
+          "type": "string"
+        },
+        "stream": {
+          "type": "boolean"
+        },
+        "resource": {
+          "type": "string"
+        },
+        "skip_if_current": {
+          "type": "string"
+        },
+        "grant": {
+          "type": "string"
+        },
+        "forward_from": {
+          "type": "integer",
+          "description": "1-based index of an earlier handler_effects entry whose carrier is forwarded as the final argument of this call."
+        },
+        "extract_from": {
+          "type": "integer",
+          "description": "1-based index of an earlier entry whose carrier the handler EXTRACTS from (bool-tests it), triggering the truncation path. Terminal: nothing after this entry runs."
+        },
+        "wait": {
+          "const": true,
+          "description": "On a spawn entry only: the generated handler waits on the returned handle (Wait() / wait(), default check) immediately after the spawn, before the next entry. Not an effect option; never passed to spawn."
+        }
+      }
+    },
+    "handler_diagnostic": {
+      "type": "object",
+      "required": [
+        "level",
+        "message"
+      ],
+      "additionalProperties": false,
+      "description": "One Context diagnostic call the generated handler issues. The four levels are gated by --quiet / --verbose per the effects contract §7.4: debug is hidden unless --verbose, info is hidden under --quiet, and warn / error are never suppressed. Each harness materializes this identically: iterate in order, call ctx.debug / ctx.info / ctx.warn / ctx.error with the declared message.",
+      "properties": {
+        "level": {
+          "enum": [
+            "debug",
+            "info",
+            "warn",
+            "error"
+          ]
+        },
+        "message": {
+          "type": "string"
+        }
+      }
+    },
+    "effect_record": {
+      "type": "object",
+      "required": [
+        "seq",
+        "kind",
+        "verb",
+        "detail",
+        "recorded"
+      ],
+      "additionalProperties": false,
+      "description": "One record of the structured effect log (effects contract §14.2). Populated in BOTH modes; 'recorded' is the key that says which happened.",
+      "properties": {
+        "seq": {
+          "type": "integer"
+        },
+        "kind": {
+          "enum": [
+            "proc_mutate",
+            "proc_spawn",
+            "file_write",
+            "net_mutate",
+            "cache_write"
+          ]
+        },
+        "verb": {
+          "enum": [
+            "run",
+            "spawn",
+            "write",
+            "mkdir",
+            "remove",
+            "rename",
+            "chmod",
+            "net",
+            "cache"
+          ]
+        },
+        "detail": {
+          "type": "string"
+        },
+        "bytes": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "resource": {
+          "type": "string"
+        },
+        "skip_if_current": {
+          "type": "string"
+        },
+        "grant": {
+          "type": "string"
+        },
+        "recorded": {
+          "type": "boolean"
+        }
+      }
+    },
+    "arg": {
+      "type": "object",
+      "required": [
+        "name",
+        "help",
+        "presence"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "$comment": "Contract §23.1/§23.3: `default` co-occurs exactly with presence=\"default\". A case that spells an illegal combination (to assert a registration error) declares skip_schema_validation.",
+          "if": {
+            "required": [
+              "presence"
+            ],
+            "properties": {
+              "presence": {
+                "const": "default"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "default"
+            ]
+          },
+          "else": {
+            "not": {
+              "required": [
+                "default"
+              ]
+            }
+          }
+        }
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "help": {
+          "type": "string"
+        },
+        "presence": {
+          "enum": [
+            "required",
+            "optional",
+            "default"
+          ],
+          "description": "The presence declaration (contract §23.3). Exactly one of the three facts, on every declared arg. `default` is spelled by the `default` key beside presence=\"default\"."
+        },
+        "default": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "variadic": {
+          "type": "boolean",
+          "default": false,
+          "description": "If true, collects all remaining positional args into a list. Must be the last declared arg."
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "str",
+            "int",
+            "float",
+            "bool",
+            "list[str]",
+            "list[int]",
+            "list[float]"
+          ],
+          "default": "str",
+          "description": "The arg's declared carrier. The list rows are the LIST-CARRIER spelling of a variadic arg (contract §25.4): both spellings register in every implementation, both deliver the same list, and both publish the same array-shaped fragment -- so the corpus must be able to declare each of them."
+        },
+        "choices_str": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "value"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "value": {
+                "type": "string"
+              },
+              "help": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "description": "Choices for str-type args, in the record spelling (contract §24.2): every entry is a value plus OPTIONAL help. The bare-value entry is deleted -- an entry that may carry help and an entry that carries none would be two spellings of one fact. The split by type survives because its reason is the input side's alone: JSON cannot tell an integer choice from a float one, and each harness must know which typed constructor to call."
+        },
+        "choices_int": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "value"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "value": {
+                "type": "integer"
+              },
+              "help": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "description": "Choices for int-type args, in the record spelling (contract §24.2): every entry is a value plus OPTIONAL help. The bare-value entry is deleted -- an entry that may carry help and an entry that carries none would be two spellings of one fact. The split by type survives because its reason is the input side's alone: JSON cannot tell an integer choice from a float one, and each harness must know which typed constructor to call."
+        },
+        "choices_float": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "value"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "value": {
+                "type": "number"
+              },
+              "help": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "description": "Choices for float-type args, in the record spelling (contract §24.2): every entry is a value plus OPTIONAL help. The bare-value entry is deleted -- an entry that may carry help and an entry that carries none would be two spellings of one fact. The split by type survives because its reason is the input side's alone: JSON cannot tell an integer choice from a float one, and each harness must know which typed constructor to call."
+        },
+        "retired_choices_str": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "value",
+              "message"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "value": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          },
+          "description": "The spellings this arg USED to accept, each carrying the message that names its replacement. The typed split mirrors `choices_<T>`'s and exists for the same input-side reason: JSON cannot tell an integer spelling from a float one, and each harness must know which typed constructor to call. A bare entry (a value rather than a record) is spellable so Python's bare-entry refusal has a covering input; the siblings refuse it at compile time."
+        },
+        "retired_choices_int": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "value",
+              "message"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "value": {
+                "type": "integer"
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          },
+          "description": "The spellings this arg USED to accept, each carrying the message that names its replacement. The typed split mirrors `choices_<T>`'s and exists for the same input-side reason: JSON cannot tell an integer spelling from a float one, and each harness must know which typed constructor to call. A bare entry (a value rather than a record) is spellable so Python's bare-entry refusal has a covering input; the siblings refuse it at compile time."
+        },
+        "retired_choices_float": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "value",
+              "message"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "value": {
+                "type": "number"
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          },
+          "description": "The spellings this arg USED to accept, each carrying the message that names its replacement. The typed split mirrors `choices_<T>`'s and exists for the same input-side reason: JSON cannot tell an integer spelling from a float one, and each harness must know which typed constructor to call. A bare entry (a value rather than a record) is spellable so Python's bare-entry refusal has a covering input; the siblings refuse it at compile time."
+        }
+      }
+    },
+    "choice": {
+      "type": "object",
+      "required": [
+        "name",
+        "help"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The choice's name. Under member spelling it IS the electing flag's own name (contract §24.4)."
+        },
+        "help": {
+          "type": "string",
+          "description": "Mandatory on a choice -- which is what makes a selector always render as a help block (§24.10), and what errChoiceHelpEmpty refuses."
+        },
+        "short": {
+          "type": "string",
+          "description": "A PAYLOAD-LESS member's electing flag short (§24.4). Such a choice has no `value` to carry it, so the choice object is where it is declared -- Python's @choice(short=...) and TypeScript's choice({short}) both, while Go declares it on the bool member flag `MemberChoice` already takes. Spellable on a token-spelled choice and beside a `value` too: those are the inputs the two short refusals are asserted against."
+        },
+        "value": {
+          "type": "object",
+          "required": [
+            "type",
+            "help"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "str",
+                "int",
+                "float"
+              ]
+            },
+            "help": {
+              "type": "string"
+            },
+            "short": {
+              "type": "string",
+              "description": "The electing flag's short form, declared HERE for a payload-carrying member: this declaration is that flag's declaration in every implementation -- Go's MemberChoice takes the flag itself, Python's member_value(short=...) and TypeScript's value: {short} are the same declaration under two idioms (§24.4, §24.12). Spellable beside the choice-level `short` too, which is the input the two-declarations refusal is asserted against."
+            }
+          },
+          "description": "A member-spelled choice's own payload (§24.4). It is the choice object's own KEY here, and NOT the first entry of `flags` the way the dump places it (§25.6): a case spelling it the dump's way would be indistinguishable from a case declaring a scoped flag named `value`, which is the input errScopedNameValueReserved is asserted against. It declares no presence, because electing the member supplies the value. Spellable on a token-spelled choice too -- that is the input errTokenChoiceCarriesPayload is asserted against."
+        },
+        "flags": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/flag"
+          },
+          "description": "The choice's scope: the flags that exist only while it is elected. Recursion costs the schema nothing -- a nested selector is an ordinary flag entry carrying its own `elect_by` and `choices`, to any depth -- and presence stays mandatory at every depth through the `required` list the ref already carries."
+        },
+        "presence": {
+          "type": "string",
+          "enum": [
+            "required",
+            "optional"
+          ],
+          "description": "The MEMBER flag's own presence. It is spellable only so that errMemberFlagPresence (§12.13) has a covering input: a member flag's presence is `required`, read as required once this member is elected, and no declaration surface has a slot for anything else -- TypeScript reads the choice record back as `{presence?: unknown}` and Go sets the option on the electing flag. Python is excluded from the template (§18.19 item 213), so a case spelling this key restricts its targets."
+        },
+        "args": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/arg"
+          },
+          "description": "Positional args declared inside the scope. Spellable only so that errScopedPositional (§12.13) has a covering input: a positional's meaning would depend on an election that may be typed after it, so no declaration surface offers the slot -- Python reaches it through an Arg in the choice class's body and TypeScript through a widened flags map. Go's Choice(name, help, flags ...Flag) cannot take one at all, so a case spelling this key restricts its targets."
+        }
+      },
+      "description": "One choice of a selector (contract §24.1, §13's item-207 box): a name, mandatory help, an optional member payload, and the scope it owns."
+    },
+    "flag": {
+      "type": "object",
+      "required": [
+        "name",
+        "help",
+        "presence"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "$comment": "Contract §23.1: `default` (or its RelativeToRoot marker form) co-occurs exactly with presence=\"default\". A case that spells an illegal combination (to assert a registration error) declares skip_schema_validation.",
+          "if": {
+            "required": [
+              "presence"
+            ],
+            "properties": {
+              "presence": {
+                "const": "default"
+              }
+            }
+          },
+          "then": {
+            "oneOf": [
+              {
+                "required": [
+                  "default"
+                ]
+              },
+              {
+                "required": [
+                  "default_relative_to_root"
+                ]
+              }
+            ]
+          },
+          "else": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "default"
+                  ]
+                },
+                {
+                  "required": [
+                    "default_relative_to_root"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "$comment": "Contract §13 (item 207): `elect_by` is the input-side discriminator, exactly as it is the dump's (§25.6). An entry carrying it is a selector -- it declares `choices` and none of the value-flag keys; an entry not carrying it is an ordinary flag and declares no `choices`. A case that spells an illegal combination (to assert a registration error) declares skip_schema_validation.",
+          "if": {
+            "required": [
+              "elect_by"
+            ]
+          },
+          "then": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "type"
+                  ]
+                },
+                {
+                  "required": [
+                    "choices_str"
+                  ]
+                },
+                {
+                  "required": [
+                    "choices_int"
+                  ]
+                },
+                {
+                  "required": [
+                    "choices_float"
+                  ]
+                },
+                {
+                  "required": [
+                    "repeatable"
+                  ]
+                },
+                {
+                  "required": [
+                    "validate"
+                  ]
+                }
+              ]
+            }
+          },
+          "else": {
+            "not": {
+              "required": [
+                "choices"
+              ]
+            }
+          }
+        }
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "help": {
+          "type": "string"
+        },
+        "presence": {
+          "enum": [
+            "required",
+            "optional",
+            "default"
+          ],
+          "description": "The presence declaration (contract §23.1, §23.2). Exactly one of the three facts, on every declared flag at every level. `default` is spelled by the `default` key (or `default_relative_to_root`) beside presence=\"default\"."
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "str",
+            "bool",
+            "int",
+            "float",
+            "list[str]",
+            "list[int]",
+            "list[float]",
+            "dict[str,str]",
+            "dict[str,int]",
+            "dict[str,float]"
+          ],
+          "default": "str"
+        },
+        "short": {
+          "type": "string"
+        },
+        "default": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            },
+            {
+              "type": "array",
+              "items": {
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ]
+              }
+            },
+            {
+              "type": "object",
+              "$comment": "A dict flag's declared default (contract §23.5's dict row), and a SELECTOR's defaulted selection, which is the same flat map §25.6 publishes: the choice's name under the reserved key `choice` followed by each field that has a value.",
+              "additionalProperties": {
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "boolean"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "default_relative_to_root": {
+          "type": "object",
+          "required": [
+            "env_var"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "env_var": {
+              "type": "string"
+            },
+            "parts": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "description": "Flag default that resolves through a declared infra root (RelativeToRoot marker)."
+        },
+        "env": {
+          "type": "string"
+        },
+        "connection_url": {
+          "type": "boolean"
+        },
+        "connection_env": {
+          "type": "string"
+        },
+        "prefixed": {
+          "type": "boolean",
+          "default": true
+        },
+        "choices_str": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "value"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "value": {
+                "type": "string"
+              },
+              "help": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "description": "Choices for str-type flags, in the record spelling (contract §24.2): every entry is a value plus OPTIONAL help. The bare-value entry is deleted -- an entry that may carry help and an entry that carries none would be two spellings of one fact. The split by type survives because its reason is the input side's alone: JSON cannot tell an integer choice from a float one, and each harness must know which typed constructor to call."
+        },
+        "choices_int": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "value"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "value": {
+                "type": "integer"
+              },
+              "help": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "description": "Choices for int-type flags, in the record spelling (contract §24.2): every entry is a value plus OPTIONAL help. The bare-value entry is deleted -- an entry that may carry help and an entry that carries none would be two spellings of one fact. The split by type survives because its reason is the input side's alone: JSON cannot tell an integer choice from a float one, and each harness must know which typed constructor to call."
+        },
+        "choices_float": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "value"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "value": {
+                "type": "number"
+              },
+              "help": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          "description": "Choices for float-type flags, in the record spelling (contract §24.2): every entry is a value plus OPTIONAL help. The bare-value entry is deleted -- an entry that may carry help and an entry that carries none would be two spellings of one fact. The split by type survives because its reason is the input side's alone: JSON cannot tell an integer choice from a float one, and each harness must know which typed constructor to call."
+        },
+        "retired_choices_str": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "value",
+              "message"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "value": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          },
+          "description": "The spellings this flag USED to accept, each carrying the message that names its replacement. The typed split mirrors `choices_<T>`'s and exists for the same input-side reason: JSON cannot tell an integer spelling from a float one, and each harness must know which typed constructor to call. A bare entry (a value rather than a record) is spellable so Python's bare-entry refusal has a covering input; the siblings refuse it at compile time."
+        },
+        "retired_choices_int": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "value",
+              "message"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "value": {
+                "type": "integer"
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          },
+          "description": "The spellings this flag USED to accept, each carrying the message that names its replacement. The typed split mirrors `choices_<T>`'s and exists for the same input-side reason: JSON cannot tell an integer spelling from a float one, and each harness must know which typed constructor to call. A bare entry (a value rather than a record) is spellable so Python's bare-entry refusal has a covering input; the siblings refuse it at compile time."
+        },
+        "retired_choices_float": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "value",
+              "message"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "value": {
+                "type": "number"
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          },
+          "description": "The spellings this flag USED to accept, each carrying the message that names its replacement. The typed split mirrors `choices_<T>`'s and exists for the same input-side reason: JSON cannot tell an integer spelling from a float one, and each harness must know which typed constructor to call. A bare entry (a value rather than a record) is spellable so Python's bare-entry refusal has a covering input; the siblings refuse it at compile time."
+        },
+        "repeatable": {
+          "type": "boolean",
+          "default": false
+        },
+        "negatable": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether --no-flagname negation is supported. Only meaningful for bool-type flags."
+        },
+        "nullable": {
+          "type": "boolean",
+          "default": false,
+          "description": "Declares that this flag is a CLEARABLE property of the command's update (contract §27.6). It mints --unset-<name>, which carries no value, delivers absence, reports provided() true and is answered by ctx.unset(name); at the machine doors the same act is spelled `null` on the property's own key (§24.11's carve-out). Absence means the property cannot be cleared, which is the baseline: the help document emits the key only when true, and mints no second flag entry for the minted spelling. Declaring it on anything that is not a property of an update is a registration-time hard error, and it reserves the flag name `unset-<name>` on the same command."
+        },
+        "unique": {
+          "type": "boolean"
+        },
+        "conflict_mode": {
+          "type": "string",
+          "enum": [
+            "cli-wins",
+            "error"
+          ],
+          "description": "Per-flag override of the app config conflict mode. Absent means inherit the app-level config_conflict_mode."
+        },
+        "env_separator": {
+          "type": "string"
+        },
+        "validate": {
+          "type": "object",
+          "required": [
+            "rejects",
+            "message"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "rejects": {
+              "type": "array",
+              "items": {
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ]
+              },
+              "minItems": 1
+            },
+            "message": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "description": "A custom validation callback (ValidateFn / validate=), expressed as a closed vocabulary a JSON case can carry: the listed values are rejected with the given message, everything else passes. Each harness builds the same callable, so the resulting `--<flag>: <message>` parse error is byte-identical across targets. Contract §23.5's validate row -- it runs on a supplied value only, never on a declared default."
+        },
+        "elect_by": {
+          "type": "string",
+          "enum": [
+            "selector-token",
+            "member-flags"
+          ],
+          "description": "Declares this flag a SELECTOR and names its spelling (contract §24.12's own two strings, the same pair §25.6 publishes). `selector-token` is `--via email`; `member-flags` spells each choice as its own flag and never types the selector's name."
+        },
+        "choices": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/choice"
+          },
+          "description": "A selector's choices, in declaration order. On a flag entry `choices` always means choice objects and `choices_<T>` always means value records -- which is what lets the two constructs share one flag entry without collision."
+        }
+      }
+    },
+    "flag_set": {
+      "type": "object",
+      "required": [
+        "name",
+        "flags"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "flags": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/flag"
+          }
+        }
+      }
+    },
+    "constraint_member_record": {
+      "type": "object",
+      "description": "The record form of a member: the two declared facts, and nothing else. It is its own $def so the API-surface check can compare it against `Member` / `ConstraintMember` field by field.",
+      "required": [
+        "name"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "when": {
+          "enum": [
+            "present",
+            "true",
+            "non_empty"
+          ]
+        }
+      }
+    },
+    "constraint_member": {
+      "description": "One operand of a co-occurrence constraint (contract §26.2), referenced BY NAME. A member declares no `kind`: registration resolves the name against the command's flags, args and other constraints, which is item 200's declaration-versus-published-fact distinction and is what keeps errConstraintMemberAmbiguous spellable at all. `when` is OMITTED when not declared -- the omission is a declaration state of its own, which §26.3's bool refusal reads. A bare string is a member entry a case may still write on purpose: it is the covering input for errConstraintMemberNotRecord, which Python and TypeScript reach and Go cannot express.",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/constraint_member_record"
+        },
+        {
+          "type": "string"
+        }
+      ]
+    },
+    "at_least_one": {
+      "type": "object",
+      "description": "At least one member is engaged (contract §26.1). Members MAY co-occur; there is no upper bound and this is never exclusivity. `members` may carry fewer than two entries on purpose -- that is errConstraintMinMembers's covering input, which Go's two-named-parameter constructor makes a compile error rather than a message.",
+      "required": [
+        "type",
+        "name",
+        "members"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "at_least_one"
+        },
+        "name": {
+          "type": "string"
+        },
+        "members": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/constraint_member"
+          }
+        }
+      }
+    },
+    "all_or_none": {
+      "type": "object",
+      "description": "Every member is engaged or none is (contract §26.1); vacuously satisfied with nothing engaged. This family absorbed the deleted `co_required`, which went the way `mutex` went.",
+      "required": [
+        "type",
+        "name",
+        "members"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "all_or_none"
+        },
+        "name": {
+          "type": "string"
+        },
+        "members": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/constraint_member"
+          }
+        }
+      }
+    },
+    "requires": {
+      "type": "object",
+      "description": "One-way dependency, semantics untouched by §26 (§26.13): flags only, by name, at root scope -- no args, no nesting, no `when`.",
+      "required": [
+        "type",
+        "name",
+        "flag",
+        "depends_on"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "requires"
+        },
+        "name": {
+          "type": "string"
+        },
+        "flag": {
+          "type": "string"
+        },
+        "depends_on": {
+          "type": "string"
+        }
+      }
+    },
+    "implies": {
+      "type": "object",
+      "description": "Value injection, semantics untouched by §26 (§26.13), including the injection order: it resolves before the co-occurrence families, so an implied value can engage a member.",
+      "required": [
+        "type",
+        "name",
+        "flag",
+        "implies",
+        "value"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "implies"
+        },
+        "name": {
+          "type": "string"
+        },
+        "flag": {
+          "type": "string"
+        },
+        "implies": {
+          "type": "string"
+        },
+        "value": {
+          "type": "boolean"
+        }
+      }
+    },
+    "constraint": {
+      "description": "One entry of the `constraints` command key (contract §26, case encoding ratified as §13's surface by §18.31 item 291). Every entry carries a mandatory `name` and a `type` from §25.7's four values.",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/at_least_one"
+        },
+        {
+          "$ref": "#/$defs/all_or_none"
+        },
+        {
+          "$ref": "#/$defs/requires"
+        },
+        {
+          "$ref": "#/$defs/implies"
+        }
+      ]
+    },
+    "config_field_def": {
+      "type": "object",
+      "required": [
+        "name",
+        "type",
+        "help"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "str",
+            "int",
+            "float",
+            "bool"
+          ]
+        },
+        "help": {
+          "type": "string"
+        },
+        "default": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "expect": {
+      "type": "object",
+      "required": [
+        "exit_code"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "exit_code": {
+          "type": "integer"
+        },
+        "stdout_contains": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ],
+          "description": "Substring(s) that must appear in stdout."
+        },
+        "stdout_equals": {
+          "type": "string",
+          "description": "Exact stdout content."
+        },
+        "stdout_matches": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ],
+          "description": "Regex pattern(s) that must match (re.search) somewhere in stdout. For non-deterministic content like durations."
+        },
+        "stderr_matches": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ],
+          "description": "Regex pattern(s) that must match (re.search) somewhere in stderr."
+        },
+        "stderr_contains": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ],
+          "description": "Substring(s) that must appear in stderr."
+        },
+        "stderr_equals": {
+          "type": "string",
+          "description": "Exact stderr content."
+        },
+        "stdout_not_contains": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ],
+          "description": "Substring(s) that must NOT appear in stdout."
+        },
+        "stderr_not_contains": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ],
+          "description": "Substring(s) that must NOT appear in stderr."
+        },
+        "config_file_contains": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ],
+          "description": "Substring(s) that must appear in the seeded config file after the run (reads the config_content / config_content_late temp file)."
+        },
+        "config_file_not_contains": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ],
+          "description": "Substring(s) that must NOT appear in the seeded config file after the run."
+        },
+        "config_file_matches": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ],
+          "description": "Regex pattern(s) that must match (re.search) somewhere in the seeded config file after the run. Useful for asserting key ordering."
+        },
+        "effects_equals": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/effect_record"
+          },
+          "description": "Deep-equality assertion against the structured effect log the run produced (effects contract §14.1). Comparison is STRUCTURAL over the parsed JSON arrays, in order: key order is never compared, key sets are compared as sets (failing fast on the first difference), and values recurse. Absent optional keys and explicit-null keys are equivalent. 'recorded' is required on every record and is therefore never absent. An expected value of the string '$ANY' matches any actual value of any type -- the per-field wildcard for a field whose value is nondeterministic by construction (a continuation signature, a timestamp), where the contract is that the field is present, not what it holds."
+        },
+        "schema_command_keys": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object"
+          },
+          "description": "Per-command key assertions against the help document a help --json run printed. Maps a dotted command path (groups then command, e.g. 'release.run') to the keys that entry must carry, with their expected values. Values are compared structurally by the same comparator effects_equals uses, so '$ANY' is the per-field wildcard here too: it asserts the key's presence and nothing about its content. Requires help ... --json in the case argv."
+        },
+        "schema_command_absent_keys": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "description": "The mirror of schema_command_keys: maps a dotted command path to keys that must NOT appear on that entry. Pins the emit-when-declared contract (a key omitted by one implementation and emitted with a default value by another is a silent divergence). Requires help ... --json in the case argv."
+        },
+        "schema_bytes_equal": {
+          "type": "string",
+          "description": "The WHOLE bytes of the help document a help --json run printed (contract §25.8's byte canon), apart from the project_id line, which names each target's own program and must be present. Key order, escaping, number form, two-space indentation and the single trailing newline are all part of the contract after schema v2, so the assertion compares the document as text rather than parsing it first. Requires help ... --json in the case argv."
+        }
+      }
+    }
+  }
+}

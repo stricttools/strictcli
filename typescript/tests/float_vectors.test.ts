@@ -19,7 +19,9 @@ const vectorsPath = join(
 	"..",
 	"..",
 	"..",
-	"conformance",
+	"go",
+	"strictcli",
+	"testdata",
 	"float_vectors.json",
 );
 

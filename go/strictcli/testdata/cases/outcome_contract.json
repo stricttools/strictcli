@@ -1,0 +1,113 @@
+[
+  {
+    "name": "outcome: exit-only return sets the process exit code",
+    "app": {
+      "name": "outcomeapp",
+      "version": "1.0.0",
+      "help": "Test the Outcome return contract",
+      "commands": [
+        {
+          "name": "run",
+          "help": "Return an exit-only outcome",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "exit",
+            "code": 3
+          }
+        }
+      ]
+    },
+    "argv": [
+      "run"
+    ],
+    "expect": {
+      "exit_code": 3,
+      "stdout_equals": ""
+    }
+  },
+  {
+    "name": "outcome: the machine payload prints one compact JSON line in machine mode (byte-identical across languages)",
+    "app": {
+      "name": "outcomeapp",
+      "version": "1.0.0",
+      "help": "Test the Outcome data contract",
+      "commands": [
+        {
+          "name": "run",
+          "help": "Return a data-only outcome",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "data",
+            "data": {
+              "count": 3,
+              "name": "strictcli"
+            }
+          }
+        }
+      ]
+    },
+    "argv": [
+      "run",
+      "--json"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "{\"interface_version\":3,\"app\":\"outcomeapp\",\"app_version\":\"1.0.0\",\"command\":\"run\",\"exit_code\":0,\"payload\":{\"count\":3,\"name\":\"strictcli\"},\"output\":null,\"dry_run\":false,\"writes\":null,\"preview\":[],\"preview_error\":null,\"diagnostics\":[]}"
+    }
+  },
+  {
+    "name": "outcome: a payload plus an exit code prints the payload AND sets the code",
+    "app": {
+      "name": "outcomeapp",
+      "version": "1.0.0",
+      "help": "Test exit+data outcome",
+      "commands": [
+        {
+          "name": "run",
+          "help": "Return an exit+data outcome",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "exit_data",
+            "code": 2,
+            "data": {
+              "ok": false
+            }
+          }
+        }
+      ]
+    },
+    "argv": [
+      "run",
+      "--json"
+    ],
+    "expect": {
+      "exit_code": 2,
+      "stdout_equals": "{\"interface_version\":3,\"app\":\"outcomeapp\",\"app_version\":\"1.0.0\",\"command\":\"run\",\"exit_code\":2,\"payload\":{\"ok\":false},\"output\":null,\"dry_run\":false,\"writes\":null,\"preview\":[],\"preview_error\":null,\"diagnostics\":[]}"
+    }
+  },
+  {
+    "name": "outcome: None return (Python) / Exit(0) (Go) exits 0 with no data",
+    "app": {
+      "name": "outcomeapp",
+      "version": "1.0.0",
+      "help": "Test None-return outcome",
+      "commands": [
+        {
+          "name": "run",
+          "help": "Return None / Exit(0)",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "none"
+          }
+        }
+      ]
+    },
+    "argv": [
+      "run"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": ""
+    }
+  }
+]

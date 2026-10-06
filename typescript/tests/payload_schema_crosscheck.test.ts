@@ -29,7 +29,9 @@ const vectorsPath = join(
 	"..",
 	"..",
 	"..",
-	"conformance",
+	"go",
+	"strictcli",
+	"testdata",
 	"payload_schema_vectors.json",
 );
 

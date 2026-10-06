@@ -1,0 +1,1088 @@
+[
+  {
+    "name": "selector registration: a choice flag cannot declare optional (go)",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "optional",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver as an email message"
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver as a text message"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "skip_schema_validation": true,
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "error: Flag \"via\": a choice flag cannot declare Optional(): an absent selection is a choice nobody named, so name it as a choice of its own"
+    }
+  },
+  {
+    "name": "selector registration: a duplicate choice name is refused",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver as an email message"
+                },
+                {
+                  "name": "email",
+                  "help": "the same name again"
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver as a text message"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "error: Flag \"via\": choice \"email\" is declared twice"
+    }
+  },
+  {
+    "name": "selector registration: a choice with empty help is refused",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": ""
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver as a text message"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "error: Choice \"email\" of \"via\": help text is required"
+    }
+  },
+  {
+    "name": "selector registration: a scoped flag named choice is reserved",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver as an email message",
+                  "flags": [
+                    {
+                      "name": "choice",
+                      "help": "should be rejected",
+                      "type": "str",
+                      "presence": "optional"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver as a text message"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "error: Choice \"email\" of \"via\": flag name 'choice' is reserved by the framework: it tags the delivered record"
+    }
+  },
+  {
+    "name": "selector registration: a scoped flag named value is reserved",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver as an email message",
+                  "flags": [
+                    {
+                      "name": "value",
+                      "help": "should be rejected",
+                      "type": "str",
+                      "presence": "optional"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver as a text message"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "error: Choice \"email\" of \"via\": flag name 'value' is reserved by the framework: it carries a member-spelled choice's own payload"
+    }
+  },
+  {
+    "name": "selector registration: a scoped flag colliding with a command-level flag",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "subject",
+              "help": "a command-level flag",
+              "type": "str",
+              "presence": "optional"
+            },
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver as an email message",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "subject line",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver as a text message"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "error: Choice \"email\" of \"via\": flag '--subject' collides with a command-level flag of the same name: the scoped one could never be reached"
+    }
+  },
+  {
+    "name": "selector registration: a scoped flag colliding with its own selector's name",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver as an email message",
+                  "flags": [
+                    {
+                      "name": "via",
+                      "help": "should be rejected",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver as a text message"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "error: Choice \"email\" of \"via\": flag '--via' collides with the choice flag's own name"
+    }
+  },
+  {
+    "name": "selector registration: sibling scopes reusing a name with different value shapes",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver as an email message",
+                  "flags": [
+                    {
+                      "name": "depth",
+                      "help": "how deep",
+                      "type": "int",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver as a text message",
+                  "flags": [
+                    {
+                      "name": "depth",
+                      "help": "how deep",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "error: Flag \"via\": flag '--depth' is declared by choices \"email\" and \"sms\" with different value shapes: sibling scopes may reuse a name only with an identical type and arity, because tokenizing '--depth' cannot wait for an election"
+    }
+  },
+  {
+    "name": "selector registration: sibling scopes reusing a name with the same value shape is legal",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "via={via}",
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver as an email message",
+                  "flags": [
+                    {
+                      "name": "depth",
+                      "help": "how deep",
+                      "type": "int",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver as a text message",
+                  "flags": [
+                    {
+                      "name": "depth",
+                      "help": "how deep",
+                      "type": "int",
+                      "presence": "required"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd",
+      "--via",
+      "sms",
+      "--depth",
+      "3"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "via=sms(depth=3)"
+    }
+  },
+  {
+    "name": "selector registration: a short claimed by two simultaneously electable scopes",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "format",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "table",
+                  "help": "a rendered table",
+                  "flags": [
+                    {
+                      "name": "width",
+                      "help": "column width",
+                      "type": "int",
+                      "presence": "required",
+                      "short": "w"
+                    }
+                  ]
+                },
+                {
+                  "name": "raw",
+                  "help": "unrendered output"
+                }
+              ]
+            },
+            {
+              "name": "sink",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "file",
+                  "help": "write to a file",
+                  "flags": [
+                    {
+                      "name": "wrap",
+                      "help": "line wrap",
+                      "type": "int",
+                      "presence": "required",
+                      "short": "w"
+                    }
+                  ]
+                },
+                {
+                  "name": "stdout",
+                  "help": "write to stdout"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "error: command \"cmd\": short '-w' is claimed by '--width' and '--wrap', which can be elected at the same time"
+    }
+  },
+  {
+    "name": "selector registration: a short reused by sibling scopes with different value shapes",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver as an email message",
+                  "flags": [
+                    {
+                      "name": "depth",
+                      "help": "how deep",
+                      "type": "int",
+                      "presence": "required",
+                      "short": "d"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver as a text message",
+                  "flags": [
+                    {
+                      "name": "detail",
+                      "help": "how detailed",
+                      "type": "bool",
+                      "presence": "optional",
+                      "short": "d"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "error: command \"cmd\": short '-d' is claimed by '--depth' and '--detail' with different value shapes: sibling scopes may reuse a short only with an identical type and arity, because tokenizing '-d' cannot wait for an election"
+    }
+  },
+  {
+    "name": "selector registration: a short reused by sibling scopes and also claimed by an election token",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "mode",
+              "help": "how to run",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "aa",
+                  "help": "the first way",
+                  "flags": [
+                    {
+                      "name": "pick",
+                      "help": "which sub-way",
+                      "presence": "required",
+                      "short": "d",
+                      "elect_by": "selector-token",
+                      "choices": [
+                        {
+                          "name": "xx",
+                          "help": "the x sub-way"
+                        },
+                        {
+                          "name": "yy",
+                          "help": "the y sub-way"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "name": "bb",
+                  "help": "the second way",
+                  "flags": [
+                    {
+                      "name": "depth",
+                      "help": "how deep",
+                      "type": "int",
+                      "presence": "required",
+                      "short": "d"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "error: command \"cmd\": short '-d' is reused by sibling scopes and also claimed by '--pick', which elects: an election token is read before any election has happened, so its short cannot be shared"
+    }
+  },
+  {
+    "name": "selector registration: an AllOrNone member naming a scoped flag is refused",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "other",
+              "help": "a command-level flag",
+              "type": "bool",
+              "presence": "default",
+              "default": false
+            },
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver as an email message",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "subject line",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver as a text message"
+                }
+              ]
+            }
+          ],
+          "constraints": [
+            {
+              "type": "all_or_none",
+              "name": "subject-other",
+              "members": [
+                {
+                  "name": "subject"
+                },
+                {
+                  "name": "other",
+                  "when": "true"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "error: command \"cmd\": constraint \"subject-other\" references 'subject', which is declared under '--via email': constraints operate at root scope only"
+    }
+  },
+  {
+    "name": "selector registration: a Requires constraint naming a scoped flag is refused",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "other",
+              "help": "a command-level flag",
+              "type": "bool",
+              "presence": "default",
+              "default": false
+            },
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver as an email message",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "subject line",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver as a text message"
+                }
+              ]
+            }
+          ],
+          "constraints": [
+            {
+              "type": "requires",
+              "name": "other-subject",
+              "flag": "other",
+              "depends_on": "subject"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "error: command \"cmd\": constraint \"other-subject\" references 'subject', which is declared under '--via email': constraints operate at root scope only"
+    }
+  },
+  {
+    "name": "selector registration: an Implies constraint naming a scoped flag is refused",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "other",
+              "help": "a command-level flag",
+              "type": "bool",
+              "presence": "default",
+              "default": false
+            },
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver as an email message",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "subject line",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver as a text message"
+                }
+              ]
+            }
+          ],
+          "constraints": [
+            {
+              "type": "implies",
+              "name": "other-subject",
+              "flag": "other",
+              "implies": "subject",
+              "value": true
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "error: command \"cmd\": constraint \"other-subject\" references 'subject', which is declared under '--via email': constraints operate at root scope only"
+    }
+  },
+  {
+    "name": "selector registration: a member-spelled choice flag cannot carry a short",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "member-flags",
+              "choices": [
+                {
+                  "name": "profile",
+                  "help": "one named profile",
+                  "value": {
+                    "type": "str",
+                    "help": "the profile"
+                  }
+                },
+                {
+                  "name": "all-profiles",
+                  "help": "every profile"
+                }
+              ],
+              "short": "v"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "error: Flag \"via\": a member-spelled choice flag is never typed, so it cannot carry a short: declare the short on a member"
+    }
+  },
+  {
+    "name": "selector registration: a default naming no declared choice (go)",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "default",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver as an email message"
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver as a text message"
+                }
+              ],
+              "default": {
+                "choice": "carrier"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "error: Flag \"via\": Default(carrier) names no declared choice: must be one of: email, sms"
+    }
+  },
+  {
+    "name": "selector registration: a defaulted selection must be complete (go)",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "default",
+              "default": {
+                "choice": "email"
+              },
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver as an email message",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "subject line of the message",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver as a text message"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "error: Flag \"via\": Default(\"email\") elects choice \"email\", whose scope declares the required flag '--subject': a defaulted selection must be complete with nothing typed"
+    }
+  },
+  {
+    "name": "selector registration: a defaulted member must be payload-less (go)",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "target",
+              "help": "which profiles to operate on",
+              "presence": "default",
+              "default": {
+                "choice": "profile"
+              },
+              "elect_by": "member-flags",
+              "choices": [
+                {
+                  "name": "profile",
+                  "help": "one named profile",
+                  "value": {
+                    "type": "str",
+                    "help": "the profile"
+                  }
+                },
+                {
+                  "name": "all-profiles",
+                  "help": "every profile"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "error: Flag \"target\": Default(\"profile\") elects choice \"profile\", whose flag carries a value nothing supplies: only a payload-less member can be a default"
+    }
+  },
+  {
+    "name": "selector registration: a token-spelled choice cannot carry a payload (go)",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver as an email message",
+                  "value": {
+                    "type": "str",
+                    "help": "the address"
+                  }
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver as a text message"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "error: Choice \"email\" of \"via\": a token-spelled choice cannot carry a payload: the token names the choice, and a choice that carries its own value belongs to a member-spelled choice flag, declared with MemberChoiceFlag(...)"
+    }
+  }
+]

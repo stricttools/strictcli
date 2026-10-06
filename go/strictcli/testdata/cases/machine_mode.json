@@ -1,0 +1,686 @@
+[
+  {
+    "name": "machine_mode: a command flag named json is rejected",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "json",
+              "type": "bool",
+              "help": "should be rejected",
+              "presence": "required"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_contains": "flag name 'json' is reserved by the framework: --json selects machine mode"
+    }
+  },
+  {
+    "name": "machine_mode: a global flag named json is rejected",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "json",
+          "type": "bool",
+          "help": "should be rejected",
+          "presence": "required"
+        }
+      ],
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok"
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_contains": "flag name 'json' is reserved by the framework: --json selects machine mode"
+    }
+  },
+  {
+    "name": "machine_mode: a flag-set flag named json is rejected",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flag_sets": [
+            {
+              "name": "common",
+              "flags": [
+                {
+                  "name": "json",
+                  "type": "bool",
+                  "help": "should be rejected",
+                  "presence": "required"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_contains": "flag name 'json' is reserved by the framework: --json selects machine mode"
+    }
+  },
+  {
+    "name": "machine_mode: a SCOPED flag named json is rejected",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "mode",
+              "help": "output mode",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "structured",
+                  "help": "machine output",
+                  "flags": [
+                    {
+                      "name": "json",
+                      "type": "bool",
+                      "help": "should be rejected",
+                      "presence": "optional"
+                    }
+                  ]
+                },
+                {
+                  "name": "text",
+                  "help": "text output"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_contains": "flag name 'json' is reserved by the framework: --json selects machine mode"
+    }
+  },
+  {
+    "name": "machine_mode: an arg named json is unaffected by the ban",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "got {json}",
+          "args": [
+            {
+              "name": "json",
+              "help": "a file named json",
+              "presence": "required"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd",
+      "value"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "got value\n"
+    }
+  },
+  {
+    "name": "machine_mode: the payload is not printed outside machine mode",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "data",
+            "data": {
+              "ok": true
+            }
+          }
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": ""
+    }
+  },
+  {
+    "name": "machine_mode: --json before the command word prints the payload",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "data",
+            "data": {
+              "ok": true
+            }
+          }
+        }
+      ]
+    },
+    "argv": [
+      "--json",
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "{\"interface_version\":3,\"app\":\"myapp\",\"app_version\":\"1.0.0\",\"command\":\"cmd\",\"exit_code\":0,\"payload\":{\"ok\":true},\"output\":null,\"dry_run\":false,\"writes\":null,\"preview\":[],\"preview_error\":null,\"diagnostics\":[]}\n"
+    }
+  },
+  {
+    "name": "machine_mode: --json after the command word prints the payload",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "data",
+            "data": {
+              "ok": true
+            }
+          }
+        }
+      ]
+    },
+    "argv": [
+      "cmd",
+      "--json"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "{\"interface_version\":3,\"app\":\"myapp\",\"app_version\":\"1.0.0\",\"command\":\"cmd\",\"exit_code\":0,\"payload\":{\"ok\":true},\"output\":null,\"dry_run\":false,\"writes\":null,\"preview\":[],\"preview_error\":null,\"diagnostics\":[]}\n"
+    }
+  },
+  {
+    "name": "machine_mode: --json is recognized between a group and its subcommand",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "groups": [
+        {
+          "name": "grp",
+          "help": "a group",
+          "commands": [
+            {
+              "name": "cmd",
+              "help": "a command",
+              "effect": "read_only",
+              "handler_returns": {
+                "kind": "data",
+                "data": {
+                  "ok": true
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "commands": []
+    },
+    "argv": [
+      "grp",
+      "--json",
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "{\"interface_version\":3,\"app\":\"myapp\",\"app_version\":\"1.0.0\",\"command\":\"grp.cmd\",\"exit_code\":0,\"payload\":{\"ok\":true},\"output\":null,\"dry_run\":false,\"writes\":null,\"preview\":[],\"preview_error\":null,\"diagnostics\":[]}\n"
+    }
+  },
+  {
+    "name": "machine_mode: a token after -- is data, never the machine flag",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "rest={rest}",
+          "args": [
+            {
+              "name": "rest",
+              "help": "the rest",
+              "presence": "required",
+              "variadic": true
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd",
+      "--",
+      "--json"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "rest=--json\n"
+    }
+  },
+  {
+    "name": "machine_mode: a passthrough command's args keep the machine flag opaque",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "exec",
+          "help": "run a child",
+          "effect": "read_only",
+          "passthrough": true,
+          "passthrough_handler_prints": "{name}:{args}"
+        }
+      ]
+    },
+    "argv": [
+      "exec",
+      "--json",
+      "child"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "exec:--json,child\n"
+    }
+  },
+  {
+    "name": "machine_mode: the payload survives --quiet (structurally exempt)",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_diagnostics": [
+            {
+              "level": "info",
+              "message": "info-line"
+            }
+          ],
+          "handler_returns": {
+            "kind": "data",
+            "data": {
+              "ok": true
+            }
+          }
+        }
+      ]
+    },
+    "argv": [
+      "--quiet",
+      "--json",
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "{\"interface_version\":3,\"app\":\"myapp\",\"app_version\":\"1.0.0\",\"command\":\"cmd\",\"exit_code\":0,\"payload\":{\"ok\":true},\"output\":null,\"dry_run\":false,\"writes\":null,\"preview\":[],\"preview_error\":null,\"diagnostics\":[{\"level\":\"info\",\"message\":\"info-line\"}]}\n"
+    }
+  },
+  {
+    "name": "machine_mode: the payload's escaping is plain UTF-8 with no HTML escaping",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "data",
+            "data": {
+              "text": "héllo <b>&</b> 日本語 — ünïcode"
+            }
+          }
+        }
+      ]
+    },
+    "argv": [
+      "cmd",
+      "--json"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "{\"interface_version\":3,\"app\":\"myapp\",\"app_version\":\"1.0.0\",\"command\":\"cmd\",\"exit_code\":0,\"payload\":{\"text\":\"héllo <b>&</b> 日本語 — ünïcode\"},\"output\":null,\"dry_run\":false,\"writes\":null,\"preview\":[],\"preview_error\":null,\"diagnostics\":[]}\n"
+    }
+  },
+  {
+    "name": "machine_mode: check's machine output survives --quiet",
+    "app": {
+      "name": "testapp",
+      "version": "1.0.0",
+      "help": "test",
+      "commands": [],
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ndescription = \"Checks lint\"\nsubject = \"quality\"\ntags = [\"release\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n",
+      "checks": [
+        {
+          "name": "lint",
+          "mint": "passed",
+          "message": "all good"
+        }
+      ]
+    },
+    "argv": [
+      "check",
+      "--list",
+      "--json",
+      "--quiet"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_contains": [
+        "\"name\"",
+        "\"severity\"",
+        "lint"
+      ]
+    }
+  },
+  {
+    "name": "machine_mode: config show's machine output survives --quiet",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "config": true,
+      "commands": [
+        {
+          "name": "run",
+          "help": "run",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "count",
+              "type": "int",
+              "help": "a count",
+              "presence": "default",
+              "default": 0
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "config",
+      "show",
+      "--json",
+      "--quiet"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_contains": [
+        "\"count\"",
+        "\"source\":\"default\""
+      ]
+    }
+  },
+  {
+    "name": "machine_mode: a payload matching its declared schema rides the envelope",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "payload_schema": {
+            "type": "object",
+            "properties": {
+              "ok": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "ok"
+            ],
+            "additionalProperties": false
+          },
+          "handler_returns": {
+            "kind": "data",
+            "data": {
+              "ok": true
+            }
+          }
+        }
+      ]
+    },
+    "argv": [
+      "cmd",
+      "--json"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "{\"interface_version\":3,\"app\":\"myapp\",\"app_version\":\"1.0.0\",\"command\":\"cmd\",\"exit_code\":0,\"payload\":{\"ok\":true},\"output\":null,\"dry_run\":false,\"writes\":null,\"preview\":[],\"preview_error\":null,\"diagnostics\":[]}\n"
+    }
+  },
+  {
+    "name": "machine_mode: config path emits one envelope carrying its line as a diagnostic",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "config": true,
+      "commands": [
+        {
+          "name": "run",
+          "help": "run",
+          "effect": "read_only",
+          "handler_prints": "ok"
+        }
+      ]
+    },
+    "argv": [
+      "--json",
+      "config",
+      "path"
+    ],
+    "env": {
+      "XDG_CONFIG_HOME": "/tmp/fake-config"
+    },
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "{\"interface_version\":3,\"app\":\"myapp\",\"app_version\":\"1.0.0\",\"command\":\"config.path\",\"exit_code\":0,\"payload\":null,\"output\":null,\"dry_run\":false,\"writes\":null,\"preview\":[],\"preview_error\":null,\"diagnostics\":[{\"level\":\"info\",\"message\":\"/tmp/fake-config/myapp/config.json\"}]}\n"
+    }
+  },
+  {
+    "name": "machine_mode: config init's created path rides the envelope, not a second document",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "config": true,
+      "commands": [
+        {
+          "name": "run",
+          "help": "run",
+          "effect": "read_only",
+          "handler_prints": "ok"
+        }
+      ]
+    },
+    "argv": [
+      "--json",
+      "--dry-run",
+      "config",
+      "init"
+    ],
+    "env": {
+      "XDG_CONFIG_HOME": "/tmp/strictcli-conformance-absent"
+    },
+    "expect": {
+      "exit_code": 0,
+      "stdout_matches": "^\\{\"interface_version\":3,[^\\n]*\\}\\n?\\z",
+      "stdout_contains": [
+        "\"dry_run\":true",
+        "\"level\":\"info\",\"message\":\"/tmp/strictcli-conformance-absent/myapp/config.json\""
+      ]
+    }
+  },
+  {
+    "name": "machine_mode: check with no flags emits one envelope with the help text as a diagnostic",
+    "app": {
+      "name": "testapp",
+      "version": "1.0.0",
+      "help": "test",
+      "commands": [],
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ndescription = \"Checks lint\"\nsubject = \"quality\"\ntags = [\"release\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n",
+      "checks": [
+        {
+          "name": "lint",
+          "mint": "passed",
+          "message": "all good"
+        }
+      ]
+    },
+    "argv": [
+      "--json",
+      "check"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_matches": "^\\{\"interface_version\":3,[^\\n]*\\}\\n?\\z",
+      "stdout_contains": [
+        "\"command\":\"check\"",
+        "\"level\":\"info\"",
+        "Run project checks registered via the check framework"
+      ]
+    }
+  },
+  {
+    "name": "machine_mode: check with no matching tag emits one envelope, not a second line",
+    "app": {
+      "name": "testapp",
+      "version": "1.0.0",
+      "help": "test",
+      "commands": [],
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ndescription = \"Checks lint\"\nsubject = \"quality\"\ntags = [\"release\"]\nseverity = \"error\"\nfast = true\npure = true\nneeds_network = false\ndepends_on = []\n",
+      "checks": [
+        {
+          "name": "lint",
+          "mint": "passed",
+          "message": "all good"
+        }
+      ]
+    },
+    "argv": [
+      "--json",
+      "check",
+      "--tag",
+      "nonexistent"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "{\"interface_version\":3,\"app\":\"testapp\",\"app_version\":\"1.0.0\",\"command\":\"check\",\"exit_code\":0,\"payload\":null,\"output\":null,\"dry_run\":false,\"writes\":null,\"preview\":[],\"preview_error\":null,\"diagnostics\":[{\"level\":\"info\",\"message\":\"No checks matched the given filters.\"}]}\n"
+    }
+  },
+  {
+    "name": "machine_mode: a dry check run emits one envelope carrying its plan as a diagnostic",
+    "app": {
+      "name": "testapp",
+      "version": "1.0.0",
+      "help": "test",
+      "commands": [],
+      "checks_toml": "app = \"testapp\"\n[checks.lint]\ndescription = \"Checks lint\"\nsubject = \"quality\"\ntags = [\"release\"]\nseverity = \"error\"\nfast = true\npure = false\nneeds_network = false\ndepends_on = []\n",
+      "checks": [
+        {
+          "name": "lint",
+          "mint": "passed",
+          "message": "all good"
+        }
+      ]
+    },
+    "argv": [
+      "--json",
+      "--dry-run",
+      "check",
+      "--tag",
+      "release"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "{\"interface_version\":3,\"app\":\"testapp\",\"app_version\":\"1.0.0\",\"command\":\"check\",\"exit_code\":0,\"payload\":[],\"output\":null,\"dry_run\":true,\"writes\":null,\"preview\":[],\"preview_error\":null,\"diagnostics\":[{\"level\":\"info\",\"message\":\"Would run 1 check:\\n  1. lint [impure]\"}]}\n"
+    }
+  }
+]

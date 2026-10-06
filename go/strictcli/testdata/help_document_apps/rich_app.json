@@ -1,0 +1,628 @@
+{
+  "name": "richapp",
+  "version": "2.5.0",
+  "help": "A comprehensive test app for schema parity",
+  "env_prefix": "RICH",
+  "config": true,
+  "infra_root": {
+    "RICH_HOME": "/var/lib/richapp"
+  },
+  "handshake_env": {
+    "RICH_SESSION": "Session token from the invoking process"
+  },
+  "proc_observe_allowlist": [
+    [
+      "git",
+      "status"
+    ],
+    [
+      "git",
+      "rev-parse"
+    ]
+  ],
+  "global_flags": [
+    {
+      "name": "trace",
+      "type": "bool",
+      "help": "Enable trace output",
+      "presence": "default",
+      "short": "V",
+      "default": false
+    },
+    {
+      "name": "log-level",
+      "type": "str",
+      "help": "Logging level",
+      "presence": "default",
+      "default": "info",
+      "env": "RICH_LOG_LEVEL",
+      "choices_str": [
+        {
+          "value": "debug",
+          "help": "Everything, including internals"
+        },
+        {
+          "value": "info"
+        },
+        {
+          "value": "warn"
+        },
+        {
+          "value": "error"
+        }
+      ]
+    },
+    {
+      "name": "state-file",
+      "type": "str",
+      "help": "State file relative to the infra root",
+      "presence": "default",
+      "default_relative_to_root": {
+        "env_var": "RICH_HOME",
+        "parts": [
+          "state",
+          "app.db"
+        ]
+      }
+    }
+  ],
+  "commands": [
+    {
+      "name": "types",
+      "help": "Test all flag types",
+      "effect": "read_only",
+      "handler_prints": "types",
+      "flags": [
+        {
+          "name": "name",
+          "type": "str",
+          "help": "A string flag",
+          "presence": "default",
+          "default": "world"
+        },
+        {
+          "name": "count",
+          "type": "int",
+          "help": "An integer flag",
+          "presence": "default",
+          "default": 42
+        },
+        {
+          "name": "ratio",
+          "type": "float",
+          "help": "A float flag",
+          "presence": "default",
+          "default": 3.14
+        },
+        {
+          "name": "simulate",
+          "type": "bool",
+          "help": "Simulate without applying",
+          "presence": "required"
+        },
+        {
+          "name": "cache-file",
+          "type": "str",
+          "help": "Cache file relative to the infra root",
+          "presence": "default",
+          "default_relative_to_root": {
+            "env_var": "RICH_HOME",
+            "parts": [
+              "cache.bin"
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "target",
+          "help": "Target to process",
+          "presence": "required"
+        }
+      ]
+    },
+    {
+      "name": "multi",
+      "help": "Test repeatable flags",
+      "effect": "read_only",
+      "handler_prints": "multi",
+      "flags": [
+        {
+          "name": "tag",
+          "type": "str",
+          "help": "Tags to apply",
+          "presence": "required",
+          "repeatable": true,
+          "unique": true,
+          "env": "RICH_TAGS",
+          "env_separator": ","
+        },
+        {
+          "name": "port",
+          "type": "int",
+          "help": "Ports to open",
+          "presence": "default",
+          "repeatable": true,
+          "unique": false,
+          "default": [
+            80,
+            443
+          ]
+        }
+      ]
+    },
+    {
+      "name": "output",
+      "help": "Test the selector construct",
+      "effect": "read_only",
+      "handler_prints": "output",
+      "flags": [
+        {
+          "name": "sink",
+          "help": "Where the output goes",
+          "short": "k",
+          "presence": "default",
+          "default": {
+            "choice": "stdout"
+          },
+          "elect_by": "selector-token",
+          "choices": [
+            {
+              "name": "stdout",
+              "help": "Write to standard output"
+            },
+            {
+              "name": "file",
+              "help": "Write to a file on disk",
+              "flags": [
+                {
+                  "name": "path",
+                  "type": "str",
+                  "help": "Where to write",
+                  "presence": "required"
+                },
+                {
+                  "name": "rotate",
+                  "type": "int",
+                  "help": "How many files to keep",
+                  "presence": "default",
+                  "default": 5
+                },
+                {
+                  "name": "headers",
+                  "type": "dict[str,str]",
+                  "help": "Extra headers to write",
+                  "presence": "default",
+                  "default": {}
+                },
+                {
+                  "name": "encoding",
+                  "help": "How the file is encoded",
+                  "presence": "required",
+                  "elect_by": "selector-token",
+                  "choices": [
+                    {
+                      "name": "utf8",
+                      "help": "UTF-8 text"
+                    },
+                    {
+                      "name": "binary",
+                      "help": "Raw bytes",
+                      "flags": [
+                        {
+                          "name": "chunk",
+                          "type": "int",
+                          "help": "Bytes per write",
+                          "presence": "default",
+                          "default": 4096
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "audience",
+          "help": "Who the output is for",
+          "presence": "required",
+          "elect_by": "member-flags",
+          "choices": [
+            {
+              "name": "operator",
+              "help": "One named operator",
+              "value": {
+                "type": "str",
+                "help": "One named operator",
+                "short": "o"
+              },
+              "flags": [
+                {
+                  "name": "notify",
+                  "type": "bool",
+                  "help": "Send a notification too",
+                  "presence": "default",
+                  "default": false
+                }
+              ]
+            },
+            {
+              "name": "everyone",
+              "help": "Every subscriber",
+              "short": "e"
+            }
+          ]
+        },
+        {
+          "name": "labels",
+          "type": "list[str]",
+          "help": "Labels to attach",
+          "presence": "default",
+          "unique": false,
+          "default": []
+        },
+        {
+          "name": "limits",
+          "type": "dict[str,int]",
+          "help": "Per-stream limits",
+          "presence": "optional"
+        }
+      ],
+      "args": [
+        {
+          "name": "level",
+          "type": "str",
+          "help": "How loud to be",
+          "presence": "default",
+          "default": "normal",
+          "choices_str": [
+            {
+              "value": "quiet",
+              "help": "Say as little as possible"
+            },
+            {
+              "value": "normal"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "deploy",
+      "help": "Test constraints",
+      "effect": "mutating",
+      "consequential": true,
+      "grants": [
+        {
+          "name": "push",
+          "reason": "release engine owns remote refs",
+          "kind": "proc_mutate"
+        },
+        {
+          "name": "write-manifest",
+          "reason": "the deploy manifest is regenerated in place",
+          "kind": "file_write"
+        }
+      ],
+      "handler_prints": "deploy",
+      "flags": [
+        {
+          "name": "host",
+          "type": "str",
+          "help": "Deploy host",
+          "presence": "optional"
+        },
+        {
+          "name": "port-num",
+          "type": "int",
+          "help": "Deploy port",
+          "presence": "optional"
+        },
+        {
+          "name": "ssl",
+          "type": "bool",
+          "help": "Use SSL",
+          "presence": "required"
+        },
+        {
+          "name": "cert",
+          "type": "str",
+          "help": "SSL certificate path",
+          "presence": "optional"
+        }
+      ],
+      "args": [
+        {
+          "name": "regions",
+          "help": "Regions to deploy to",
+          "presence": "optional",
+          "variadic": true
+        }
+      ],
+      "constraints": [
+        {
+          "type": "all_or_none",
+          "name": "endpoint",
+          "members": [
+            {
+              "name": "host"
+            },
+            {
+              "name": "port-num"
+            }
+          ]
+        },
+        {
+          "type": "at_least_one",
+          "name": "deploy-selection",
+          "members": [
+            {
+              "name": "regions",
+              "when": "non_empty"
+            },
+            {
+              "name": "endpoint"
+            },
+            {
+              "name": "cert"
+            }
+          ]
+        },
+        {
+          "type": "requires",
+          "name": "cert-ssl",
+          "flag": "cert",
+          "depends_on": "ssl"
+        }
+      ]
+    },
+    {
+      "name": "notify",
+      "help": "Test the implies constraint",
+      "effect": "mutating",
+      "consequential": true,
+      "dry_run_supported": false,
+      "dry_run_unsupported_reason": "the alert it raises decides who is paged next",
+      "handler_prints": "notify",
+      "flags": [
+        {
+          "name": "email",
+          "type": "bool",
+          "help": "Send email notification",
+          "presence": "required"
+        },
+        {
+          "name": "alert",
+          "type": "bool",
+          "help": "Enable alerts",
+          "presence": "required"
+        }
+      ],
+      "constraints": [
+        {
+          "type": "implies",
+          "name": "email-alert",
+          "flag": "email",
+          "implies": "alert",
+          "value": true
+        }
+      ]
+    },
+    {
+      "name": "query",
+      "help": "Test flag sets",
+      "effect": "read_only",
+      "handler_prints": "query",
+      "flag_sets": [
+        {
+          "name": "pagination",
+          "flags": [
+            {
+              "name": "page",
+              "type": "int",
+              "help": "Page number",
+              "presence": "default",
+              "default": 1
+            },
+            {
+              "name": "per-page",
+              "type": "int",
+              "help": "Items per page",
+              "presence": "default",
+              "default": 20
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "files",
+      "help": "Test args",
+      "effect": "read_only",
+      "handler_prints": "files",
+      "args": [
+        {
+          "name": "src",
+          "help": "Source directory",
+          "presence": "required"
+        },
+        {
+          "name": "extra",
+          "help": "Extra files",
+          "presence": "optional",
+          "variadic": true
+        }
+      ]
+    },
+    {
+      "name": "exec",
+      "help": "Execute a command",
+      "effect": "mutating",
+      "passthrough": true,
+      "handler_prints": "exec",
+      "passthrough_handler_prints": "exec:{name}:{args}"
+    },
+    {
+      "name": "lint",
+      "help": "Run linters",
+      "effect": "read_only",
+      "forwarding": {
+        "reason": "wraps the underlying linter's own flags"
+      },
+      "handler_prints": "lint",
+      "tags": [
+        "quality",
+        "ci"
+      ]
+    },
+    {
+      "name": "old-cmd",
+      "help": "Deprecated command",
+      "deprecated": true,
+      "deprecated_message": "Use 'new-cmd' instead"
+    },
+    {
+      "name": "level",
+      "help": "Test int/float choices",
+      "effect": "read_only",
+      "handler_prints": "level",
+      "flags": [
+        {
+          "name": "priority",
+          "type": "int",
+          "help": "Priority level",
+          "presence": "default",
+          "choices_int": [
+            {
+              "value": 1,
+              "help": "The lowest level"
+            },
+            {
+              "value": 2
+            },
+            {
+              "value": 3
+            },
+            {
+              "value": 4
+            },
+            {
+              "value": 5
+            }
+          ],
+          "default": 3
+        },
+        {
+          "name": "threshold",
+          "type": "float",
+          "help": "Threshold value",
+          "presence": "default",
+          "choices_float": [
+            {
+              "value": 0.1
+            },
+            {
+              "value": 0.5
+            },
+            {
+              "value": 0.9,
+              "help": "Almost everything"
+            }
+          ],
+          "default": 0.5
+        }
+      ]
+    },
+    {
+      "name": "info",
+      "help": "Show info",
+      "effect": "read_only",
+      "handler_prints": "info",
+      "flags": [
+        {
+          "name": "format",
+          "type": "str",
+          "help": "Output format",
+          "presence": "default",
+          "short": "f",
+          "default": "table",
+          "prefixed": true
+        },
+        {
+          "name": "color-off",
+          "type": "bool",
+          "help": "Disable colors",
+          "presence": "required",
+          "negatable": false
+        }
+      ]
+    }
+  ],
+  "groups": [
+    {
+      "name": "db",
+      "help": "Database operations",
+      "tags": [
+        "infra"
+      ],
+      "commands": [
+        {
+          "name": "migrate",
+          "help": "Run migrations",
+          "effect": "mutating",
+          "handler_prints": "migrate",
+          "flags": [
+            {
+              "name": "steps",
+              "type": "int",
+              "help": "Migration steps",
+              "presence": "optional"
+            }
+          ]
+        },
+        {
+          "name": "seed",
+          "help": "Seed database",
+          "effect": "mutating",
+          "handler_prints": "seed"
+        },
+        {
+          "name": "reset",
+          "help": "Reset database",
+          "deprecated": true,
+          "deprecated_message": "Use 'db migrate --steps -1' instead"
+        }
+      ],
+      "groups": [
+        {
+          "name": "cache",
+          "help": "Cache operations",
+          "commands": [
+            {
+              "name": "clear",
+              "help": "Clear cache",
+              "effect": "mutating",
+              "handler_prints": "clear"
+            },
+            {
+              "name": "stats",
+              "help": "Show cache stats",
+              "effect": "read_only",
+              "handler_prints": "stats",
+              "flags": [
+                {
+                  "name": "detailed",
+                  "type": "bool",
+                  "help": "Show detailed stats",
+                  "presence": "required"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

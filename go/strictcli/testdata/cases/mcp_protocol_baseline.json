@@ -1,0 +1,549 @@
+[
+  {
+    "name": "mcp_baseline: tools/list publishes one tool per leaf command, named by its dotted path",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "status",
+          "help": "show status",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "data",
+            "data": {
+              "ok": true
+            }
+          }
+        }
+      ],
+      "groups": [
+        {
+          "name": "dns",
+          "help": "manage DNS",
+          "commands": [
+            {
+              "name": "zone-list",
+              "help": "list DNS zones",
+              "effect": "read_only",
+              "handler_returns": {
+                "kind": "data",
+                "data": {
+                  "zones": 1
+                }
+              }
+            }
+          ],
+          "groups": [
+            {
+              "name": "zone",
+              "help": "manage zones",
+              "commands": [
+                {
+                  "name": "create",
+                  "help": "create a zone",
+                  "effect": "read_only",
+                  "handler_returns": {
+                    "kind": "data",
+                    "data": {
+                      "created": true
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\",\"params\":{\"_meta\":{\"io.modelcontextprotocol/protocolVersion\":\"2026-07-28\",\"io.modelcontextprotocol/clientCapabilities\":{}}}}",
+        "expect_line": {
+          "json_equals": {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "result": {
+              "resultType": "complete",
+              "tools": [
+                {
+                  "name": "status",
+                  "description": "show status",
+                  "effect": "read_only",
+                  "inputSchema": {
+                    "type": "object",
+                    "properties": {},
+                    "required": [],
+                    "additionalProperties": false
+                  }
+                },
+                {
+                  "name": "dns.zone-list",
+                  "description": "list DNS zones",
+                  "effect": "read_only",
+                  "inputSchema": {
+                    "type": "object",
+                    "properties": {},
+                    "required": [],
+                    "additionalProperties": false
+                  }
+                },
+                {
+                  "name": "dns.zone.create",
+                  "description": "create a zone",
+                  "effect": "read_only",
+                  "inputSchema": {
+                    "type": "object",
+                    "properties": {},
+                    "required": [],
+                    "additionalProperties": false
+                  }
+                }
+              ],
+              "ttlMs": 3600000,
+              "cacheScope": "public",
+              "_meta": {
+                "io.modelcontextprotocol/serverInfo": {
+                  "name": "myapp",
+                  "version": "1.0.0"
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "mcp_baseline: tools/call reaches a nested command by its dotted path",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "status",
+          "help": "show status",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "data",
+            "data": {
+              "ok": true
+            }
+          }
+        }
+      ],
+      "groups": [
+        {
+          "name": "dns",
+          "help": "manage DNS",
+          "commands": [
+            {
+              "name": "zone-list",
+              "help": "list DNS zones",
+              "effect": "read_only",
+              "handler_returns": {
+                "kind": "data",
+                "data": {
+                  "zones": 1
+                }
+              }
+            }
+          ],
+          "groups": [
+            {
+              "name": "zone",
+              "help": "manage zones",
+              "commands": [
+                {
+                  "name": "create",
+                  "help": "create a zone",
+                  "effect": "read_only",
+                  "handler_returns": {
+                    "kind": "data",
+                    "data": {
+                      "created": true
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/call\",\"params\":{\"_meta\":{\"io.modelcontextprotocol/protocolVersion\":\"2026-07-28\",\"io.modelcontextprotocol/clientCapabilities\":{}},\"name\":\"dns.zone.create\",\"arguments\":{}}}",
+        "expect_line": {
+          "json_equals": {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "result": {
+              "resultType": "complete",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "$ANY"
+                }
+              ],
+              "_meta": {
+                "io.modelcontextprotocol/serverInfo": {
+                  "name": "myapp",
+                  "version": "1.0.0"
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "mcp_baseline: an unknown tool is a tool-result error naming what the caller sent",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "status",
+          "help": "show status",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "data",
+            "data": {
+              "ok": true
+            }
+          }
+        }
+      ],
+      "groups": [
+        {
+          "name": "dns",
+          "help": "manage DNS",
+          "commands": [
+            {
+              "name": "zone-list",
+              "help": "list DNS zones",
+              "effect": "read_only",
+              "handler_returns": {
+                "kind": "data",
+                "data": {
+                  "zones": 1
+                }
+              }
+            }
+          ],
+          "groups": [
+            {
+              "name": "zone",
+              "help": "manage zones",
+              "commands": [
+                {
+                  "name": "create",
+                  "help": "create a zone",
+                  "effect": "read_only",
+                  "handler_returns": {
+                    "kind": "data",
+                    "data": {
+                      "created": true
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/call\",\"params\":{\"_meta\":{\"io.modelcontextprotocol/protocolVersion\":\"2026-07-28\",\"io.modelcontextprotocol/clientCapabilities\":{}},\"name\":\"no_such_tool\",\"arguments\":{}}}",
+        "expect_line": {
+          "json_equals": {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "result": {
+              "resultType": "complete",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "unknown command 'no_such_tool'"
+                }
+              ],
+              "isError": true,
+              "_meta": {
+                "io.modelcontextprotocol/serverInfo": {
+                  "name": "myapp",
+                  "version": "1.0.0"
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "mcp_baseline: protocol errors for a malformed line, an unknown method and bad params",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "status",
+          "help": "show status",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "data",
+            "data": {
+              "ok": true
+            }
+          }
+        }
+      ],
+      "groups": [
+        {
+          "name": "dns",
+          "help": "manage DNS",
+          "commands": [
+            {
+              "name": "zone-list",
+              "help": "list DNS zones",
+              "effect": "read_only",
+              "handler_returns": {
+                "kind": "data",
+                "data": {
+                  "zones": 1
+                }
+              }
+            }
+          ],
+          "groups": [
+            {
+              "name": "zone",
+              "help": "manage zones",
+              "commands": [
+                {
+                  "name": "create",
+                  "help": "create a zone",
+                  "effect": "read_only",
+                  "handler_returns": {
+                    "kind": "data",
+                    "data": {
+                      "created": true
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{not json",
+        "expect_line": {
+          "json_equals": {
+            "jsonrpc": "2.0",
+            "id": null,
+            "error": {
+              "code": -32700,
+              "message": "Parse error"
+            }
+          }
+        }
+      },
+      {
+        "send": "[1, 2, 3]",
+        "expect_line": {
+          "json_equals": {
+            "jsonrpc": "2.0",
+            "id": null,
+            "error": {
+              "code": -32700,
+              "message": "Parse error"
+            }
+          }
+        }
+      },
+      {
+        "send": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"no/such/method\",\"params\":{\"_meta\":{\"io.modelcontextprotocol/protocolVersion\":\"2026-07-28\",\"io.modelcontextprotocol/clientCapabilities\":{}}}}",
+        "expect_line": {
+          "json_equals": {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "error": {
+              "code": -32601,
+              "message": "Method not found: no/such/method"
+            }
+          }
+        }
+      },
+      {
+        "send": "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/call\",\"params\":{\"_meta\":{\"io.modelcontextprotocol/protocolVersion\":\"2026-07-28\",\"io.modelcontextprotocol/clientCapabilities\":{}}}}",
+        "expect_line": {
+          "json_equals": {
+            "jsonrpc": "2.0",
+            "id": 2,
+            "error": {
+              "code": -32602,
+              "message": "missing required parameter: name"
+            }
+          }
+        }
+      },
+      {
+        "send": "{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"tools/call\",\"params\":{\"_meta\":{\"io.modelcontextprotocol/protocolVersion\":\"2026-07-28\",\"io.modelcontextprotocol/clientCapabilities\":{}},\"name\":7}}",
+        "expect_line": {
+          "json_equals": {
+            "jsonrpc": "2.0",
+            "id": 3,
+            "error": {
+              "code": -32602,
+              "message": "parameter 'name' must be a string"
+            }
+          }
+        }
+      },
+      {
+        "send": "{\"jsonrpc\":\"2.0\",\"id\":4,\"method\":\"tools/call\",\"params\":{\"_meta\":{\"io.modelcontextprotocol/protocolVersion\":\"2026-07-28\",\"io.modelcontextprotocol/clientCapabilities\":{}},\"name\":\"status\",\"arguments\":[]}}",
+        "expect_line": {
+          "json_equals": {
+            "jsonrpc": "2.0",
+            "id": 4,
+            "error": {
+              "code": -32602,
+              "message": "parameter 'arguments' must be an object"
+            }
+          }
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "mcp_baseline: a notification gets no reply and does not desynchronize the loop",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "status",
+          "help": "show status",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "data",
+            "data": {
+              "ok": true
+            }
+          }
+        }
+      ],
+      "groups": [
+        {
+          "name": "dns",
+          "help": "manage DNS",
+          "commands": [
+            {
+              "name": "zone-list",
+              "help": "list DNS zones",
+              "effect": "read_only",
+              "handler_returns": {
+                "kind": "data",
+                "data": {
+                  "zones": 1
+                }
+              }
+            }
+          ],
+          "groups": [
+            {
+              "name": "zone",
+              "help": "manage zones",
+              "commands": [
+                {
+                  "name": "create",
+                  "help": "create a zone",
+                  "effect": "read_only",
+                  "handler_returns": {
+                    "kind": "data",
+                    "data": {
+                      "created": true
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\":\"2.0\",\"method\":\"notifications/initialized\"}"
+      },
+      {
+        "send": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{}}",
+        "expect_line": {
+          "json_equals": {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "result": {
+              "protocolVersion": "2025-11-25",
+              "capabilities": {
+                "tools": {},
+                "experimental": {
+                  "dev.smmh.strictcli/consequential-confirmation": {}
+                }
+              },
+              "serverInfo": {
+                "name": "myapp",
+                "version": "1.0.0"
+              }
+            }
+          }
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  }
+]

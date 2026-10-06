@@ -2,7 +2,7 @@
  * Replays the committed strict-ULID vectors against the TypeScript
  * implementation.
  *
- * The vectors live at conformance/ulid_vectors.json and are authored in
+ * The vectors live at go/strictcli/testdata/ulid_vectors.json and are authored in
  * conformance/gen_ulid_vectors.py -- not derived from any implementation. The
  * Python and Go suites replay the same file, which is what pins the profile
  * (docs/process-trace-store.md, "Identifiers") across three independent
@@ -28,7 +28,9 @@ const vectorsPath = join(
 	"..",
 	"..",
 	"..",
-	"conformance",
+	"go",
+	"strictcli",
+	"testdata",
 	"ulid_vectors.json",
 );
 

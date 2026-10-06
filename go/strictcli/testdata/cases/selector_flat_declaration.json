@@ -1,0 +1,555 @@
+[
+  {
+    "name": "flat declaration: the command line refuses a scoped value outside its closed set",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "send",
+          "help": "send one notification through exactly one channel",
+          "effect": "read_only",
+          "handler_prints": "fmt={via.fmt} prov={provided:via.fmt}",
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver the notification as an email message",
+                  "flags": [
+                    {
+                      "name": "fmt",
+                      "help": "body format of the message",
+                      "type": "str",
+                      "presence": "default",
+                      "default": "text",
+                      "choices_str": [
+                        {
+                          "value": "text",
+                          "help": "a plain-text body"
+                        },
+                        {
+                          "value": "json",
+                          "help": "a structured body"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver the notification as a text message",
+                  "flags": [
+                    {
+                      "name": "phone-number",
+                      "help": "destination number",
+                      "type": "str",
+                      "presence": "optional"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "send",
+      "--via",
+      "email",
+      "--fmt",
+      "xml"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: --fmt: invalid value 'xml', must be one of: text, json\ntry 'myapp send --help'\n"
+    }
+  },
+  {
+    "name": "flat declaration: the flat door refuses a scoped value outside its closed set",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "send",
+          "help": "send one notification through exactly one channel",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "data",
+            "data": {
+              "ok": true
+            }
+          },
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver the notification as an email message",
+                  "flags": [
+                    {
+                      "name": "fmt",
+                      "help": "body format of the message",
+                      "type": "str",
+                      "presence": "default",
+                      "default": "text",
+                      "choices_str": [
+                        {
+                          "value": "text",
+                          "help": "a plain-text body"
+                        },
+                        {
+                          "value": "json",
+                          "help": "a structured body"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver the notification as a text message",
+                  "flags": [
+                    {
+                      "name": "phone-number",
+                      "help": "destination number",
+                      "type": "str",
+                      "presence": "optional"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"tools/call\", \"params\": {\"name\": \"send\", \"arguments\": {\"via\": \"email\", \"fmt\": \"xml\"}, \"_meta\": {\"io.modelcontextprotocol/protocolVersion\": \"2026-07-28\", \"io.modelcontextprotocol/clientCapabilities\": {}}}}",
+        "expect_line": {
+          "contains": [
+            "\"isError\"",
+            "--fmt: invalid value 'xml', must be one of: text, json"
+          ]
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "flat declaration: a scoped value inside the closed set is delivered at the flat door",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "send",
+          "help": "send one notification through exactly one channel",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "data",
+            "data": {
+              "ok": true
+            }
+          },
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver the notification as an email message",
+                  "flags": [
+                    {
+                      "name": "fmt",
+                      "help": "body format of the message",
+                      "type": "str",
+                      "presence": "default",
+                      "default": "text",
+                      "choices_str": [
+                        {
+                          "value": "text",
+                          "help": "a plain-text body"
+                        },
+                        {
+                          "value": "json",
+                          "help": "a structured body"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver the notification as a text message",
+                  "flags": [
+                    {
+                      "name": "phone-number",
+                      "help": "destination number",
+                      "type": "str",
+                      "presence": "optional"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"tools/call\", \"params\": {\"name\": \"send\", \"arguments\": {\"via\": \"email\", \"fmt\": \"json\"}, \"_meta\": {\"io.modelcontextprotocol/protocolVersion\": \"2026-07-28\", \"io.modelcontextprotocol/clientCapabilities\": {}}}}",
+        "expect_line": {
+          "matches": "ok",
+          "not_contains": "isError"
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "flat declaration: a caller-supplied scoped value answers provided true at the flat door",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "send",
+          "help": "send one notification through exactly one channel",
+          "effect": "read_only",
+          "handler_prints": "fmt={via.fmt} prov={provided:via.fmt}",
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver the notification as an email message",
+                  "flags": [
+                    {
+                      "name": "fmt",
+                      "help": "body format of the message",
+                      "type": "str",
+                      "presence": "default",
+                      "default": "text",
+                      "choices_str": [
+                        {
+                          "value": "text",
+                          "help": "a plain-text body"
+                        },
+                        {
+                          "value": "json",
+                          "help": "a structured body"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver the notification as a text message",
+                  "flags": [
+                    {
+                      "name": "phone-number",
+                      "help": "destination number",
+                      "type": "str",
+                      "presence": "optional"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"tools/call\", \"params\": {\"name\": \"send\", \"arguments\": {\"via\": \"email\", \"fmt\": \"json\"}, \"_meta\": {\"io.modelcontextprotocol/protocolVersion\": \"2026-07-28\", \"io.modelcontextprotocol/clientCapabilities\": {}}}}",
+        "expect_line": {
+          "equals": "fmt=json prov=true"
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "flat declaration: a scoped value the declaration decided answers provided false at the flat door",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "send",
+          "help": "send one notification through exactly one channel",
+          "effect": "read_only",
+          "handler_prints": "fmt={via.fmt} prov={provided:via.fmt}",
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver the notification as an email message",
+                  "flags": [
+                    {
+                      "name": "fmt",
+                      "help": "body format of the message",
+                      "type": "str",
+                      "presence": "default",
+                      "default": "text",
+                      "choices_str": [
+                        {
+                          "value": "text",
+                          "help": "a plain-text body"
+                        },
+                        {
+                          "value": "json",
+                          "help": "a structured body"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver the notification as a text message",
+                  "flags": [
+                    {
+                      "name": "phone-number",
+                      "help": "destination number",
+                      "type": "str",
+                      "presence": "optional"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"tools/call\", \"params\": {\"name\": \"send\", \"arguments\": {\"via\": \"email\"}, \"_meta\": {\"io.modelcontextprotocol/protocolVersion\": \"2026-07-28\", \"io.modelcontextprotocol/clientCapabilities\": {}}}}",
+        "expect_line": {
+          "equals": "fmt=text prov=false"
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "flat declaration: the command line answers provided the same way",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "send",
+          "help": "send one notification through exactly one channel",
+          "effect": "read_only",
+          "handler_prints": "fmt={via.fmt} prov={provided:via.fmt}",
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver the notification as an email message",
+                  "flags": [
+                    {
+                      "name": "fmt",
+                      "help": "body format of the message",
+                      "type": "str",
+                      "presence": "default",
+                      "default": "text",
+                      "choices_str": [
+                        {
+                          "value": "text",
+                          "help": "a plain-text body"
+                        },
+                        {
+                          "value": "json",
+                          "help": "a structured body"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver the notification as a text message",
+                  "flags": [
+                    {
+                      "name": "phone-number",
+                      "help": "destination number",
+                      "type": "str",
+                      "presence": "optional"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "send",
+      "--via",
+      "email",
+      "--fmt",
+      "json"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "fmt=json prov=true\n",
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "flat declaration: the record door still reports the declaration for every field it delivers",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "pre_call": [
+        {
+          "command": "send",
+          "kwargs": {
+            "via": {
+              "choice": "email",
+              "fmt": "json"
+            }
+          }
+        }
+      ],
+      "commands": [
+        {
+          "name": "send",
+          "help": "send one notification through exactly one channel",
+          "effect": "read_only",
+          "handler_prints": "fmt={via.fmt} prov={provided:via.fmt}",
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver the notification as an email message",
+                  "flags": [
+                    {
+                      "name": "fmt",
+                      "help": "body format of the message",
+                      "type": "str",
+                      "presence": "default",
+                      "default": "text",
+                      "choices_str": [
+                        {
+                          "value": "text",
+                          "help": "a plain-text body"
+                        },
+                        {
+                          "value": "json",
+                          "help": "a structured body"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver the notification as a text message",
+                  "flags": [
+                    {
+                      "name": "phone-number",
+                      "help": "destination number",
+                      "type": "str",
+                      "presence": "optional"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "noop",
+          "help": "a command the case argv can run without output",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "exit",
+            "code": 0
+          }
+        }
+      ]
+    },
+    "argv": [
+      "noop"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "fmt=json prov=false\ncall ok: send\n",
+      "stderr_equals": ""
+    }
+  }
+]

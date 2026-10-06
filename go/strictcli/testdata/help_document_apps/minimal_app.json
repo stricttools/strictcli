@@ -1,0 +1,13 @@
+{
+  "name": "minimal",
+  "version": "0.1.0",
+  "help": "A minimal app",
+  "commands": [
+    {
+      "name": "hello",
+      "help": "Say hello",
+      "effect": "read_only",
+      "handler_prints": "hello"
+    }
+  ]
+}

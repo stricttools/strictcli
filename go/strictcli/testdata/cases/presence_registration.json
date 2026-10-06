@@ -1,0 +1,333 @@
+[
+  {
+    "name": "presence registration: a flag declaring nothing does not register (go)",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "level",
+              "help": "the level"
+            }
+          ],
+          "handler_prints": "level={level}"
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "error: Flag \"level\": presence is undeclared: declare exactly one of Required(), Optional(), or Default(<value>)"
+    },
+    "skip_schema_validation": true
+  },
+  {
+    "name": "presence registration: an arg declaring nothing does not register (go)",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "args": [
+            {
+              "name": "file",
+              "help": "the file"
+            }
+          ],
+          "handler_prints": "file={file}"
+        }
+      ]
+    },
+    "argv": [
+      "cmd",
+      "x"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "error: Arg \"file\": presence is undeclared: declare exactly one of ArgRequired(), ArgOptional(), or ArgDefault(<value>)"
+    },
+    "skip_schema_validation": true
+  },
+  {
+    "name": "presence registration: a flag declaring two facts does not register (go)",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "level",
+              "help": "the level",
+              "presence": "required",
+              "default": "info"
+            }
+          ],
+          "handler_prints": "level={level}"
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "error: Flag \"level\": presence is declared twice: Required() and Default(info) cannot be combined; declare exactly one"
+    },
+    "skip_schema_validation": true
+  },
+  {
+    "name": "presence registration: an arg declaring two facts does not register (go)",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "args": [
+            {
+              "name": "file",
+              "help": "the file",
+              "presence": "optional",
+              "default": "out.txt"
+            }
+          ],
+          "handler_prints": "file={file}"
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "error: Arg \"file\": presence is declared twice: ArgOptional() and ArgDefault(out.txt) cannot be combined; declare exactly one"
+    },
+    "skip_schema_validation": true
+  },
+  {
+    "name": "presence registration: a null-valued flag default redirects to optional (go)",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "level",
+              "help": "the level",
+              "default": null
+            }
+          ],
+          "handler_prints": "level={level}"
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "error: Flag \"level\": Default(nil) does not declare optionality: use Optional() (it delivers nil when the flag is absent)"
+    },
+    "skip_schema_validation": true
+  },
+  {
+    "name": "presence registration: a null-valued arg default redirects to optional (go)",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "args": [
+            {
+              "name": "file",
+              "help": "the file",
+              "default": null
+            }
+          ],
+          "handler_prints": "file={file}"
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "error: Arg \"file\": ArgDefault(nil) does not declare optionality: use ArgOptional() (it delivers nil when the arg is absent)"
+    },
+    "skip_schema_validation": true
+  },
+  {
+    "name": "presence registration: a null flag default beside a presence declaration is two declarations (go)",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "level",
+              "help": "the level",
+              "presence": "required",
+              "default": null
+            }
+          ],
+          "handler_prints": "level={level}"
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "error: Flag \"level\": presence is declared twice: Required() and Default(nil) cannot be combined; declare exactly one"
+    },
+    "skip_schema_validation": true
+  },
+  {
+    "name": "presence registration: a null arg default beside a presence declaration is two declarations (go)",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "args": [
+            {
+              "name": "file",
+              "help": "the file",
+              "presence": "optional",
+              "default": null
+            }
+          ],
+          "handler_prints": "file={file}"
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "error: Arg \"file\": presence is declared twice: ArgOptional() and ArgDefault(nil) cannot be combined; declare exactly one"
+    },
+    "skip_schema_validation": true
+  },
+  {
+    "name": "presence registration: a member flag must declare requiredness (go)",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "target",
+              "help": "which profiles to operate on",
+              "presence": "required",
+              "elect_by": "member-flags",
+              "choices": [
+                {
+                  "name": "profile",
+                  "help": "operate on one named profile",
+                  "value": {
+                    "type": "str",
+                    "help": "profile name"
+                  },
+                  "presence": "optional"
+                },
+                {
+                  "name": "all-profiles",
+                  "help": "operate on every profile"
+                }
+              ]
+            }
+          ],
+          "handler_prints": "target={target}"
+        }
+      ]
+    },
+    "argv": [
+      "cmd",
+      "--all-profiles"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "error: Choice \"profile\" of \"target\": a member flag must declare Required(), read as required once this member is elected"
+    }
+  },
+  {
+    "name": "presence registration: a variadic arg cannot declare a default (go)",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "args": [
+            {
+              "name": "files",
+              "help": "files to process",
+              "presence": "default",
+              "default": "none.txt",
+              "variadic": true
+            }
+          ],
+          "handler_prints": "files={files}"
+        }
+      ]
+    },
+    "argv": [
+      "cmd",
+      "a"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "error: Arg \"files\": a variadic arg cannot declare ArgDefault(): it always delivers a list, so declare ArgRequired() for at least one value or ArgOptional() for possibly none"
+    }
+  }
+]

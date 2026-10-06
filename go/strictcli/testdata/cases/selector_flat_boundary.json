@@ -1,0 +1,2144 @@
+[
+  {
+    "name": "selector flat door: a payload key alone elects its member",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "send",
+          "help": "send one notification through exactly one channel",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "data",
+            "data": {
+              "ok": true
+            }
+          },
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver the notification as an email message",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "subject line of the message",
+                      "type": "str",
+                      "presence": "required"
+                    },
+                    {
+                      "name": "retries",
+                      "help": "delivery attempts before giving up",
+                      "type": "int",
+                      "presence": "default",
+                      "default": 3
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver the notification as a text message",
+                  "flags": [
+                    {
+                      "name": "phone-number",
+                      "help": "destination number",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "target",
+              "help": "which profiles to operate on",
+              "presence": "required",
+              "elect_by": "member-flags",
+              "choices": [
+                {
+                  "name": "profile",
+                  "help": "operate on one named profile",
+                  "value": {
+                    "type": "str",
+                    "help": "profile name"
+                  }
+                },
+                {
+                  "name": "all-profiles",
+                  "help": "operate on every profile"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"tools/call\", \"params\": {\"name\": \"send\", \"arguments\": {\"via\": \"email\", \"subject\": \"hi\", \"profile\": \"work\"}, \"_meta\": {\"io.modelcontextprotocol/protocolVersion\": \"2026-07-28\", \"io.modelcontextprotocol/clientCapabilities\": {}}}}",
+        "expect_line": {
+          "matches": "ok",
+          "not_contains": "isError"
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "selector flat door: one election named twice is one election",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "send",
+          "help": "send one notification through exactly one channel",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "data",
+            "data": {
+              "ok": true
+            }
+          },
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver the notification as an email message",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "subject line of the message",
+                      "type": "str",
+                      "presence": "required"
+                    },
+                    {
+                      "name": "retries",
+                      "help": "delivery attempts before giving up",
+                      "type": "int",
+                      "presence": "default",
+                      "default": 3
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver the notification as a text message",
+                  "flags": [
+                    {
+                      "name": "phone-number",
+                      "help": "destination number",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "target",
+              "help": "which profiles to operate on",
+              "presence": "required",
+              "elect_by": "member-flags",
+              "choices": [
+                {
+                  "name": "profile",
+                  "help": "operate on one named profile",
+                  "value": {
+                    "type": "str",
+                    "help": "profile name"
+                  }
+                },
+                {
+                  "name": "all-profiles",
+                  "help": "operate on every profile"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"tools/call\", \"params\": {\"name\": \"send\", \"arguments\": {\"via\": \"email\", \"subject\": \"hi\", \"target\": \"profile\", \"profile\": \"work\"}, \"_meta\": {\"io.modelcontextprotocol/protocolVersion\": \"2026-07-28\", \"io.modelcontextprotocol/clientCapabilities\": {}}}}",
+        "expect_line": {
+          "matches": "ok",
+          "not_contains": "isError"
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "selector flat door: a second member elected by its payload key is a double election",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "send",
+          "help": "send one notification through exactly one channel",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "data",
+            "data": {
+              "ok": true
+            }
+          },
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver the notification as an email message",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "subject line of the message",
+                      "type": "str",
+                      "presence": "required"
+                    },
+                    {
+                      "name": "retries",
+                      "help": "delivery attempts before giving up",
+                      "type": "int",
+                      "presence": "default",
+                      "default": 3
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver the notification as a text message",
+                  "flags": [
+                    {
+                      "name": "phone-number",
+                      "help": "destination number",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "target",
+              "help": "which profiles to operate on",
+              "presence": "required",
+              "elect_by": "member-flags",
+              "choices": [
+                {
+                  "name": "profile",
+                  "help": "operate on one named profile",
+                  "value": {
+                    "type": "str",
+                    "help": "profile name"
+                  }
+                },
+                {
+                  "name": "all-profiles",
+                  "help": "operate on every profile"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"tools/call\", \"params\": {\"name\": \"send\", \"arguments\": {\"via\": \"email\", \"subject\": \"hi\", \"target\": \"all-profiles\", \"profile\": \"work\"}, \"_meta\": {\"io.modelcontextprotocol/protocolVersion\": \"2026-07-28\", \"io.modelcontextprotocol/clientCapabilities\": {}}}}",
+        "expect_line": {
+          "contains": [
+            "\"isError\"",
+            "--profile and --all-profiles are mutually exclusive"
+          ]
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "selector flat door: every election stages before any presence refusal",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "send",
+          "help": "send one notification through exactly one channel",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "data",
+            "data": {
+              "ok": true
+            }
+          },
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver the notification as an email message",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "subject line of the message",
+                      "type": "str",
+                      "presence": "required"
+                    },
+                    {
+                      "name": "retries",
+                      "help": "delivery attempts before giving up",
+                      "type": "int",
+                      "presence": "default",
+                      "default": 3
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver the notification as a text message",
+                  "flags": [
+                    {
+                      "name": "phone-number",
+                      "help": "destination number",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "target",
+              "help": "which profiles to operate on",
+              "presence": "required",
+              "elect_by": "member-flags",
+              "choices": [
+                {
+                  "name": "profile",
+                  "help": "operate on one named profile",
+                  "value": {
+                    "type": "str",
+                    "help": "profile name"
+                  }
+                },
+                {
+                  "name": "all-profiles",
+                  "help": "operate on every profile"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"tools/call\", \"params\": {\"name\": \"send\", \"arguments\": {\"target\": \"all-profiles\", \"profile\": \"work\"}, \"_meta\": {\"io.modelcontextprotocol/protocolVersion\": \"2026-07-28\", \"io.modelcontextprotocol/clientCapabilities\": {}}}}",
+        "expect_line": {
+          "contains": [
+            "\"isError\"",
+            "--profile and --all-profiles are mutually exclusive"
+          ]
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "selector flat door: an elected member with no payload key takes the missing-value sentence",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "send",
+          "help": "send one notification through exactly one channel",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "data",
+            "data": {
+              "ok": true
+            }
+          },
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver the notification as an email message",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "subject line of the message",
+                      "type": "str",
+                      "presence": "required"
+                    },
+                    {
+                      "name": "retries",
+                      "help": "delivery attempts before giving up",
+                      "type": "int",
+                      "presence": "default",
+                      "default": 3
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver the notification as a text message",
+                  "flags": [
+                    {
+                      "name": "phone-number",
+                      "help": "destination number",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "target",
+              "help": "which profiles to operate on",
+              "presence": "required",
+              "elect_by": "member-flags",
+              "choices": [
+                {
+                  "name": "profile",
+                  "help": "operate on one named profile",
+                  "value": {
+                    "type": "str",
+                    "help": "profile name"
+                  }
+                },
+                {
+                  "name": "all-profiles",
+                  "help": "operate on every profile"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"tools/call\", \"params\": {\"name\": \"send\", \"arguments\": {\"via\": \"email\", \"subject\": \"hi\", \"target\": \"profile\"}, \"_meta\": {\"io.modelcontextprotocol/protocolVersion\": \"2026-07-28\", \"io.modelcontextprotocol/clientCapabilities\": {}}}}",
+        "expect_line": {
+          "contains": [
+            "\"isError\"",
+            "flag '--profile' requires a value"
+          ]
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "selector flat door: a payload-less member's own key elects on true",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "send",
+          "help": "send one notification through exactly one channel",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "data",
+            "data": {
+              "ok": true
+            }
+          },
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver the notification as an email message",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "subject line of the message",
+                      "type": "str",
+                      "presence": "required"
+                    },
+                    {
+                      "name": "retries",
+                      "help": "delivery attempts before giving up",
+                      "type": "int",
+                      "presence": "default",
+                      "default": 3
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver the notification as a text message",
+                  "flags": [
+                    {
+                      "name": "phone-number",
+                      "help": "destination number",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "target",
+              "help": "which profiles to operate on",
+              "presence": "required",
+              "elect_by": "member-flags",
+              "choices": [
+                {
+                  "name": "profile",
+                  "help": "operate on one named profile",
+                  "value": {
+                    "type": "str",
+                    "help": "profile name"
+                  }
+                },
+                {
+                  "name": "all-profiles",
+                  "help": "operate on every profile"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"tools/call\", \"params\": {\"name\": \"send\", \"arguments\": {\"via\": \"email\", \"subject\": \"hi\", \"all_profiles\": true}, \"_meta\": {\"io.modelcontextprotocol/protocolVersion\": \"2026-07-28\", \"io.modelcontextprotocol/clientCapabilities\": {}}}}",
+        "expect_line": {
+          "matches": "ok",
+          "not_contains": "isError"
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "selector flat door: a payload-less member's own key declines on false",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "send",
+          "help": "send one notification through exactly one channel",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "data",
+            "data": {
+              "ok": true
+            }
+          },
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver the notification as an email message",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "subject line of the message",
+                      "type": "str",
+                      "presence": "required"
+                    },
+                    {
+                      "name": "retries",
+                      "help": "delivery attempts before giving up",
+                      "type": "int",
+                      "presence": "default",
+                      "default": 3
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver the notification as a text message",
+                  "flags": [
+                    {
+                      "name": "phone-number",
+                      "help": "destination number",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "target",
+              "help": "which profiles to operate on",
+              "presence": "required",
+              "elect_by": "member-flags",
+              "choices": [
+                {
+                  "name": "profile",
+                  "help": "operate on one named profile",
+                  "value": {
+                    "type": "str",
+                    "help": "profile name"
+                  }
+                },
+                {
+                  "name": "all-profiles",
+                  "help": "operate on every profile"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"tools/call\", \"params\": {\"name\": \"send\", \"arguments\": {\"via\": \"email\", \"subject\": \"hi\", \"all_profiles\": false}, \"_meta\": {\"io.modelcontextprotocol/protocolVersion\": \"2026-07-28\", \"io.modelcontextprotocol/clientCapabilities\": {}}}}",
+        "expect_line": {
+          "contains": [
+            "\"isError\"",
+            "one of --profile, --all-profiles is required (--no-all-profiles declines an option; it does not choose one)"
+          ]
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "selector flat door: the selector's property wins over its member key's decline",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "send",
+          "help": "send one notification through exactly one channel",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "data",
+            "data": {
+              "ok": true
+            }
+          },
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver the notification as an email message",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "subject line of the message",
+                      "type": "str",
+                      "presence": "required"
+                    },
+                    {
+                      "name": "retries",
+                      "help": "delivery attempts before giving up",
+                      "type": "int",
+                      "presence": "default",
+                      "default": 3
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver the notification as a text message",
+                  "flags": [
+                    {
+                      "name": "phone-number",
+                      "help": "destination number",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "target",
+              "help": "which profiles to operate on",
+              "presence": "required",
+              "elect_by": "member-flags",
+              "choices": [
+                {
+                  "name": "profile",
+                  "help": "operate on one named profile",
+                  "value": {
+                    "type": "str",
+                    "help": "profile name"
+                  }
+                },
+                {
+                  "name": "all-profiles",
+                  "help": "operate on every profile"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"tools/call\", \"params\": {\"name\": \"send\", \"arguments\": {\"via\": \"email\", \"subject\": \"hi\", \"target\": \"all-profiles\", \"all_profiles\": false}, \"_meta\": {\"io.modelcontextprotocol/protocolVersion\": \"2026-07-28\", \"io.modelcontextprotocol/clientCapabilities\": {}}}}",
+        "expect_line": {
+          "matches": "ok",
+          "not_contains": "isError"
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "selector flat door: an unknown property is refused ahead of a double election",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "send",
+          "help": "send one notification through exactly one channel",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "data",
+            "data": {
+              "ok": true
+            }
+          },
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver the notification as an email message",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "subject line of the message",
+                      "type": "str",
+                      "presence": "required"
+                    },
+                    {
+                      "name": "retries",
+                      "help": "delivery attempts before giving up",
+                      "type": "int",
+                      "presence": "default",
+                      "default": 3
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver the notification as a text message",
+                  "flags": [
+                    {
+                      "name": "phone-number",
+                      "help": "destination number",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "target",
+              "help": "which profiles to operate on",
+              "presence": "required",
+              "elect_by": "member-flags",
+              "choices": [
+                {
+                  "name": "profile",
+                  "help": "operate on one named profile",
+                  "value": {
+                    "type": "str",
+                    "help": "profile name"
+                  }
+                },
+                {
+                  "name": "all-profiles",
+                  "help": "operate on every profile"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"tools/call\", \"params\": {\"name\": \"send\", \"arguments\": {\"target\": \"all-profiles\", \"profile\": \"work\", \"bogus\": 1}, \"_meta\": {\"io.modelcontextprotocol/protocolVersion\": \"2026-07-28\", \"io.modelcontextprotocol/clientCapabilities\": {}}}}",
+        "expect_line": {
+          "contains": "\"isError\"",
+          "matches": "unknown parameter (\\\\\"|')bogus(\\\\\"|') for command (\\\\\"|')send(\\\\\"|')"
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "selector flat door: an unknown property is refused ahead of a missing payload",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "send",
+          "help": "send one notification through exactly one channel",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "data",
+            "data": {
+              "ok": true
+            }
+          },
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver the notification as an email message",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "subject line of the message",
+                      "type": "str",
+                      "presence": "required"
+                    },
+                    {
+                      "name": "retries",
+                      "help": "delivery attempts before giving up",
+                      "type": "int",
+                      "presence": "default",
+                      "default": 3
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver the notification as a text message",
+                  "flags": [
+                    {
+                      "name": "phone-number",
+                      "help": "destination number",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "target",
+              "help": "which profiles to operate on",
+              "presence": "required",
+              "elect_by": "member-flags",
+              "choices": [
+                {
+                  "name": "profile",
+                  "help": "operate on one named profile",
+                  "value": {
+                    "type": "str",
+                    "help": "profile name"
+                  }
+                },
+                {
+                  "name": "all-profiles",
+                  "help": "operate on every profile"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"tools/call\", \"params\": {\"name\": \"send\", \"arguments\": {\"target\": \"profile\", \"bogus\": 1}, \"_meta\": {\"io.modelcontextprotocol/protocolVersion\": \"2026-07-28\", \"io.modelcontextprotocol/clientCapabilities\": {}}}}",
+        "expect_line": {
+          "contains": "\"isError\"",
+          "matches": "unknown parameter (\\\\\"|')bogus(\\\\\"|') for command (\\\\\"|')send(\\\\\"|')"
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "selector flat door: a dash-spelled scoped key names nothing",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "send",
+          "help": "send one notification through exactly one channel",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "data",
+            "data": {
+              "ok": true
+            }
+          },
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver the notification as an email message",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "subject line of the message",
+                      "type": "str",
+                      "presence": "required"
+                    },
+                    {
+                      "name": "retries",
+                      "help": "delivery attempts before giving up",
+                      "type": "int",
+                      "presence": "default",
+                      "default": 3
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver the notification as a text message",
+                  "flags": [
+                    {
+                      "name": "phone-number",
+                      "help": "destination number",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "target",
+              "help": "which profiles to operate on",
+              "presence": "required",
+              "elect_by": "member-flags",
+              "choices": [
+                {
+                  "name": "profile",
+                  "help": "operate on one named profile",
+                  "value": {
+                    "type": "str",
+                    "help": "profile name"
+                  }
+                },
+                {
+                  "name": "all-profiles",
+                  "help": "operate on every profile"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"tools/call\", \"params\": {\"name\": \"send\", \"arguments\": {\"via\": \"sms\", \"phone-number\": \"555\", \"target\": \"all-profiles\"}, \"_meta\": {\"io.modelcontextprotocol/protocolVersion\": \"2026-07-28\", \"io.modelcontextprotocol/clientCapabilities\": {}}}}",
+        "expect_line": {
+          "contains": "\"isError\"",
+          "matches": "unknown parameter (\\\\\"|')phone-number(\\\\\"|') for command (\\\\\"|')send(\\\\\"|')"
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "selector flat door: a dash-spelled member key names nothing",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "send",
+          "help": "send one notification through exactly one channel",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "data",
+            "data": {
+              "ok": true
+            }
+          },
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver the notification as an email message",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "subject line of the message",
+                      "type": "str",
+                      "presence": "required"
+                    },
+                    {
+                      "name": "retries",
+                      "help": "delivery attempts before giving up",
+                      "type": "int",
+                      "presence": "default",
+                      "default": 3
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver the notification as a text message",
+                  "flags": [
+                    {
+                      "name": "phone-number",
+                      "help": "destination number",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "target",
+              "help": "which profiles to operate on",
+              "presence": "required",
+              "elect_by": "member-flags",
+              "choices": [
+                {
+                  "name": "profile",
+                  "help": "operate on one named profile",
+                  "value": {
+                    "type": "str",
+                    "help": "profile name"
+                  }
+                },
+                {
+                  "name": "all-profiles",
+                  "help": "operate on every profile"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"tools/call\", \"params\": {\"name\": \"send\", \"arguments\": {\"via\": \"email\", \"subject\": \"hi\", \"all-profiles\": true}, \"_meta\": {\"io.modelcontextprotocol/protocolVersion\": \"2026-07-28\", \"io.modelcontextprotocol/clientCapabilities\": {}}}}",
+        "expect_line": {
+          "contains": "\"isError\"",
+          "matches": "unknown parameter (\\\\\"|')all-profiles(\\\\\"|') for command (\\\\\"|')send(\\\\\"|')"
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "selector flat door: a scoped value is checked against its declared type",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "send",
+          "help": "send one notification through exactly one channel",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "data",
+            "data": {
+              "ok": true
+            }
+          },
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver the notification as an email message",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "subject line of the message",
+                      "type": "str",
+                      "presence": "required"
+                    },
+                    {
+                      "name": "retries",
+                      "help": "delivery attempts before giving up",
+                      "type": "int",
+                      "presence": "default",
+                      "default": 3
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver the notification as a text message",
+                  "flags": [
+                    {
+                      "name": "phone-number",
+                      "help": "destination number",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "target",
+              "help": "which profiles to operate on",
+              "presence": "required",
+              "elect_by": "member-flags",
+              "choices": [
+                {
+                  "name": "profile",
+                  "help": "operate on one named profile",
+                  "value": {
+                    "type": "str",
+                    "help": "profile name"
+                  }
+                },
+                {
+                  "name": "all-profiles",
+                  "help": "operate on every profile"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"tools/call\", \"params\": {\"name\": \"send\", \"arguments\": {\"via\": \"email\", \"subject\": \"hi\", \"retries\": \"nope\", \"target\": \"all-profiles\"}, \"_meta\": {\"io.modelcontextprotocol/protocolVersion\": \"2026-07-28\", \"io.modelcontextprotocol/clientCapabilities\": {}}}}",
+        "expect_line": {
+          "contains": [
+            "\"isError\"",
+            "--retries: expected integer, got str"
+          ]
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "selector flat door: null is legal for nothing",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "send",
+          "help": "send one notification through exactly one channel",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "data",
+            "data": {
+              "ok": true
+            }
+          },
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver the notification as an email message",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "subject line of the message",
+                      "type": "str",
+                      "presence": "required"
+                    },
+                    {
+                      "name": "retries",
+                      "help": "delivery attempts before giving up",
+                      "type": "int",
+                      "presence": "default",
+                      "default": 3
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver the notification as a text message",
+                  "flags": [
+                    {
+                      "name": "phone-number",
+                      "help": "destination number",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "target",
+              "help": "which profiles to operate on",
+              "presence": "required",
+              "elect_by": "member-flags",
+              "choices": [
+                {
+                  "name": "profile",
+                  "help": "operate on one named profile",
+                  "value": {
+                    "type": "str",
+                    "help": "profile name"
+                  }
+                },
+                {
+                  "name": "all-profiles",
+                  "help": "operate on every profile"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"tools/call\", \"params\": {\"name\": \"send\", \"arguments\": {\"via\": \"email\", \"subject\": null, \"target\": \"all-profiles\"}, \"_meta\": {\"io.modelcontextprotocol/protocolVersion\": \"2026-07-28\", \"io.modelcontextprotocol/clientCapabilities\": {}}}}",
+        "expect_line": {
+          "contains": [
+            "\"isError\"",
+            "--subject: expected string, got null"
+          ]
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "selector flat door: an integral number satisfies an int declaration",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "send",
+          "help": "send one notification through exactly one channel",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "data",
+            "data": {
+              "ok": true
+            }
+          },
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver the notification as an email message",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "subject line of the message",
+                      "type": "str",
+                      "presence": "required"
+                    },
+                    {
+                      "name": "retries",
+                      "help": "delivery attempts before giving up",
+                      "type": "int",
+                      "presence": "default",
+                      "default": 3
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver the notification as a text message",
+                  "flags": [
+                    {
+                      "name": "phone-number",
+                      "help": "destination number",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "target",
+              "help": "which profiles to operate on",
+              "presence": "required",
+              "elect_by": "member-flags",
+              "choices": [
+                {
+                  "name": "profile",
+                  "help": "operate on one named profile",
+                  "value": {
+                    "type": "str",
+                    "help": "profile name"
+                  }
+                },
+                {
+                  "name": "all-profiles",
+                  "help": "operate on every profile"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"tools/call\", \"params\": {\"name\": \"send\", \"arguments\": {\"via\": \"email\", \"subject\": \"hi\", \"retries\": 7.0, \"target\": \"all-profiles\"}, \"_meta\": {\"io.modelcontextprotocol/protocolVersion\": \"2026-07-28\", \"io.modelcontextprotocol/clientCapabilities\": {}}}}",
+        "expect_line": {
+          "matches": "ok",
+          "not_contains": "isError"
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "selector flat door: a fractional number does not",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "send",
+          "help": "send one notification through exactly one channel",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "data",
+            "data": {
+              "ok": true
+            }
+          },
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver the notification as an email message",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "subject line of the message",
+                      "type": "str",
+                      "presence": "required"
+                    },
+                    {
+                      "name": "retries",
+                      "help": "delivery attempts before giving up",
+                      "type": "int",
+                      "presence": "default",
+                      "default": 3
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver the notification as a text message",
+                  "flags": [
+                    {
+                      "name": "phone-number",
+                      "help": "destination number",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "target",
+              "help": "which profiles to operate on",
+              "presence": "required",
+              "elect_by": "member-flags",
+              "choices": [
+                {
+                  "name": "profile",
+                  "help": "operate on one named profile",
+                  "value": {
+                    "type": "str",
+                    "help": "profile name"
+                  }
+                },
+                {
+                  "name": "all-profiles",
+                  "help": "operate on every profile"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"tools/call\", \"params\": {\"name\": \"send\", \"arguments\": {\"via\": \"email\", \"subject\": \"hi\", \"retries\": 7.5, \"target\": \"all-profiles\"}, \"_meta\": {\"io.modelcontextprotocol/protocolVersion\": \"2026-07-28\", \"io.modelcontextprotocol/clientCapabilities\": {}}}}",
+        "expect_line": {
+          "contains": [
+            "\"isError\"",
+            "--retries: expected integer, got float"
+          ]
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "selector flat door: a positional binds to the arg its key names",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "run",
+          "help": "run the job",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "data",
+            "data": {
+              "ok": true
+            }
+          },
+          "flags": [
+            {
+              "name": "name",
+              "help": "what to call this run",
+              "type": "str",
+              "presence": "optional"
+            }
+          ],
+          "args": [
+            {
+              "name": "label",
+              "help": "how the run is labelled",
+              "presence": "optional"
+            },
+            {
+              "name": "count",
+              "help": "how many times",
+              "type": "int",
+              "presence": "required"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"tools/call\", \"params\": {\"name\": \"run\", \"arguments\": {\"count\": 2}, \"_meta\": {\"io.modelcontextprotocol/protocolVersion\": \"2026-07-28\", \"io.modelcontextprotocol/clientCapabilities\": {}}}}",
+        "expect_line": {
+          "matches": "ok",
+          "not_contains": "isError"
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "selector flat door: a positional's value is checked against its declared type",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "run",
+          "help": "run the job",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "data",
+            "data": {
+              "ok": true
+            }
+          },
+          "flags": [
+            {
+              "name": "name",
+              "help": "what to call this run",
+              "type": "str",
+              "presence": "optional"
+            }
+          ],
+          "args": [
+            {
+              "name": "label",
+              "help": "how the run is labelled",
+              "presence": "optional"
+            },
+            {
+              "name": "count",
+              "help": "how many times",
+              "type": "int",
+              "presence": "required"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"tools/call\", \"params\": {\"name\": \"run\", \"arguments\": {\"count\": \"5\"}, \"_meta\": {\"io.modelcontextprotocol/protocolVersion\": \"2026-07-28\", \"io.modelcontextprotocol/clientCapabilities\": {}}}}",
+        "expect_line": {
+          "contains": [
+            "\"isError\"",
+            "argument 'count': expected integer, got str"
+          ]
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "selector flat door: an integral number satisfies an int-declared positional",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "run",
+          "help": "run the job",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "data",
+            "data": {
+              "ok": true
+            }
+          },
+          "flags": [
+            {
+              "name": "name",
+              "help": "what to call this run",
+              "type": "str",
+              "presence": "optional"
+            }
+          ],
+          "args": [
+            {
+              "name": "label",
+              "help": "how the run is labelled",
+              "presence": "optional"
+            },
+            {
+              "name": "count",
+              "help": "how many times",
+              "type": "int",
+              "presence": "required"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"tools/call\", \"params\": {\"name\": \"run\", \"arguments\": {\"count\": 2.0}, \"_meta\": {\"io.modelcontextprotocol/protocolVersion\": \"2026-07-28\", \"io.modelcontextprotocol/clientCapabilities\": {}}}}",
+        "expect_line": {
+          "matches": "ok",
+          "not_contains": "isError"
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "selector flat door: null is legal for no positional either",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "run",
+          "help": "run the job",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "data",
+            "data": {
+              "ok": true
+            }
+          },
+          "flags": [
+            {
+              "name": "name",
+              "help": "what to call this run",
+              "type": "str",
+              "presence": "optional"
+            }
+          ],
+          "args": [
+            {
+              "name": "label",
+              "help": "how the run is labelled",
+              "presence": "optional"
+            },
+            {
+              "name": "count",
+              "help": "how many times",
+              "type": "int",
+              "presence": "required"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"tools/call\", \"params\": {\"name\": \"run\", \"arguments\": {\"label\": null, \"count\": 2}, \"_meta\": {\"io.modelcontextprotocol/protocolVersion\": \"2026-07-28\", \"io.modelcontextprotocol/clientCapabilities\": {}}}}",
+        "expect_line": {
+          "contains": [
+            "\"isError\"",
+            "argument 'label': expected string, got null"
+          ]
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "selector flat door: a required positional with no key keeps the argv path's own sentence",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "run",
+          "help": "run the job",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "data",
+            "data": {
+              "ok": true
+            }
+          },
+          "flags": [
+            {
+              "name": "name",
+              "help": "what to call this run",
+              "type": "str",
+              "presence": "optional"
+            }
+          ],
+          "args": [
+            {
+              "name": "label",
+              "help": "how the run is labelled",
+              "presence": "optional"
+            },
+            {
+              "name": "count",
+              "help": "how many times",
+              "type": "int",
+              "presence": "required"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"tools/call\", \"params\": {\"name\": \"run\", \"arguments\": {}, \"_meta\": {\"io.modelcontextprotocol/protocolVersion\": \"2026-07-28\", \"io.modelcontextprotocol/clientCapabilities\": {}}}}",
+        "expect_line": {
+          "contains": [
+            "\"isError\"",
+            "missing required argument 'count'"
+          ]
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "selector flat door divergence: the type name a refusal quotes is each runtime's own",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "run",
+          "help": "run the job",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "data",
+            "data": {
+              "ok": true
+            }
+          },
+          "flags": [
+            {
+              "name": "name",
+              "help": "what to call this run",
+              "type": "str",
+              "presence": "optional"
+            }
+          ],
+          "args": [
+            {
+              "name": "label",
+              "help": "how the run is labelled",
+              "presence": "optional"
+            },
+            {
+              "name": "count",
+              "help": "how many times",
+              "type": "int",
+              "presence": "required"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"tools/call\", \"params\": {\"name\": \"run\", \"arguments\": {\"name\": 7.0, \"count\": 2}, \"_meta\": {\"io.modelcontextprotocol/protocolVersion\": \"2026-07-28\", \"io.modelcontextprotocol/clientCapabilities\": {}}}}",
+        "expect_line": {
+          "contains": [
+            "\"isError\"",
+            "--name: expected string, got"
+          ]
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "selector flat door: an uncoercible value in one scope does not outrank a double election",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "send",
+          "help": "send one notification through exactly one channel",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "data",
+            "data": {
+              "ok": true
+            }
+          },
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver the notification as an email message",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "subject line of the message",
+                      "type": "str",
+                      "presence": "required"
+                    },
+                    {
+                      "name": "retries",
+                      "help": "delivery attempts before giving up",
+                      "type": "int",
+                      "presence": "default",
+                      "default": 3
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver the notification as a text message",
+                  "flags": [
+                    {
+                      "name": "phone-number",
+                      "help": "destination number",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "target",
+              "help": "which profiles to operate on",
+              "presence": "required",
+              "elect_by": "member-flags",
+              "choices": [
+                {
+                  "name": "profile",
+                  "help": "operate on one named profile",
+                  "value": {
+                    "type": "str",
+                    "help": "profile name"
+                  }
+                },
+                {
+                  "name": "all-profiles",
+                  "help": "operate on every profile"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"tools/call\", \"params\": {\"name\": \"send\", \"arguments\": {\"via\": \"email\", \"subject\": \"hi\", \"retries\": \"nope\", \"target\": \"all-profiles\", \"profile\": \"work\"}, \"_meta\": {\"io.modelcontextprotocol/protocolVersion\": \"2026-07-28\", \"io.modelcontextprotocol/clientCapabilities\": {}}}}",
+        "expect_line": {
+          "contains": [
+            "\"isError\"",
+            "--profile and --all-profiles are mutually exclusive"
+          ]
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "selector flat door: two payload keys naming two members are one double election",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "send",
+          "help": "send one notification through exactly one channel",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "data",
+            "data": {
+              "ok": true
+            }
+          },
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver the notification as an email message",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "subject line of the message",
+                      "type": "str",
+                      "presence": "required"
+                    },
+                    {
+                      "name": "retries",
+                      "help": "delivery attempts before giving up",
+                      "type": "int",
+                      "presence": "default",
+                      "default": 3
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver the notification as a text message",
+                  "flags": [
+                    {
+                      "name": "phone-number",
+                      "help": "destination number",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "target",
+              "help": "which profiles to operate on",
+              "presence": "required",
+              "elect_by": "member-flags",
+              "choices": [
+                {
+                  "name": "profile",
+                  "help": "operate on one named profile",
+                  "value": {
+                    "type": "str",
+                    "help": "profile name"
+                  }
+                },
+                {
+                  "name": "team",
+                  "help": "operate on one named team",
+                  "value": {
+                    "type": "str",
+                    "help": "team name"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"tools/call\", \"params\": {\"name\": \"send\", \"arguments\": {\"via\": \"email\", \"subject\": \"hi\", \"profile\": \"work\", \"team\": \"core\"}, \"_meta\": {\"io.modelcontextprotocol/protocolVersion\": \"2026-07-28\", \"io.modelcontextprotocol/clientCapabilities\": {}}}}",
+        "expect_line": {
+          "contains": [
+            "\"isError\"",
+            "--profile and --team are mutually exclusive"
+          ]
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  }
+]

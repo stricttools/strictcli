@@ -1,0 +1,578 @@
+[
+  {
+    "name": "choice records: a flag whose entries carry help renders as a block",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "push",
+          "help": "push refs",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "what",
+              "help": "what to push",
+              "type": "str",
+              "presence": "required",
+              "choices_str": [
+                {
+                  "value": "head",
+                  "help": "push only the current HEAD branch"
+                },
+                {
+                  "value": "branches",
+                  "help": "push every local branch"
+                },
+                {
+                  "value": "tags"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "push",
+      "--help"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "myapp push -- push refs\n\nFlags:\n  --what <str>    what to push [required]\n    head          push only the current HEAD branch\n    branches      push every local branch\n    tags"
+    }
+  },
+  {
+    "name": "choice records: a flag whose entries carry no help keeps the one-line form",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "push",
+          "help": "push refs",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "what",
+              "help": "what to push",
+              "type": "str",
+              "presence": "required",
+              "choices_str": [
+                {
+                  "value": "head"
+                },
+                {
+                  "value": "branches"
+                },
+                {
+                  "value": "tags"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "push",
+      "--help"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "myapp push -- push refs\n\nFlags:\n  --what <str>    what to push [choices: head, branches, tags] [required]"
+    }
+  },
+  {
+    "name": "choice records: an arg whose entries carry help renders as a block",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "push",
+          "help": "push refs",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [],
+          "args": [
+            {
+              "name": "level",
+              "help": "how loud",
+              "type": "str",
+              "presence": "required",
+              "choices_str": [
+                {
+                  "value": "quiet",
+                  "help": "say as little as possible"
+                },
+                {
+                  "value": "loud",
+                  "help": "say everything"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "push",
+      "--help"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "myapp push -- push refs\n\nArguments:\n  level      how loud [required]\n    quiet    say as little as possible\n    loud     say everything"
+    }
+  },
+  {
+    "name": "choice records: an arg whose entries carry no help keeps the one-line form",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "push",
+          "help": "push refs",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [],
+          "args": [
+            {
+              "name": "level",
+              "help": "how loud",
+              "type": "str",
+              "presence": "required",
+              "choices_str": [
+                {
+                  "value": "quiet"
+                },
+                {
+                  "value": "loud"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "push",
+      "--help"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "myapp push -- push refs\n\nArguments:\n  level    how loud [choices: quiet, loud] [required]"
+    }
+  },
+  {
+    "name": "choice records: a declared value is accepted whether or not it carries help",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "push",
+          "help": "push refs",
+          "effect": "read_only",
+          "handler_prints": "what={what}",
+          "flags": [
+            {
+              "name": "what",
+              "help": "what to push",
+              "type": "str",
+              "presence": "required",
+              "choices_str": [
+                {
+                  "value": "head",
+                  "help": "push only the current HEAD branch"
+                },
+                {
+                  "value": "branches",
+                  "help": "push every local branch"
+                },
+                {
+                  "value": "tags"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "push",
+      "--what",
+      "tags"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "what=tags"
+    }
+  },
+  {
+    "name": "choice records: an undeclared value is refused by the existing text",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "push",
+          "help": "push refs",
+          "effect": "read_only",
+          "handler_prints": "what={what}",
+          "flags": [
+            {
+              "name": "what",
+              "help": "what to push",
+              "type": "str",
+              "presence": "required",
+              "choices_str": [
+                {
+                  "value": "head",
+                  "help": "push only the current HEAD branch"
+                },
+                {
+                  "value": "branches",
+                  "help": "push every local branch"
+                },
+                {
+                  "value": "tags"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "push",
+      "--what",
+      "stash"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "error: --what: invalid value 'stash', must be one of: head, branches, tags\ntry 'myapp push --help'"
+    }
+  },
+  {
+    "name": "choice records: the dump carries the enum in value_schema and the records in choices",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "push",
+          "help": "push refs",
+          "effect": "read_only",
+          "handler_prints": "what={what}",
+          "flags": [
+            {
+              "name": "what",
+              "help": "what to push",
+              "type": "str",
+              "presence": "required",
+              "choices_str": [
+                {
+                  "value": "head",
+                  "help": "push only the current HEAD branch"
+                },
+                {
+                  "value": "branches",
+                  "help": "push every local branch"
+                },
+                {
+                  "value": "tags"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "help",
+      "--json"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "schema_command_keys": {
+        "push": {
+          "flags": [
+            {
+              "name": "what",
+              "help": "what to push",
+              "value_schema": {
+                "type": "string",
+                "enum": [
+                  "head",
+                  "branches",
+                  "tags"
+                ]
+              },
+              "presence": "required",
+              "choices": [
+                {
+                  "value": "head",
+                  "help": "push only the current HEAD branch"
+                },
+                {
+                  "value": "branches",
+                  "help": "push every local branch"
+                },
+                {
+                  "value": "tags"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "name": "choice records: a bare flag entry is refused, index 0-based (go)",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "push",
+          "help": "push refs",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "what",
+              "help": "what to push",
+              "type": "str",
+              "presence": "required",
+              "choices_str": [
+                "head",
+                {
+                  "value": "branches"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "push"
+    ],
+    "skip_schema_validation": true,
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "error: Flag \"what\": choices entry 0 is a bare value: declare it as Ch(<value>, \"<help>\")"
+    }
+  },
+  {
+    "name": "choice records: the arg twin names the arg, index 0-based (go)",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "push",
+          "help": "push refs",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [],
+          "args": [
+            {
+              "name": "level",
+              "help": "how loud",
+              "type": "str",
+              "presence": "required",
+              "choices_str": [
+                "quiet",
+                {
+                  "value": "loud"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "push"
+    ],
+    "skip_schema_validation": true,
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "error: Arg \"level\": choices entry 0 is a bare value: declare it as Ch(<value>, \"<help>\")"
+    }
+  },
+  {
+    "name": "choice records: an int flag choice above 2^53 is refused",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "push",
+          "help": "push refs",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "ident",
+              "help": "an identifier",
+              "type": "int",
+              "presence": "required",
+              "choices_int": [
+                {
+                  "value": 9007199254740994
+                },
+                {
+                  "value": 1
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "push"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "error: Flag \"ident\": choice 9007199254740994: the number's magnitude exceeds 2^53 (declare a big identifier as a string)"
+    }
+  },
+  {
+    "name": "choice records: an int arg choice above 2^53 is refused",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "push",
+          "help": "push refs",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [],
+          "args": [
+            {
+              "name": "ident",
+              "help": "an identifier",
+              "type": "int",
+              "presence": "required",
+              "choices_int": [
+                {
+                  "value": 9007199254740994
+                },
+                {
+                  "value": 1
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "push"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "error: Arg \"ident\": choice 9007199254740994: the number's magnitude exceeds 2^53 (declare a big identifier as a string)"
+    }
+  },
+  {
+    "name": "choice records: a negative int choice below -2^53 is refused",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "push",
+          "help": "push refs",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "ident",
+              "help": "an identifier",
+              "type": "int",
+              "presence": "required",
+              "choices_int": [
+                {
+                  "value": -9007199254740994
+                },
+                {
+                  "value": 1
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "push"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "error: Flag \"ident\": choice -9007199254740994: the number's magnitude exceeds 2^53 (declare a big identifier as a string)"
+    }
+  },
+  {
+    "name": "choice records: a float choice of the same magnitude is deliberately exempt",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "push",
+          "help": "push refs",
+          "effect": "read_only",
+          "handler_prints": "rate={rate}",
+          "flags": [
+            {
+              "name": "rate",
+              "help": "a rate",
+              "type": "float",
+              "presence": "required",
+              "choices_float": [
+                {
+                  "value": 9007199254740994.0
+                },
+                {
+                  "value": 1.5
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "push",
+      "--rate",
+      "1.5"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "rate=1.5"
+    }
+  }
+]

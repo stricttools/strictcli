@@ -1,0 +1,1365 @@
+[
+  {
+    "name": "update registration: update_of on a read_only command",
+    "skip_schema_validation": true,
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "update_of": {
+            "resource": "dns-record",
+            "write_mode": "sparse",
+            "identity": [],
+            "properties": [
+              "content"
+            ]
+          },
+          "flags": [
+            {
+              "name": "content",
+              "help": "record content",
+              "presence": "optional",
+              "type": "str"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": a read_only command cannot declare update_of (a command that changes nothing writes no properties)\n"
+    }
+  },
+  {
+    "name": "update registration: a write mode outside the vocabulary",
+    "skip_schema_validation": true,
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "mutating",
+          "handler_prints": "ok",
+          "update_of": {
+            "resource": "dns-record",
+            "write_mode": "partial",
+            "identity": [],
+            "properties": [
+              "content"
+            ]
+          },
+          "flags": [
+            {
+              "name": "content",
+              "help": "record content",
+              "presence": "optional",
+              "type": "str"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": invalid write_mode \"partial\": must be \"sparse\" or \"full_replace\"\n"
+    }
+  },
+  {
+    "name": "update registration: an absent write mode reaches the same refusal, rendered empty",
+    "skip_schema_validation": true,
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "mutating",
+          "handler_prints": "ok",
+          "update_of": {
+            "resource": "dns-record",
+            "identity": [],
+            "properties": [
+              "content"
+            ]
+          },
+          "flags": [
+            {
+              "name": "content",
+              "help": "record content",
+              "presence": "optional",
+              "type": "str"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": invalid write_mode \"\": must be \"sparse\" or \"full_replace\"\n"
+    }
+  },
+  {
+    "name": "update registration: a resource name outside the charset",
+    "skip_schema_validation": true,
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "mutating",
+          "handler_prints": "ok",
+          "update_of": {
+            "resource": "DNS_Record",
+            "write_mode": "sparse",
+            "identity": [],
+            "properties": [
+              "content"
+            ]
+          },
+          "flags": [
+            {
+              "name": "content",
+              "help": "record content",
+              "presence": "optional",
+              "type": "str"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": update resource \"DNS_Record\" must be lowercase kebab-case of at least two characters: [a-z][a-z0-9]*(-[a-z0-9]+)*\n"
+    }
+  },
+  {
+    "name": "update registration: an update with nothing to write is not an update",
+    "skip_schema_validation": true,
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "mutating",
+          "handler_prints": "ok",
+          "update_of": {
+            "resource": "dns-record",
+            "write_mode": "sparse",
+            "identity": [],
+            "properties": []
+          },
+          "flags": [
+            {
+              "name": "content",
+              "help": "record content",
+              "presence": "optional",
+              "type": "str"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": update of \"dns-record\" declares no properties: an update with nothing to write is not an update\n"
+    }
+  },
+  {
+    "name": "update registration: a property naming nothing the command declares",
+    "skip_schema_validation": true,
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "mutating",
+          "handler_prints": "ok",
+          "update_of": {
+            "resource": "dns-record",
+            "write_mode": "sparse",
+            "identity": [],
+            "properties": [
+              "nope"
+            ]
+          },
+          "flags": [
+            {
+              "name": "content",
+              "help": "record content",
+              "presence": "optional",
+              "type": "str"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": update of \"dns-record\" references unknown name \"nope\"\n"
+    }
+  },
+  {
+    "name": "update registration: a name that is both a flag and a positional arg",
+    "skip_schema_validation": true,
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "mutating",
+          "handler_prints": "ok",
+          "update_of": {
+            "resource": "dns-record",
+            "write_mode": "sparse",
+            "identity": [
+              "env"
+            ],
+            "properties": [
+              "content"
+            ]
+          },
+          "flags": [
+            {
+              "name": "content",
+              "help": "record content",
+              "presence": "optional",
+              "type": "str"
+            },
+            {
+              "name": "env",
+              "help": "the environment",
+              "presence": "optional",
+              "type": "str"
+            }
+          ],
+          "args": [
+            {
+              "name": "env",
+              "help": "the environment",
+              "presence": "optional"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": update of \"dns-record\" references \"env\", which names both a flag and a positional arg\n"
+    }
+  },
+  {
+    "name": "update registration: one name declared twice",
+    "skip_schema_validation": true,
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "mutating",
+          "handler_prints": "ok",
+          "update_of": {
+            "resource": "dns-record",
+            "write_mode": "sparse",
+            "identity": [],
+            "properties": [
+              "content",
+              "content"
+            ]
+          },
+          "flags": [
+            {
+              "name": "content",
+              "help": "record content",
+              "presence": "optional",
+              "type": "str"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": update of \"dns-record\" declares \"content\" twice\n"
+    }
+  },
+  {
+    "name": "update registration: one name in both roles",
+    "skip_schema_validation": true,
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "mutating",
+          "handler_prints": "ok",
+          "update_of": {
+            "resource": "dns-record",
+            "write_mode": "sparse",
+            "identity": [
+              "content"
+            ],
+            "properties": [
+              "content"
+            ]
+          },
+          "flags": [
+            {
+              "name": "content",
+              "help": "record content",
+              "presence": "optional",
+              "type": "str"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": update of \"dns-record\" declares \"content\" as both identity and property\n"
+    }
+  },
+  {
+    "name": "update registration: a property declared inside a choice scope",
+    "skip_schema_validation": true,
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "mutating",
+          "handler_prints": "ok",
+          "update_of": {
+            "resource": "dns-record",
+            "write_mode": "sparse",
+            "identity": [],
+            "properties": [
+              "subject"
+            ]
+          },
+          "flags": [
+            {
+              "name": "content",
+              "help": "record content",
+              "presence": "optional",
+              "type": "str"
+            },
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver it as an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "subject line",
+                      "presence": "optional",
+                      "type": "str"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver it as a text message"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": update of \"dns-record\" references 'subject', which is declared under '--via email': an update's identity and properties are declared at root scope only\n"
+    }
+  },
+  {
+    "name": "update registration: a property declaring required (go)",
+    "skip_schema_validation": true,
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "mutating",
+          "handler_prints": "ok",
+          "update_of": {
+            "resource": "dns-record",
+            "write_mode": "sparse",
+            "identity": [],
+            "properties": [
+              "content"
+            ]
+          },
+          "flags": [
+            {
+              "name": "content",
+              "help": "record content",
+              "presence": "required",
+              "type": "str"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": update of \"dns-record\" property flag '--content' declares Required(): a property is absent exactly when it is not being written, and the presence declaration for that is Optional()\n"
+    }
+  },
+  {
+    "name": "update registration: a property that is a positional arg",
+    "skip_schema_validation": true,
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "mutating",
+          "handler_prints": "ok",
+          "update_of": {
+            "resource": "dns-record",
+            "write_mode": "sparse",
+            "identity": [],
+            "properties": [
+              "env"
+            ]
+          },
+          "flags": [
+            {
+              "name": "content",
+              "help": "record content",
+              "presence": "optional",
+              "type": "str"
+            }
+          ],
+          "args": [
+            {
+              "name": "env",
+              "help": "the environment",
+              "presence": "optional"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": update of \"dns-record\" property \"env\" is a positional arg: a property must be individually omissible and clearable, and only a flag is\n"
+    }
+  },
+  {
+    "name": "update registration: a property that is a choice flag",
+    "skip_schema_validation": true,
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "mutating",
+          "handler_prints": "ok",
+          "update_of": {
+            "resource": "dns-record",
+            "write_mode": "sparse",
+            "identity": [],
+            "properties": [
+              "via"
+            ]
+          },
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver it as an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "subject line",
+                      "presence": "optional",
+                      "type": "str"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver it as a text message"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": update of \"dns-record\" property '--via' is a choice flag: an elected record is a selection, not a property value\n"
+    }
+  },
+  {
+    "name": "update registration: nullable on a flag that is no property at all (go)",
+    "skip_schema_validation": true,
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "mutating",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "content",
+              "help": "record content",
+              "presence": "optional",
+              "type": "str",
+              "nullable": true
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": flag '--content' declares Nullable() but is not a property of an update: only a property can be cleared\n"
+    }
+  },
+  {
+    "name": "update registration: nullable on an identity member is not a property either (go)",
+    "skip_schema_validation": true,
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "mutating",
+          "handler_prints": "ok",
+          "update_of": {
+            "resource": "dns-record",
+            "write_mode": "sparse",
+            "identity": [
+              "zone"
+            ],
+            "properties": [
+              "content"
+            ]
+          },
+          "flags": [
+            {
+              "name": "content",
+              "help": "record content",
+              "presence": "optional",
+              "type": "str"
+            },
+            {
+              "name": "zone",
+              "help": "the zone",
+              "presence": "required",
+              "type": "str",
+              "nullable": true
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": flag '--zone' declares Nullable() but is not a property of an update: only a property can be cleared\n"
+    }
+  },
+  {
+    "name": "update registration: the minted unset name is reserved (go)",
+    "skip_schema_validation": true,
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "mutating",
+          "handler_prints": "ok",
+          "update_of": {
+            "resource": "dns-record",
+            "write_mode": "sparse",
+            "identity": [],
+            "properties": [
+              "ttl"
+            ]
+          },
+          "flags": [
+            {
+              "name": "ttl",
+              "help": "time to live in seconds",
+              "presence": "optional",
+              "type": "int",
+              "nullable": true
+            },
+            {
+              "name": "unset-ttl",
+              "help": "a flag that wants the minted name",
+              "presence": "optional",
+              "type": "str"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": flag name \"unset-ttl\" is reserved: property '--ttl' declares Nullable(), which mints '--unset-ttl'\n"
+    }
+  },
+  {
+    "name": "update registration: the minted unset name is reserved against an app global (go)",
+    "skip_schema_validation": true,
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "unset-ttl",
+          "help": "an app global that wants the minted name",
+          "presence": "optional",
+          "type": "str"
+        }
+      ],
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "mutating",
+          "handler_prints": "ok",
+          "update_of": {
+            "resource": "dns-record",
+            "write_mode": "sparse",
+            "identity": [],
+            "properties": [
+              "ttl"
+            ]
+          },
+          "flags": [
+            {
+              "name": "ttl",
+              "help": "time to live in seconds",
+              "presence": "optional",
+              "type": "int",
+              "nullable": true
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": flag name \"unset-ttl\" is reserved: property '--ttl' declares Nullable(), which mints '--unset-ttl'\n"
+    }
+  },
+  {
+    "name": "update registration order: the ban runs ahead of every update step (go)",
+    "skip_schema_validation": true,
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "mutating",
+          "handler_prints": "ok",
+          "update_of": {
+            "resource": "BAD",
+            "write_mode": "sparse",
+            "identity": [],
+            "properties": [
+              "content"
+            ]
+          },
+          "flags": [
+            {
+              "name": "content",
+              "help": "record content",
+              "presence": "optional",
+              "type": "str"
+            },
+            {
+              "name": "target",
+              "help": "where to deploy",
+              "presence": "default",
+              "type": "str",
+              "default": "prod"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": flag '--target' declares Default(prod) on a mutating command: absence would write a value the invocation never stated (declare Required() or Optional(), or apply the fallback in the handler and say so in its help)\n"
+    }
+  },
+  {
+    "name": "update registration order: classification legality runs ahead of record legality",
+    "skip_schema_validation": true,
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "update_of": {
+            "resource": "BAD",
+            "write_mode": "partial",
+            "identity": [],
+            "properties": [
+              "content"
+            ]
+          },
+          "flags": [
+            {
+              "name": "content",
+              "help": "record content",
+              "presence": "optional",
+              "type": "str"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": a read_only command cannot declare update_of (a command that changes nothing writes no properties)\n"
+    }
+  },
+  {
+    "name": "update registration order: record legality runs ahead of name resolution",
+    "skip_schema_validation": true,
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "mutating",
+          "handler_prints": "ok",
+          "update_of": {
+            "resource": "dns-record",
+            "write_mode": "partial",
+            "identity": [],
+            "properties": [
+              "nope"
+            ]
+          },
+          "flags": [
+            {
+              "name": "content",
+              "help": "record content",
+              "presence": "optional",
+              "type": "str"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": invalid write_mode \"partial\": must be \"sparse\" or \"full_replace\"\n"
+    }
+  },
+  {
+    "name": "update registration order: name resolution runs ahead of the scope rule",
+    "skip_schema_validation": true,
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "mutating",
+          "handler_prints": "ok",
+          "update_of": {
+            "resource": "dns-record",
+            "write_mode": "sparse",
+            "identity": [],
+            "properties": [
+              "nope",
+              "subject"
+            ]
+          },
+          "flags": [
+            {
+              "name": "content",
+              "help": "record content",
+              "presence": "optional",
+              "type": "str"
+            },
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver it as an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "subject line",
+                      "presence": "optional",
+                      "type": "str"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver it as a text message"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": update of \"dns-record\" references unknown name \"nope\"\n"
+    }
+  },
+  {
+    "name": "update registration order: the scope rule runs ahead of role legality",
+    "skip_schema_validation": true,
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "mutating",
+          "handler_prints": "ok",
+          "update_of": {
+            "resource": "dns-record",
+            "write_mode": "sparse",
+            "identity": [],
+            "properties": [
+              "subject",
+              "env"
+            ]
+          },
+          "flags": [
+            {
+              "name": "content",
+              "help": "record content",
+              "presence": "optional",
+              "type": "str"
+            },
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver it as an email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "subject line",
+                      "presence": "optional",
+                      "type": "str"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver it as a text message"
+                }
+              ]
+            }
+          ],
+          "args": [
+            {
+              "name": "env",
+              "help": "the environment",
+              "presence": "optional"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": update of \"dns-record\" references 'subject', which is declared under '--via email': an update's identity and properties are declared at root scope only\n"
+    }
+  },
+  {
+    "name": "update registration order: role legality runs ahead of presence legality",
+    "skip_schema_validation": true,
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "mutating",
+          "handler_prints": "ok",
+          "update_of": {
+            "resource": "dns-record",
+            "write_mode": "sparse",
+            "identity": [],
+            "properties": [
+              "env"
+            ]
+          },
+          "flags": [
+            {
+              "name": "content",
+              "help": "record content",
+              "presence": "optional",
+              "type": "str"
+            }
+          ],
+          "args": [
+            {
+              "name": "env",
+              "help": "the environment",
+              "presence": "required"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": update of \"dns-record\" property \"env\" is a positional arg: a property must be individually omissible and clearable, and only a flag is\n"
+    }
+  },
+  {
+    "name": "update registration order: presence legality runs ahead of the clear vocabulary (go)",
+    "skip_schema_validation": true,
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "mutating",
+          "handler_prints": "ok",
+          "update_of": {
+            "resource": "dns-record",
+            "write_mode": "sparse",
+            "identity": [],
+            "properties": [
+              "ttl"
+            ]
+          },
+          "flags": [
+            {
+              "name": "ttl",
+              "help": "time to live in seconds",
+              "presence": "required",
+              "type": "int",
+              "nullable": true
+            },
+            {
+              "name": "unset-ttl",
+              "help": "a flag that wants the minted name",
+              "presence": "optional",
+              "type": "str"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": update of \"dns-record\" property flag '--ttl' declares Required(): a property is absent exactly when it is not being written, and the presence declaration for that is Optional()\n"
+    }
+  },
+  {
+    "name": "update registration: an identity member may be a positional arg",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "mutating",
+          "handler_prints": "ok",
+          "update_of": {
+            "resource": "dns-record",
+            "write_mode": "sparse",
+            "identity": [
+              "record"
+            ],
+            "properties": [
+              "content"
+            ]
+          },
+          "flags": [
+            {
+              "name": "content",
+              "help": "record content",
+              "presence": "optional",
+              "type": "str"
+            }
+          ],
+          "args": [
+            {
+              "name": "record",
+              "help": "the record to change",
+              "presence": "required"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd",
+      "r7",
+      "--content",
+      "x"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "ok\n",
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "update registration: an identity member may be optional, with a constraint stating the rule",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "mutating",
+          "handler_prints": "ok",
+          "update_of": {
+            "resource": "dns-record",
+            "write_mode": "sparse",
+            "identity": [
+              "by-name",
+              "by-id"
+            ],
+            "properties": [
+              "content"
+            ]
+          },
+          "flags": [
+            {
+              "name": "by-name",
+              "help": "address it by name",
+              "presence": "optional",
+              "type": "str"
+            },
+            {
+              "name": "by-id",
+              "help": "address it by identifier",
+              "presence": "optional",
+              "type": "str"
+            },
+            {
+              "name": "content",
+              "help": "record content",
+              "presence": "optional",
+              "type": "str"
+            }
+          ],
+          "constraints": [
+            {
+              "type": "at_least_one",
+              "name": "addressing",
+              "members": [
+                {
+                  "name": "by-name"
+                },
+                {
+                  "name": "by-id"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd",
+      "--by-id",
+      "r7",
+      "--content",
+      "x"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "ok\n",
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "update registration: a flag named in neither list is neither, and that is ordinary",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "mutating",
+          "handler_prints": "ok",
+          "update_of": {
+            "resource": "dns-record",
+            "write_mode": "sparse",
+            "identity": [],
+            "properties": [
+              "content"
+            ]
+          },
+          "flags": [
+            {
+              "name": "content",
+              "help": "record content",
+              "presence": "optional",
+              "type": "str"
+            },
+            {
+              "name": "format",
+              "help": "how to render the result",
+              "presence": "optional",
+              "type": "str"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd",
+      "--content",
+      "x",
+      "--format",
+      "json"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "ok\n",
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "update registration: dry_run_supported false composes with an update declaration",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "mutating",
+          "handler_prints": "ok",
+          "update_of": {
+            "resource": "dns-record",
+            "write_mode": "sparse",
+            "identity": [],
+            "properties": [
+              "content"
+            ]
+          },
+          "flags": [
+            {
+              "name": "content",
+              "help": "record content",
+              "presence": "optional",
+              "type": "str"
+            }
+          ],
+          "dry_run_supported": false,
+          "dry_run_unsupported_reason": "the effects escape the effects handle"
+        }
+      ]
+    },
+    "argv": [
+      "cmd",
+      "--content",
+      "x"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "ok\n",
+      "stderr_equals": ""
+    }
+  }
+]

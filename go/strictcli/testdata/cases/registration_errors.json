@@ -1,0 +1,1112 @@
+[
+  {
+    "name": "registration: empty app help",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok"
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_contains": "must be a non-empty string",
+      "stderr_equals": "error: App.help must be a non-empty string"
+    }
+  },
+  {
+    "name": "registration: empty command help",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "",
+          "effect": "read_only",
+          "handler_prints": "ok"
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_contains": "missing help text",
+      "stderr_equals": "error: command \"cmd\": missing help text"
+    }
+  },
+  {
+    "name": "registration: empty flag help",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "chatter",
+              "type": "bool",
+              "help": "",
+              "presence": "default",
+              "default": false
+            }
+          ],
+          "handler_prints": "ok"
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_contains": "must be a non-empty string",
+      "stderr_equals": "error: Flag.help must be a non-empty string"
+    }
+  },
+  {
+    "name": "registration: empty arg help",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "args": [
+            {
+              "name": "file",
+              "help": "",
+              "presence": "required"
+            }
+          ],
+          "handler_prints": "ok"
+        }
+      ]
+    },
+    "argv": [
+      "cmd",
+      "test.txt"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_contains": "must be a non-empty string",
+      "stderr_equals": "error: Arg.help must be a non-empty string"
+    }
+  },
+  {
+    "name": "registration: empty group help",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "groups": [
+        {
+          "name": "config",
+          "help": "",
+          "commands": [
+            {
+              "name": "show",
+              "help": "display config",
+              "effect": "read_only",
+              "handler_prints": "ok"
+            }
+          ]
+        }
+      ],
+      "commands": []
+    },
+    "argv": [
+      "config",
+      "show"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_contains": "must be a non-empty string",
+      "stderr_equals": "error: Group.help must be a non-empty string"
+    }
+  },
+  {
+    "name": "registration: repeatable bool flag",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "chatter",
+              "type": "bool",
+              "help": "be chatter",
+              "presence": "default",
+              "repeatable": true,
+              "default": false
+            }
+          ],
+          "handler_prints": "ok"
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_contains": [
+        "repeatable",
+        "bool"
+      ],
+      "stderr_equals": "error: Flag \"chatter\": repeatable is incompatible with type=bool"
+    }
+  },
+  {
+    "name": "registration: choices on bool flag",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "chatter",
+              "type": "bool",
+              "help": "be chatter",
+              "presence": "default",
+              "choices_str": [
+                {
+                  "value": "yes"
+                },
+                {
+                  "value": "no"
+                }
+              ],
+              "default": false
+            }
+          ],
+          "handler_prints": "ok"
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_contains": [
+        "choices",
+        "bool"
+      ],
+      "stderr_equals": "error: Flag \"chatter\": choices is incompatible with type=bool"
+    }
+  },
+  {
+    "name": "registration: a choice flag with one choice",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver as an email message"
+                }
+              ]
+            }
+          ],
+          "handler_prints": "ok"
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_contains": "at least two choices",
+      "stderr_equals": "error: Flag \"via\": a choice flag must declare at least two choices"
+    }
+  },
+  {
+    "name": "registration: duplicate flag names",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "target",
+              "type": "str",
+              "help": "the target",
+              "presence": "required"
+            },
+            {
+              "name": "target",
+              "type": "str",
+              "help": "the target again",
+              "presence": "required"
+            }
+          ],
+          "handler_prints": "ok"
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_contains": "duplicate",
+      "stderr_equals": "error: command \"cmd\": duplicate flag name \"target\""
+    }
+  },
+  {
+    "name": "registration: duplicate arg names",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "args": [
+            {
+              "name": "file",
+              "help": "the file",
+              "presence": "required"
+            },
+            {
+              "name": "file",
+              "help": "the file again",
+              "presence": "required"
+            }
+          ],
+          "handler_prints": "ok"
+        }
+      ]
+    },
+    "argv": [
+      "cmd",
+      "a.txt",
+      "b.txt"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_contains": "duplicate",
+      "stderr_equals": "error: command \"cmd\": duplicate arg name \"file\""
+    }
+  },
+  {
+    "name": "registration: flag collides with global flag",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "chatter",
+          "type": "bool",
+          "help": "enable chatter output",
+          "presence": "default",
+          "default": false
+        }
+      ],
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "chatter",
+              "type": "bool",
+              "help": "be chatter",
+              "presence": "default",
+              "default": false
+            }
+          ],
+          "handler_prints": "ok"
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_contains": "collides",
+      "stderr_equals": "error: command \"cmd\": flag \"chatter\" collides with a global flag"
+    }
+  },
+  {
+    "name": "registration: env prefix mismatch",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "env_prefix": "MYAPP",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "target",
+              "type": "str",
+              "help": "the target",
+              "presence": "required",
+              "env": "WRONG_TARGET"
+            }
+          ],
+          "handler_prints": "target={target}"
+        }
+      ]
+    },
+    "argv": [
+      "cmd",
+      "--target",
+      "prod"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_contains": "must start with",
+      "stderr_equals": "error: command \"cmd\": env var \"WRONG_TARGET\" for flag \"target\" must start with \"MYAPP_\" (or set prefixed=false)"
+    }
+  },
+  {
+    "name": "registration: duplicate global flag names",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "chatter",
+          "type": "bool",
+          "help": "enable chatter output",
+          "presence": "default",
+          "default": false
+        },
+        {
+          "name": "chatter",
+          "type": "bool",
+          "help": "enable chatter output again",
+          "presence": "default",
+          "default": false
+        }
+      ],
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok"
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_contains": "duplicate",
+      "stderr_equals": "error: duplicate global flag name \"chatter\""
+    }
+  },
+  {
+    "name": "registration: int flag with string default",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "port",
+              "type": "int",
+              "help": "the port",
+              "presence": "default",
+              "default": "abc"
+            }
+          ],
+          "handler_prints": "ok"
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_contains": [
+        "type=int requires an int default",
+        "port"
+      ],
+      "stderr_equals": "error: Flag \"port\": type=int requires an int default, got 'str'"
+    }
+  },
+  {
+    "name": "registration: default not in choices",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "format",
+              "type": "str",
+              "help": "output format",
+              "presence": "default",
+              "choices_str": [
+                {
+                  "value": "json"
+                },
+                {
+                  "value": "csv"
+                }
+              ],
+              "default": "xml"
+            }
+          ],
+          "handler_prints": "ok"
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_contains": [
+        "default",
+        "not in choices"
+      ],
+      "stderr_equals": "error: Flag \"format\": default 'xml' is not in choices ['json', 'csv']"
+    }
+  },
+  {
+    "name": "registration: a name reused by simultaneously electable scopes",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "format",
+              "help": "output format",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "table",
+                  "help": "a rendered table",
+                  "flags": [
+                    {
+                      "name": "width",
+                      "help": "column width",
+                      "type": "int",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "raw",
+                  "help": "unrendered output"
+                }
+              ]
+            },
+            {
+              "name": "sink",
+              "help": "where output goes",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "file",
+                  "help": "write to a file",
+                  "flags": [
+                    {
+                      "name": "width",
+                      "help": "line width",
+                      "type": "int",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "stdout",
+                  "help": "write to stdout"
+                }
+              ]
+            }
+          ],
+          "handler_prints": "ok"
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_contains": "simultaneously electable scopes may not reuse a flag name",
+      "stderr_equals": "error: command \"cmd\": flag '--width' is declared under '--format table' and under '--sink file', which can be elected at the same time: simultaneously electable scopes may not reuse a flag name"
+    }
+  },
+  {
+    "name": "registration: empty choices list",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "format",
+              "type": "str",
+              "help": "output format",
+              "presence": "required",
+              "choices_str": []
+            }
+          ],
+          "handler_prints": "ok"
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_contains": "choices must be a non-empty list",
+      "stderr_equals": "error: Flag \"format\": choices must be a non-empty list"
+    }
+  },
+  {
+    "name": "registration: global flag with empty help",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "global_flags": [
+        {
+          "name": "chatter",
+          "type": "bool",
+          "help": "",
+          "presence": "default",
+          "default": false
+        }
+      ],
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok"
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_contains": "must be a non-empty string",
+      "stderr_equals": "error: Flag.help must be a non-empty string"
+    }
+  },
+  {
+    "name": "registration: a constraint member naming nothing declared",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "output",
+              "type": "str",
+              "help": "output file",
+              "presence": "default",
+              "default": "none"
+            },
+            {
+              "name": "format",
+              "type": "str",
+              "help": "format",
+              "presence": "default",
+              "default": "none"
+            }
+          ],
+          "handler_prints": "ok",
+          "constraints": [
+            {
+              "type": "all_or_none",
+              "name": "output-format",
+              "members": [
+                {
+                  "name": "output"
+                },
+                {
+                  "name": "missing"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "error: command \"cmd\": constraint \"output-format\" references unknown member \"missing\""
+    }
+  },
+  {
+    "name": "registration: a constraint declaring one member twice",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "output",
+              "type": "str",
+              "help": "output file",
+              "presence": "default",
+              "default": "none"
+            },
+            {
+              "name": "format",
+              "type": "str",
+              "help": "format",
+              "presence": "default",
+              "default": "none"
+            }
+          ],
+          "handler_prints": "ok",
+          "constraints": [
+            {
+              "type": "all_or_none",
+              "name": "output-format",
+              "members": [
+                {
+                  "name": "output"
+                },
+                {
+                  "name": "output"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "error: command \"cmd\": constraint \"output-format\" declares member \"output\" twice"
+    }
+  },
+  {
+    "name": "registration: a Requires operand naming nothing declared",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "output",
+              "type": "str",
+              "help": "output file",
+              "presence": "default",
+              "default": "none"
+            }
+          ],
+          "handler_prints": "ok",
+          "constraints": [
+            {
+              "type": "requires",
+              "name": "missing-output",
+              "flag": "missing",
+              "depends_on": "output"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "error: command \"cmd\": constraint \"missing-output\" references unknown flag \"missing\""
+    }
+  },
+  {
+    "name": "registration: Requires flag and depends_on same",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "output",
+              "type": "str",
+              "help": "output file",
+              "presence": "default",
+              "default": "none"
+            }
+          ],
+          "handler_prints": "ok",
+          "constraints": [
+            {
+              "type": "requires",
+              "name": "output-itself",
+              "flag": "output",
+              "depends_on": "output"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_equals": "error: command \"cmd\": Requires flag and depends_on cannot be the same (\"output\")"
+    }
+  },
+  {
+    "name": "registration: unique on non-repeatable flag",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "tag",
+              "type": "str",
+              "help": "a tag",
+              "presence": "required",
+              "unique": true
+            }
+          ],
+          "handler_prints": "ok"
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_contains": "unique requires repeatable=True",
+      "stderr_equals": "error: Flag \"tag\": unique requires repeatable=True"
+    }
+  },
+  {
+    "name": "registration: repeatable without unique",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "tag",
+              "type": "str",
+              "help": "a tag",
+              "presence": "required",
+              "repeatable": true
+            }
+          ],
+          "handler_prints": "ok"
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_contains": "repeatable requires explicit unique",
+      "stderr_equals": "error: Flag \"tag\": repeatable requires explicit unique (unique=True or unique=False)"
+    }
+  },
+  {
+    "name": "registration: env_separator without repeatable",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "env_prefix": "MYAPP",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "tag",
+              "type": "str",
+              "help": "a tag",
+              "presence": "required",
+              "env": "MYAPP_TAG",
+              "env_separator": ","
+            }
+          ],
+          "handler_prints": "ok"
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_contains": "env_separator requires repeatable=True",
+      "stderr_equals": "error: Flag \"tag\": env_separator requires repeatable=True"
+    }
+  },
+  {
+    "name": "registration: env_separator without env",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "tag",
+              "type": "str",
+              "help": "a tag",
+              "presence": "required",
+              "repeatable": true,
+              "unique": false,
+              "env_separator": ","
+            }
+          ],
+          "handler_prints": "ok"
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_contains": "env_separator requires env",
+      "stderr_equals": "error: Flag \"tag\": env_separator requires env"
+    }
+  },
+  {
+    "name": "registration: repeatable with env but no env_separator",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "env_prefix": "MYAPP",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "tag",
+              "type": "str",
+              "help": "a tag",
+              "presence": "required",
+              "repeatable": true,
+              "unique": false,
+              "env": "MYAPP_TAG"
+            }
+          ],
+          "handler_prints": "ok"
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_contains": "repeatable flag with env requires env_separator",
+      "stderr_equals": "error: Flag \"tag\": repeatable flag with env requires env_separator"
+    }
+  },
+  {
+    "name": "registration: env_separator multi-char",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "env_prefix": "MYAPP",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "tag",
+              "type": "str",
+              "help": "a tag",
+              "presence": "required",
+              "repeatable": true,
+              "unique": false,
+              "env": "MYAPP_TAG",
+              "env_separator": "::"
+            }
+          ],
+          "handler_prints": "ok"
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_contains": "env_separator must be a single character",
+      "stderr_equals": "error: Flag \"tag\": env_separator must be a single character"
+    }
+  },
+  {
+    "name": "registration: env_separator backslash",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "env_prefix": "MYAPP",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "tag",
+              "type": "str",
+              "help": "a tag",
+              "presence": "required",
+              "repeatable": true,
+              "unique": false,
+              "env": "MYAPP_TAG",
+              "env_separator": "\\"
+            }
+          ],
+          "handler_prints": "ok"
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_contains": "env_separator cannot be a backslash",
+      "stderr_equals": "error: Flag \"tag\": env_separator cannot be a backslash"
+    }
+  }
+]

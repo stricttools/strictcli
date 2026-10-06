@@ -1,0 +1,2106 @@
+[
+  {
+    "name": "constraint registration: a constraint name outside the charset",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "aa",
+              "type": "str",
+              "help": "the a",
+              "presence": "optional"
+            },
+            {
+              "name": "bb",
+              "type": "str",
+              "help": "the b",
+              "presence": "optional"
+            }
+          ],
+          "constraints": [
+            {
+              "type": "all_or_none",
+              "name": "Bad Name",
+              "members": [
+                {
+                  "name": "aa"
+                },
+                {
+                  "name": "bb"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": constraint name \"Bad Name\" must be lowercase kebab-case of at least two characters: [a-z][a-z0-9]*(-[a-z0-9]+)*\n"
+    }
+  },
+  {
+    "name": "constraint registration: two constraints of one name",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "aa",
+              "type": "str",
+              "help": "the a",
+              "presence": "optional"
+            },
+            {
+              "name": "bb",
+              "type": "str",
+              "help": "the b",
+              "presence": "optional"
+            },
+            {
+              "name": "cc",
+              "type": "str",
+              "help": "the c",
+              "presence": "optional"
+            }
+          ],
+          "constraints": [
+            {
+              "type": "all_or_none",
+              "name": "pair",
+              "members": [
+                {
+                  "name": "aa"
+                },
+                {
+                  "name": "bb"
+                }
+              ]
+            },
+            {
+              "type": "all_or_none",
+              "name": "pair",
+              "members": [
+                {
+                  "name": "aa"
+                },
+                {
+                  "name": "cc"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": duplicate constraint name \"pair\"\n"
+    }
+  },
+  {
+    "name": "constraint registration: a constraint name that is already a flag name",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "aa",
+              "type": "str",
+              "help": "the a",
+              "presence": "optional"
+            },
+            {
+              "name": "bb",
+              "type": "str",
+              "help": "the b",
+              "presence": "optional"
+            },
+            {
+              "name": "pair",
+              "type": "str",
+              "help": "the pair",
+              "presence": "optional"
+            }
+          ],
+          "constraints": [
+            {
+              "type": "all_or_none",
+              "name": "pair",
+              "members": [
+                {
+                  "name": "aa"
+                },
+                {
+                  "name": "bb"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": constraint name \"pair\" is already a flag or arg name: a member reference resolves by name and would be ambiguous\n"
+    }
+  },
+  {
+    "name": "constraint registration: a constraint name that is already an arg name",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "aa",
+              "type": "str",
+              "help": "the a",
+              "presence": "optional"
+            },
+            {
+              "name": "bb",
+              "type": "str",
+              "help": "the b",
+              "presence": "optional"
+            }
+          ],
+          "args": [
+            {
+              "name": "pair",
+              "help": "the pair",
+              "presence": "optional"
+            }
+          ],
+          "constraints": [
+            {
+              "type": "all_or_none",
+              "name": "pair",
+              "members": [
+                {
+                  "name": "aa"
+                },
+                {
+                  "name": "bb"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": constraint name \"pair\" is already a flag or arg name: a member reference resolves by name and would be ambiguous\n"
+    }
+  },
+  {
+    "name": "constraint registration: a member naming both a flag and a positional arg",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "dup",
+              "type": "str",
+              "help": "the dup",
+              "presence": "optional"
+            },
+            {
+              "name": "bb",
+              "type": "str",
+              "help": "the b",
+              "presence": "optional"
+            }
+          ],
+          "args": [
+            {
+              "name": "dup",
+              "help": "the dup arg",
+              "presence": "optional"
+            }
+          ],
+          "constraints": [
+            {
+              "type": "all_or_none",
+              "name": "pair",
+              "members": [
+                {
+                  "name": "dup"
+                },
+                {
+                  "name": "bb"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": constraint \"pair\" references \"dup\", which names both a flag and a positional arg\n"
+    }
+  },
+  {
+    "name": "constraint registration: an all-or-none member declaring required (go)",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "aa",
+              "type": "str",
+              "help": "the a",
+              "presence": "required"
+            },
+            {
+              "name": "bb",
+              "type": "str",
+              "help": "the b",
+              "presence": "optional"
+            }
+          ],
+          "constraints": [
+            {
+              "type": "all_or_none",
+              "name": "pair",
+              "members": [
+                {
+                  "name": "aa"
+                },
+                {
+                  "name": "bb"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": constraint \"pair\" member '--aa' declares Required(): a member the invocation must always supply leaves the constraint nothing to decide\n"
+    }
+  },
+  {
+    "name": "constraint registration: an at-least-one member declaring required (go)",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "aa",
+              "type": "str",
+              "help": "the a",
+              "presence": "required"
+            },
+            {
+              "name": "bb",
+              "type": "str",
+              "help": "the b",
+              "presence": "optional"
+            }
+          ],
+          "constraints": [
+            {
+              "type": "at_least_one",
+              "name": "pick",
+              "members": [
+                {
+                  "name": "aa"
+                },
+                {
+                  "name": "bb"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": constraint \"pick\" member '--aa' declares Required(): a member the invocation must always supply leaves the constraint nothing to decide\n"
+    }
+  },
+  {
+    "name": "constraint registration: a required ARG member renders its bare name (go)",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "bb",
+              "type": "str",
+              "help": "the b",
+              "presence": "optional"
+            }
+          ],
+          "args": [
+            {
+              "name": "targets",
+              "help": "the targets",
+              "presence": "required"
+            }
+          ],
+          "constraints": [
+            {
+              "type": "at_least_one",
+              "name": "pick",
+              "members": [
+                {
+                  "name": "targets"
+                },
+                {
+                  "name": "bb"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": constraint \"pick\" member 'targets' declares Required(): a member the invocation must always supply leaves the constraint nothing to decide\n"
+    }
+  },
+  {
+    "name": "constraint registration: a bool member declaring no election (go)",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "all",
+              "type": "bool",
+              "help": "the all",
+              "presence": "default",
+              "default": false
+            },
+            {
+              "name": "bb",
+              "type": "str",
+              "help": "the b",
+              "presence": "optional"
+            }
+          ],
+          "constraints": [
+            {
+              "type": "at_least_one",
+              "name": "pick",
+              "members": [
+                {
+                  "name": "all"
+                },
+                {
+                  "name": "bb"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": constraint \"pick\" member '--all' is a bool and must declare its election: WhenTrue() counts only a true value, WhenPresent() counts any\n"
+    }
+  },
+  {
+    "name": "constraint registration: when=true on a str member (go)",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "aa",
+              "type": "str",
+              "help": "the a",
+              "presence": "optional"
+            },
+            {
+              "name": "bb",
+              "type": "str",
+              "help": "the b",
+              "presence": "optional"
+            }
+          ],
+          "constraints": [
+            {
+              "type": "at_least_one",
+              "name": "pick",
+              "members": [
+                {
+                  "name": "aa",
+                  "when": "true"
+                },
+                {
+                  "name": "bb"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": constraint \"pick\" member '--aa' declares WhenTrue(), which needs a bool; '--aa' is a str\n"
+    }
+  },
+  {
+    "name": "constraint registration: when=true on an int member (go)",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "nn",
+              "type": "int",
+              "help": "the n",
+              "presence": "optional"
+            },
+            {
+              "name": "bb",
+              "type": "str",
+              "help": "the b",
+              "presence": "optional"
+            }
+          ],
+          "constraints": [
+            {
+              "type": "at_least_one",
+              "name": "pick",
+              "members": [
+                {
+                  "name": "nn",
+                  "when": "true"
+                },
+                {
+                  "name": "bb"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": constraint \"pick\" member '--nn' declares WhenTrue(), which needs a bool; '--nn' is a int\n"
+    }
+  },
+  {
+    "name": "constraint registration: when=true on a float member (go)",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "rr",
+              "type": "float",
+              "help": "the r",
+              "presence": "optional"
+            },
+            {
+              "name": "bb",
+              "type": "str",
+              "help": "the b",
+              "presence": "optional"
+            }
+          ],
+          "constraints": [
+            {
+              "type": "at_least_one",
+              "name": "pick",
+              "members": [
+                {
+                  "name": "rr",
+                  "when": "true"
+                },
+                {
+                  "name": "bb"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": constraint \"pick\" member '--rr' declares WhenTrue(), which needs a bool; '--rr' is a float\n"
+    }
+  },
+  {
+    "name": "constraint registration: when=true on a repeatable member renders list[str] (go)",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "tag",
+              "type": "str",
+              "help": "the tag",
+              "presence": "default",
+              "repeatable": true,
+              "unique": false,
+              "default": []
+            },
+            {
+              "name": "bb",
+              "type": "str",
+              "help": "the b",
+              "presence": "optional"
+            }
+          ],
+          "constraints": [
+            {
+              "type": "at_least_one",
+              "name": "pick",
+              "members": [
+                {
+                  "name": "tag",
+                  "when": "true"
+                },
+                {
+                  "name": "bb"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": constraint \"pick\" member '--tag' declares WhenTrue(), which needs a bool; '--tag' is a list[str]\n"
+    }
+  },
+  {
+    "name": "constraint registration: when=true on a dict member renders its value type in one argument (go)",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "env",
+              "type": "dict[str,int]",
+              "help": "the env",
+              "presence": "default",
+              "default": {}
+            },
+            {
+              "name": "bb",
+              "type": "str",
+              "help": "the b",
+              "presence": "optional"
+            }
+          ],
+          "constraints": [
+            {
+              "type": "at_least_one",
+              "name": "pick",
+              "members": [
+                {
+                  "name": "env",
+                  "when": "true"
+                },
+                {
+                  "name": "bb"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": constraint \"pick\" member '--env' declares WhenTrue(), which needs a bool; '--env' is a dict[int]\n"
+    }
+  },
+  {
+    "name": "constraint registration: when=true on a variadic bool arg renders list[bool] (go)",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "bb",
+              "type": "str",
+              "help": "the b",
+              "presence": "optional"
+            }
+          ],
+          "args": [
+            {
+              "name": "switches",
+              "type": "bool",
+              "help": "the switches",
+              "presence": "optional",
+              "variadic": true
+            }
+          ],
+          "constraints": [
+            {
+              "type": "at_least_one",
+              "name": "pick",
+              "members": [
+                {
+                  "name": "switches",
+                  "when": "true"
+                },
+                {
+                  "name": "bb"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": constraint \"pick\" member 'switches' declares WhenTrue(), which needs a bool; 'switches' is a list[bool]\n"
+    }
+  },
+  {
+    "name": "constraint registration: when=true on a token-spelled selector member renders choice flag (go)",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "as email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "type": "str",
+                      "help": "the subject",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "as sms"
+                }
+              ]
+            },
+            {
+              "name": "bb",
+              "type": "str",
+              "help": "the b",
+              "presence": "optional"
+            }
+          ],
+          "constraints": [
+            {
+              "type": "at_least_one",
+              "name": "pick",
+              "members": [
+                {
+                  "name": "via",
+                  "when": "true"
+                },
+                {
+                  "name": "bb"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": constraint \"pick\" member '--via' declares WhenTrue(), which needs a bool; '--via' is a choice flag\n"
+    }
+  },
+  {
+    "name": "constraint registration: when=non_empty on a bool member (go)",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "all",
+              "type": "bool",
+              "help": "the all",
+              "presence": "default",
+              "default": false
+            },
+            {
+              "name": "bb",
+              "type": "str",
+              "help": "the b",
+              "presence": "optional"
+            }
+          ],
+          "constraints": [
+            {
+              "type": "at_least_one",
+              "name": "pick",
+              "members": [
+                {
+                  "name": "all",
+                  "when": "non_empty"
+                },
+                {
+                  "name": "bb"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": constraint \"pick\" member '--all' declares WhenNonEmpty(), which needs a string or a collection; '--all' is a bool\n"
+    }
+  },
+  {
+    "name": "constraint registration: when=non_empty on an int member (go)",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "nn",
+              "type": "int",
+              "help": "the n",
+              "presence": "optional"
+            },
+            {
+              "name": "bb",
+              "type": "str",
+              "help": "the b",
+              "presence": "optional"
+            }
+          ],
+          "constraints": [
+            {
+              "type": "at_least_one",
+              "name": "pick",
+              "members": [
+                {
+                  "name": "nn",
+                  "when": "non_empty"
+                },
+                {
+                  "name": "bb"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": constraint \"pick\" member '--nn' declares WhenNonEmpty(), which needs a string or a collection; '--nn' is a int\n"
+    }
+  },
+  {
+    "name": "constraint registration: when=non_empty on a float member (go)",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "rr",
+              "type": "float",
+              "help": "the r",
+              "presence": "optional"
+            },
+            {
+              "name": "bb",
+              "type": "str",
+              "help": "the b",
+              "presence": "optional"
+            }
+          ],
+          "constraints": [
+            {
+              "type": "at_least_one",
+              "name": "pick",
+              "members": [
+                {
+                  "name": "rr",
+                  "when": "non_empty"
+                },
+                {
+                  "name": "bb"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": constraint \"pick\" member '--rr' declares WhenNonEmpty(), which needs a string or a collection; '--rr' is a float\n"
+    }
+  },
+  {
+    "name": "constraint registration: a nested constraint member declaring an election",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "aa",
+              "type": "str",
+              "help": "the a",
+              "presence": "optional"
+            },
+            {
+              "name": "bb",
+              "type": "str",
+              "help": "the b",
+              "presence": "optional"
+            },
+            {
+              "name": "cc",
+              "type": "str",
+              "help": "the c",
+              "presence": "optional"
+            }
+          ],
+          "constraints": [
+            {
+              "type": "at_least_one",
+              "name": "inner",
+              "members": [
+                {
+                  "name": "aa"
+                },
+                {
+                  "name": "bb"
+                }
+              ]
+            },
+            {
+              "type": "at_least_one",
+              "name": "outer",
+              "members": [
+                {
+                  "name": "inner",
+                  "when": "present"
+                },
+                {
+                  "name": "cc"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": constraint \"outer\" member \"inner\" is a constraint and cannot declare an election: a nested constraint is engaged when its own members are\n"
+    }
+  },
+  {
+    "name": "constraint registration: a nested member naming a one-way dependency",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "aa",
+              "type": "str",
+              "help": "the a",
+              "presence": "optional"
+            },
+            {
+              "name": "bb",
+              "type": "str",
+              "help": "the b",
+              "presence": "optional"
+            },
+            {
+              "name": "cc",
+              "type": "str",
+              "help": "the c",
+              "presence": "optional"
+            }
+          ],
+          "constraints": [
+            {
+              "type": "requires",
+              "name": "dep",
+              "flag": "aa",
+              "depends_on": "bb"
+            },
+            {
+              "type": "at_least_one",
+              "name": "outer",
+              "members": [
+                {
+                  "name": "dep"
+                },
+                {
+                  "name": "cc"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": constraint \"outer\" references constraint \"dep\", which declares a one-way dependency rather than a co-occurrence rule: only at-least-one and all-or-none can be members of another constraint\n"
+    }
+  },
+  {
+    "name": "constraint registration: two constraints naming each other",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "aa",
+              "type": "str",
+              "help": "the a",
+              "presence": "optional"
+            },
+            {
+              "name": "bb",
+              "type": "str",
+              "help": "the b",
+              "presence": "optional"
+            },
+            {
+              "name": "cc",
+              "type": "str",
+              "help": "the c",
+              "presence": "optional"
+            }
+          ],
+          "constraints": [
+            {
+              "type": "at_least_one",
+              "name": "first",
+              "members": [
+                {
+                  "name": "second"
+                },
+                {
+                  "name": "aa"
+                }
+              ]
+            },
+            {
+              "type": "at_least_one",
+              "name": "second",
+              "members": [
+                {
+                  "name": "first"
+                },
+                {
+                  "name": "bb"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": constraints form a cycle: first -> second -> first\n"
+    }
+  },
+  {
+    "name": "constraint registration: a constraint naming itself is the degenerate cycle",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "aa",
+              "type": "str",
+              "help": "the a",
+              "presence": "optional"
+            },
+            {
+              "name": "bb",
+              "type": "str",
+              "help": "the b",
+              "presence": "optional"
+            }
+          ],
+          "constraints": [
+            {
+              "type": "at_least_one",
+              "name": "loop",
+              "members": [
+                {
+                  "name": "loop"
+                },
+                {
+                  "name": "aa"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": constraints form a cycle: loop -> loop\n"
+    }
+  },
+  {
+    "name": "constraint registration: a constraint name colliding with a SCOPED flag name registers",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "as email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "type": "str",
+                      "help": "the subject",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "as sms"
+                }
+              ]
+            },
+            {
+              "name": "aa",
+              "type": "str",
+              "help": "the a",
+              "presence": "optional"
+            },
+            {
+              "name": "bb",
+              "type": "str",
+              "help": "the b",
+              "presence": "optional"
+            }
+          ],
+          "constraints": [
+            {
+              "type": "all_or_none",
+              "name": "subject",
+              "members": [
+                {
+                  "name": "aa"
+                },
+                {
+                  "name": "bb"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd",
+      "--via",
+      "sms",
+      "--aa",
+      "xx",
+      "--bb",
+      "yy"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "ok\n",
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "constraint registration: a member naming a scoped flag is refused at the scope step",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "as email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "type": "str",
+                      "help": "the subject",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "as sms"
+                }
+              ]
+            },
+            {
+              "name": "bb",
+              "type": "str",
+              "help": "the b",
+              "presence": "optional"
+            }
+          ],
+          "constraints": [
+            {
+              "type": "all_or_none",
+              "name": "pair",
+              "members": [
+                {
+                  "name": "subject"
+                },
+                {
+                  "name": "bb"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd",
+      "--via",
+      "sms"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": constraint \"pair\" references 'subject', which is declared under '--via email': constraints operate at root scope only\n"
+    }
+  },
+  {
+    "name": "constraint registration: a Requires whose two operands are the same unknown name reports the unknown flag, not the coincidence that both operands spell it",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "aa",
+              "type": "str",
+              "help": "the a",
+              "presence": "optional"
+            },
+            {
+              "name": "bb",
+              "type": "str",
+              "help": "the b",
+              "presence": "optional"
+            }
+          ],
+          "constraints": [
+            {
+              "type": "requires",
+              "name": "rr",
+              "flag": "zzz",
+              "depends_on": "zzz"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": constraint \"rr\" references unknown flag \"zzz\"\n"
+    }
+  },
+  {
+    "name": "constraint registration: an unknown dependency operand (step 3) outranks a required member (step 7), whichever is declared first",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "aa",
+              "type": "str",
+              "help": "the a",
+              "presence": "required"
+            },
+            {
+              "name": "bb",
+              "type": "str",
+              "help": "the b",
+              "presence": "optional"
+            }
+          ],
+          "constraints": [
+            {
+              "type": "all_or_none",
+              "name": "pair",
+              "members": [
+                {
+                  "name": "aa"
+                },
+                {
+                  "name": "bb"
+                }
+              ]
+            },
+            {
+              "type": "requires",
+              "name": "rr",
+              "flag": "zzz",
+              "depends_on": "zzz"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": constraint \"rr\" references unknown flag \"zzz\"\n"
+    }
+  },
+  {
+    "name": "constraint registration: a required member (step 7) outranks a non-bool Implies trigger, which the trailing phase holds (go)",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "ss",
+              "type": "str",
+              "help": "the s",
+              "presence": "optional"
+            },
+            {
+              "name": "tt",
+              "type": "bool",
+              "help": "the t",
+              "presence": "default",
+              "default": false
+            },
+            {
+              "name": "aa",
+              "type": "str",
+              "help": "the a",
+              "presence": "required"
+            },
+            {
+              "name": "bb",
+              "type": "str",
+              "help": "the b",
+              "presence": "optional"
+            }
+          ],
+          "constraints": [
+            {
+              "type": "implies",
+              "name": "ii",
+              "flag": "ss",
+              "implies": "tt",
+              "value": true
+            },
+            {
+              "type": "all_or_none",
+              "name": "pair",
+              "members": [
+                {
+                  "name": "aa"
+                },
+                {
+                  "name": "bb"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": constraint \"pair\" member '--aa' declares Required(): a member the invocation must always supply leaves the constraint nothing to decide\n"
+    }
+  },
+  {
+    "name": "constraint registration: a required member (step 7) outranks a same-flag Requires over operands that both resolve (go)",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "ss",
+              "type": "str",
+              "help": "the s",
+              "presence": "optional"
+            },
+            {
+              "name": "aa",
+              "type": "str",
+              "help": "the a",
+              "presence": "required"
+            },
+            {
+              "name": "bb",
+              "type": "str",
+              "help": "the b",
+              "presence": "optional"
+            }
+          ],
+          "constraints": [
+            {
+              "type": "requires",
+              "name": "rr",
+              "flag": "ss",
+              "depends_on": "ss"
+            },
+            {
+              "type": "all_or_none",
+              "name": "pair",
+              "members": [
+                {
+                  "name": "aa"
+                },
+                {
+                  "name": "bb"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": constraint \"pair\" member '--aa' declares Required(): a member the invocation must always supply leaves the constraint nothing to decide\n"
+    }
+  },
+  {
+    "name": "constraint registration: a cycle entered at a later participant opens on the earliest-declared one",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "f1",
+              "type": "str",
+              "help": "the f1",
+              "presence": "optional"
+            },
+            {
+              "name": "f2",
+              "type": "str",
+              "help": "the f2",
+              "presence": "optional"
+            },
+            {
+              "name": "f3",
+              "type": "str",
+              "help": "the f3",
+              "presence": "optional"
+            }
+          ],
+          "constraints": [
+            {
+              "type": "all_or_none",
+              "name": "aa",
+              "members": [
+                {
+                  "name": "cc"
+                },
+                {
+                  "name": "f1"
+                }
+              ]
+            },
+            {
+              "type": "all_or_none",
+              "name": "bb",
+              "members": [
+                {
+                  "name": "cc"
+                },
+                {
+                  "name": "f2"
+                }
+              ]
+            },
+            {
+              "type": "all_or_none",
+              "name": "cc",
+              "members": [
+                {
+                  "name": "bb"
+                },
+                {
+                  "name": "f3"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": constraints form a cycle: bb -> cc -> bb\n"
+    }
+  },
+  {
+    "name": "constraint registration: a cycle reached through a root that is not in it names only its participants",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "f1",
+              "type": "str",
+              "help": "the f1",
+              "presence": "optional"
+            },
+            {
+              "name": "f2",
+              "type": "str",
+              "help": "the f2",
+              "presence": "optional"
+            },
+            {
+              "name": "f3",
+              "type": "str",
+              "help": "the f3",
+              "presence": "optional"
+            }
+          ],
+          "constraints": [
+            {
+              "type": "all_or_none",
+              "name": "aa",
+              "members": [
+                {
+                  "name": "bb"
+                },
+                {
+                  "name": "f1"
+                }
+              ]
+            },
+            {
+              "type": "all_or_none",
+              "name": "bb",
+              "members": [
+                {
+                  "name": "cc"
+                },
+                {
+                  "name": "f2"
+                }
+              ]
+            },
+            {
+              "type": "all_or_none",
+              "name": "cc",
+              "members": [
+                {
+                  "name": "bb"
+                },
+                {
+                  "name": "f3"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": constraints form a cycle: bb -> cc -> bb\n"
+    }
+  },
+  {
+    "name": "constraint registration: a member naming a member flag of a member-spelled selector takes the scoped-operand refusal, whose path is the member's own flag",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "source",
+              "help": "where to read from",
+              "presence": "required",
+              "elect_by": "member-flags",
+              "choices": [
+                {
+                  "name": "file",
+                  "help": "read from file"
+                },
+                {
+                  "name": "url",
+                  "help": "read from URL"
+                }
+              ]
+            },
+            {
+              "name": "bb",
+              "type": "str",
+              "help": "the b",
+              "presence": "optional"
+            }
+          ],
+          "constraints": [
+            {
+              "type": "all_or_none",
+              "name": "pair",
+              "members": [
+                {
+                  "name": "file"
+                },
+                {
+                  "name": "bb"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": constraint \"pair\" references 'file', which is declared under '--file': constraints operate at root scope only\n"
+    }
+  },
+  {
+    "name": "constraint registration: one name declared twice as a member of the same constraint",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "aa",
+              "type": "str",
+              "help": "the a",
+              "presence": "optional"
+            },
+            {
+              "name": "bb",
+              "type": "str",
+              "help": "the b",
+              "presence": "optional"
+            }
+          ],
+          "constraints": [
+            {
+              "type": "all_or_none",
+              "name": "pair",
+              "members": [
+                {
+                  "name": "aa"
+                },
+                {
+                  "name": "aa"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": constraint \"pair\" declares member \"aa\" twice\n"
+    }
+  },
+  {
+    "name": "constraint registration: a bool ARG member declaring no election renders its bare name (go)",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "bb",
+              "type": "str",
+              "help": "the b",
+              "presence": "optional"
+            }
+          ],
+          "args": [
+            {
+              "name": "switch",
+              "type": "bool",
+              "help": "the switch",
+              "presence": "default",
+              "default": false
+            }
+          ],
+          "constraints": [
+            {
+              "type": "at_least_one",
+              "name": "pick",
+              "members": [
+                {
+                  "name": "switch"
+                },
+                {
+                  "name": "bb"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": constraint \"pick\" member 'switch' is a bool and must declare its election: WhenTrue() counts only a true value, WhenPresent() counts any\n"
+    }
+  },
+  {
+    "name": "constraint registration: when=non_empty on an int ARG member renders its bare name in both halves of the sentence (go)",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "cmd",
+          "help": "a command",
+          "effect": "read_only",
+          "handler_prints": "ok",
+          "flags": [
+            {
+              "name": "bb",
+              "type": "str",
+              "help": "the b",
+              "presence": "optional"
+            }
+          ],
+          "args": [
+            {
+              "name": "count",
+              "type": "int",
+              "help": "the count",
+              "presence": "default",
+              "default": 0
+            }
+          ],
+          "constraints": [
+            {
+              "type": "at_least_one",
+              "name": "pick",
+              "members": [
+                {
+                  "name": "count",
+                  "when": "non_empty"
+                },
+                {
+                  "name": "bb"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "cmd"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: command \"cmd\": constraint \"pick\" member 'count' declares WhenNonEmpty(), which needs a string or a collection; 'count' is a int\n"
+    }
+  }
+]

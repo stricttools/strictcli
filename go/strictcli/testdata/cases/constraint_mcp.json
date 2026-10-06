@@ -1,0 +1,1633 @@
+[
+  {
+    "name": "mcp constraints: one at-least-one over `present` members emits a bare anyOf, exact",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "purge",
+          "help": "purge it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "older-than",
+              "type": "str",
+              "help": "the older-than",
+              "presence": "optional"
+            },
+            {
+              "name": "larger-than",
+              "type": "str",
+              "help": "the larger-than",
+              "presence": "optional"
+            }
+          ],
+          "constraints": [
+            {
+              "type": "at_least_one",
+              "name": "purge-selection",
+              "members": [
+                {
+                  "name": "older-than"
+                },
+                {
+                  "name": "larger-than"
+                }
+              ]
+            }
+          ],
+          "handler_prints": "xx"
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\",\"params\":{\"_meta\":{\"io.modelcontextprotocol/protocolVersion\":\"2026-07-28\",\"io.modelcontextprotocol/clientCapabilities\":{}}}}",
+        "expect_line": {
+          "json_equals": {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "result": {
+              "resultType": "complete",
+              "tools": [
+                {
+                  "name": "purge",
+                  "description": "purge it\n\nConstraints (enforced at call time):\n  at least one of: older_than, larger_than",
+                  "effect": "read_only",
+                  "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                      "older_than": {
+                        "type": "string",
+                        "description": "the older-than"
+                      },
+                      "larger_than": {
+                        "type": "string",
+                        "description": "the larger-than"
+                      }
+                    },
+                    "required": [],
+                    "anyOf": [
+                      {
+                        "required": [
+                          "older_than"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "larger_than"
+                        ]
+                      }
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              ],
+              "ttlMs": 3600000,
+              "cacheScope": "public",
+              "_meta": {
+                "io.modelcontextprotocol/serverInfo": {
+                  "name": "myapp",
+                  "version": "1.0.0"
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "mcp constraints: two at-least-one constraints wrap in allOf, one element each",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "purge",
+          "help": "purge it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "older-than",
+              "type": "str",
+              "help": "the older-than",
+              "presence": "optional"
+            },
+            {
+              "name": "larger-than",
+              "type": "str",
+              "help": "the larger-than",
+              "presence": "optional"
+            },
+            {
+              "name": "host",
+              "type": "str",
+              "help": "the host",
+              "presence": "optional"
+            },
+            {
+              "name": "port",
+              "type": "str",
+              "help": "the port",
+              "presence": "optional"
+            }
+          ],
+          "constraints": [
+            {
+              "type": "at_least_one",
+              "name": "purge-selection",
+              "members": [
+                {
+                  "name": "older-than"
+                },
+                {
+                  "name": "larger-than"
+                }
+              ]
+            },
+            {
+              "type": "at_least_one",
+              "name": "endpoint",
+              "members": [
+                {
+                  "name": "host"
+                },
+                {
+                  "name": "port"
+                }
+              ]
+            }
+          ],
+          "handler_prints": "xx"
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\",\"params\":{\"_meta\":{\"io.modelcontextprotocol/protocolVersion\":\"2026-07-28\",\"io.modelcontextprotocol/clientCapabilities\":{}}}}",
+        "expect_line": {
+          "json_equals": {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "result": {
+              "resultType": "complete",
+              "tools": [
+                {
+                  "name": "purge",
+                  "description": "purge it\n\nConstraints (enforced at call time):\n  at least one of: older_than, larger_than\n  at least one of: host, port",
+                  "effect": "read_only",
+                  "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                      "older_than": {
+                        "type": "string",
+                        "description": "the older-than"
+                      },
+                      "larger_than": {
+                        "type": "string",
+                        "description": "the larger-than"
+                      },
+                      "host": {
+                        "type": "string",
+                        "description": "the host"
+                      },
+                      "port": {
+                        "type": "string",
+                        "description": "the port"
+                      }
+                    },
+                    "required": [],
+                    "allOf": [
+                      {
+                        "anyOf": [
+                          {
+                            "required": [
+                              "older_than"
+                            ]
+                          },
+                          {
+                            "required": [
+                              "larger_than"
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "anyOf": [
+                          {
+                            "required": [
+                              "host"
+                            ]
+                          },
+                          {
+                            "required": [
+                              "port"
+                            ]
+                          }
+                        ]
+                      }
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              ],
+              "ttlMs": 3600000,
+              "cacheScope": "public",
+              "_meta": {
+                "io.modelcontextprotocol/serverInfo": {
+                  "name": "myapp",
+                  "version": "1.0.0"
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "mcp constraints: an at-least-one over two all-or-none pairs with no selector at any depth is exact",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "rewrite",
+          "help": "rewrite it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "old-name",
+              "type": "str",
+              "help": "the old-name",
+              "presence": "optional"
+            },
+            {
+              "name": "new-name",
+              "type": "str",
+              "help": "the new-name",
+              "presence": "optional"
+            },
+            {
+              "name": "old-email",
+              "type": "str",
+              "help": "the old-email",
+              "presence": "optional"
+            },
+            {
+              "name": "new-email",
+              "type": "str",
+              "help": "the new-email",
+              "presence": "optional"
+            }
+          ],
+          "constraints": [
+            {
+              "type": "all_or_none",
+              "name": "author-name",
+              "members": [
+                {
+                  "name": "old-name"
+                },
+                {
+                  "name": "new-name"
+                }
+              ]
+            },
+            {
+              "type": "all_or_none",
+              "name": "author-email",
+              "members": [
+                {
+                  "name": "old-email"
+                },
+                {
+                  "name": "new-email"
+                }
+              ]
+            },
+            {
+              "type": "at_least_one",
+              "name": "author-change",
+              "members": [
+                {
+                  "name": "author-name"
+                },
+                {
+                  "name": "author-email"
+                }
+              ]
+            }
+          ],
+          "handler_prints": "xx"
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\",\"params\":{\"_meta\":{\"io.modelcontextprotocol/protocolVersion\":\"2026-07-28\",\"io.modelcontextprotocol/clientCapabilities\":{}}}}",
+        "expect_line": {
+          "json_equals": {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "result": {
+              "resultType": "complete",
+              "tools": [
+                {
+                  "name": "rewrite",
+                  "description": "rewrite it\n\nConstraints (enforced at call time):\n  all or none of: old_name, new_name\n  all or none of: old_email, new_email\n  at least one of: (old_name with new_name), (old_email with new_email)",
+                  "effect": "read_only",
+                  "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                      "old_name": {
+                        "type": "string",
+                        "description": "the old-name"
+                      },
+                      "new_name": {
+                        "type": "string",
+                        "description": "the new-name"
+                      },
+                      "old_email": {
+                        "type": "string",
+                        "description": "the old-email"
+                      },
+                      "new_email": {
+                        "type": "string",
+                        "description": "the new-email"
+                      }
+                    },
+                    "required": [],
+                    "anyOf": [
+                      {
+                        "required": [
+                          "old_name",
+                          "new_name"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "old_email",
+                          "new_email"
+                        ]
+                      }
+                    ],
+                    "dependentRequired": {
+                      "old_name": [
+                        "new_name"
+                      ],
+                      "new_name": [
+                        "old_name"
+                      ],
+                      "old_email": [
+                        "new_email"
+                      ],
+                      "new_email": [
+                        "old_email"
+                      ]
+                    },
+                    "additionalProperties": false
+                  }
+                }
+              ],
+              "ttlMs": 3600000,
+              "cacheScope": "public",
+              "_meta": {
+                "io.modelcontextprotocol/serverInfo": {
+                  "name": "myapp",
+                  "version": "1.0.0"
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "mcp constraints: a nested at-least-one's branches are inlined into the parent's anyOf",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "pick",
+          "help": "pick it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "aa",
+              "type": "str",
+              "help": "the a",
+              "presence": "optional"
+            },
+            {
+              "name": "bb",
+              "type": "str",
+              "help": "the b",
+              "presence": "optional"
+            },
+            {
+              "name": "cc",
+              "type": "str",
+              "help": "the c",
+              "presence": "optional"
+            }
+          ],
+          "constraints": [
+            {
+              "type": "at_least_one",
+              "name": "inner",
+              "members": [
+                {
+                  "name": "aa"
+                },
+                {
+                  "name": "bb"
+                }
+              ]
+            },
+            {
+              "type": "at_least_one",
+              "name": "outer",
+              "members": [
+                {
+                  "name": "inner"
+                },
+                {
+                  "name": "cc"
+                }
+              ]
+            }
+          ],
+          "handler_prints": "xx"
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\",\"params\":{\"_meta\":{\"io.modelcontextprotocol/protocolVersion\":\"2026-07-28\",\"io.modelcontextprotocol/clientCapabilities\":{}}}}",
+        "expect_line": {
+          "json_equals": {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "result": {
+              "resultType": "complete",
+              "tools": [
+                {
+                  "name": "pick",
+                  "description": "pick it\n\nConstraints (enforced at call time):\n  at least one of: aa, bb\n  at least one of: (aa or bb), cc",
+                  "effect": "read_only",
+                  "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                      "aa": {
+                        "type": "string",
+                        "description": "the a"
+                      },
+                      "bb": {
+                        "type": "string",
+                        "description": "the b"
+                      },
+                      "cc": {
+                        "type": "string",
+                        "description": "the c"
+                      }
+                    },
+                    "required": [],
+                    "allOf": [
+                      {
+                        "anyOf": [
+                          {
+                            "required": [
+                              "aa"
+                            ]
+                          },
+                          {
+                            "required": [
+                              "bb"
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "anyOf": [
+                          {
+                            "required": [
+                              "aa"
+                            ]
+                          },
+                          {
+                            "required": [
+                              "bb"
+                            ]
+                          },
+                          {
+                            "required": [
+                              "cc"
+                            ]
+                          }
+                        ]
+                      }
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              ],
+              "ttlMs": 3600000,
+              "cacheScope": "public",
+              "_meta": {
+                "io.modelcontextprotocol/serverInfo": {
+                  "name": "myapp",
+                  "version": "1.0.0"
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "mcp constraints: a when=true two levels down makes the parent partial, recursively",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "pick",
+          "help": "pick it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "aa",
+              "type": "str",
+              "help": "the a",
+              "presence": "optional"
+            },
+            {
+              "name": "all",
+              "type": "bool",
+              "help": "the all",
+              "presence": "default",
+              "default": false
+            },
+            {
+              "name": "cc",
+              "type": "str",
+              "help": "the c",
+              "presence": "optional"
+            }
+          ],
+          "constraints": [
+            {
+              "type": "all_or_none",
+              "name": "inner",
+              "members": [
+                {
+                  "name": "aa"
+                },
+                {
+                  "name": "all",
+                  "when": "true"
+                }
+              ]
+            },
+            {
+              "type": "at_least_one",
+              "name": "outer",
+              "members": [
+                {
+                  "name": "inner"
+                },
+                {
+                  "name": "cc"
+                }
+              ]
+            }
+          ],
+          "handler_prints": "xx"
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\",\"params\":{\"_meta\":{\"io.modelcontextprotocol/protocolVersion\":\"2026-07-28\",\"io.modelcontextprotocol/clientCapabilities\":{}}}}",
+        "expect_line": {
+          "json_equals": {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "result": {
+              "resultType": "complete",
+              "tools": [
+                {
+                  "name": "pick",
+                  "description": "pick it\n\nConstraints (enforced at call time):\n  all or none of: aa, all -- not expressed in the schema: the \"true\" and \"non_empty\" selectors\n  at least one of: (aa with all), cc -- not expressed in the schema: the \"true\" and \"non_empty\" selectors",
+                  "effect": "read_only",
+                  "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                      "aa": {
+                        "type": "string",
+                        "description": "the a"
+                      },
+                      "all": {
+                        "type": "boolean",
+                        "description": "the all"
+                      },
+                      "cc": {
+                        "type": "string",
+                        "description": "the c"
+                      }
+                    },
+                    "required": [],
+                    "anyOf": [
+                      {
+                        "required": [
+                          "aa",
+                          "all"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "cc"
+                        ]
+                      }
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              ],
+              "ttlMs": 3600000,
+              "cacheScope": "public",
+              "_meta": {
+                "io.modelcontextprotocol/serverInfo": {
+                  "name": "myapp",
+                  "version": "1.0.0"
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "mcp constraints: an all-or-none over `present` members maps each member to all the others",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "trace",
+          "help": "trace it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "trace-id",
+              "type": "str",
+              "help": "the trace-id",
+              "presence": "optional"
+            },
+            {
+              "name": "span-id",
+              "type": "str",
+              "help": "the span-id",
+              "presence": "optional"
+            },
+            {
+              "name": "parent-id",
+              "type": "str",
+              "help": "the parent-id",
+              "presence": "optional"
+            }
+          ],
+          "constraints": [
+            {
+              "type": "all_or_none",
+              "name": "tracing",
+              "members": [
+                {
+                  "name": "trace-id"
+                },
+                {
+                  "name": "span-id"
+                },
+                {
+                  "name": "parent-id"
+                }
+              ]
+            }
+          ],
+          "handler_prints": "xx"
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\",\"params\":{\"_meta\":{\"io.modelcontextprotocol/protocolVersion\":\"2026-07-28\",\"io.modelcontextprotocol/clientCapabilities\":{}}}}",
+        "expect_line": {
+          "json_equals": {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "result": {
+              "resultType": "complete",
+              "tools": [
+                {
+                  "name": "trace",
+                  "description": "trace it\n\nConstraints (enforced at call time):\n  all or none of: trace_id, span_id, parent_id",
+                  "effect": "read_only",
+                  "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                      "trace_id": {
+                        "type": "string",
+                        "description": "the trace-id"
+                      },
+                      "span_id": {
+                        "type": "string",
+                        "description": "the span-id"
+                      },
+                      "parent_id": {
+                        "type": "string",
+                        "description": "the parent-id"
+                      }
+                    },
+                    "required": [],
+                    "dependentRequired": {
+                      "trace_id": [
+                        "span_id",
+                        "parent_id"
+                      ],
+                      "span_id": [
+                        "trace_id",
+                        "parent_id"
+                      ],
+                      "parent_id": [
+                        "trace_id",
+                        "span_id"
+                      ]
+                    },
+                    "additionalProperties": false
+                  }
+                }
+              ],
+              "ttlMs": 3600000,
+              "cacheScope": "public",
+              "_meta": {
+                "io.modelcontextprotocol/serverInfo": {
+                  "name": "myapp",
+                  "version": "1.0.0"
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "mcp constraints: an all-or-none with a nested member emits nothing and states the remainder",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "pick",
+          "help": "pick it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "aa",
+              "type": "str",
+              "help": "the a",
+              "presence": "optional"
+            },
+            {
+              "name": "bb",
+              "type": "str",
+              "help": "the b",
+              "presence": "optional"
+            },
+            {
+              "name": "cc",
+              "type": "str",
+              "help": "the c",
+              "presence": "optional"
+            }
+          ],
+          "constraints": [
+            {
+              "type": "at_least_one",
+              "name": "inner",
+              "members": [
+                {
+                  "name": "aa"
+                },
+                {
+                  "name": "bb"
+                }
+              ]
+            },
+            {
+              "type": "all_or_none",
+              "name": "outer",
+              "members": [
+                {
+                  "name": "inner"
+                },
+                {
+                  "name": "cc"
+                }
+              ]
+            }
+          ],
+          "handler_prints": "xx"
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\",\"params\":{\"_meta\":{\"io.modelcontextprotocol/protocolVersion\":\"2026-07-28\",\"io.modelcontextprotocol/clientCapabilities\":{}}}}",
+        "expect_line": {
+          "json_equals": {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "result": {
+              "resultType": "complete",
+              "tools": [
+                {
+                  "name": "pick",
+                  "description": "pick it\n\nConstraints (enforced at call time):\n  at least one of: aa, bb\n  all or none of: (aa or bb), cc -- not expressed in the schema: the nested grouping",
+                  "effect": "read_only",
+                  "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                      "aa": {
+                        "type": "string",
+                        "description": "the a"
+                      },
+                      "bb": {
+                        "type": "string",
+                        "description": "the b"
+                      },
+                      "cc": {
+                        "type": "string",
+                        "description": "the c"
+                      }
+                    },
+                    "required": [],
+                    "anyOf": [
+                      {
+                        "required": [
+                          "aa"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "bb"
+                        ]
+                      }
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              ],
+              "ttlMs": 3600000,
+              "cacheScope": "public",
+              "_meta": {
+                "io.modelcontextprotocol/serverInfo": {
+                  "name": "myapp",
+                  "version": "1.0.0"
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "mcp constraints: requires merges into dependentRequired; implies emits nothing and states its injection",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "deploy",
+          "help": "deploy it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "cert",
+              "type": "str",
+              "help": "the cert",
+              "presence": "optional"
+            },
+            {
+              "name": "ssl",
+              "type": "bool",
+              "help": "the ssl",
+              "presence": "default",
+              "default": false
+            },
+            {
+              "name": "host",
+              "type": "str",
+              "help": "the host",
+              "presence": "optional"
+            },
+            {
+              "name": "port",
+              "type": "str",
+              "help": "the port",
+              "presence": "optional"
+            },
+            {
+              "name": "fast",
+              "type": "bool",
+              "help": "the fast",
+              "presence": "default",
+              "default": false
+            },
+            {
+              "name": "embeddings",
+              "type": "bool",
+              "help": "the embeddings",
+              "presence": "default",
+              "default": true
+            }
+          ],
+          "constraints": [
+            {
+              "type": "all_or_none",
+              "name": "endpoint",
+              "members": [
+                {
+                  "name": "host"
+                },
+                {
+                  "name": "port"
+                }
+              ]
+            },
+            {
+              "type": "requires",
+              "name": "cert-ssl",
+              "flag": "cert",
+              "depends_on": "ssl"
+            },
+            {
+              "type": "implies",
+              "name": "fast-embeddings",
+              "flag": "fast",
+              "implies": "embeddings",
+              "value": false
+            }
+          ],
+          "handler_prints": "xx"
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\",\"params\":{\"_meta\":{\"io.modelcontextprotocol/protocolVersion\":\"2026-07-28\",\"io.modelcontextprotocol/clientCapabilities\":{}}}}",
+        "expect_line": {
+          "json_equals": {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "result": {
+              "resultType": "complete",
+              "tools": [
+                {
+                  "name": "deploy",
+                  "description": "deploy it\n\nConstraints (enforced at call time):\n  all or none of: host, port\n  cert requires ssl\n  fast implies embeddings = false -- not expressed in the schema: the injection",
+                  "effect": "read_only",
+                  "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                      "cert": {
+                        "type": "string",
+                        "description": "the cert"
+                      },
+                      "ssl": {
+                        "type": "boolean",
+                        "description": "the ssl"
+                      },
+                      "host": {
+                        "type": "string",
+                        "description": "the host"
+                      },
+                      "port": {
+                        "type": "string",
+                        "description": "the port"
+                      },
+                      "fast": {
+                        "type": "boolean",
+                        "description": "the fast"
+                      },
+                      "embeddings": {
+                        "type": "boolean",
+                        "description": "the embeddings"
+                      }
+                    },
+                    "required": [],
+                    "dependentRequired": {
+                      "host": [
+                        "port"
+                      ],
+                      "port": [
+                        "host"
+                      ],
+                      "cert": [
+                        "ssl"
+                      ]
+                    },
+                    "additionalProperties": false
+                  }
+                }
+              ],
+              "ttlMs": 3600000,
+              "cacheScope": "public",
+              "_meta": {
+                "io.modelcontextprotocol/serverInfo": {
+                  "name": "myapp",
+                  "version": "1.0.0"
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "mcp constraints: a direct non_empty member makes the at-least-one partial",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "purge",
+          "help": "purge it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "older-than",
+              "type": "str",
+              "help": "the older-than",
+              "presence": "optional"
+            },
+            {
+              "name": "tags",
+              "type": "str",
+              "help": "the tags",
+              "presence": "default",
+              "default": [],
+              "repeatable": true,
+              "unique": false
+            }
+          ],
+          "constraints": [
+            {
+              "type": "at_least_one",
+              "name": "purge-selection",
+              "members": [
+                {
+                  "name": "tags",
+                  "when": "non_empty"
+                },
+                {
+                  "name": "older-than"
+                }
+              ]
+            }
+          ],
+          "handler_prints": "xx"
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\",\"params\":{\"_meta\":{\"io.modelcontextprotocol/protocolVersion\":\"2026-07-28\",\"io.modelcontextprotocol/clientCapabilities\":{}}}}",
+        "expect_line": {
+          "json_equals": {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "result": {
+              "resultType": "complete",
+              "tools": [
+                {
+                  "name": "purge",
+                  "description": "purge it\n\nConstraints (enforced at call time):\n  at least one of: tags, older_than -- not expressed in the schema: the \"true\" and \"non_empty\" selectors",
+                  "effect": "read_only",
+                  "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                      "older_than": {
+                        "type": "string",
+                        "description": "the older-than"
+                      },
+                      "tags": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "description": "the tags"
+                      }
+                    },
+                    "required": [],
+                    "anyOf": [
+                      {
+                        "required": [
+                          "tags"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "older_than"
+                        ]
+                      }
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              ],
+              "ttlMs": 3600000,
+              "cacheScope": "public",
+              "_meta": {
+                "io.modelcontextprotocol/serverInfo": {
+                  "name": "myapp",
+                  "version": "1.0.0"
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "mcp constraints: the Constraints block follows the scope block, separated by a blank line",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "send",
+          "help": "send it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "as email",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "type": "str",
+                      "help": "the subject",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "as sms"
+                }
+              ]
+            },
+            {
+              "name": "older-than",
+              "type": "str",
+              "help": "the older-than",
+              "presence": "optional"
+            },
+            {
+              "name": "larger-than",
+              "type": "str",
+              "help": "the larger-than",
+              "presence": "optional"
+            }
+          ],
+          "constraints": [
+            {
+              "type": "at_least_one",
+              "name": "purge-selection",
+              "members": [
+                {
+                  "name": "older-than"
+                },
+                {
+                  "name": "larger-than"
+                }
+              ]
+            }
+          ],
+          "handler_prints": "xx"
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\",\"params\":{\"_meta\":{\"io.modelcontextprotocol/protocolVersion\":\"2026-07-28\",\"io.modelcontextprotocol/clientCapabilities\":{}}}}",
+        "expect_line": {
+          "json_equals": {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "result": {
+              "resultType": "complete",
+              "tools": [
+                {
+                  "name": "send",
+                  "description": "send it\n\nScoped parameters (enforced at call time):\n  via=email: subject (required)\n  via=sms: (no parameters)\n\nConstraints (enforced at call time):\n  at least one of: older_than, larger_than",
+                  "effect": "read_only",
+                  "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                      "older_than": {
+                        "type": "string",
+                        "description": "the older-than"
+                      },
+                      "larger_than": {
+                        "type": "string",
+                        "description": "the larger-than"
+                      },
+                      "via": {
+                        "type": "string",
+                        "enum": [
+                          "email",
+                          "sms"
+                        ],
+                        "description": "delivery channel"
+                      },
+                      "subject": {
+                        "type": "string",
+                        "description": "the subject"
+                      }
+                    },
+                    "required": [
+                      "via"
+                    ],
+                    "anyOf": [
+                      {
+                        "required": [
+                          "older_than"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "larger_than"
+                        ]
+                      }
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              ],
+              "ttlMs": 3600000,
+              "cacheScope": "public",
+              "_meta": {
+                "io.modelcontextprotocol/serverInfo": {
+                  "name": "myapp",
+                  "version": "1.0.0"
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "mcp constraints: a violation at the machine door is an isError result carrying the parser's own sentence, never -32602",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "purge",
+          "help": "purge it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "older-than",
+              "type": "str",
+              "help": "the older-than",
+              "presence": "optional"
+            },
+            {
+              "name": "larger-than",
+              "type": "str",
+              "help": "the larger-than",
+              "presence": "optional"
+            }
+          ],
+          "constraints": [
+            {
+              "type": "at_least_one",
+              "name": "purge-selection",
+              "members": [
+                {
+                  "name": "older-than"
+                },
+                {
+                  "name": "larger-than"
+                }
+              ]
+            }
+          ],
+          "handler_prints": "older={older-than}"
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/call\",\"params\":{\"name\":\"purge\",\"arguments\":{},\"_meta\":{\"io.modelcontextprotocol/protocolVersion\":\"2026-07-28\",\"io.modelcontextprotocol/clientCapabilities\":{}}}}",
+        "expect_line": {
+          "json_equals": {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "result": {
+              "resultType": "complete",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "constraint \"purge-selection\": at least one of --older-than, --larger-than is required"
+                }
+              ],
+              "isError": true,
+              "_meta": {
+                "io.modelcontextprotocol/serverInfo": {
+                  "name": "myapp",
+                  "version": "1.0.0"
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "mcp constraints: an explicitly empty array is not a provision at the flat machine door, so the at-least-one is violated",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "purge",
+          "help": "purge it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "older-than",
+              "type": "str",
+              "help": "the older-than",
+              "presence": "optional"
+            }
+          ],
+          "args": [
+            {
+              "name": "targets",
+              "help": "the targets",
+              "presence": "optional",
+              "variadic": true
+            }
+          ],
+          "constraints": [
+            {
+              "type": "at_least_one",
+              "name": "purge-selection",
+              "members": [
+                {
+                  "name": "targets",
+                  "when": "non_empty"
+                },
+                {
+                  "name": "older-than"
+                }
+              ]
+            }
+          ],
+          "handler_prints": "targets={targets}"
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/call\",\"params\":{\"name\":\"purge\",\"arguments\":{\"targets\":[]},\"_meta\":{\"io.modelcontextprotocol/protocolVersion\":\"2026-07-28\",\"io.modelcontextprotocol/clientCapabilities\":{}}}}",
+        "expect_line": {
+          "json_equals": {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "result": {
+              "resultType": "complete",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "constraint \"purge-selection\": at least one of targets, --older-than is required"
+                }
+              ],
+              "isError": true,
+              "_meta": {
+                "io.modelcontextprotocol/serverInfo": {
+                  "name": "myapp",
+                  "version": "1.0.0"
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "mcp constraints: one element at the flat machine door is a provision, and engages the member",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "purge",
+          "help": "purge it",
+          "effect": "read_only",
+          "flags": [
+            {
+              "name": "older-than",
+              "type": "str",
+              "help": "the older-than",
+              "presence": "optional"
+            }
+          ],
+          "args": [
+            {
+              "name": "targets",
+              "help": "the targets",
+              "presence": "optional",
+              "variadic": true
+            }
+          ],
+          "constraints": [
+            {
+              "type": "at_least_one",
+              "name": "purge-selection",
+              "members": [
+                {
+                  "name": "targets",
+                  "when": "non_empty"
+                },
+                {
+                  "name": "older-than"
+                }
+              ]
+            }
+          ],
+          "handler_prints": "targets={targets}"
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/call\",\"params\":{\"name\":\"purge\",\"arguments\":{\"targets\":[\"aa\"]},\"_meta\":{\"io.modelcontextprotocol/protocolVersion\":\"2026-07-28\",\"io.modelcontextprotocol/clientCapabilities\":{}}}}",
+        "expect_line": {
+          "equals": "targets=aa"
+        }
+      },
+      {
+        "expect_line": {
+          "json_equals": {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "result": {
+              "resultType": "complete",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "$ANY"
+                }
+              ],
+              "_meta": {
+                "io.modelcontextprotocol/serverInfo": {
+                  "name": "myapp",
+                  "version": "1.0.0"
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  }
+]

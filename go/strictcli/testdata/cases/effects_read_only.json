@@ -1,0 +1,486 @@
+[
+  {
+    "name": "effects_read_only: a mutating method in a read-only command is a call-time error",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "show",
+          "help": "show something",
+          "effect": "read_only",
+          "handler_effects": [
+            {
+              "method": "write",
+              "path": "out.txt",
+              "content": "nope"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "show"
+    ],
+    "expect": {
+      "exit_code": 2,
+      "stderr_contains": "command \"show\" is classified read_only; effects.write is a mutating operation"
+    }
+  },
+  {
+    "name": "effects_read_only: mkdir is refused in a read-only command",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "show",
+          "help": "show something",
+          "effect": "read_only",
+          "handler_effects": [
+            {
+              "method": "mkdir",
+              "path": "build"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "show"
+    ],
+    "expect": {
+      "exit_code": 2,
+      "stderr_contains": "command \"show\" is classified read_only; effects.mkdir is a mutating operation"
+    }
+  },
+  {
+    "name": "effects_read_only: remove is refused in a read-only command",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "show",
+          "help": "show something",
+          "effect": "read_only",
+          "handler_effects": [
+            {
+              "method": "remove",
+              "path": "state"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "show"
+    ],
+    "expect": {
+      "exit_code": 2,
+      "stderr_contains": "command \"show\" is classified read_only; effects.remove is a mutating operation"
+    }
+  },
+  {
+    "name": "effects_read_only: rename is refused in a read-only command",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "show",
+          "help": "show something",
+          "effect": "read_only",
+          "handler_effects": [
+            {
+              "method": "rename",
+              "path": "a.txt",
+              "to": "b.txt"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "show"
+    ],
+    "expect": {
+      "exit_code": 2,
+      "stderr_contains": "command \"show\" is classified read_only; effects.rename is a mutating operation"
+    }
+  },
+  {
+    "name": "effects_read_only: chmod is refused in a read-only command",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "show",
+          "help": "show something",
+          "effect": "read_only",
+          "handler_effects": [
+            {
+              "method": "chmod",
+              "path": "run.sh",
+              "mode": "755"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "show"
+    ],
+    "expect": {
+      "exit_code": 2,
+      "stderr_contains": "command \"show\" is classified read_only; effects.chmod is a mutating operation"
+    }
+  },
+  {
+    "name": "effects_read_only: spawn is refused in a read-only command",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "show",
+          "help": "show something",
+          "effect": "read_only",
+          "handler_effects": [
+            {
+              "method": "spawn",
+              "argv": [
+                "worker"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "show"
+    ],
+    "expect": {
+      "exit_code": 2,
+      "stderr_contains": "command \"show\" is classified read_only; effects.spawn is a mutating operation"
+    }
+  },
+  {
+    "name": "effects_read_only: http is refused in a read-only command",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "show",
+          "help": "show something",
+          "effect": "read_only",
+          "handler_effects": [
+            {
+              "method": "http",
+              "http_method": "POST",
+              "url": "https://api.example.com/x"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "show"
+    ],
+    "expect": {
+      "exit_code": 2,
+      "stderr_contains": "command \"show\" is classified read_only; effects.http is a mutating operation"
+    }
+  },
+  {
+    "name": "effects_read_only: a non-allowlisted run is refused in a read-only command",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "proc_observe_allowlist": [
+        [
+          "git",
+          "status"
+        ]
+      ],
+      "commands": [
+        {
+          "name": "show",
+          "help": "show something",
+          "effect": "read_only",
+          "handler_effects": [
+            {
+              "method": "run",
+              "argv": [
+                "git",
+                "push",
+                "origin",
+                "main"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "show"
+    ],
+    "expect": {
+      "exit_code": 2,
+      "stderr_contains": "command \"show\" is classified read_only; effects.run argv git push origin main is not on the app's proc_observe_allowlist"
+    }
+  },
+  {
+    "name": "effects_read_only: a run is refused when the app declares no allowlist at all",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "show",
+          "help": "show something",
+          "effect": "read_only",
+          "handler_effects": [
+            {
+              "method": "run",
+              "argv": [
+                "git",
+                "status"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "show"
+    ],
+    "expect": {
+      "exit_code": 2,
+      "stderr_contains": "command \"show\" is classified read_only; effects.run argv git status is not on the app's proc_observe_allowlist"
+    }
+  },
+  {
+    "name": "effects_read_only: an allowlisted run is an observe and executes",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "proc_observe_allowlist": [
+        [
+          "echo"
+        ]
+      ],
+      "commands": [
+        {
+          "name": "show",
+          "help": "observe something",
+          "effect": "read_only",
+          "handler_prints": "done",
+          "handler_effects": [
+            {
+              "method": "run",
+              "argv": [
+                "echo",
+                "observed"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "show"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "done\n"
+    }
+  },
+  {
+    "name": "effects_read_only: an observe executes in dry mode and is never logged",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "proc_observe_allowlist": [
+        [
+          "echo"
+        ]
+      ],
+      "commands": [
+        {
+          "name": "show",
+          "help": "observe something",
+          "effect": "read_only",
+          "handler_prints": "done",
+          "handler_effects": [
+            {
+              "method": "run",
+              "argv": [
+                "echo",
+                "observed"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--dry-run",
+      "show"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "done\nDRY RUN — no changes were made. Would do:\n"
+    }
+  },
+  {
+    "name": "effects_read_only: the allowlist matches an argv prefix, not the whole argv",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "proc_observe_allowlist": [
+        [
+          "echo",
+          "ok"
+        ]
+      ],
+      "commands": [
+        {
+          "name": "show",
+          "help": "observe something",
+          "effect": "read_only",
+          "handler_prints": "done",
+          "handler_effects": [
+            {
+              "method": "run",
+              "argv": [
+                "echo",
+                "ok",
+                "and",
+                "more"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "show"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "done\n"
+    }
+  },
+  {
+    "name": "effects_read_only: a shorter argv than the allowlist prefix does not match",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "proc_observe_allowlist": [
+        [
+          "echo",
+          "ok"
+        ]
+      ],
+      "commands": [
+        {
+          "name": "show",
+          "help": "observe something",
+          "effect": "read_only",
+          "handler_effects": [
+            {
+              "method": "run",
+              "argv": [
+                "echo"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "show"
+    ],
+    "expect": {
+      "exit_code": 2,
+      "stderr_contains": "command \"show\" is classified read_only; effects.run argv echo is not on the app's proc_observe_allowlist"
+    }
+  },
+  {
+    "name": "effects_read_only: allowlist matching is exact string equality, not prefix-of-element",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "proc_observe_allowlist": [
+        [
+          "git",
+          "status"
+        ]
+      ],
+      "commands": [
+        {
+          "name": "show",
+          "help": "observe something",
+          "effect": "read_only",
+          "handler_effects": [
+            {
+              "method": "run",
+              "argv": [
+                "git",
+                "status-x"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "show"
+    ],
+    "expect": {
+      "exit_code": 2,
+      "stderr_contains": "command \"show\" is classified read_only; effects.run argv git status-x is not on the app's proc_observe_allowlist"
+    }
+  },
+  {
+    "name": "effects_read_only: a read-only command never prompts",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "show",
+          "help": "show something",
+          "effect": "read_only",
+          "handler_prints": "shown"
+        }
+      ]
+    },
+    "argv": [
+      "show"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "shown\n",
+      "stderr_equals": ""
+    }
+  }
+]

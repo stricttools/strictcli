@@ -1,0 +1,95 @@
+[
+  {
+    "name": "protocol_script: a scripted MCP exchange is asserted line by line",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "status",
+          "help": "show status",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "data",
+            "data": {
+              "ok": true
+            }
+          }
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{}}",
+        "expect_line": {
+          "json_equals": {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "result": {
+              "protocolVersion": "2025-11-25",
+              "capabilities": {
+                "tools": {},
+                "experimental": {
+                  "dev.smmh.strictcli/consequential-confirmation": {}
+                }
+              },
+              "serverInfo": {
+                "name": "myapp",
+                "version": "1.0.0"
+              }
+            }
+          }
+        }
+      },
+      {
+        "send": "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/list\"}",
+        "expect_line": {
+          "json_equals": {
+            "jsonrpc": "2.0",
+            "id": 2,
+            "result": {
+              "tools": [
+                {
+                  "name": "status",
+                  "description": "show status",
+                  "effect": "read_only",
+                  "inputSchema": {
+                    "type": "object",
+                    "properties": {},
+                    "required": [],
+                    "additionalProperties": false
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "send": "{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"tools/call\",\"params\":{\"name\":\"status\",\"arguments\":{}}}",
+        "expect_line": {
+          "json_equals": {
+            "jsonrpc": "2.0",
+            "id": 3,
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "$ANY"
+                }
+              ]
+            }
+          }
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  }
+]

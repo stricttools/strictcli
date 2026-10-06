@@ -2,8 +2,8 @@ package strictcli
 
 // The declared payload schema's validator (effects contract §19.5).
 //
-// The bulk of the coverage is the committed cross-language vector file at
-// conformance/payload_schema_vectors.json, replayed here and by the Python and
+// The bulk of the coverage is the committed vector file at
+// testdata/payload_schema_vectors.json, replayed here and by the Python and
 // TypeScript suites. Every vector pins both the verdict AND the exact error
 // text, which is what makes the three validators byte-identical rather than
 // merely similarly-strict.
@@ -48,7 +48,7 @@ func payloadVectorsPath(t *testing.T) string {
 		t.Fatal("runtime.Caller failed")
 	}
 	dir := filepath.Dir(thisFile) // .../go/strictcli
-	return filepath.Join(dir, "..", "..", "conformance", "payload_schema_vectors.json")
+	return filepath.Join(dir, "testdata", "payload_schema_vectors.json")
 }
 
 func loadPayloadVectors(t *testing.T) payloadVectorDoc {
@@ -489,8 +489,7 @@ func buildersPath(t *testing.T) string {
 	if !ok {
 		t.Fatal("runtime.Caller failed")
 	}
-	return filepath.Join(filepath.Dir(thisFile), "..", "..",
-		"conformance", "payload_schema_builders.json")
+	return filepath.Join(filepath.Dir(thisFile), "testdata", "payload_schema_builders.json")
 }
 
 // buildConstruct constructs one fixture entry through the builders.

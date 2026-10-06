@@ -1,0 +1,440 @@
+[
+  {
+    "name": "default election: the command line reports a selection nobody elected as the declaration's",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "send",
+          "help": "send one notification through exactly one channel",
+          "effect": "read_only",
+          "handler_prints": "via={via} src={source:via} prov={provided:via}",
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "default",
+              "default": {
+                "choice": "email"
+              },
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver the notification as an email message",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "subject line of the message",
+                      "type": "str",
+                      "presence": "default",
+                      "default": "hi"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver the notification as a text message",
+                  "flags": [
+                    {
+                      "name": "phone-number",
+                      "help": "destination number",
+                      "type": "str",
+                      "presence": "optional"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "noop",
+          "help": "a command the case argv can run without output",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "exit",
+            "code": 0
+          }
+        }
+      ]
+    },
+    "argv": [
+      "send"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "via=email(subject=hi) src=default prov=false\n",
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "default election: a caller who elects earns cli and provided",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "send",
+          "help": "send one notification through exactly one channel",
+          "effect": "read_only",
+          "handler_prints": "via={via} src={source:via} prov={provided:via}",
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "default",
+              "default": {
+                "choice": "email"
+              },
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver the notification as an email message",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "subject line of the message",
+                      "type": "str",
+                      "presence": "default",
+                      "default": "hi"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver the notification as a text message",
+                  "flags": [
+                    {
+                      "name": "phone-number",
+                      "help": "destination number",
+                      "type": "str",
+                      "presence": "optional"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "noop",
+          "help": "a command the case argv can run without output",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "exit",
+            "code": 0
+          }
+        }
+      ]
+    },
+    "argv": [
+      "send",
+      "--via",
+      "email"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "via=email(subject=hi) src=cli prov=true\n",
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "default election: the record door reports it as the declaration's too",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "pre_call": [
+        {
+          "command": "send",
+          "kwargs": {}
+        }
+      ],
+      "commands": [
+        {
+          "name": "send",
+          "help": "send one notification through exactly one channel",
+          "effect": "read_only",
+          "handler_prints": "via={via} src={source:via} prov={provided:via}",
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "default",
+              "default": {
+                "choice": "email"
+              },
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver the notification as an email message",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "subject line of the message",
+                      "type": "str",
+                      "presence": "default",
+                      "default": "hi"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver the notification as a text message",
+                  "flags": [
+                    {
+                      "name": "phone-number",
+                      "help": "destination number",
+                      "type": "str",
+                      "presence": "optional"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "noop",
+          "help": "a command the case argv can run without output",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "exit",
+            "code": 0
+          }
+        }
+      ]
+    },
+    "argv": [
+      "noop"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "via=email(subject=hi) src=default prov=false\ncall ok: send\n",
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "default election: the flat door does not treat the declaration's selection as supplied",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "send",
+          "help": "send one notification through exactly one channel",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "data",
+            "data": {
+              "ok": true
+            }
+          },
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "default",
+              "default": {
+                "choice": "email"
+              },
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver the notification as an email message",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "subject line of the message",
+                      "type": "str",
+                      "presence": "default",
+                      "default": "hi",
+                      "validate": {
+                        "rejects": [
+                          "hi"
+                        ],
+                        "message": "hi is refused"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver the notification as a text message",
+                  "flags": [
+                    {
+                      "name": "phone-number",
+                      "help": "destination number",
+                      "type": "str",
+                      "presence": "optional"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"tools/call\", \"params\": {\"name\": \"send\", \"arguments\": {}, \"_meta\": {\"io.modelcontextprotocol/protocolVersion\": \"2026-07-28\", \"io.modelcontextprotocol/clientCapabilities\": {}}}}",
+        "expect_line": {
+          "matches": "ok",
+          "not_contains": "isError"
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "default election: a scoped value the caller supplies at the flat door runs its validate callback",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "send",
+          "help": "send one notification through exactly one channel",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "data",
+            "data": {
+              "ok": true
+            }
+          },
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "default",
+              "default": {
+                "choice": "email"
+              },
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver the notification as an email message",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "subject line of the message",
+                      "type": "str",
+                      "presence": "default",
+                      "default": "hi",
+                      "validate": {
+                        "rejects": [
+                          "hi"
+                        ],
+                        "message": "hi is refused"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver the notification as a text message",
+                  "flags": [
+                    {
+                      "name": "phone-number",
+                      "help": "destination number",
+                      "type": "str",
+                      "presence": "optional"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"tools/call\", \"params\": {\"name\": \"send\", \"arguments\": {\"via\": \"email\", \"subject\": \"hi\"}, \"_meta\": {\"io.modelcontextprotocol/protocolVersion\": \"2026-07-28\", \"io.modelcontextprotocol/clientCapabilities\": {}}}}",
+        "expect_line": {
+          "contains": [
+            "\"isError\"",
+            "--subject: hi is refused"
+          ]
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "default election: a root-scope value the caller supplies at the flat door runs its validate callback",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "send",
+          "help": "send one notification through exactly one channel",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "data",
+            "data": {
+              "ok": true
+            }
+          },
+          "flags": [
+            {
+              "name": "subject",
+              "help": "subject line of the message",
+              "type": "str",
+              "presence": "optional",
+              "validate": {
+                "rejects": [
+                  "hi"
+                ],
+                "message": "hi is refused"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"tools/call\", \"params\": {\"name\": \"send\", \"arguments\": {\"subject\": \"hi\"}, \"_meta\": {\"io.modelcontextprotocol/protocolVersion\": \"2026-07-28\", \"io.modelcontextprotocol/clientCapabilities\": {}}}}",
+        "expect_line": {
+          "contains": [
+            "\"isError\"",
+            "--subject: hi is refused"
+          ]
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  }
+]

@@ -1,0 +1,1277 @@
+[
+  {
+    "name": "record door: a root value refusal outranks a scoped one when the root flag is declared first",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "pre_call": [
+        {
+          "command": "send",
+          "kwargs": {
+            "before": "nope",
+            "via": {
+              "choice": "email",
+              "subject": "hi",
+              "retries": "nope"
+            }
+          }
+        }
+      ],
+      "commands": [
+        {
+          "name": "send",
+          "help": "send one notification through exactly one channel",
+          "effect": "read_only",
+          "handler_prints": "via={via} before={before} after={after}",
+          "flags": [
+            {
+              "name": "before",
+              "help": "a root flag declared before the selector",
+              "type": "int",
+              "presence": "optional"
+            },
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver the notification as an email message",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "subject line of the message",
+                      "type": "str",
+                      "presence": "required"
+                    },
+                    {
+                      "name": "retries",
+                      "help": "delivery attempts before giving up",
+                      "type": "int",
+                      "presence": "default",
+                      "default": 3
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver the notification as a text message",
+                  "flags": [
+                    {
+                      "name": "phone-number",
+                      "help": "destination number",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "after",
+              "help": "a root flag declared after the selector",
+              "type": "int",
+              "presence": "optional"
+            }
+          ]
+        },
+        {
+          "name": "noop",
+          "help": "a command the case argv can run without output",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "exit",
+            "code": 0
+          }
+        }
+      ]
+    },
+    "argv": [
+      "noop"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "",
+      "stderr_equals": "call error: --before: expected integer, got str\n"
+    }
+  },
+  {
+    "name": "record door: a scoped value refusal outranks a root one declared after the selector",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "pre_call": [
+        {
+          "command": "send",
+          "kwargs": {
+            "after": "nope",
+            "via": {
+              "choice": "email",
+              "subject": "hi",
+              "retries": "nope"
+            }
+          }
+        }
+      ],
+      "commands": [
+        {
+          "name": "send",
+          "help": "send one notification through exactly one channel",
+          "effect": "read_only",
+          "handler_prints": "via={via} before={before} after={after}",
+          "flags": [
+            {
+              "name": "before",
+              "help": "a root flag declared before the selector",
+              "type": "int",
+              "presence": "optional"
+            },
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver the notification as an email message",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "subject line of the message",
+                      "type": "str",
+                      "presence": "required"
+                    },
+                    {
+                      "name": "retries",
+                      "help": "delivery attempts before giving up",
+                      "type": "int",
+                      "presence": "default",
+                      "default": 3
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver the notification as a text message",
+                  "flags": [
+                    {
+                      "name": "phone-number",
+                      "help": "destination number",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "after",
+              "help": "a root flag declared after the selector",
+              "type": "int",
+              "presence": "optional"
+            }
+          ]
+        },
+        {
+          "name": "noop",
+          "help": "a command the case argv can run without output",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "exit",
+            "code": 0
+          }
+        }
+      ]
+    },
+    "argv": [
+      "noop"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "",
+      "stderr_equals": "call error: --retries: expected integer, got str\n"
+    }
+  },
+  {
+    "name": "record door: a record's fields are checked to their full depth",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "pre_call": [
+        {
+          "command": "send",
+          "kwargs": {
+            "mode": {
+              "choice": "advanced",
+              "via": {
+                "choice": "email",
+                "subject": "hi",
+                "retries": "nope"
+              }
+            }
+          }
+        }
+      ],
+      "commands": [
+        {
+          "name": "send",
+          "help": "send one notification through exactly one channel",
+          "effect": "read_only",
+          "handler_prints": "mode={mode}",
+          "flags": [
+            {
+              "name": "mode",
+              "help": "operating mode",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "advanced",
+                  "help": "the mode that opens a channel selection of its own",
+                  "flags": [
+                    {
+                      "name": "via",
+                      "help": "delivery channel",
+                      "presence": "required",
+                      "elect_by": "selector-token",
+                      "choices": [
+                        {
+                          "name": "email",
+                          "help": "deliver the notification as an email message",
+                          "flags": [
+                            {
+                              "name": "subject",
+                              "help": "subject line of the message",
+                              "type": "str",
+                              "presence": "required"
+                            },
+                            {
+                              "name": "retries",
+                              "help": "delivery attempts before giving up",
+                              "type": "int",
+                              "presence": "default",
+                              "default": 3
+                            }
+                          ]
+                        },
+                        {
+                          "name": "sms",
+                          "help": "deliver the notification as a text message",
+                          "flags": [
+                            {
+                              "name": "phone-number",
+                              "help": "destination number",
+                              "type": "str",
+                              "presence": "required"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "name": "simple",
+                  "help": "the mode that declares no channel of its own"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "noop",
+          "help": "a command the case argv can run without output",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "exit",
+            "code": 0
+          }
+        }
+      ]
+    },
+    "argv": [
+      "noop"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "",
+      "stderr_equals": "call error: --retries: expected integer, got str\n"
+    }
+  },
+  {
+    "name": "record door: an explicit null on an optional field delivers absence",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "pre_call": [
+        {
+          "command": "send",
+          "kwargs": {
+            "via": {
+              "choice": "email",
+              "subject": "hi",
+              "note": null
+            }
+          }
+        }
+      ],
+      "commands": [
+        {
+          "name": "send",
+          "help": "send one notification through exactly one channel",
+          "effect": "read_only",
+          "handler_prints": "via={via}",
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver the notification as an email message",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "subject line of the message",
+                      "type": "str",
+                      "presence": "required"
+                    },
+                    {
+                      "name": "note",
+                      "help": "an optional note carried with the message",
+                      "type": "str",
+                      "presence": "optional"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver the notification as a text message",
+                  "flags": [
+                    {
+                      "name": "phone-number",
+                      "help": "destination number",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "noop",
+          "help": "a command the case argv can run without output",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "exit",
+            "code": 0
+          }
+        }
+      ]
+    },
+    "argv": [
+      "noop"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "via=email(subject=hi, note=None)\ncall ok: send\n",
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "record door: an explicit null on a required field is refused",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "pre_call": [
+        {
+          "command": "send",
+          "kwargs": {
+            "via": {
+              "choice": "email",
+              "subject": null
+            }
+          }
+        }
+      ],
+      "commands": [
+        {
+          "name": "send",
+          "help": "send one notification through exactly one channel",
+          "effect": "read_only",
+          "handler_prints": "via={via}",
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver the notification as an email message",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "subject line of the message",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver the notification as a text message",
+                  "flags": [
+                    {
+                      "name": "phone-number",
+                      "help": "destination number",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "noop",
+          "help": "a command the case argv can run without output",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "exit",
+            "code": 0
+          }
+        }
+      ]
+    },
+    "argv": [
+      "noop"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "",
+      "stderr_equals": "call error: --subject: expected string, got null\n"
+    }
+  },
+  {
+    "name": "record door: a field the caller supplied is not provided-by-the-invocation",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "pre_call": [
+        {
+          "command": "send",
+          "kwargs": {
+            "via": {
+              "choice": "email",
+              "subject": "hi"
+            }
+          }
+        }
+      ],
+      "commands": [
+        {
+          "name": "send",
+          "help": "send one notification through exactly one channel",
+          "effect": "read_only",
+          "handler_prints": "subject={via.subject} provided={provided:via.subject}",
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver the notification as an email message",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "subject line of the message",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver the notification as a text message",
+                  "flags": [
+                    {
+                      "name": "phone-number",
+                      "help": "destination number",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "noop",
+          "help": "a command the case argv can run without output",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "exit",
+            "code": 0
+          }
+        }
+      ]
+    },
+    "argv": [
+      "noop"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "subject=hi provided=false\ncall ok: send\n",
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "record door: the type is checked and the closed set is not",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "pre_call": [
+        {
+          "command": "send",
+          "kwargs": {
+            "via": {
+              "choice": "email",
+              "subject": "hi",
+              "format": "loud"
+            }
+          }
+        }
+      ],
+      "commands": [
+        {
+          "name": "send",
+          "help": "send one notification through exactly one channel",
+          "effect": "read_only",
+          "handler_prints": "via={via}",
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver the notification as an email message",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "subject line of the message",
+                      "type": "str",
+                      "presence": "required"
+                    },
+                    {
+                      "name": "format",
+                      "help": "how the message body is rendered",
+                      "type": "str",
+                      "presence": "default",
+                      "default": "plain",
+                      "choices_str": [
+                        {
+                          "value": "plain",
+                          "help": "no markup at all"
+                        },
+                        {
+                          "value": "rich",
+                          "help": "the full markup set"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver the notification as a text message",
+                  "flags": [
+                    {
+                      "name": "phone-number",
+                      "help": "destination number",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "noop",
+          "help": "a command the case argv can run without output",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "exit",
+            "code": 0
+          }
+        }
+      ]
+    },
+    "argv": [
+      "noop"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "via=email(subject=hi, format=loud)\ncall ok: send\n",
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "record door: a key the elected scope does not declare is an unknown parameter under that scope",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "pre_call": [
+        {
+          "command": "send",
+          "kwargs": {
+            "via": {
+              "choice": "email",
+              "subject": "hi",
+              "bogus": 1
+            }
+          }
+        }
+      ],
+      "commands": [
+        {
+          "name": "send",
+          "help": "send one notification through exactly one channel",
+          "effect": "read_only",
+          "handler_prints": "via={via}",
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver the notification as an email message",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "subject line of the message",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver the notification as a text message",
+                  "flags": [
+                    {
+                      "name": "phone-number",
+                      "help": "destination number",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "noop",
+          "help": "a command the case argv can run without output",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "exit",
+            "code": 0
+          }
+        }
+      ]
+    },
+    "argv": [
+      "noop"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "",
+      "stderr_equals": "call error: unknown parameter \"bogus\" for command \"send\" under '--via email'\n"
+    }
+  },
+  {
+    "name": "record door: a positional binds to the arg its key names",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "pre_call": [
+        {
+          "command": "run",
+          "kwargs": {
+            "count": 2
+          }
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run the job",
+          "effect": "read_only",
+          "handler_prints": "label={label} count={count}",
+          "args": [
+            {
+              "name": "label",
+              "help": "what to call this run",
+              "presence": "optional"
+            },
+            {
+              "name": "count",
+              "help": "how many times",
+              "type": "int",
+              "presence": "required"
+            }
+          ]
+        },
+        {
+          "name": "noop",
+          "help": "a command the case argv can run without output",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "exit",
+            "code": 0
+          }
+        }
+      ]
+    },
+    "argv": [
+      "noop"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "label=None count=2\ncall ok: run\n",
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "record door: a positional's supplied value is checked against its declared type",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "pre_call": [
+        {
+          "command": "run",
+          "kwargs": {
+            "count": "5"
+          }
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run the job",
+          "effect": "read_only",
+          "handler_prints": "count={count}",
+          "args": [
+            {
+              "name": "count",
+              "help": "how many times",
+              "type": "int",
+              "presence": "required"
+            }
+          ]
+        },
+        {
+          "name": "noop",
+          "help": "a command the case argv can run without output",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "exit",
+            "code": 0
+          }
+        }
+      ]
+    },
+    "argv": [
+      "noop"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "",
+      "stderr_equals": "call error: argument 'count': expected integer, got str\n"
+    }
+  },
+  {
+    "name": "record door: a string handed to a str-declared positional is not stringified from a number",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "pre_call": [
+        {
+          "command": "run",
+          "kwargs": {
+            "label": 7
+          }
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run the job",
+          "effect": "read_only",
+          "handler_prints": "label={label}",
+          "args": [
+            {
+              "name": "label",
+              "help": "what to call this run",
+              "presence": "required"
+            }
+          ]
+        },
+        {
+          "name": "noop",
+          "help": "a command the case argv can run without output",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "exit",
+            "code": 0
+          }
+        }
+      ]
+    },
+    "argv": [
+      "noop"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "",
+      "stderr_equals": "call error: argument 'label': expected string, got int\n"
+    }
+  },
+  {
+    "name": "record door: a missing required flag outranks a bad positional",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "pre_call": [
+        {
+          "command": "run",
+          "kwargs": {
+            "count": "5"
+          }
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run the job",
+          "effect": "read_only",
+          "handler_prints": "target={target} count={count}",
+          "flags": [
+            {
+              "name": "target",
+              "help": "where the job runs",
+              "type": "str",
+              "presence": "required"
+            }
+          ],
+          "args": [
+            {
+              "name": "count",
+              "help": "how many times",
+              "type": "int",
+              "presence": "required"
+            }
+          ]
+        },
+        {
+          "name": "noop",
+          "help": "a command the case argv can run without output",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "exit",
+            "code": 0
+          }
+        }
+      ]
+    },
+    "argv": [
+      "noop"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "",
+      "stderr_equals": "call error: flag '--target' is required\n"
+    }
+  },
+  {
+    "name": "record door: a root flag's supplied value is checked against its declared type",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "pre_call": [
+        {
+          "command": "run",
+          "kwargs": {
+            "retries": "nope"
+          }
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run the job",
+          "effect": "read_only",
+          "handler_prints": "retries={retries}",
+          "flags": [
+            {
+              "name": "retries",
+              "help": "attempts before giving up",
+              "type": "int",
+              "presence": "default",
+              "default": 3
+            }
+          ]
+        },
+        {
+          "name": "noop",
+          "help": "a command the case argv can run without output",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "exit",
+            "code": 0
+          }
+        }
+      ]
+    },
+    "argv": [
+      "noop"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "",
+      "stderr_equals": "call error: --retries: expected integer, got str\n"
+    }
+  },
+  {
+    "name": "record door: a value problem in one record does not outrank another selector's election refusal",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "pre_call": [
+        {
+          "command": "send",
+          "kwargs": {
+            "via": {
+              "choice": "email",
+              "subject": "hi",
+              "retries": "nope"
+            },
+            "target": {
+              "choice": "simple"
+            }
+          }
+        }
+      ],
+      "commands": [
+        {
+          "name": "send",
+          "help": "send one notification through exactly one channel",
+          "effect": "read_only",
+          "handler_prints": "via={via} target={target}",
+          "flags": [
+            {
+              "name": "mode",
+              "help": "operating mode",
+              "presence": "default",
+              "default": {
+                "choice": "simple"
+              },
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "advanced",
+                  "help": "the mode that opens a rendering selection of its own"
+                },
+                {
+                  "name": "simple",
+                  "help": "the mode that declares no rendering of its own"
+                }
+              ]
+            },
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver the notification as an email message",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "subject line of the message",
+                      "type": "str",
+                      "presence": "required"
+                    },
+                    {
+                      "name": "retries",
+                      "help": "delivery attempts before giving up",
+                      "type": "int",
+                      "presence": "default",
+                      "default": 3
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver the notification as a text message",
+                  "flags": [
+                    {
+                      "name": "phone-number",
+                      "help": "destination number",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "target",
+              "help": "which profiles to operate on",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "one-profile",
+                  "help": "operate on a single profile"
+                },
+                {
+                  "name": "all-profiles",
+                  "help": "operate on every profile"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "noop",
+          "help": "a command the case argv can run without output",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "exit",
+            "code": 0
+          }
+        }
+      ]
+    },
+    "argv": [
+      "noop"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "",
+      "stderr_contains": "call error: ",
+      "stderr_not_contains": [
+        "expected integer",
+        "is required"
+      ]
+    }
+  },
+  {
+    "name": "record door: a presence problem in one record does not outrank it either",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "pre_call": [
+        {
+          "command": "send",
+          "kwargs": {
+            "via": {
+              "choice": "email"
+            },
+            "target": {
+              "choice": "simple"
+            }
+          }
+        }
+      ],
+      "commands": [
+        {
+          "name": "send",
+          "help": "send one notification through exactly one channel",
+          "effect": "read_only",
+          "handler_prints": "via={via} target={target}",
+          "flags": [
+            {
+              "name": "mode",
+              "help": "operating mode",
+              "presence": "default",
+              "default": {
+                "choice": "simple"
+              },
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "advanced",
+                  "help": "the mode that opens a rendering selection of its own"
+                },
+                {
+                  "name": "simple",
+                  "help": "the mode that declares no rendering of its own"
+                }
+              ]
+            },
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver the notification as an email message",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "subject line of the message",
+                      "type": "str",
+                      "presence": "required"
+                    },
+                    {
+                      "name": "retries",
+                      "help": "delivery attempts before giving up",
+                      "type": "int",
+                      "presence": "default",
+                      "default": 3
+                    }
+                  ]
+                },
+                {
+                  "name": "sms",
+                  "help": "deliver the notification as a text message",
+                  "flags": [
+                    {
+                      "name": "phone-number",
+                      "help": "destination number",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "target",
+              "help": "which profiles to operate on",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "one-profile",
+                  "help": "operate on a single profile"
+                },
+                {
+                  "name": "all-profiles",
+                  "help": "operate on every profile"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "noop",
+          "help": "a command the case argv can run without output",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "exit",
+            "code": 0
+          }
+        }
+      ]
+    },
+    "argv": [
+      "noop"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "",
+      "stderr_contains": "call error: ",
+      "stderr_not_contains": [
+        "expected integer",
+        "is required"
+      ]
+    }
+  },
+  {
+    "name": "record door: a passthrough command takes only its raw argument list (go and typescript)",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "pre_call": [
+        {
+          "command": "shell",
+          "kwargs": {
+            "bogus": 1
+          }
+        }
+      ],
+      "commands": [
+        {
+          "name": "shell",
+          "help": "hand every argument to the child",
+          "effect": "mutating",
+          "passthrough": true,
+          "passthrough_handler_prints": "{name}:{args}"
+        },
+        {
+          "name": "noop",
+          "help": "a command the case argv can run without output",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "exit",
+            "code": 0
+          }
+        }
+      ]
+    },
+    "argv": [
+      "noop"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "",
+      "stderr_equals": "call error: unknown parameter \"bogus\" for passthrough command \"shell\"\n"
+    }
+  }
+]

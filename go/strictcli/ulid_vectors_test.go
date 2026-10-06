@@ -2,11 +2,10 @@ package strictcli
 
 // Replays the committed strict-ULID vectors against the Go implementation.
 //
-// The vectors live at conformance/ulid_vectors.json and are authored in
-// conformance/gen_ulid_vectors.py -- not derived from any implementation. The
-// Python and TypeScript suites replay the same file, which is what pins the
-// profile (docs/process-trace-store.md, "Identifiers") across three
-// independent minters.
+// The vectors live at testdata/ulid_vectors.json and are authored there --
+// not derived from any implementation. The Python and TypeScript suites replay
+// the same file, which pins the profile (docs/process-trace-store.md,
+// "Identifiers") for all three minters.
 
 import (
 	"encoding/hex"
@@ -38,7 +37,7 @@ type ulidVectorDoc struct {
 	ParseVectors  []ulidParseVector  `json:"parse_vectors"`
 }
 
-// ulidVectorsPath locates conformance/ulid_vectors.json relative to this source
+// ulidVectorsPath locates testdata/ulid_vectors.json relative to this source
 // file via runtime.Caller, so the test works regardless of the process working
 // directory.
 func ulidVectorsPath(t *testing.T) string {
@@ -47,7 +46,7 @@ func ulidVectorsPath(t *testing.T) string {
 	if !ok {
 		t.Fatal("runtime.Caller failed")
 	}
-	return filepath.Join(filepath.Dir(thisFile), "..", "..", "conformance", "ulid_vectors.json")
+	return filepath.Join(filepath.Dir(thisFile), "testdata", "ulid_vectors.json")
 }
 
 func loadULIDVectors(t *testing.T) ulidVectorDoc {

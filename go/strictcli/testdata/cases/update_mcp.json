@@ -1,0 +1,725 @@
+[
+  {
+    "name": "update mcp: the description block, the anyOf branches and the nullable type list",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "update-record",
+          "help": "change one DNS record in place",
+          "effect": "mutating",
+          "update_of": {
+            "resource": "dns-record",
+            "write_mode": "sparse",
+            "identity": [
+              "zone",
+              "record-id"
+            ],
+            "properties": [
+              "content",
+              "ttl",
+              "proxied"
+            ]
+          },
+          "flags": [
+            {
+              "name": "zone",
+              "help": "zone the record belongs to",
+              "presence": "required",
+              "type": "str"
+            },
+            {
+              "name": "record-id",
+              "help": "identifier of the record to change",
+              "presence": "required",
+              "type": "str"
+            },
+            {
+              "name": "content",
+              "help": "record content",
+              "presence": "optional",
+              "type": "str"
+            },
+            {
+              "name": "ttl",
+              "help": "time to live in seconds",
+              "presence": "optional",
+              "type": "int",
+              "nullable": true
+            },
+            {
+              "name": "proxied",
+              "help": "whether the record is proxied",
+              "presence": "optional",
+              "type": "bool"
+            }
+          ],
+          "handler_prints": "ok"
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\",\"params\":{\"_meta\":{\"io.modelcontextprotocol/protocolVersion\":\"2026-07-28\",\"io.modelcontextprotocol/clientCapabilities\":{}}}}",
+        "expect_line": {
+          "json_equals": {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "result": {
+              "resultType": "complete",
+              "tools": [
+                {
+                  "name": "update-record",
+                  "description": "change one DNS record in place\n\nUpdate of \"dns-record\" (write mode: sparse):\n  identifies: zone, record_id\n  writes: content, ttl, proxied -- at least one is required\n  a property that is not supplied is left unchanged; null clears ttl",
+                  "effect": "mutating",
+                  "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                      "zone": {
+                        "type": "string",
+                        "description": "zone the record belongs to"
+                      },
+                      "record_id": {
+                        "type": "string",
+                        "description": "identifier of the record to change"
+                      },
+                      "content": {
+                        "type": "string",
+                        "description": "record content"
+                      },
+                      "ttl": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ],
+                        "description": "time to live in seconds"
+                      },
+                      "proxied": {
+                        "type": "boolean",
+                        "description": "whether the record is proxied"
+                      }
+                    },
+                    "required": [
+                      "zone",
+                      "record_id"
+                    ],
+                    "anyOf": [
+                      {
+                        "required": [
+                          "content"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "ttl"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "proxied"
+                        ]
+                      }
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              ],
+              "ttlMs": 3600000,
+              "cacheScope": "public",
+              "_meta": {
+                "io.modelcontextprotocol/serverInfo": {
+                  "name": "myapp",
+                  "version": "1.0.0"
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "update mcp: full_replace says re-sent as read, in the human log's own words",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "update-record",
+          "help": "change one DNS record in place",
+          "effect": "mutating",
+          "update_of": {
+            "resource": "dns-record",
+            "write_mode": "full_replace",
+            "identity": [
+              "zone",
+              "record-id"
+            ],
+            "properties": [
+              "content",
+              "ttl",
+              "proxied"
+            ]
+          },
+          "flags": [
+            {
+              "name": "zone",
+              "help": "zone the record belongs to",
+              "presence": "required",
+              "type": "str"
+            },
+            {
+              "name": "record-id",
+              "help": "identifier of the record to change",
+              "presence": "required",
+              "type": "str"
+            },
+            {
+              "name": "content",
+              "help": "record content",
+              "presence": "optional",
+              "type": "str"
+            },
+            {
+              "name": "ttl",
+              "help": "time to live in seconds",
+              "presence": "optional",
+              "type": "int",
+              "nullable": true
+            },
+            {
+              "name": "proxied",
+              "help": "whether the record is proxied",
+              "presence": "optional",
+              "type": "bool"
+            }
+          ],
+          "handler_prints": "ok"
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\",\"params\":{\"_meta\":{\"io.modelcontextprotocol/protocolVersion\":\"2026-07-28\",\"io.modelcontextprotocol/clientCapabilities\":{}}}}",
+        "expect_line": {
+          "json_equals": {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "result": {
+              "resultType": "complete",
+              "tools": [
+                {
+                  "name": "update-record",
+                  "description": "change one DNS record in place\n\nUpdate of \"dns-record\" (write mode: full_replace):\n  identifies: zone, record_id\n  writes: content, ttl, proxied -- at least one is required\n  a property that is not supplied is re-sent as read; null clears ttl",
+                  "effect": "mutating",
+                  "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                      "zone": {
+                        "type": "string",
+                        "description": "zone the record belongs to"
+                      },
+                      "record_id": {
+                        "type": "string",
+                        "description": "identifier of the record to change"
+                      },
+                      "content": {
+                        "type": "string",
+                        "description": "record content"
+                      },
+                      "ttl": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ],
+                        "description": "time to live in seconds"
+                      },
+                      "proxied": {
+                        "type": "boolean",
+                        "description": "whether the record is proxied"
+                      }
+                    },
+                    "required": [
+                      "zone",
+                      "record_id"
+                    ],
+                    "anyOf": [
+                      {
+                        "required": [
+                          "content"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "ttl"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "proxied"
+                        ]
+                      }
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              ],
+              "ttlMs": 3600000,
+              "cacheScope": "public",
+              "_meta": {
+                "io.modelcontextprotocol/serverInfo": {
+                  "name": "myapp",
+                  "version": "1.0.0"
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "update mcp: the identifies line is omitted when the resource declares no identity",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "update-record",
+          "help": "change one DNS record in place",
+          "effect": "mutating",
+          "update_of": {
+            "resource": "dns-record",
+            "write_mode": "sparse",
+            "identity": [],
+            "properties": [
+              "content",
+              "ttl",
+              "proxied"
+            ]
+          },
+          "flags": [
+            {
+              "name": "content",
+              "help": "record content",
+              "presence": "optional",
+              "type": "str"
+            },
+            {
+              "name": "ttl",
+              "help": "time to live in seconds",
+              "presence": "optional",
+              "type": "int",
+              "nullable": true
+            },
+            {
+              "name": "proxied",
+              "help": "whether the record is proxied",
+              "presence": "optional",
+              "type": "bool"
+            }
+          ],
+          "handler_prints": "ok"
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\",\"params\":{\"_meta\":{\"io.modelcontextprotocol/protocolVersion\":\"2026-07-28\",\"io.modelcontextprotocol/clientCapabilities\":{}}}}",
+        "expect_line": {
+          "json_equals": {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "result": {
+              "resultType": "complete",
+              "tools": [
+                {
+                  "name": "update-record",
+                  "description": "change one DNS record in place\n\nUpdate of \"dns-record\" (write mode: sparse):\n  writes: content, ttl, proxied -- at least one is required\n  a property that is not supplied is left unchanged; null clears ttl",
+                  "effect": "mutating",
+                  "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                      "content": {
+                        "type": "string",
+                        "description": "record content"
+                      },
+                      "ttl": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ],
+                        "description": "time to live in seconds"
+                      },
+                      "proxied": {
+                        "type": "boolean",
+                        "description": "whether the record is proxied"
+                      }
+                    },
+                    "required": [],
+                    "anyOf": [
+                      {
+                        "required": [
+                          "content"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "ttl"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "proxied"
+                        ]
+                      }
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              ],
+              "ttlMs": 3600000,
+              "cacheScope": "public",
+              "_meta": {
+                "io.modelcontextprotocol/serverInfo": {
+                  "name": "myapp",
+                  "version": "1.0.0"
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "update mcp: the null-clears clause appears only when a property is nullable",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "update-record",
+          "help": "change one DNS record in place",
+          "effect": "mutating",
+          "update_of": {
+            "resource": "dns-record",
+            "write_mode": "sparse",
+            "identity": [
+              "zone",
+              "record-id"
+            ],
+            "properties": [
+              "content",
+              "ttl",
+              "proxied"
+            ]
+          },
+          "flags": [
+            {
+              "name": "zone",
+              "help": "zone the record belongs to",
+              "presence": "required",
+              "type": "str"
+            },
+            {
+              "name": "record-id",
+              "help": "identifier of the record to change",
+              "presence": "required",
+              "type": "str"
+            },
+            {
+              "name": "content",
+              "help": "record content",
+              "presence": "optional",
+              "type": "str"
+            },
+            {
+              "name": "ttl",
+              "help": "time to live in seconds",
+              "presence": "optional",
+              "type": "int"
+            },
+            {
+              "name": "proxied",
+              "help": "whether the record is proxied",
+              "presence": "optional",
+              "type": "bool"
+            }
+          ],
+          "handler_prints": "ok"
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\",\"params\":{\"_meta\":{\"io.modelcontextprotocol/protocolVersion\":\"2026-07-28\",\"io.modelcontextprotocol/clientCapabilities\":{}}}}",
+        "expect_line": {
+          "json_equals": {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "result": {
+              "resultType": "complete",
+              "tools": [
+                {
+                  "name": "update-record",
+                  "description": "change one DNS record in place\n\nUpdate of \"dns-record\" (write mode: sparse):\n  identifies: zone, record_id\n  writes: content, ttl, proxied -- at least one is required\n  a property that is not supplied is left unchanged",
+                  "effect": "mutating",
+                  "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                      "zone": {
+                        "type": "string",
+                        "description": "zone the record belongs to"
+                      },
+                      "record_id": {
+                        "type": "string",
+                        "description": "identifier of the record to change"
+                      },
+                      "content": {
+                        "type": "string",
+                        "description": "record content"
+                      },
+                      "ttl": {
+                        "type": "integer",
+                        "description": "time to live in seconds"
+                      },
+                      "proxied": {
+                        "type": "boolean",
+                        "description": "whether the record is proxied"
+                      }
+                    },
+                    "required": [
+                      "zone",
+                      "record_id"
+                    ],
+                    "anyOf": [
+                      {
+                        "required": [
+                          "content"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "ttl"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "proxied"
+                        ]
+                      }
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              ],
+              "ttlMs": 3600000,
+              "cacheScope": "public",
+              "_meta": {
+                "io.modelcontextprotocol/serverInfo": {
+                  "name": "myapp",
+                  "version": "1.0.0"
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "update mcp: with a constraint beside it, both anyOf rules are wrapped and the update's comes first",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "update-record",
+          "help": "change one DNS record in place",
+          "effect": "mutating",
+          "update_of": {
+            "resource": "dns-record",
+            "write_mode": "sparse",
+            "identity": [
+              "by-name",
+              "by-id"
+            ],
+            "properties": [
+              "content",
+              "ttl"
+            ]
+          },
+          "flags": [
+            {
+              "name": "by-name",
+              "help": "address it by name",
+              "presence": "optional",
+              "type": "str"
+            },
+            {
+              "name": "by-id",
+              "help": "address it by identifier",
+              "presence": "optional",
+              "type": "str"
+            },
+            {
+              "name": "content",
+              "help": "record content",
+              "presence": "optional",
+              "type": "str"
+            },
+            {
+              "name": "ttl",
+              "help": "time to live in seconds",
+              "presence": "optional",
+              "type": "int",
+              "nullable": true
+            }
+          ],
+          "constraints": [
+            {
+              "type": "at_least_one",
+              "name": "addressing",
+              "members": [
+                {
+                  "name": "by-name"
+                },
+                {
+                  "name": "by-id"
+                }
+              ]
+            }
+          ],
+          "handler_prints": "ok"
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\",\"params\":{\"_meta\":{\"io.modelcontextprotocol/protocolVersion\":\"2026-07-28\",\"io.modelcontextprotocol/clientCapabilities\":{}}}}",
+        "expect_line": {
+          "json_equals": {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "result": {
+              "resultType": "complete",
+              "tools": [
+                {
+                  "name": "update-record",
+                  "description": "change one DNS record in place\n\nConstraints (enforced at call time):\n  at least one of: by_name, by_id\n\nUpdate of \"dns-record\" (write mode: sparse):\n  identifies: by_name, by_id\n  writes: content, ttl -- at least one is required\n  a property that is not supplied is left unchanged; null clears ttl",
+                  "effect": "mutating",
+                  "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                      "by_name": {
+                        "type": "string",
+                        "description": "address it by name"
+                      },
+                      "by_id": {
+                        "type": "string",
+                        "description": "address it by identifier"
+                      },
+                      "content": {
+                        "type": "string",
+                        "description": "record content"
+                      },
+                      "ttl": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ],
+                        "description": "time to live in seconds"
+                      }
+                    },
+                    "required": [],
+                    "allOf": [
+                      {
+                        "anyOf": [
+                          {
+                            "required": [
+                              "content"
+                            ]
+                          },
+                          {
+                            "required": [
+                              "ttl"
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "anyOf": [
+                          {
+                            "required": [
+                              "by_name"
+                            ]
+                          },
+                          {
+                            "required": [
+                              "by_id"
+                            ]
+                          }
+                        ]
+                      }
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              ],
+              "ttlMs": 3600000,
+              "cacheScope": "public",
+              "_meta": {
+                "io.modelcontextprotocol/serverInfo": {
+                  "name": "myapp",
+                  "version": "1.0.0"
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  }
+]

@@ -2,7 +2,7 @@
  * The declared payload schema's validator (effects contract §19.5).
  *
  * The bulk of the coverage is the committed cross-language vector file at
- * conformance/payload_schema_vectors.json, replayed here and by the Python and
+ * go/strictcli/testdata/payload_schema_vectors.json, replayed here and by the Python and
  * Go suites. Every vector pins both the verdict AND the exact error text, which
  * is what makes the three validators byte-identical rather than merely
  * similarly-strict.
@@ -40,7 +40,9 @@ const vectorsPath = join(
 	"..",
 	"..",
 	"..",
-	"conformance",
+	"go",
+	"strictcli",
+	"testdata",
 	"payload_schema_vectors.json",
 );
 
@@ -405,7 +407,9 @@ const buildersPath = join(
 	"..",
 	"..",
 	"..",
-	"conformance",
+	"go",
+	"strictcli",
+	"testdata",
 	"payload_schema_builders.json",
 );
 

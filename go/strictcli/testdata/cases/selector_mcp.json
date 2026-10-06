@@ -1,0 +1,924 @@
+[
+  {
+    "name": "selector mcp: the scoped-parameter block is appended to the tool description",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "send",
+          "help": "send one notification through exactly one channel",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "data",
+            "data": {
+              "ok": true
+            }
+          },
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver the notification as an email message",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "subject line of the message",
+                      "type": "str",
+                      "presence": "required"
+                    },
+                    {
+                      "name": "recipient",
+                      "help": "destination email address",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "user-facing",
+                  "help": "post the notification to a URL",
+                  "flags": [
+                    {
+                      "name": "url",
+                      "help": "where to post",
+                      "type": "str",
+                      "presence": "required"
+                    },
+                    {
+                      "name": "retries",
+                      "help": "delivery attempts before giving up",
+                      "type": "int",
+                      "presence": "default",
+                      "default": 3
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "target",
+              "help": "which profiles to operate on",
+              "presence": "required",
+              "elect_by": "member-flags",
+              "choices": [
+                {
+                  "name": "profile",
+                  "help": "operate on one named profile",
+                  "value": {
+                    "type": "str",
+                    "help": "profile name"
+                  }
+                },
+                {
+                  "name": "all-profiles",
+                  "help": "operate on every profile"
+                }
+              ]
+            },
+            {
+              "name": "labels",
+              "help": "labels to attach",
+              "type": "str",
+              "presence": "optional",
+              "repeatable": true,
+              "unique": false,
+              "choices_str": [
+                {
+                  "value": "a",
+                  "help": "the a label"
+                },
+                {
+                  "value": "b"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\",\"params\":{\"_meta\":{\"io.modelcontextprotocol/protocolVersion\":\"2026-07-28\",\"io.modelcontextprotocol/clientCapabilities\":{}}}}",
+        "expect_line": {
+          "contains": "send one notification through exactly one channel\\n\\nScoped parameters (enforced at call time):\\n  via=email: subject (required), recipient (required)\\n  via=user-facing: url (required), retries (default: 3)\\n  target=profile: profile (required)\\n  target=all-profiles: (no parameters)"
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "selector mcp: a selector contributes one enum property named after itself",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "send",
+          "help": "send one notification through exactly one channel",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "data",
+            "data": {
+              "ok": true
+            }
+          },
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver the notification as an email message",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "subject line of the message",
+                      "type": "str",
+                      "presence": "required"
+                    },
+                    {
+                      "name": "recipient",
+                      "help": "destination email address",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "user-facing",
+                  "help": "post the notification to a URL",
+                  "flags": [
+                    {
+                      "name": "url",
+                      "help": "where to post",
+                      "type": "str",
+                      "presence": "required"
+                    },
+                    {
+                      "name": "retries",
+                      "help": "delivery attempts before giving up",
+                      "type": "int",
+                      "presence": "default",
+                      "default": 3
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "target",
+              "help": "which profiles to operate on",
+              "presence": "required",
+              "elect_by": "member-flags",
+              "choices": [
+                {
+                  "name": "profile",
+                  "help": "operate on one named profile",
+                  "value": {
+                    "type": "str",
+                    "help": "profile name"
+                  }
+                },
+                {
+                  "name": "all-profiles",
+                  "help": "operate on every profile"
+                }
+              ]
+            },
+            {
+              "name": "labels",
+              "help": "labels to attach",
+              "type": "str",
+              "presence": "optional",
+              "repeatable": true,
+              "unique": false,
+              "choices_str": [
+                {
+                  "value": "a",
+                  "help": "the a label"
+                },
+                {
+                  "value": "b"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\",\"params\":{\"_meta\":{\"io.modelcontextprotocol/protocolVersion\":\"2026-07-28\",\"io.modelcontextprotocol/clientCapabilities\":{}}}}",
+        "expect_line": {
+          "matches": "\"via\":\\s*\\{\\s*\"description\":\\s*\"delivery channel\",\\s*\"enum\":\\s*\\[\\s*\"email\",\\s*\"user-facing\"\\s*\\],\\s*\"type\":\\s*\"string\"\\s*\\}|\"via\":\\s*\\{\\s*\"type\":\\s*\"string\",\\s*\"enum\":\\s*\\[\\s*\"email\",\\s*\"user-facing\"\\s*\\],\\s*\"description\":\\s*\"delivery channel\"\\s*\\}"
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "selector mcp: every scoped flag is a top-level property and none is required",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "send",
+          "help": "send one notification through exactly one channel",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "data",
+            "data": {
+              "ok": true
+            }
+          },
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver the notification as an email message",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "subject line of the message",
+                      "type": "str",
+                      "presence": "required"
+                    },
+                    {
+                      "name": "recipient",
+                      "help": "destination email address",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "user-facing",
+                  "help": "post the notification to a URL",
+                  "flags": [
+                    {
+                      "name": "url",
+                      "help": "where to post",
+                      "type": "str",
+                      "presence": "required"
+                    },
+                    {
+                      "name": "retries",
+                      "help": "delivery attempts before giving up",
+                      "type": "int",
+                      "presence": "default",
+                      "default": 3
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "target",
+              "help": "which profiles to operate on",
+              "presence": "required",
+              "elect_by": "member-flags",
+              "choices": [
+                {
+                  "name": "profile",
+                  "help": "operate on one named profile",
+                  "value": {
+                    "type": "str",
+                    "help": "profile name"
+                  }
+                },
+                {
+                  "name": "all-profiles",
+                  "help": "operate on every profile"
+                }
+              ]
+            },
+            {
+              "name": "labels",
+              "help": "labels to attach",
+              "type": "str",
+              "presence": "optional",
+              "repeatable": true,
+              "unique": false,
+              "choices_str": [
+                {
+                  "value": "a",
+                  "help": "the a label"
+                },
+                {
+                  "value": "b"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\",\"params\":{\"_meta\":{\"io.modelcontextprotocol/protocolVersion\":\"2026-07-28\",\"io.modelcontextprotocol/clientCapabilities\":{}}}}",
+        "expect_line": {
+          "matches": "\"required\":\\s*\\[\\s*\"via\",\\s*\"target\"\\s*\\]"
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "selector mcp: an array-shaped parameter carries its enum inside items",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "send",
+          "help": "send one notification through exactly one channel",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "data",
+            "data": {
+              "ok": true
+            }
+          },
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver the notification as an email message",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "subject line of the message",
+                      "type": "str",
+                      "presence": "required"
+                    },
+                    {
+                      "name": "recipient",
+                      "help": "destination email address",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "user-facing",
+                  "help": "post the notification to a URL",
+                  "flags": [
+                    {
+                      "name": "url",
+                      "help": "where to post",
+                      "type": "str",
+                      "presence": "required"
+                    },
+                    {
+                      "name": "retries",
+                      "help": "delivery attempts before giving up",
+                      "type": "int",
+                      "presence": "default",
+                      "default": 3
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "target",
+              "help": "which profiles to operate on",
+              "presence": "required",
+              "elect_by": "member-flags",
+              "choices": [
+                {
+                  "name": "profile",
+                  "help": "operate on one named profile",
+                  "value": {
+                    "type": "str",
+                    "help": "profile name"
+                  }
+                },
+                {
+                  "name": "all-profiles",
+                  "help": "operate on every profile"
+                }
+              ]
+            },
+            {
+              "name": "labels",
+              "help": "labels to attach",
+              "type": "str",
+              "presence": "optional",
+              "repeatable": true,
+              "unique": false,
+              "choices_str": [
+                {
+                  "value": "a",
+                  "help": "the a label"
+                },
+                {
+                  "value": "b"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\",\"params\":{\"_meta\":{\"io.modelcontextprotocol/protocolVersion\":\"2026-07-28\",\"io.modelcontextprotocol/clientCapabilities\":{}}}}",
+        "expect_line": {
+          "matches": "\"items\":\\s*\\{[^}]*\"enum\":\\s*\\[\\s*\"a\",\\s*\"b\"\\s*\\]"
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "selector mcp: a well-formed call that satisfies one scope succeeds",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "send",
+          "help": "send one notification through exactly one channel",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "data",
+            "data": {
+              "ok": true
+            }
+          },
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver the notification as an email message",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "subject line of the message",
+                      "type": "str",
+                      "presence": "required"
+                    },
+                    {
+                      "name": "recipient",
+                      "help": "destination email address",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "user-facing",
+                  "help": "post the notification to a URL",
+                  "flags": [
+                    {
+                      "name": "url",
+                      "help": "where to post",
+                      "type": "str",
+                      "presence": "required"
+                    },
+                    {
+                      "name": "retries",
+                      "help": "delivery attempts before giving up",
+                      "type": "int",
+                      "presence": "default",
+                      "default": 3
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "target",
+              "help": "which profiles to operate on",
+              "presence": "required",
+              "elect_by": "member-flags",
+              "choices": [
+                {
+                  "name": "profile",
+                  "help": "operate on one named profile",
+                  "value": {
+                    "type": "str",
+                    "help": "profile name"
+                  }
+                },
+                {
+                  "name": "all-profiles",
+                  "help": "operate on every profile"
+                }
+              ]
+            },
+            {
+              "name": "labels",
+              "help": "labels to attach",
+              "type": "str",
+              "presence": "optional",
+              "repeatable": true,
+              "unique": false,
+              "choices_str": [
+                {
+                  "value": "a",
+                  "help": "the a label"
+                },
+                {
+                  "value": "b"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"tools/call\", \"params\": {\"name\": \"send\", \"arguments\": {\"via\": \"email\", \"subject\": \"hi\", \"recipient\": \"a@b\", \"target\": \"all-profiles\"}, \"_meta\": {\"io.modelcontextprotocol/protocolVersion\": \"2026-07-28\", \"io.modelcontextprotocol/clientCapabilities\": {}}}}",
+        "expect_line": {
+          "matches": "\\\\\"ok\\\\\"",
+          "not_contains": "isError"
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "selector mcp: a scope violation comes back as isError content, not -32602",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "send",
+          "help": "send one notification through exactly one channel",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "data",
+            "data": {
+              "ok": true
+            }
+          },
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver the notification as an email message",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "subject line of the message",
+                      "type": "str",
+                      "presence": "required"
+                    },
+                    {
+                      "name": "recipient",
+                      "help": "destination email address",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "user-facing",
+                  "help": "post the notification to a URL",
+                  "flags": [
+                    {
+                      "name": "url",
+                      "help": "where to post",
+                      "type": "str",
+                      "presence": "required"
+                    },
+                    {
+                      "name": "retries",
+                      "help": "delivery attempts before giving up",
+                      "type": "int",
+                      "presence": "default",
+                      "default": 3
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "target",
+              "help": "which profiles to operate on",
+              "presence": "required",
+              "elect_by": "member-flags",
+              "choices": [
+                {
+                  "name": "profile",
+                  "help": "operate on one named profile",
+                  "value": {
+                    "type": "str",
+                    "help": "profile name"
+                  }
+                },
+                {
+                  "name": "all-profiles",
+                  "help": "operate on every profile"
+                }
+              ]
+            },
+            {
+              "name": "labels",
+              "help": "labels to attach",
+              "type": "str",
+              "presence": "optional",
+              "repeatable": true,
+              "unique": false,
+              "choices_str": [
+                {
+                  "value": "a",
+                  "help": "the a label"
+                },
+                {
+                  "value": "b"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"tools/call\", \"params\": {\"name\": \"send\", \"arguments\": {\"via\": \"email\", \"subject\": \"hi\", \"recipient\": \"a@b\", \"url\": \"http://x\", \"target\": \"all-profiles\"}, \"_meta\": {\"io.modelcontextprotocol/protocolVersion\": \"2026-07-28\", \"io.modelcontextprotocol/clientCapabilities\": {}}}}",
+        "expect_line": {
+          "contains": [
+            "\"isError\"",
+            "flag '--url' is only valid under '--via user-facing', but '--via email' was elected"
+          ]
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "selector mcp: the whole property map is published, and a payload-less member contributes nothing to it",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "send",
+          "help": "send one notification through exactly one channel",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "data",
+            "data": {
+              "ok": true
+            }
+          },
+          "flags": [
+            {
+              "name": "via",
+              "help": "delivery channel",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "email",
+                  "help": "deliver the notification as an email message",
+                  "flags": [
+                    {
+                      "name": "subject",
+                      "help": "subject line of the message",
+                      "type": "str",
+                      "presence": "required"
+                    },
+                    {
+                      "name": "recipient",
+                      "help": "destination email address",
+                      "type": "str",
+                      "presence": "required"
+                    }
+                  ]
+                },
+                {
+                  "name": "user-facing",
+                  "help": "post the notification to a URL",
+                  "flags": [
+                    {
+                      "name": "url",
+                      "help": "where to post",
+                      "type": "str",
+                      "presence": "required"
+                    },
+                    {
+                      "name": "retries",
+                      "help": "delivery attempts before giving up",
+                      "type": "int",
+                      "presence": "default",
+                      "default": 3
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "target",
+              "help": "which profiles to operate on",
+              "presence": "required",
+              "elect_by": "member-flags",
+              "choices": [
+                {
+                  "name": "profile",
+                  "help": "operate on one named profile",
+                  "value": {
+                    "type": "str",
+                    "help": "profile name"
+                  }
+                },
+                {
+                  "name": "all-profiles",
+                  "help": "operate on every profile"
+                }
+              ]
+            },
+            {
+              "name": "labels",
+              "help": "labels to attach",
+              "type": "str",
+              "presence": "optional",
+              "repeatable": true,
+              "unique": false,
+              "choices_str": [
+                {
+                  "value": "a",
+                  "help": "the a label"
+                },
+                {
+                  "value": "b"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--mcp"
+    ],
+    "protocol_script": [
+      {
+        "send": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\",\"params\":{\"_meta\":{\"io.modelcontextprotocol/protocolVersion\":\"2026-07-28\",\"io.modelcontextprotocol/clientCapabilities\":{}}}}",
+        "expect_line": {
+          "json_equals": {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "result": {
+              "resultType": "complete",
+              "tools": [
+                {
+                  "name": "send",
+                  "description": "send one notification through exactly one channel\n\nScoped parameters (enforced at call time):\n  via=email: subject (required), recipient (required)\n  via=user-facing: url (required), retries (default: 3)\n  target=profile: profile (required)\n  target=all-profiles: (no parameters)",
+                  "effect": "read_only",
+                  "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                      "via": {
+                        "type": "string",
+                        "enum": [
+                          "email",
+                          "user-facing"
+                        ],
+                        "description": "delivery channel"
+                      },
+                      "subject": {
+                        "type": "string",
+                        "description": "subject line of the message"
+                      },
+                      "recipient": {
+                        "type": "string",
+                        "description": "destination email address"
+                      },
+                      "url": {
+                        "type": "string",
+                        "description": "where to post"
+                      },
+                      "retries": {
+                        "type": "integer",
+                        "description": "delivery attempts before giving up"
+                      },
+                      "target": {
+                        "type": "string",
+                        "enum": [
+                          "profile",
+                          "all-profiles"
+                        ],
+                        "description": "which profiles to operate on"
+                      },
+                      "profile": {
+                        "type": "string",
+                        "description": "profile name"
+                      },
+                      "labels": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "enum": [
+                            "a",
+                            "b"
+                          ]
+                        },
+                        "description": "labels to attach"
+                      }
+                    },
+                    "required": [
+                      "via",
+                      "target"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              ],
+              "ttlMs": 3600000,
+              "cacheScope": "public",
+              "_meta": {
+                "io.modelcontextprotocol/serverInfo": {
+                  "name": "myapp",
+                  "version": "1.0.0"
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stderr_equals": ""
+    }
+  }
+]

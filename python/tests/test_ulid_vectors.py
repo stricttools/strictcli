@@ -1,6 +1,6 @@
 """Replay the committed strict-ULID vectors against the Python implementation.
 
-The vectors live at ``conformance/ulid_vectors.json`` and are authored in
+The vectors live at ``go/strictcli/testdata/ulid_vectors.json`` and are authored in
 ``conformance/gen_ulid_vectors.py`` -- not derived from any implementation. The
 Go and TypeScript suites replay the same file, which is what pins the profile
 (docs/process-trace-store.md, "Identifiers") across three independent minters.
@@ -16,7 +16,7 @@ import pytest
 import strictcli as sc
 
 VECTORS_PATH = (
-    Path(__file__).resolve().parents[2] / "conformance" / "ulid_vectors.json"
+    Path(__file__).resolve().parents[2] / "go" / "strictcli" / "testdata" / "ulid_vectors.json"
 )
 DOC = json.loads(VECTORS_PATH.read_text())
 

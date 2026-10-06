@@ -1,0 +1,538 @@
+[
+  {
+    "name": "effects_grants: an undeclared grant name is a call-time error",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "release",
+          "help": "push a release",
+          "effect": "mutating",
+          "grants": [
+            {
+              "name": "push",
+              "reason": "release engine owns remote refs",
+              "kind": "proc_mutate"
+            }
+          ],
+          "handler_effects": [
+            {
+              "method": "run",
+              "argv": [
+                "git",
+                "push"
+              ],
+              "grant": "publish"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--dry-run",
+      "release"
+    ],
+    "expect": {
+      "exit_code": 2,
+      "stderr_contains": "command \"release\": grant 'publish' is not declared on this command"
+    }
+  },
+  {
+    "name": "effects_grants: a grant with no declarations at all is a call-time error",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "release",
+          "help": "push a release",
+          "effect": "mutating",
+          "handler_effects": [
+            {
+              "method": "run",
+              "argv": [
+                "git",
+                "push"
+              ],
+              "grant": "push"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--dry-run",
+      "release"
+    ],
+    "expect": {
+      "exit_code": 2,
+      "stderr_contains": "command \"release\": grant 'push' is not declared on this command"
+    }
+  },
+  {
+    "name": "effects_grants: a grant used for the wrong effect kind is a call-time error",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "release",
+          "help": "push a release",
+          "effect": "mutating",
+          "grants": [
+            {
+              "name": "push",
+              "reason": "release engine owns remote refs",
+              "kind": "proc_mutate"
+            }
+          ],
+          "handler_effects": [
+            {
+              "method": "write",
+              "path": "VERSION",
+              "content": "1.2.3",
+              "grant": "push"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--dry-run",
+      "release"
+    ],
+    "expect": {
+      "exit_code": 2,
+      "stderr_contains": "command \"release\": grant 'push' is declared for kind proc_mutate but was used for a file_write effect"
+    }
+  },
+  {
+    "name": "effects_grants: a spawn grant does not authorize a run",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "start",
+          "help": "start a worker",
+          "effect": "mutating",
+          "grants": [
+            {
+              "name": "worker",
+              "reason": "the supervisor owns worker lifecycles",
+              "kind": "proc_spawn"
+            }
+          ],
+          "handler_effects": [
+            {
+              "method": "run",
+              "argv": [
+                "worker",
+                "--once"
+              ],
+              "grant": "worker"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--dry-run",
+      "start"
+    ],
+    "expect": {
+      "exit_code": 2,
+      "stderr_contains": "command \"start\": grant 'worker' is declared for kind proc_spawn but was used for a proc_mutate effect"
+    }
+  },
+  {
+    "name": "effects_grants: a net_mutate grant labels an http effect",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "publish",
+          "help": "publish a release",
+          "effect": "mutating",
+          "grants": [
+            {
+              "name": "gh-api",
+              "reason": "the release bot owns GitHub releases",
+              "kind": "net_mutate"
+            }
+          ],
+          "handler_effects": [
+            {
+              "method": "http",
+              "http_method": "POST",
+              "url": "https://api.example.com/releases",
+              "grant": "gh-api"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--dry-run",
+      "publish"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "DRY RUN — no changes were made. Would do:\n  1. net: POST https://api.example.com/releases (granted: gh-api — the release bot owns GitHub releases)\n"
+    }
+  },
+  {
+    "name": "effects_grants: a proc_spawn grant labels a spawn effect",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "start",
+          "help": "start a worker",
+          "effect": "mutating",
+          "grants": [
+            {
+              "name": "worker",
+              "reason": "the supervisor owns worker lifecycles",
+              "kind": "proc_spawn"
+            }
+          ],
+          "handler_effects": [
+            {
+              "method": "spawn",
+              "argv": [
+                "worker",
+                "--daemon"
+              ],
+              "grant": "worker"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--dry-run",
+      "start"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "DRY RUN — no changes were made. Would do:\n  1. spawn: worker --daemon (granted: worker — the supervisor owns worker lifecycles)\n"
+    }
+  },
+  {
+    "name": "effects_grants: one file_write grant labels every path-mutating verb",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "layout",
+          "help": "rearrange the tree",
+          "effect": "mutating",
+          "grants": [
+            {
+              "name": "tree",
+              "reason": "the generator owns the build tree",
+              "kind": "file_write"
+            }
+          ],
+          "handler_effects": [
+            {
+              "method": "write",
+              "path": "a.txt",
+              "content": "hi",
+              "grant": "tree"
+            },
+            {
+              "method": "mkdir",
+              "path": "d",
+              "grant": "tree"
+            },
+            {
+              "method": "remove",
+              "path": "old",
+              "grant": "tree"
+            },
+            {
+              "method": "rename",
+              "path": "a.txt",
+              "to": "b.txt",
+              "grant": "tree"
+            },
+            {
+              "method": "chmod",
+              "path": "b.txt",
+              "mode": "644",
+              "grant": "tree"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--dry-run",
+      "layout"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "DRY RUN — no changes were made. Would do:\n  1. write: a.txt (2 bytes) (granted: tree — the generator owns the build tree)\n  2. mkdir: d (granted: tree — the generator owns the build tree)\n  3. remove: old (granted: tree — the generator owns the build tree)\n  4. rename: a.txt -> b.txt (granted: tree — the generator owns the build tree)\n  5. chmod: b.txt 0644 (granted: tree — the generator owns the build tree)\n"
+    }
+  },
+  {
+    "name": "effects_grants: a grant on an allowlisted observe is a call-time error",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "proc_observe_allowlist": [
+        [
+          "git",
+          "status"
+        ]
+      ],
+      "commands": [
+        {
+          "name": "report",
+          "help": "observe the tree",
+          "effect": "mutating",
+          "grants": [
+            {
+              "name": "inspect",
+              "reason": "the auditor reads the work tree",
+              "kind": "proc_mutate"
+            }
+          ],
+          "handler_effects": [
+            {
+              "method": "run",
+              "argv": [
+                "git",
+                "status"
+              ],
+              "grant": "inspect"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "--dry-run",
+      "report"
+    ],
+    "expect": {
+      "exit_code": 2,
+      "stderr_contains": "command \"report\": grant 'inspect' cannot be used on an observe (an allowlisted effects.run changes nothing)"
+    }
+  },
+  {
+    "name": "effects_grants: grant-on-observe is decided by the argv, not the classification",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "proc_observe_allowlist": [
+        [
+          "git",
+          "status"
+        ]
+      ],
+      "commands": [
+        {
+          "name": "report",
+          "help": "observe the tree",
+          "effect": "read_only",
+          "grants": [
+            {
+              "name": "inspect",
+              "reason": "the auditor reads the work tree",
+              "kind": "proc_mutate"
+            }
+          ],
+          "handler_effects": [
+            {
+              "method": "run",
+              "argv": [
+                "git",
+                "status"
+              ],
+              "grant": "inspect"
+            }
+          ]
+        }
+      ]
+    },
+    "argv": [
+      "report"
+    ],
+    "expect": {
+      "exit_code": 2,
+      "stderr_contains": "command \"report\": grant 'inspect' cannot be used on an observe (an allowlisted effects.run changes nothing)"
+    }
+  },
+  {
+    "name": "effects_grants: an empty proc_observe_allowlist prefix is a registration error",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "proc_observe_allowlist": [
+        [
+          "git",
+          "status"
+        ],
+        []
+      ],
+      "commands": [
+        {
+          "name": "show",
+          "help": "show something",
+          "effect": "read_only",
+          "handler_prints": "shown"
+        }
+      ]
+    },
+    "argv": [
+      "show"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_contains": "proc_observe_allowlist entries must not be empty"
+    }
+  },
+  {
+    "name": "effects_grants: an empty grant reason is a registration error",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "release",
+          "help": "push a release",
+          "effect": "mutating",
+          "grants": [
+            {
+              "name": "push",
+              "reason": "",
+              "kind": "proc_mutate"
+            }
+          ],
+          "handler_prints": "released"
+        }
+      ]
+    },
+    "argv": [
+      "release"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_contains": "command \"release\": grant 'push' reason must be a non-empty string"
+    }
+  },
+  {
+    "name": "effects_grants: a duplicate grant name is a registration error",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "release",
+          "help": "push a release",
+          "effect": "mutating",
+          "grants": [
+            {
+              "name": "push",
+              "reason": "release engine owns remote refs",
+              "kind": "proc_mutate"
+            },
+            {
+              "name": "push",
+              "reason": "and again",
+              "kind": "file_write"
+            }
+          ],
+          "handler_prints": "released"
+        }
+      ]
+    },
+    "argv": [
+      "release"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_contains": "command \"release\": duplicate grant 'push'"
+    }
+  },
+  {
+    "name": "effects_grants: an invalid grant name is a registration error",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "release",
+          "help": "push a release",
+          "effect": "mutating",
+          "grants": [
+            {
+              "name": "Push",
+              "reason": "release engine owns remote refs",
+              "kind": "proc_mutate"
+            }
+          ],
+          "handler_prints": "released"
+        }
+      ]
+    },
+    "argv": [
+      "release"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_contains": "command \"release\": invalid grant name 'Push': must be lowercase kebab-case of at least two characters: [a-z][a-z0-9]*(-[a-z0-9]+)*"
+    }
+  },
+  {
+    "name": "effects_grants: an invalid grant kind is a registration error",
+    "skip_schema_validation": true,
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "commands": [
+        {
+          "name": "release",
+          "help": "push a release",
+          "effect": "mutating",
+          "grants": [
+            {
+              "name": "push",
+              "reason": "release engine owns remote refs",
+              "kind": "cache_write"
+            }
+          ],
+          "handler_prints": "released"
+        }
+      ]
+    },
+    "argv": [
+      "release"
+    ],
+    "expect": {
+      "exit_code": 1,
+      "stderr_contains": "command \"release\": grant 'push' has invalid kind 'cache_write': must be one of proc_mutate, proc_spawn, file_write, net_mutate"
+    }
+  }
+]

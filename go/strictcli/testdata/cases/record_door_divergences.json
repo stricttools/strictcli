@@ -1,0 +1,304 @@
+[
+  {
+    "name": "record door divergence: a selector value naming no choice of its own selector is refused everywhere",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "pre_call": [
+        {
+          "command": "send",
+          "kwargs": {
+            "target": {
+              "choice": "simple"
+            }
+          }
+        }
+      ],
+      "commands": [
+        {
+          "name": "send",
+          "help": "send one notification through exactly one channel",
+          "effect": "read_only",
+          "handler_prints": "mode={mode} target={target}",
+          "flags": [
+            {
+              "name": "mode",
+              "help": "operating mode",
+              "presence": "default",
+              "default": {
+                "choice": "simple"
+              },
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "advanced",
+                  "help": "the mode that opens a rendering selection of its own",
+                  "flags": [
+                    {
+                      "name": "format",
+                      "help": "how the message body is rendered",
+                      "presence": "required",
+                      "elect_by": "selector-token",
+                      "choices": [
+                        {
+                          "name": "plain",
+                          "help": "no markup at all"
+                        },
+                        {
+                          "name": "rich",
+                          "help": "the full markup set"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "name": "simple",
+                  "help": "the mode that declares no rendering of its own"
+                }
+              ]
+            },
+            {
+              "name": "target",
+              "help": "which profiles to operate on",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "one-profile",
+                  "help": "operate on a single profile"
+                },
+                {
+                  "name": "all-profiles",
+                  "help": "operate on every profile"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "noop",
+          "help": "a command the case argv can run without output",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "exit",
+            "code": 0
+          }
+        }
+      ]
+    },
+    "argv": [
+      "noop"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "",
+      "stderr_contains": "call error: "
+    }
+  },
+  {
+    "name": "record door divergence: the same wrong choice one level down is refused everywhere",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "pre_call": [
+        {
+          "command": "send",
+          "kwargs": {
+            "target": {
+              "choice": "all-profiles"
+            },
+            "mode": {
+              "choice": "advanced",
+              "format": {
+                "choice": "simple"
+              }
+            }
+          }
+        }
+      ],
+      "commands": [
+        {
+          "name": "send",
+          "help": "send one notification through exactly one channel",
+          "effect": "read_only",
+          "handler_prints": "mode={mode} target={target}",
+          "flags": [
+            {
+              "name": "mode",
+              "help": "operating mode",
+              "presence": "default",
+              "default": {
+                "choice": "simple"
+              },
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "advanced",
+                  "help": "the mode that opens a rendering selection of its own",
+                  "flags": [
+                    {
+                      "name": "format",
+                      "help": "how the message body is rendered",
+                      "presence": "required",
+                      "elect_by": "selector-token",
+                      "choices": [
+                        {
+                          "name": "plain",
+                          "help": "no markup at all"
+                        },
+                        {
+                          "name": "rich",
+                          "help": "the full markup set"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "name": "simple",
+                  "help": "the mode that declares no rendering of its own"
+                }
+              ]
+            },
+            {
+              "name": "target",
+              "help": "which profiles to operate on",
+              "presence": "required",
+              "elect_by": "selector-token",
+              "choices": [
+                {
+                  "name": "one-profile",
+                  "help": "operate on a single profile"
+                },
+                {
+                  "name": "all-profiles",
+                  "help": "operate on every profile"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "noop",
+          "help": "a command the case argv can run without output",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "exit",
+            "code": 0
+          }
+        }
+      ]
+    },
+    "argv": [
+      "noop"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "",
+      "stderr_contains": "call error: "
+    }
+  },
+  {
+    "name": "record door divergence: go and typescript cannot see that a native integral number was written with a point",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "pre_call": [
+        {
+          "command": "run",
+          "kwargs": {
+            "retries": 7.0
+          }
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run the job",
+          "effect": "read_only",
+          "handler_prints": "retries={retries}",
+          "flags": [
+            {
+              "name": "retries",
+              "help": "attempts before giving up",
+              "type": "int",
+              "presence": "default",
+              "default": 3
+            }
+          ]
+        },
+        {
+          "name": "noop",
+          "help": "a command the case argv can run without output",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "exit",
+            "code": 0
+          }
+        }
+      ]
+    },
+    "argv": [
+      "noop"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "retries=7\ncall ok: run\n",
+      "stderr_equals": ""
+    }
+  },
+  {
+    "name": "record door divergence: a fractional number is refused for an int declaration everywhere",
+    "app": {
+      "name": "myapp",
+      "version": "1.0.0",
+      "help": "test app",
+      "pre_call": [
+        {
+          "command": "run",
+          "kwargs": {
+            "retries": 7.5
+          }
+        }
+      ],
+      "commands": [
+        {
+          "name": "run",
+          "help": "run the job",
+          "effect": "read_only",
+          "handler_prints": "retries={retries}",
+          "flags": [
+            {
+              "name": "retries",
+              "help": "attempts before giving up",
+              "type": "int",
+              "presence": "default",
+              "default": 3
+            }
+          ]
+        },
+        {
+          "name": "noop",
+          "help": "a command the case argv can run without output",
+          "effect": "read_only",
+          "handler_returns": {
+            "kind": "exit",
+            "code": 0
+          }
+        }
+      ]
+    },
+    "argv": [
+      "noop"
+    ],
+    "expect": {
+      "exit_code": 0,
+      "stdout_equals": "",
+      "stderr_equals": "call error: --retries: expected integer, got float\n"
+    }
+  }
+]

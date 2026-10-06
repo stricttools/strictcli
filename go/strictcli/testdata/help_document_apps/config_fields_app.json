@@ -1,0 +1,43 @@
+{
+  "name": "cfgapp",
+  "version": "1.0.0",
+  "help": "An app with config fields",
+  "config": true,
+  "config_fields_def": [
+    {
+      "name": "api.key",
+      "type": "str",
+      "help": "API key for the service"
+    },
+    {
+      "name": "port",
+      "type": "int",
+      "help": "Port to listen on",
+      "default": 8080
+    },
+    {
+      "name": "debug",
+      "type": "bool",
+      "help": "Enable debug mode",
+      "default": false
+    }
+  ],
+  "commands": [
+    {
+      "name": "serve",
+      "effect": "mutating",
+      "help": "Start the server",
+      "handler_prints": "serve",
+      "config_fields": [
+        "api.key",
+        "port"
+      ]
+    },
+    {
+      "name": "status",
+      "effect": "read_only",
+      "help": "Show status",
+      "handler_prints": "status"
+    }
+  ]
+}

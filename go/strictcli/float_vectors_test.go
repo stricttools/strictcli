@@ -10,10 +10,9 @@ import (
 	"testing"
 )
 
-// floatVectorsPath locates conformance/float_vectors.json relative to this
+// floatVectorsPath locates testdata/float_vectors.json relative to this
 // source file via runtime.Caller, so the test works regardless of the process
-// working directory. This file lives at go/strictcli/float_vectors_test.go, so
-// the vectors are two directories up and across into conformance/.
+// working directory.
 func floatVectorsPath(t *testing.T) string {
 	t.Helper()
 	_, thisFile, _, ok := runtime.Caller(0)
@@ -21,7 +20,7 @@ func floatVectorsPath(t *testing.T) string {
 		t.Fatal("runtime.Caller failed")
 	}
 	dir := filepath.Dir(thisFile) // .../go/strictcli
-	return filepath.Join(dir, "..", "..", "conformance", "float_vectors.json")
+	return filepath.Join(dir, "testdata", "float_vectors.json")
 }
 
 type floatVector struct {
