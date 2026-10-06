@@ -681,7 +681,7 @@ paths have no TTY contract, so a consequential command is dispatched directly.
 
 ## See also
 
-- [strictcli monorepo](https://github.com/stricttools/strictcli) -- conformance tests, Go implementation, and project documentation
+- [strictcli monorepo](https://github.com/stricttools/strictcli) -- the Go and TypeScript implementations and project documentation
 - [Go implementation](https://github.com/stricttools/strictcli/tree/main/go) -- same semantics, functional options API
 
 ## License

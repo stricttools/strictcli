@@ -1689,7 +1689,7 @@ def _msg_payload_schema_invalid(name: str, path: str, detail: str) -> str:
     Registration time. ``path`` names the position inside the declared literal
     (rooted at ``payload_schema``) and ``detail`` names the violated rule. Both
     are byte-identical across the three implementations, pinned by
-    ``conformance/payload_schema_vectors.json``.
+    ``go/strictcli/testdata/payload_schema_vectors.json``.
     """
     return (
         f'command "{name}": payload schema is invalid at {path}: {detail}'
@@ -2269,7 +2269,7 @@ def _validate_payload_value(value: object, schema: dict):
 # rejected at registration exactly as the hand-written literal would be.
 #
 # The one-to-one mapping onto the closed subset is pinned across the three
-# implementations by conformance/payload_schema_builders.json.
+# implementations by go/strictcli/testdata/payload_schema_builders.json.
 # ---------------------------------------------------------------------------
 
 
