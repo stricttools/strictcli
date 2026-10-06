@@ -1117,8 +1117,8 @@ class TestEffectLog:
 class TestCacheWrites:
     def test_a_coverage_shard_records_a_cache_write(self, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)
-        (tmp_path / ".strictcli").mkdir()
-        app = _app(test_coverage_dir=str(tmp_path / ".strictcli"))
+        (tmp_path / ".strictmetadata" / ".cli-test-coverage").mkdir(parents=True)
+        app = _app(source_tree_root=str(tmp_path))
 
         @app.command("run", help="run", effect="read_only")
         def _run(ctx):
@@ -1134,20 +1134,20 @@ class TestCacheWrites:
 
     def test_cache_writes_execute_in_dry_mode(self, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)
-        (tmp_path / ".strictcli").mkdir()
-        app = _app(test_coverage_dir=str(tmp_path / ".strictcli"))
+        (tmp_path / ".strictmetadata" / ".cli-test-coverage").mkdir(parents=True)
+        app = _app(source_tree_root=str(tmp_path))
 
         @app.command("run", help="run", effect="read_only")
         def _run(ctx):
             return 0
 
         app.test(["--dry-run", "run"])
-        assert list((tmp_path / ".strictcli" / "coverage").glob("*.jsonl"))
+        assert list((tmp_path / ".strictmetadata" / ".cli-test-coverage" / "shards").glob("*.jsonl"))
 
     def test_cache_writes_never_appear_in_the_would_do_log(self, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)
-        (tmp_path / ".strictcli").mkdir()
-        app = _app(test_coverage_dir=str(tmp_path / ".strictcli"))
+        (tmp_path / ".strictmetadata" / ".cli-test-coverage").mkdir(parents=True)
+        app = _app(source_tree_root=str(tmp_path))
 
         @app.command("run", help="run", effect="read_only")
         def _run(ctx):
@@ -1166,8 +1166,8 @@ class TestCacheWrites:
         would move user-visible numbering for no visible reason.
         """
         monkeypatch.chdir(tmp_path)
-        (tmp_path / ".strictcli").mkdir()
-        app = _app(test_coverage_dir=str(tmp_path / ".strictcli"))
+        (tmp_path / ".strictmetadata" / ".cli-test-coverage").mkdir(parents=True)
+        app = _app(source_tree_root=str(tmp_path))
 
         @app.command("rel", help="rel", effect="mutating")
         def _rel(ctx):
@@ -1190,8 +1190,8 @@ class TestCacheWrites:
     def test_cache_writes_do_not_shift_the_truncation_step(self, tmp_path,
                                                            monkeypatch):
         monkeypatch.chdir(tmp_path)
-        (tmp_path / ".strictcli").mkdir()
-        app = _app(test_coverage_dir=str(tmp_path / ".strictcli"))
+        (tmp_path / ".strictmetadata" / ".cli-test-coverage").mkdir(parents=True)
+        app = _app(source_tree_root=str(tmp_path))
 
         @app.command("rel", help="rel", effect="mutating")
         def _rel(ctx):

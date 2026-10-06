@@ -1,14 +1,15 @@
 """Tests for the cli-test-coverage mechanism.
 
 Verifies that:
-- test_coverage_dir=<existing dir> enables recording of command hits
+- source_tree_root=<root holding .strictmetadata/.cli-test-coverage/> enables
+  recording of command hits
 - test() and call() both record to per-process shard files under that directory
 - The cli-test-coverage check merges shards, compares against the command
   surface, and FAILs listing uncovered commands
 - Full coverage produces a PASS
 - Empty/stale manifest is a hard error
-- A declared directory that does not exist leaves the instrumentation off
-- The retired boolean is refused by name
+- A coverage directory that does not exist leaves the instrumentation off
+- The retired options are refused by name
 """
 
 import json
@@ -26,18 +27,22 @@ class SimpleCtx:
     project_root: Path
 
 
-def _coverage_root(tmp_path):
-    """The declared coverage directory, created so the option takes effect."""
-    root = tmp_path / ".strictcli"
-    root.mkdir(parents=True, exist_ok=True)
-    return root
+# The coverage directory relative to the declared source-tree root, spelled out
+# here rather than read from the implementation so the tests pin the layout.
+COVERAGE_REL = ".strictmetadata/.cli-test-coverage"
+
+
+def _source_tree_root(tmp_path):
+    """The declared root, with its coverage directory created so coverage is on."""
+    (tmp_path / COVERAGE_REL).mkdir(parents=True, exist_ok=True)
+    return tmp_path
 
 
 def _make_app(tmp_path):
-    """Build a 3-command app whose coverage directory is tmp_path/.strictcli."""
+    """Build a 3-command app whose source-tree root is tmp_path."""
     app = strictcli.App(
         name="coverapp", version="1.0.0", help="coverage test app",
-        test_coverage_dir=str(_coverage_root(tmp_path)),
+        source_tree_root=str(_source_tree_root(tmp_path)),
     )
 
     @app.command(name="deploy", effect="read_only", forwarding=strictcli.Forwarding(reason="test handler absorbs global flag values"), help="deploy the app")
@@ -60,7 +65,7 @@ def _make_grouped_app(tmp_path):
     """Build an app with grouped commands for dotted-path coverage."""
     app = strictcli.App(
         name="grpapp", version="1.0.0", help="grouped coverage test",
-        test_coverage_dir=str(_coverage_root(tmp_path)),
+        source_tree_root=str(_source_tree_root(tmp_path)),
     )
 
     grp = app.group("infra", help="infrastructure commands")
@@ -86,7 +91,7 @@ class TestCoverageRecording:
         app = _make_app(tmp_path)
         app.test(["deploy"])
 
-        coverage_dir = tmp_path / ".strictcli" / "coverage"
+        coverage_dir = tmp_path / COVERAGE_REL / "shards"
         assert coverage_dir.is_dir()
         shards = list(coverage_dir.glob("*.jsonl"))
         assert len(shards) >= 1
@@ -106,7 +111,7 @@ class TestCoverageRecording:
         app = _make_app(tmp_path)
         app.call("status")
 
-        coverage_dir = tmp_path / ".strictcli" / "coverage"
+        coverage_dir = tmp_path / COVERAGE_REL / "shards"
         shards = list(coverage_dir.glob("*.jsonl"))
         assert len(shards) >= 1
 
@@ -124,7 +129,7 @@ class TestCoverageRecording:
         app.test(["status"])
         app.call("build")
 
-        coverage_dir = tmp_path / ".strictcli" / "coverage"
+        coverage_dir = tmp_path / COVERAGE_REL / "shards"
         entries = []
         for shard in coverage_dir.glob("*.jsonl"):
             for line in shard.read_text().strip().splitlines():
@@ -137,7 +142,7 @@ class TestCoverageRecording:
         app = _make_grouped_app(tmp_path)
         app.test(["infra", "deploy"])
 
-        coverage_dir = tmp_path / ".strictcli" / "coverage"
+        coverage_dir = tmp_path / COVERAGE_REL / "shards"
         entries = []
         for shard in coverage_dir.glob("*.jsonl"):
             for line in shard.read_text().strip().splitlines():
@@ -204,15 +209,15 @@ class TestCoverageCheck:
         cov_result = next(r for r in results if r.name == "cli-test-coverage")
         assert cov_result.status == "skip"
         assert "development tree" in cov_result.message
-        # Reason names the anchored .strictcli path, not the foreign cwd.
-        assert str(tmp_path / ".strictcli") in cov_result.message
+        # Reason names the anchored coverage directory, not the foreign cwd.
+        assert str(tmp_path / COVERAGE_REL) in cov_result.message
 
     def test_empty_manifest_file_present_fails_listing_all(self, tmp_path):
         """An empty-manifest file present means "coverage configured but empty"
         -> FAIL listing every command, NOT a skip. The skip class only triggers
         when NEITHER a manifest NOR any shards exist."""
         app = _make_app(tmp_path)
-        manifest_path = tmp_path / ".strictcli" / "test-coverage.json"
+        manifest_path = tmp_path / COVERAGE_REL / "manifest.json"
         manifest_path.parent.mkdir(parents=True, exist_ok=True)
         manifest_path.write_text("[]\n")
 
@@ -231,7 +236,7 @@ class TestCoverageCheck:
         assert uncovered == {"build", "deploy", "status"}
 
     def test_manifest_written_on_check(self, tmp_path):
-        """The check writes .strictcli/test-coverage.json with covered commands."""
+        """The check writes the coverage manifest with covered commands."""
         app = _make_app(tmp_path)
         app.test(["deploy"])
         app.test(["status"])
@@ -242,7 +247,7 @@ class TestCoverageCheck:
             run_all=True,
         )
 
-        manifest_path = tmp_path / ".strictcli" / "test-coverage.json"
+        manifest_path = tmp_path / COVERAGE_REL / "manifest.json"
         assert manifest_path.is_file()
         manifest = json.loads(manifest_path.read_text())
         assert sorted(manifest) == ["build", "deploy", "status"]
@@ -283,7 +288,7 @@ class TestCoverageChdirSafety:
     def test_record_anchored_to_declared_directory(self, tmp_path):
         """test() records into the declared coverage dir, not the cwd that a
         test happened to chdir into."""
-        app = _make_app(tmp_path)  # declares tmp_path/.strictcli
+        app = _make_app(tmp_path)  # declares tmp_path as the source-tree root
         other = tmp_path / "elsewhere"
         other.mkdir()
         os.chdir(other)
@@ -291,10 +296,10 @@ class TestCoverageChdirSafety:
         app.test(["deploy"])
 
         declared_shards = list(
-            (tmp_path / ".strictcli" / "coverage").glob("*.jsonl")
+            (tmp_path / COVERAGE_REL / "shards").glob("*.jsonl")
         )
         assert declared_shards, "shard must be written under the declared dir"
-        foreign = other / ".strictcli" / "coverage"
+        foreign = other / COVERAGE_REL / "shards"
         assert not foreign.exists(), "must not record into the chdir'd cwd"
 
 
@@ -303,7 +308,7 @@ class TestManifestUnionVerdict:
         """Committed manifest covering every command -> deterministic PASS even
         with no shard files (the machine never ran the suite)."""
         app = _make_app(tmp_path)
-        manifest_path = tmp_path / ".strictcli" / "test-coverage.json"
+        manifest_path = tmp_path / COVERAGE_REL / "manifest.json"
         manifest_path.parent.mkdir(parents=True, exist_ok=True)
         manifest_path.write_text(
             json.dumps(["build", "deploy", "status"], indent=2) + "\n"
@@ -320,7 +325,7 @@ class TestManifestUnionVerdict:
         """The check evaluated from a foreign cwd reads the app's own repo state
         (the declared manifest), not the foreign directory."""
         app = _make_app(tmp_path)
-        manifest_path = tmp_path / ".strictcli" / "test-coverage.json"
+        manifest_path = tmp_path / COVERAGE_REL / "manifest.json"
         manifest_path.parent.mkdir(parents=True, exist_ok=True)
         manifest_path.write_text(
             json.dumps(["build", "deploy", "status"], indent=2) + "\n"
@@ -339,7 +344,7 @@ class TestManifestUnionVerdict:
     def test_manifest_union_is_monotonic(self, tmp_path):
         """A run recording only a subset keeps prior commands covered (union)."""
         app = _make_app(tmp_path)
-        manifest_path = tmp_path / ".strictcli" / "test-coverage.json"
+        manifest_path = tmp_path / COVERAGE_REL / "manifest.json"
         manifest_path.parent.mkdir(parents=True, exist_ok=True)
         manifest_path.write_text(
             json.dumps(["build", "deploy", "status"], indent=2) + "\n"
@@ -359,7 +364,7 @@ class TestManifestUnionVerdict:
         app.test(["build"])
         app.run_checks(SimpleCtx(project_root=tmp_path), run_all=True)
 
-        manifest_path = tmp_path / ".strictcli" / "test-coverage.json"
+        manifest_path = tmp_path / COVERAGE_REL / "manifest.json"
         content1 = manifest_path.read_text()
         mtime1 = manifest_path.stat().st_mtime_ns
 
@@ -371,7 +376,7 @@ class TestManifestUnionVerdict:
 
 class TestCoverageDisabled:
     def test_no_recording_when_disabled(self, tmp_path):
-        """An undeclared test_coverage_dir (the default) produces no shards."""
+        """An undeclared source_tree_root (the default) produces no shards."""
         os.chdir(tmp_path)
         app = strictcli.App(
             name="nocover", version="1.0.0", help="no coverage",
@@ -383,7 +388,7 @@ class TestCoverageDisabled:
 
         app.test(["greet"])
 
-        coverage_dir = tmp_path / ".strictcli" / "coverage"
+        coverage_dir = tmp_path / COVERAGE_REL / "shards"
         assert not coverage_dir.exists()
 
 
@@ -394,7 +399,7 @@ class TestCoverageDirectoryIsLazy:
         coverage, so it must not plant an empty directory."""
         app = _make_app(tmp_path)
         assert app is not None
-        assert not (tmp_path / ".strictcli" / "coverage").exists()
+        assert not (tmp_path / COVERAGE_REL / "shards").exists()
 
     def test_recording_creates_the_directory(self, tmp_path):
         """The recorder creates the coverage directory immediately before the
@@ -402,14 +407,14 @@ class TestCoverageDirectoryIsLazy:
         app = _make_app(tmp_path)
         app.test(["deploy"])
 
-        shard = tmp_path / ".strictcli" / "coverage" / f"{os.getpid()}.jsonl"
+        shard = tmp_path / COVERAGE_REL / "shards" / f"{os.getpid()}.jsonl"
         assert shard.is_file()
 
     def test_check_skips_when_coverage_state_absent(self, tmp_path):
         """The provider reads a declared root holding no coverage state without
         raising -- it reports the subject-matter SKIP."""
         app = _make_app(tmp_path)
-        assert not (tmp_path / ".strictcli" / "coverage").exists()
+        assert not (tmp_path / COVERAGE_REL / "shards").exists()
 
         results, _, _code = app.run_checks(
             SimpleCtx(project_root=tmp_path),
@@ -420,19 +425,19 @@ class TestCoverageDirectoryIsLazy:
 
 
 class TestDeclaredDirectoryAbsent:
-    """A declared directory that does not exist leaves coverage off.
+    """A coverage directory that does not exist leaves coverage off.
 
-    This is the installed-wheel case: the path that names the source
-    checkout's ``.strictcli`` directory is simply not there once the CLI is
-    installed elsewhere, so the app registers no check, computes no paths and
-    creates nothing.
+    This is the installed-wheel case: the declared root is not a source
+    checkout once the CLI is installed elsewhere, so it holds no
+    ``.strictmetadata/.cli-test-coverage/`` and the app registers no check,
+    computes no paths and creates nothing.
     """
 
     def test_missing_directory_registers_no_check(self, tmp_path):
-        missing = tmp_path / "nowhere" / ".strictcli"
+        missing = tmp_path / "nowhere"
         app = strictcli.App(
             name="coverapp", version="1.0.0", help="coverage test app",
-            test_coverage_dir=str(missing),
+            source_tree_root=str(missing),
         )
 
         @app.command(name="deploy", effect="read_only", help="deploy the app")
@@ -448,10 +453,10 @@ class TestDeclaredDirectoryAbsent:
             app.run_checks(SimpleCtx(project_root=tmp_path), run_all=True)
 
     def test_missing_directory_creates_nothing(self, tmp_path):
-        missing = tmp_path / "nowhere" / ".strictcli"
+        missing = tmp_path / "nowhere"
         app = strictcli.App(
             name="coverapp", version="1.0.0", help="coverage test app",
-            test_coverage_dir=str(missing),
+            source_tree_root=str(missing),
         )
 
         @app.command(name="deploy", effect="read_only", help="deploy the app")
@@ -469,7 +474,7 @@ class TestForeignDirectoryRun:
 
     The installed CLI is started in some unrelated project. Its declared
     coverage directory does not exist there, so `check` must neither list
-    cli-test-coverage nor write a `.strictcli/` into the foreign directory.
+    cli-test-coverage nor write a `.strictmetadata/` into the foreign directory.
     """
 
     def test_foreign_run_lists_no_check_and_touches_nothing(self, tmp_path):
@@ -479,7 +484,7 @@ class TestForeignDirectoryRun:
 
         app = strictcli.App(
             name="coverapp", version="1.0.0", help="coverage test app",
-            test_coverage_dir=str(tmp_path / "gone" / ".strictcli"),
+            source_tree_root=str(tmp_path / "gone"),
         )
 
         @app.command(name="deploy", effect="read_only", help="deploy the app")
@@ -489,20 +494,64 @@ class TestForeignDirectoryRun:
         result = app.test(["check", "--all"])
         assert "cli-test-coverage" not in result.stdout
 
-        assert not (foreign / ".strictcli").exists()
+        assert not (foreign / ".strictmetadata").exists()
         assert list(foreign.iterdir()) == []
 
 
+class TestRootWithoutCoverageDirectory:
+    def test_existing_root_without_coverage_directory_is_off(self, tmp_path):
+        """An installed wheel's declared root exists (the package's parent in
+        site-packages) but holds no coverage directory: coverage stays off and
+        nothing is created under the root."""
+        app = strictcli.App(
+            name="coverapp", version="1.0.0", help="coverage test app",
+            source_tree_root=str(tmp_path),
+        )
+
+        @app.command(name="deploy", effect="read_only", help="deploy the app")
+        def cmd_deploy(ctx):
+            pass
+
+        app.test(["deploy"])
+        assert "cli-test-coverage" not in app.test(["check", "--all"]).stdout
+        assert list(tmp_path.iterdir()) == []
+
+
+class TestLayout:
+    def test_shards_and_manifest_sit_under_the_root(self, tmp_path):
+        app = _make_app(tmp_path)
+        app.test(["deploy"])
+        shard = (tmp_path / ".strictmetadata" / ".cli-test-coverage" / "shards"
+                 / f"{os.getpid()}.jsonl")
+        assert shard.is_file()
+        app.run_checks(SimpleCtx(project_root=tmp_path), run_all=True)
+        manifest = tmp_path / ".strictmetadata" / ".cli-test-coverage" / "manifest.json"
+        assert "deploy" in json.loads(manifest.read_text())
+
+
 class TestRetiredBooleanRefused:
-    def test_boolean_true_is_refused_naming_the_directory_option(self):
+    def test_boolean_true_is_refused_naming_the_root_option(self):
         with pytest.raises(ValueError) as exc:
             strictcli.App(
                 name="coverapp", version="1.0.0", help="coverage test app",
                 test_coverage=True,
             )
         assert str(exc.value) == (
-            "test_coverage is not accepted; declare the directory holding "
-            "coverage/ and test-coverage.json with test_coverage_dir"
+            "test_coverage is not accepted; declare the source-tree root with "
+            "source_tree_root, which keeps test coverage in "
+            ".strictmetadata/.cli-test-coverage/ under it"
+        )
+
+    def test_directory_option_is_refused_naming_the_root_option(self, tmp_path):
+        with pytest.raises(ValueError) as exc:
+            strictcli.App(
+                name="coverapp", version="1.0.0", help="coverage test app",
+                test_coverage_dir=str(tmp_path),
+            )
+        assert str(exc.value) == (
+            "test_coverage_dir is not accepted; declare the source-tree root "
+            "with source_tree_root, which keeps test coverage in "
+            ".strictmetadata/.cli-test-coverage/ under it"
         )
 
     def test_boolean_false_is_refused_too(self):
@@ -513,4 +562,4 @@ class TestRetiredBooleanRefused:
                 name="coverapp", version="1.0.0", help="coverage test app",
                 test_coverage=False,
             )
-        assert "test_coverage_dir" in str(exc.value)
+        assert "source_tree_root" in str(exc.value)

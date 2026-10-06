@@ -10251,14 +10251,23 @@ def warn_check_spec(
     )
 
 
-def _msg_test_coverage_boolean_retired() -> str:
-    """The retired boolean's refusal (contract §12.12: one sentence, each
-    language's own spellings inside it -- `test_coverage` / `test_coverage_dir`
-    here, `WithTestCoverage` / `WithTestCoverageDir` in Go, `testCoverage` /
-    `testCoverageDir` in TypeScript)."""
+# The test-coverage layout, relative to the source-tree root an app declares
+# with source_tree_root. This is the one place the layout is spelled.
+_COVERAGE_DIR_REL = ".strictmetadata/.cli-test-coverage"
+_COVERAGE_MANIFEST_NAME = "manifest.json"
+_COVERAGE_SHARDS_NAME = "shards"
+
+
+def _msg_coverage_option_retired(option: str) -> str:
+    """A retired test-coverage option's refusal (contract §12.12: one
+    sentence, each language's own spellings inside it -- `test_coverage` /
+    `test_coverage_dir` / `source_tree_root` here, `WithTestCoverage` /
+    `WithTestCoverageDir` / `WithSourceTreeRoot` in Go, `testCoverage` /
+    `testCoverageDir` / `sourceTreeRoot` in TypeScript)."""
     return (
-        "test_coverage is not accepted; declare the directory holding "
-        "coverage/ and test-coverage.json with test_coverage_dir"
+        f"{option} is not accepted; declare the source-tree root with "
+        f"source_tree_root, which keeps test coverage in {_COVERAGE_DIR_REL}/ "
+        f"under it"
     )
 
 
@@ -10292,17 +10301,20 @@ class App:
     proc_observe_allowlist: list[list[str]] | None = None
     checks_path: str | Path | None = None
     checks_embed: bytes | None = None
-    # The directory holding this app's coverage state: `coverage/` (per-process
-    # shard files) and `test-coverage.json` (the committed manifest). Declared,
-    # never discovered. Absent means coverage is off -- no provider registered,
-    # no paths computed, nothing touched. A declared directory that does not
-    # exist at construction likewise leaves coverage off: that is the installed
-    # distribution, where the path naming the source checkout is simply gone.
-    test_coverage_dir: str | os.PathLike | None = None
-    # Refusal-only. The retired boolean has no accepted spelling; this field
-    # exists so that passing it names the option that replaced it instead of
-    # raising CPython's bare "unexpected keyword argument" TypeError.
+    # The root of the app's source tree, the checkout its tests run in. The
+    # app's coverage state lives under it, in .strictmetadata/.cli-test-coverage/:
+    # `shards/` (per-process shard files, never committed) and `manifest.json`
+    # (the committed manifest). Declared, never discovered. Absent means
+    # coverage is off -- no provider registered, no paths computed, nothing
+    # touched. A root without that coverage directory at construction likewise
+    # leaves coverage off: that is the installed distribution, whose root is not
+    # a source checkout.
+    source_tree_root: str | os.PathLike | None = None
+    # Refusal-only. The retired options have no accepted spelling; these
+    # fields exist so that passing one names the option that replaced it
+    # instead of raising CPython's bare "unexpected keyword argument" TypeError.
     test_coverage: bool | None = None
+    test_coverage_dir: str | os.PathLike | None = None
     flags: list[Flag] = field(default_factory=list)
     _commands: dict[str, Command] = field(default_factory=dict)
     _groups: dict[str, Group] = field(default_factory=dict)
@@ -10310,7 +10322,9 @@ class App:
 
     def __post_init__(self) -> None:
         if self.test_coverage is not None:
-            raise ValueError(_msg_test_coverage_boolean_retired())
+            raise ValueError(_msg_coverage_option_retired("test_coverage"))
+        if self.test_coverage_dir is not None:
+            raise ValueError(_msg_coverage_option_retired("test_coverage_dir"))
         _require_non_empty_str(self.version, "version", "App")
         _require_non_empty_str(self.help, "help", "App")
         # The module that constructed this app: the framework-use lint's
@@ -10519,21 +10533,25 @@ class App:
         self._coverage_dir: str | None = None
         self._coverage_manifest_path: str | None = None
         self._last_resolved_path: list[str] = []
-        if self.test_coverage_dir is not None:
-            # The declared directory decides everything. An app installed
-            # elsewhere finds it absent and stays uninstrumented: no provider,
-            # no paths, no writes anywhere -- in particular not into whatever
-            # directory the consumer happened to start the CLI from.
-            root = os.path.abspath(os.fspath(self.test_coverage_dir))
+        if self.source_tree_root is not None:
+            # The coverage directory under the declared root decides
+            # everything. An app installed elsewhere finds it absent and stays
+            # uninstrumented: no provider, no paths, no writes anywhere -- in
+            # particular not into whatever directory the consumer happened to
+            # start the CLI from.
+            root = os.path.abspath(os.path.join(
+                os.fspath(self.source_tree_root),
+                *_COVERAGE_DIR_REL.split("/"),
+            ))
             if os.path.isdir(root):
-                # Only the PATHS are computed here. The coverage directory
-                # itself is created lazily by _record_coverage, immediately
-                # before the first shard write: shards are written only on the
+                # Only the PATHS are computed here. The shards directory is
+                # created lazily by _record_coverage, immediately before the
+                # first shard write: shards are written only on the
                 # test-harness paths (test() and call()), so a plain CLI
-                # invocation leaves no coverage/ behind.
-                self._coverage_dir = os.path.join(root, "coverage")
+                # invocation leaves no shards/ behind.
+                self._coverage_dir = os.path.join(root, _COVERAGE_SHARDS_NAME)
                 self._coverage_manifest_path = os.path.join(
-                    root, "test-coverage.json"
+                    root, _COVERAGE_MANIFEST_NAME
                 )
                 self._coverage_shard_path = os.path.join(
                     self._coverage_dir,
@@ -10619,18 +10637,18 @@ class App:
     def _test_coverage_provider(self) -> list[CheckSpec]:
         """Built-in check provider for cli-test-coverage.
 
-        Registered automatically when test_coverage_dir names a directory that
-        exists. The verdict is derived from committed state: the covered set is
-        the union of the committed manifest (test-coverage.json in that
-        directory) and any per-process shard files merged from its coverage/
-        subdirectory. Every live registered command path (minus the injected
+        Registered automatically when the coverage directory under the root
+        source_tree_root declares exists. The verdict is derived from committed
+        state: the covered set is the union of the committed manifest
+        (manifest.json in that directory) and any per-process shard files
+        merged from its shards/ subdirectory. Every live registered command path (minus the injected
         check command) must be present in that union to pass; otherwise the
         check fails naming each uncovered command.
 
         Because the verdict reads the committed manifest, it is deterministic on
         every machine -- a machine that never ran the suite (no local shards)
         still gets a stable verdict from the committed manifest alone. Both the
-        coverage dir and the manifest path sit under the DECLARED directory, so
+        shards dir and the manifest path sit under the DECLARED root, so
         the check evaluated from any cwd reads the app's own repo state.
 
         The manifest is rewritten as the monotonic union of its prior contents
