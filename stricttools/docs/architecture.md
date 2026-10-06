@@ -1242,25 +1242,25 @@ to another project.
 ## The test-coverage root
 
 The built-in `cli-test-coverage` check reads and writes two things: per-process
-shard files under `coverage/`, appended by every `test()` and `call()` dispatch,
-and `test-coverage.json`, the committed manifest its verdict is derived from.
-Both live under one directory, and **that directory is declared, never
-discovered**:
+shard files under `shards/`, appended by every `test()` and `call()` dispatch
+and never committed, and `manifest.json`, the committed manifest its verdict is
+derived from. Both live in `.strictmetadata/.cli-test-coverage/` under the
+app's source-tree root, and **that root is declared, never discovered**:
 
 | Declaration | Result |
 |-------------|--------|
-| `test_coverage_dir="..."` (Python) / `WithTestCoverageDir(...)` (Go) / `testCoverageDir: "..."` (TypeScript), naming a directory that exists at construction | the check registers, and `coverage/` plus `test-coverage.json` resolve inside that directory |
-| the same declaration, naming a directory that does not exist at construction | coverage is off: no check registered, no paths computed, nothing created |
+| `source_tree_root="..."` (Python) / `WithSourceTreeRoot(...)` (Go) / `sourceTreeRoot: "..."` (TypeScript), naming a root whose `.strictmetadata/.cli-test-coverage/` exists at construction | the check registers, and `shards/` plus `manifest.json` resolve inside that directory |
+| the same declaration, naming a root without that directory at construction | coverage is off: no check registered, no paths computed, nothing created |
 | undeclared | coverage is off |
 
 Nothing here resolves against the process's working directory, which has two
 consequences. A test that changes directory between construction and dispatch
-still records into the declared directory. And an installed CLI started in a
+still records into the declared root. And an installed CLI started in a
 consumer's project registers no coverage check and writes nothing into that
-project -- its declared directory names a source checkout that is not there,
-which is exactly the second row.
+project -- its declared root is not a source checkout, so it holds no coverage
+directory, which is exactly the second row.
 
-The `coverage/` subdirectory itself is created lazily, immediately before the
+The `shards/` subdirectory itself is created lazily, immediately before the
 first shard write, so a plain CLI run leaves no empty directory behind.
 
 ## How WithConfig works internally
