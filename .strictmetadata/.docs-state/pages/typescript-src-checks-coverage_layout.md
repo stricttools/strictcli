@@ -1,8 +1,7 @@
 +++
 title = "typescript/src/checks/coverage_layout"
-description = "API reference for the typescript/src/checks/coverage_layout module — auto-generated documentation covering public functions, classes, and type signatures."
+description = "The test-coverage layout under a declared source-tree root: the coverage directory, its committed manifest, and its uncommitted shards directory."
 generated = true
-seeded = true
 nav_group = "API Reference"
 nav_order = 5
 +++
