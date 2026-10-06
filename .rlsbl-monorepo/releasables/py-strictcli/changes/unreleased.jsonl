@@ -3,3 +3,4 @@
 {"format_version":1,"id":"18dbf2dcd8e437a73bb5541c3e074f0f985e901b72c84fa7","commits":["c685a626efeb48dd45fe009b316fdfc44b64f10c"],"user_facing":false,"packages":["strictcli"]}
 {"format_version":1,"id":"18dbf3955e512986b4f61ef05a3d42d5be7c2373e589b360","commits":["0ce3f21d6edbfa55565edab13e65e94d9b7bfdcd"],"user_facing":false,"packages":["strictcli"]}
 {"format_version":1,"id":"18dbf39683944f2d4810935a05e94bb6ad55e9696aa8b1a8","commits":["72d1fb02c29f2b9fc859b1fb3f148383f746992c"],"user_facing":false,"packages":["strictcli"]}
+{"format_version":1,"id":"18dbf48f9d9c76cef5b222c4a06a4d62bd302c0944b7809c","commits":["36eb728c9618b0a6070c4432c0559bf8b7b0c7f1"],"user_facing":true,"description":"The README now says where an app's check list belongs: in the app's own package as package data, passed with `checks_path=`; strictcli has no standard folder or default path for it.","type":"fix","packages":["strictcli"]}
