@@ -85,8 +85,8 @@ Float flags (`type=float`) also use strict parsing and reject NaN and Inf at
 parse time to prevent invalid numeric states from reaching handlers. All three
 implementations use the strictcli canonical float form (SCF), a
 shortest-round-trip representation that produces identical output byte-for-byte
-across Python, Go, and TypeScript. The canonical form is verified by exhaustive
-bit-pattern tests committed in the conformance suite.
+across Python, Go, and TypeScript. The canonical form is verified by the
+bit-pattern vectors committed in `go/strictcli/testdata/float_vectors.json`.
 
 ## The presence declaration
 

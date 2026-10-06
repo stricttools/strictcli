@@ -23,12 +23,6 @@ name = "ts-strictcli"
 releasable = "ts-strictcli"
 
 [[projects]]
-path = "conformance"
-name = "conformance"
-dev_only = true
-releasable = false
-
-[[projects]]
 path = "."
 name = "root"
 dev_only = true

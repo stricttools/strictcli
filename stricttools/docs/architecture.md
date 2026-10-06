@@ -7,8 +7,8 @@ nav_order = 10
 
 # Architecture and Internals
 
-strictcli is a strict CLI framework implemented in Python, Go, and TypeScript,
-kept in behavioral lockstep by a shared conformance test suite. This document
+strictcli is a strict CLI framework implemented in Python, Go, and TypeScript.
+Go is the maintained implementation; Python and TypeScript are paused. This document
 explains how the framework works internally, covering the parse pipeline, the
 registration-time validation model, the schema format, the config system, flag
 negation, and the error handling philosophy.
@@ -30,8 +30,9 @@ identical help output, and identical schema JSON.
   Node >= 22), two external dependencies (smol-toml for parsing,
   toml-eslint-parser for comment-preserving edits).
 
-All three produce identical error messages, identical help output, identical
-schema JSON, and pass the same conformance test cases.
+All three were built to produce identical error messages, identical help output,
+and identical schema JSON. No check compares them any more: the cross-language
+parity suite is retired with Python and TypeScript paused.
 
 ## The parse pipeline
 
@@ -39,8 +40,7 @@ Every invocation flows through the same five-stage pipeline: reserved flag
 pre-scan, global flag parsing, command routing, command parsing, and dispatch.
 The stages are named identically in all implementations and execute in the same
 order. The Go function names below appear alongside the Python and TypeScript
-equivalents where they differ; the behavior at each stage is enforced to be
-identical by the conformance test suite.
+equivalents where they differ.
 
 ### Stage 1: reserved flag pre-scan
 
@@ -428,8 +428,8 @@ describing rather than by subtracting arrays from a schema it would have to load
 See [update commands](flag-system.md#update-commands).
 
 **No timing fields.** No duration, no timestamps, no clock-derived counters: this
-is a document three implementations must produce identically and the conformance
-suite compares structurally.
+is a document a run must produce identically every time, and the behavior cases
+compare it structurally.
 
 **The runtime guard.** While the handler runs under `--json`, the framework
 redirects the process stdout (at the file-descriptor level in Go and Python, by
@@ -779,8 +779,8 @@ fragment describing the shape of the value the declaration delivers, using JSON
 Schema's own type names (`string`, `boolean`, `integer`, `number`, `array`,
 `object`). **The subset is closed at four keywords**: `type`, `items`,
 `additionalProperties`, `enum`. Nothing else may appear in a fragment, and one
-conformance check (`schema-fragments`) validates every fragment in all three
-targets' dumps against exactly that closure.
+test (`TestHelpDocumentFragmentsAndPresence` in Go's suite) validates every
+fragment in the help documents it dumps against exactly that closure.
 
 | Carrier | `value_schema` |
 |---|---|
@@ -1012,8 +1012,9 @@ in that choice's `flags` array.
 
 A committed `.strictmetadata/.cli-schema/schema.json` must be **dumper-independent**: a repository
 whose file is written sometimes by a Go binary and sometimes by a Python one must
-see a diff exactly when something changed. The `schema-parity` conformance check
-therefore compares **bytes**, with no normalization layer.
+see a diff exactly when something changed. The help document is therefore
+defined as **bytes**, with no normalization layer, and the behavior cases'
+`schema_bytes_equal` assertion compares it that way.
 
 - **Numbers.** Every float is written in the strictcli canonical float form
   (SCF), the same one-form-three-implementations canon the float vectors already
@@ -1440,9 +1441,8 @@ imports. Only files git reports as belonging to the repository are read.
 strictcli follows a strict, no-silent-defaults error philosophy. Every error
 condition produces a specific, actionable message with enough context to fix the
 problem. There are no warnings that continue execution -- if something is wrong,
-the framework fails immediately. Error messages are byte-identical across all
-three implementations, enforced by the conformance suite's error parity check
-that compares every error template one-to-one.
+the framework fails immediately. Error messages were built to be byte-identical
+across the three implementations.
 
 ### Two error categories
 
@@ -1456,10 +1456,9 @@ that compares every error template one-to-one.
 
 ### Error message parity
 
-All three implementations produce byte-identical error messages for identical
-inputs. This is enforced by the `check_error_parity.py` conformance check,
-which extracts every error template from all implementations and verifies
-they match one-to-one.
+The three implementations were built to produce byte-identical error messages
+for identical inputs. The check that compared their templates one-to-one is
+retired with Python and TypeScript paused.
 
 Error templates are centralized in a single file per implementation:
 
@@ -1498,23 +1497,9 @@ refused. Float parsing rejects NaN and Inf. Bool env vars accept only
 the exact set `1|true|yes` / `0|false|no` (case-insensitive); anything else is
 an error.
 
-## Conformance testing
+## Behavior cases
 
-The three implementations are kept in lockstep by a conformance test suite
-(`conformance/`). JSON test cases define an app structure, argv, and expected
-output. A runner generates the app in each language and executes it, comparing
-results.
-
-Conformance checks run as part of CI and include:
-
-- **conformance-python/go/typescript**: all JSON test cases pass in each
-  implementation.
-- **conformance-parity**: outputs are byte-identical across implementations
-  (with acknowledged divergences for language-specific output).
-- **error-parity**: every error template exists in all implementations with
-  identical format strings.
-- **api-surface**: the public API surface matches across implementations.
-- **schema-parity**: the schema JSON produced by each implementation is
-  byte-identical for the same app definition.
-- **float-fuzz**: exhaustive bit-pattern verification of the canonical float
-  format (SCF) across all implementations.
+Go's suite carries JSON behavior cases (`go/strictcli/testdata/cases/`): each
+defines an app structure, argv, and expected output, and a harness program
+builds the app with the Go API and runs it as a subprocess. See
+[Behavior cases](behavior-cases.md).

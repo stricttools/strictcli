@@ -5,7 +5,7 @@ title = "README.md"
 
 A CLI framework for the Era of Agents: nothing is inferred, everything is declared. First-class support for Go, Python, and TypeScript
 
-It is for developers who would rather see a mistake when the CLI is declared than when someone runs it. The three implementations are first-class rather than ports of one another, and one shared conformance test suite holds them to identical behavior:
+It is for developers who would rather see a mistake when the CLI is declared than when someone runs it. The three implementations are first-class rather than ports of one another, and were built to identical behavior:
 
 | Implementation | Install | Docs |
 |---------------|---------|------|
@@ -182,17 +182,9 @@ app.run(process.argv.slice(2));
 - `--help` / `-h` recognized anywhere in argv
 - In-process testing via `app.test()` / `app.Test()`
 
-## Conformance
+## Maintenance
 
-The `conformance/` directory contains a cross-language test suite that verifies all implementations (Python, Go, TypeScript) produce identical output for identical inputs. It includes:
-
-- A shared JSON case suite covering every feature, run against each target via `run.py --target python` / `--target go` / `--target typescript`
-- API surface verification (`check_api_surface.py`)
-- Error message parity checks (`check_error_parity.py`)
-- Byte-identical schema dump parity (`check_schema_parity.py`), fragment validity (`check_schema_fragments.py`) and float formatting fuzzing (`check_float_fuzz.py`)
-- Pairwise combination testing and fuzzing
-
-All implementations must pass all conformance tests before release.
+Go is the maintained implementation. The Python and TypeScript implementations are paused: they stay published and usable, and receive no updates. Go's suite carries a body of JSON behavior cases, each an app declaration, an argv, and the exit code and output the run must produce (`go/strictcli/testdata/cases/`).
 
 ## Project structure
 
@@ -201,7 +193,6 @@ strictcli/
   python/          Python implementation (PyPI)
   go/              Go implementation
   typescript/      TypeScript implementation (npm)
-  conformance/     Cross-language conformance tests
 ```
 
 Each sub-project has its own version, changelog, and release cycle, managed by [rlsbl](https://github.com/stricttools/rlsbl).

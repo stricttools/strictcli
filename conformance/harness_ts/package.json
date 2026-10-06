@@ -1,6 +1,0 @@
-{
-	"name": "conformance-harness-ts",
-	"private": true,
-	"type": "module",
-	"description": "TypeScript conformance harness: interprets a CONFORMANCE_APP_DEF JSON app definition against the built typescript/dist strictcli package. No dependencies and no build step -- run.py invokes `node main.js <argv...>` directly; the only prerequisite is a built typescript/dist (cd typescript && npm run build)."
-}

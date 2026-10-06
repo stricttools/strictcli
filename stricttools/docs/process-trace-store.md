@@ -49,7 +49,7 @@ home and its owner; it does not restrict who may write to it.
 
 **What this store is not:** it is not an input to behaviour. No strictcli code path branches on the
 ancestry stack, and the framework exposes no accessor for it. That is a ratified contract item,
-enforced by conformance sweeps, and it is what makes a forged identifier a harmless false claim
+enforced by sweeps in Go's suite (`TestTraceStoreIsObservationalOnly`), and it is what makes a forged identifier a harmless false claim
 rather than an exploit.
 
 ## Propagation

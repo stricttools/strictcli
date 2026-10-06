@@ -1,8 +1,0 @@
-{
-  "version": 1,
-  "files": {
-    "VERSION": "795d6bc79574d2aec03ad9cfec404bb95083c9dd210e6521e0d4199772d28d44",
-    ".github/workflows/publish.yml": "7323380d94b523961aeaff046c004ccbdfd91cd918817a6e91685455b5a987bd",
-    ".gitignore": "8c7685bbbc0f9b008a08f36285f1d91d75388ae4f67b16a521c94d2061b5d8ab"
-  }
-}

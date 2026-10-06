@@ -24,7 +24,6 @@ jobs:
       strictcli: ${{ steps.changes.outputs.strictcli }}
       go-strictcli: ${{ steps.changes.outputs.go-strictcli }}
       ts-strictcli: ${{ steps.changes.outputs.ts-strictcli }}
-      conformance: ${{ steps.changes.outputs.conformance }}
     steps:
     - uses: actions/checkout@v6
     - uses: dorny/paths-filter@v4
@@ -43,10 +42,6 @@ jobs:
             - 'typescript/**'
             - '.github/workflows/ci-router.yml'
             - '.rlsbl-monorepo/releasables/ts-strictcli/CHANGELOG.md'
-          conformance:
-            - 'conformance/**'
-            - 'python/**'
-            - '.github/workflows/ci-router.yml'
         predicate-quantifier: some-with-excludes
   strictcli-ci-test:
     runs-on: ubuntu-latest
@@ -114,39 +109,3 @@ jobs:
     needs:
     - detect
     if: (needs.detect.outputs.ts-strictcli == 'true' || inputs.run_all)
-  conformance-ci-test:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-    - uses: actions/checkout@v6
-    - uses: astral-sh/setup-uv@v7
-    - run: uv python install 3.13
-      # The Go that builds the Go implementation is the one go/go.mod declares
-      # in its toolchain line. rlsbl monorepo sync prefixes this path with the
-      # member path (conformance/), so `../go/go.mod` resolves to go/go.mod.
-    - uses: actions/setup-go@v6
-      with:
-        go-version-file: conformance/../go/go.mod
-        cache-dependency-path: go/go.sum
-    - uses: actions/setup-node@v6
-      with:
-        node-version: 22
-    - name: Build TypeScript implementation
-      working-directory: typescript
-      run: |
-        npm ci
-        npm run build
-    - name: Install strictcli and conformance tool
-      working-directory: .
-      run: |
-        pip install -e ./python --break-system-packages
-        pip install -e ./conformance --break-system-packages
-    - name: Conformance checks
-      run: conformance check --tag pre-release
-    defaults:
-      run:
-        working-directory: conformance
-    name: conformance-ci / test
-    needs:
-    - detect
-    if: (needs.detect.outputs.conformance == 'true' || inputs.run_all)

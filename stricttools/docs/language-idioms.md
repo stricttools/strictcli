@@ -493,14 +493,9 @@ is absent"), and every choice-flag guard:
 | Go | `Flag "via": a choice flag cannot declare Optional(): an absent selection is a choice nobody named, so name it as a choice of its own` |
 | TypeScript | `Flag "via": a choice flag cannot declare presence: "optional": an absent selection is a choice nobody named, so name it as a choice of its own` |
 
-This has a consequence for how conformance is run. The cross-language
-error-parity check compares templates across implementations, so a template that
-carries a per-language spelling cannot be compared that way: each of the three
-carries only its own, and the other two record it as an `excluded:` entry in
-`conformance/check_error_parity.py` with the rationale written out. The
-assertion still happens -- it just happens **per target**, in
-`conformance/cases/presence_registration.json`, where every implementation is
-required to produce its own exact line.
+A template that carries a per-language spelling cannot be compared across
+implementations: each of the three carries only its own, and each asserts its
+own exact line in its own suite.
 
 ## Errors only one language can produce
 
@@ -548,8 +543,7 @@ default declaration is inexpressible there.
 Each of these names a state only one language's spelling can reach. A sibling
 has no input that could produce the message, and asserting parity over it would
 be asserting that two implementations carry text no code path can print. Their
-absence elsewhere is a consequence of the spelling, not a parity defect -- and
-the conformance suite records it as such.
+absence elsewhere is a consequence of the spelling, not a parity defect.
 
 ## A fifth case: the retired choice
 
@@ -761,9 +755,8 @@ to keep in step.
 Parity work then binds the semantics, the rendered bytes, the schema fields, and
 the sentence of every message -- with each language's own spellings substituted
 inside it. When a mis-declaration is expressible in only one language, that
-language gets an error template the others do not have, recorded as an
-`excluded:` entry with its rationale and asserted per target in a conformance
-case.
+language gets an error template the others do not have, asserted in that
+language's own suite.
 
 A difference in what you type is not a defect to be filed. A difference in what
 happens is.

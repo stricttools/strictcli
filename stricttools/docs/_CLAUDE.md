@@ -3,7 +3,7 @@ title = "CLAUDE.md"
 +++
 # strictcli
 
-Strict CLI framework -- declare everything, infer nothing. Multiple first-class implementations kept in behavioral lockstep via a conformance test suite.
+Strict CLI framework -- declare everything, infer nothing. Go is the maintained implementation; the Python and TypeScript implementations are paused and receive no updates.
 
 ## Monorepo structure
 
@@ -14,9 +14,6 @@ This is an rlsbl monorepo (`.rlsbl-monorepo/workspace.toml`). Each sub-project h
 | `python/` | Python implementation (PyPI) | `pyproject.toml` | pypi | `uv run pytest` in `python/` |
 | `go/` | Go implementation | `VERSION` | go | `go test ./... -race` in `go/` |
 | `typescript/` | TypeScript implementation (npm, releasable `ts-strictcli`) | `package.json` | npm | `npm test` in `typescript/` |
-| `conformance/` | Cross-language conformance suite | n/a | plain | `python conformance/run.py --target python` / `--target go` / `--target typescript` |
-
-**Note:** `conformance/` is a `dev_node` project. It has no changelog, no user-facing changes, and does not participate in the changelog system. It is not released independently -- releases happen only as part of monorepo batch releases (`rlsbl monorepo release`) if at all.
 
 ## Building and testing
 
@@ -30,8 +27,6 @@ cd go && go test ./strictcli/... -race
 # TypeScript
 cd typescript && npm ci && npm test
 
-# Conformance (requires all implementations)
-cd conformance && python run.py --target python && python run.py --target go && python run.py --target typescript
 ```
 
 ## Architecture
@@ -56,25 +51,20 @@ Handlers use ctx-first signatures: `func(ctx *Context, args map[string]interface
 
 :-: list-modules path="typescript/src/"
 
-### Conformance (`conformance/`)
+### Behavior cases (`go/strictcli/testdata/`)
 
-JSON test cases in `cases/` define app structure + argv + expected output. `run.py` drives targets differently:
+JSON cases in `go/strictcli/testdata/cases/` define an app structure, argv, and expected output, and run as part of Go's suite (`TestCases` in `go/strictcli/cases_test.go`). The test builds `go/strictcli/testdata/caseharness/` (a program that builds the app a case declares from the JSON file `CONFORMANCE_APP_DEF` names) once per run and starts it as a subprocess for every case. The same package holds the checks over whole help documents (`TestHelpDocumentFragmentsAndPresence`) and the trace store's observational-only sweeps (`TestTraceStoreIsObservationalOnly`). See `behavior-cases.md`.
 
-- **Python**: generates a reference script via `ref_python.py` and executes it with the case argv.
-- **Go**: builds a single persistent harness binary (`conformance/harness/`, built once per run and left in place afterward -- it is gitignored, and deleting it would break any other conformance tool running against the same checkout) that interprets the app definition at runtime. `run.py` writes the app definition JSON to a temp file and passes its path via the `CONFORMANCE_APP_DEF` env var. There is NO per-app-hash Go binary cache.
-- **TypeScript**: runs the `harness_ts` runtime harness (`conformance/harness_ts/main.js`) -- a plain Node ESM script (no install or build of its own) that imports the built `typescript/dist` by relative path. `run.py` builds the dist once per run (`npm run build` in `typescript/`) and passes the app definition via the same `CONFORMANCE_APP_DEF` env var as Go.
-- `conformance/fuzz.py` (the differential argv fuzzer) drives all three implementations through the same runtime paths as `run.py`: Python via `ref_python.py` codegen, Go and TypeScript via the runtime harnesses above (each reading the app definition from `CONFORMANCE_APP_DEF`). It compares results N-way, identifying the odd one out by majority. The legacy `ref_go.py` Go codegen generator has been deleted.
-
-Cases may carry an `acknowledged_divergence` block for intrinsically language-specific output (per-stream target lists with a mandatory reason); acknowledged targets are excluded from byte-identity comparison while the case's own expect block still runs everywhere, and stale acknowledgments are reported. The `check` gate (`uv run conformance check --tag pre-release` from `conformance/`) runs 12 checks: api-surface, error-parity, conformance-meta, conformance-python, conformance-go, conformance-typescript, conformance-parity, schema-parity, schema-fragments, schema-freshness, float-fuzz, trace-sweeps. `conformance-meta` runs the suite's own meta-tests (`test_error_parity_extraction.py`, `test_run_registry.py`, `test_api_surface_registry.py`, `test_lock_pin.py`) -- they pin the extraction and registry surfaces whose silent drift produces a false PASS rather than a visible error, plus the lockfile's editable-sibling pin, which drifts one release behind `python/pyproject.toml` every time it is not refreshed by hand.
+The cross-implementation parity suite that once held Python, Go, and TypeScript to identical behavior is retired: Python and TypeScript are paused, and nothing compares them with Go any more.
 
 ## TypeScript port -- durable facts
 
 The TypeScript implementation shipped as npm `strictcli` 0.31.0. These are the agent-facing constants that must not drift; the full historical design record and decision ledger live in `.stricttools/docs/history/_ts-port-spec.md` (the underscore prefix keeps it out of the published docs site -- selfdoc's `resolve_all_docs` walks `.stricttools/docs/` recursively and treats every non-underscore `.md` as a page).
 
-- **Naming registry.** Conformance target `typescript`; conformance check `conformance-typescript`; rlsbl releasable and workspace project `ts-strictcli`; npm package `strictcli`; directory `typescript/`.
+- **Naming registry.** rlsbl releasable and workspace project `ts-strictcli`; npm package `strictcli`; directory `typescript/`.
 - **TOML acceptance gate.** The TS parse layer MUST reject the six TOML-1.1-only constructs (parity with the stricter Python/Go TOML): backslash-`e` escapes and backslash-`x` hex escapes in basic strings; newlines and trailing commas inside inline tables; times without seconds and datetimes without seconds.
 - **TOML stack.** `smol-toml` (with `integersAsBigInt` so TOML integers round-trip as `bigint`) for parsing; a `toml-eslint-parser`-based single-key splicer for comment-preserving, byte-exact `config set` edits.
-- **SCF float canon.** One canonical decimal form for floats, byte-identical across Python/Go/TS; the exhaustive bit-pattern to expected-string vectors are committed at `conformance/float_vectors.json` and enforced by the `float-fuzz` check.
+- **SCF float canon.** One canonical decimal form for floats, byte-identical across Python/Go/TS; the bit-pattern to expected-string vectors are committed at `go/strictcli/testdata/float_vectors.json`, which the Go, Python, and TypeScript unit suites replay.
 
 ## Idiomatic divergence is the design, not a defect
 
@@ -113,9 +103,7 @@ regression in all three languages at once.
   expressible in one language.** Python alone can write `presence="defualt"`
   (a keyword taking a string); TypeScript alone can write `presence: "default"`
   with no `default` (the only two-part spelling). The siblings have no input that
-  could produce those messages. Record them in `conformance/check_error_parity.py`
-  as `excluded:` entries with the rationale, and assert them **per target** in a
-  conformance case (`conformance/cases/presence_registration.json` is the model),
+  could produce those messages. Assert each in its own implementation's suite,
   never by forcing one shared spelling.
 - **Exhaustiveness is a first-class goal of every delivery API.** Wherever a
   handler consumes a closed set (an elected choice, a tagged record, an
@@ -162,12 +150,10 @@ All implementations must:
 - Support exactly four types: `str`, `bool`, `int`, `float`.
 - Use strict integer parsing: plain ASCII decimal digits with an optional leading minus sign, 64-bit signed bounds; a plus sign, a leading zero (`030`), whitespace, and digit separators are refused (contract §30). Float parsing rejects NaN and Inf.
 - Accept the same boolean env var strings: `1|true|yes` / `0|false|no` (case-insensitive).
-- Produce identical error messages for identical inputs (checked by `check_error_parity.py`) -- one sentence per rule, byte-identical, with each language's own spellings substituted inside it where the message names a spelling (§12.10, §12.12).
-- Export the same API surface (checked by `check_api_surface.py`) -- the same capabilities under each language's own declaration shape, not the same literal spellings.
-- Produce identical error messages for constraint violations (checked by `check_error_parity.py`).
-- Pass all conformance cases for every target before release.
+- Produce identical error messages for identical inputs -- one sentence per rule, byte-identical, with each language's own spellings substituted inside it where the message names a spelling (§12.10, §12.12).
+- Export the same API surface -- the same capabilities under each language's own declaration shape, not the same literal spellings.
 
-When adding a feature to one implementation, add it to all implementations and add conformance cases.
+No check enforces these across implementations any more: the parity suite is retired with Python and TypeScript paused. New behavior goes to Go, with behavior cases or unit tests in Go's suite.
 
 ## Key conventions
 
@@ -224,7 +210,7 @@ Numbers are IEEE-754 doubles and any number whose magnitude exceeds 2^53 is refu
 
 Optional builder sugar constructs the same literal, one constructor per subset keyword shape: `schema_type` / `schema_array` / `schema_object` / `schema_enum` / `schema_const` (Python), `SchemaType` / `SchemaArray` / `SchemaObject` / `SchemaEnum` / `SchemaConst` (Go), `schemaType` / `schemaArray` / `schemaObject` / `schemaEnum` / `schemaConst` (TypeScript). Builders add no vocabulary and validate nothing themselves — their output is the canonical literal and passes the identical registration-time validation.
 
-The cross-language vectors live at `conformance/payload_schema_vectors.json` (verdicts and exact error texts) and `conformance/payload_schema_builders.json` (each builder construct's literal); all three unit suites replay both. python-jsonschema, santhosh-tekuri/jsonschema v6 and hyperjump are wired as dev-only cross-checks asserting verdict agreement, and are never runtime dependencies.
+The vectors live at `go/strictcli/testdata/payload_schema_vectors.json` (verdicts and exact error texts) and `go/strictcli/testdata/payload_schema_builders.json` (each builder construct's literal); all three unit suites replay both. python-jsonschema, santhosh-tekuri/jsonschema v6 and hyperjump are wired as dev-only cross-checks asserting verdict agreement, and are never runtime dependencies.
 
 ### Provenance
 
@@ -295,11 +281,7 @@ Enabled via `WithChecks(path)` (Go) / `checks_path=` (Python), pointing to a TOM
 cd python && rlsbl status
 cd go && rlsbl status
 cd typescript && rlsbl status
-cd conformance && rlsbl status
 
-# API surface check
-cd conformance && python check_api_surface.py
-
-# Error message parity check
-cd conformance && python check_error_parity.py
+# Go's behavior cases
+cd go && go test -run TestCases ./strictcli
 ```
