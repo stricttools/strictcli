@@ -18,8 +18,3 @@ dist/
 
 build/
 target/
-
-# Test apps run with this directory as cwd write schema dumps and coverage
-# shards here. Nothing under python/ is a maintained artifact (unlike
-# conformance/.strictcli/, which is committed on purpose).
-.strictcli/
