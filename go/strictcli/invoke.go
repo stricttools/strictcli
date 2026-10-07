@@ -451,6 +451,9 @@ func (a *App) invokeSealed(ctx *Context, fn func() int) (code int, truncErr stri
 		if killed := ctx.effects.settleChildren(); len(killed) > 0 && r == nil && code == 0 {
 			code = 1
 		}
+		if err := ctx.removeScratch(); err != nil && r == nil && code == 0 {
+			code = 1
+		}
 		ctx.cancel()
 		switch v := r.(type) {
 		case nil:

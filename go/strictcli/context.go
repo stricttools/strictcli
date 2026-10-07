@@ -68,6 +68,10 @@ type Context struct {
 	declaredRequirements []AnyRequirement
 	loadedRequirements   map[string]interface{}
 
+	// scratch is the dispatch's scratch directory (WithScratchDir), made on
+	// the handler's first request and removed by the exit step.
+	scratch scratch
+
 	// output is the envelope's `output` member (§19.2's box): what Out wrote
 	// in machine mode plus every captured child's stdout (§19.11), in arrival
 	// order. Never nil.
@@ -151,6 +155,7 @@ func (c *Context) bindCommand(cmd *Command) {
 	c.ownsStdout = cmd.OwnsStdout
 	c.renderer = cmd.PayloadRenderer
 	c.receivesSeparatorArgs = cmd.argsAfterSeparator != nil
+	c.scratch.declared = cmd.scratchDir
 }
 
 // DryRun reports whether the framework-owned --dry-run flag was passed.

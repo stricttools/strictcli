@@ -154,9 +154,12 @@ func (a *App) registerOneCheckCommand(commandName string, failingOnly bool) {
 	}
 	// read_only: the check command's only writes are framework-blessed
 	// CACHE_WRITEs (the coverage manifest), which never trip enforcement.
+	// It declares a scratch directory, which the check context factory may
+	// ask for, so a check can run a program that writes for itself (a
+	// package manager's cache) without writing anywhere else.
 	a.registerFrameworkCommand(commandName, help,
 		EffectReadOnly, handler, WithFlags(extraFlags...),
-		PayloadSchema(checkPayloadSchema))
+		PayloadSchema(checkPayloadSchema), WithScratchDir())
 }
 
 // registerFrameworkCommand registers one of strictcli's own auto-registered

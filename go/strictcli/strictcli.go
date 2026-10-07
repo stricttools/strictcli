@@ -344,7 +344,10 @@ type Command struct {
 	// which is the only spelling -- a half-declared record (a write mode
 	// without an update, or the reverse) is unrepresentable rather than
 	// guarded.
-	updateOf    *updateDecl
+	updateOf *updateDecl
+	// scratchDir is set by WithScratchDir: the handler may ask for a
+	// scratch directory.
+	scratchDir  bool
 	flags       []Flag
 	args        []Arg
 	flagSets    []FlagSet
@@ -2949,6 +2952,9 @@ type dispatchEnding struct {
 	// signal is the first SIGINT or SIGTERM received while the handler ran
 	// (§19.13), nil when none.
 	signal os.Signal
+	// scratch is why the dispatch's scratch directory could not be removed,
+	// empty when it was or none was made.
+	scratch string
 }
 
 // runSealed runs a handler under the runtime seal AND owns the one exit step,
@@ -2979,6 +2985,9 @@ func (a *invocation) runSealed(run sealedRun, fn func() int) (code int) {
 		// are still in place (§19.11's box, §19.13's box).
 		if run.ctx != nil && run.ctx.effects != nil {
 			end.killed = run.ctx.effects.settleChildren()
+		}
+		if err := run.ctx.removeScratch(); err != nil {
+			end.scratch = err.Error()
 		}
 		if run.signals != nil {
 			end.signal = run.signals.stop()
@@ -3126,6 +3135,12 @@ func (a *invocation) finishDispatch(run sealedRun, end dispatchEnding) int {
 	}
 	if end.stray != nil {
 		appended = append(appended, end.stray.diagnostic())
+		if code == 0 {
+			code = 1
+		}
+	}
+	if end.scratch != "" {
+		appended = append(appended, end.scratch)
 		if code == 0 {
 			code = 1
 		}
