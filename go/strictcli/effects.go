@@ -73,6 +73,12 @@ type Grant struct {
 	Kind   string
 }
 
+// NewGrant is the grant called name, authorizing effects of one effect class
+// (ProcMutate, FileWrite, ...) for the reason given.
+func NewGrant(name, reason, effectClass string) Grant {
+	return Grant{Name: name, Reason: reason, Kind: effectClass}
+}
+
 // ErrTimedOut is matched, through errors.Is, by the error of an effects-handle
 // run, spawned child's wait, or HTTP request that exceeded its Timeout option,
 // and by no other error.
