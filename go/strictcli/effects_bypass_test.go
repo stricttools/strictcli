@@ -103,7 +103,7 @@ func TestBypassCheckReportsTheInputRuleRefusal(t *testing.T) {
 	writeGoFile(t, dir, "handler.go", bypassOffender)
 	app := NewApp("testapp", "1.0.0", "test app")
 	app.RegisterCheckProvider(func() []CheckSpec { return nil })
-	app.SetCheckContext(func() CheckContext { return &testCheckContext{root: dir} })
+	app.SetCheckContext(func(*Context) (CheckContext, error) { return &testCheckContext{root: dir}, nil })
 
 	r := app.Test([]string{"check", "--name", "effects-bypass"})
 
@@ -262,7 +262,7 @@ func deploy(ctx *Ctx) int {
 `)
 	app := NewApp("testapp", "1.0.0", "test app")
 	app.RegisterCheckProvider(func() []CheckSpec { return nil })
-	app.SetCheckContext(func() CheckContext { return &testCheckContext{root: dir} })
+	app.SetCheckContext(func(*Context) (CheckContext, error) { return &testCheckContext{root: dir}, nil })
 
 	r := app.Test([]string{"check", "--name", "effects-bypass"})
 	if r.ExitCode == 0 {
@@ -313,7 +313,7 @@ func TestObserveAllowlistBreadthWarnsOnSingleTokenPrefixes(t *testing.T) {
 	app := NewApp("testapp", "1.0.0", "test app",
 		WithProcObserveAllowlist([][]string{{"git"}}))
 	app.RegisterCheckProvider(func() []CheckSpec { return nil })
-	app.SetCheckContext(func() CheckContext { return &testCheckContext{root: t.TempDir()} })
+	app.SetCheckContext(func(*Context) (CheckContext, error) { return &testCheckContext{root: t.TempDir()}, nil })
 	r := app.Test([]string{"check", "--name", "observe-allowlist-breadth"})
 	if !strings.Contains(r.Stdout, "WARN") {
 		t.Fatalf("expected a WARN verdict, got %q", r.Stdout)
@@ -331,7 +331,7 @@ func TestObserveAllowlistBreadthPassesOnNarrowPrefixes(t *testing.T) {
 	app := NewApp("testapp", "1.0.0", "test app",
 		WithProcObserveAllowlist([][]string{{"git", "status"}, {"gh", "release", "view"}}))
 	app.RegisterCheckProvider(func() []CheckSpec { return nil })
-	app.SetCheckContext(func() CheckContext { return &testCheckContext{root: t.TempDir()} })
+	app.SetCheckContext(func(*Context) (CheckContext, error) { return &testCheckContext{root: t.TempDir()}, nil })
 	r := app.Test([]string{"check", "--name", "observe-allowlist-breadth"})
 	if r.ExitCode != 0 || !strings.Contains(r.Stdout, "no single-token proc_observe_allowlist prefixes") {
 		t.Fatalf("exit=%d stdout=%q", r.ExitCode, r.Stdout)
@@ -507,7 +507,7 @@ func grantAgreementApp(t *testing.T, kind string, opts ...CmdOption) *App {
 		return Exit(0)
 	}, all...)
 	app.RegisterCheckProvider(func() []CheckSpec { return nil })
-	app.SetCheckContext(func() CheckContext { return &testCheckContext{root: t.TempDir()} })
+	app.SetCheckContext(func(*Context) (CheckContext, error) { return &testCheckContext{root: t.TempDir()}, nil })
 	return app
 }
 
@@ -558,7 +558,7 @@ func TestConsequentialGrantAgreementNamesTheDottedPath(t *testing.T) {
 	}, WithEffect(EffectMutating),
 		WithGrants(Grant{Name: "push", Reason: "owns remote refs", Kind: ProcMutate}))
 	app.RegisterCheckProvider(func() []CheckSpec { return nil })
-	app.SetCheckContext(func() CheckContext { return &testCheckContext{root: t.TempDir()} })
+	app.SetCheckContext(func(*Context) (CheckContext, error) { return &testCheckContext{root: t.TempDir()}, nil })
 	r := app.Test([]string{"check", "--name", "consequential-grant-agreement"})
 	if !strings.Contains(r.Stdout, "command 'release.run' declares grant 'push'") {
 		t.Fatalf("expected the dotted path, got %q", r.Stdout)

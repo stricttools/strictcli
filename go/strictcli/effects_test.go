@@ -1424,7 +1424,7 @@ func TestCheckDryRunEmitsTheFrameworkWouldDoHeader(t *testing.T) {
 			func(ctx CheckContext, r *ErrorReporter) CheckOutcome { return r.Passed("ok") },
 		)}
 	})
-	app.SetCheckContext(func() CheckContext { return &testCheckContext{root: emptyProjectRoot} })
+	app.SetCheckContext(func(*Context) (CheckContext, error) { return &testCheckContext{root: emptyProjectRoot}, nil })
 	r := app.Test([]string{"--dry-run", "check", "--all"})
 	if r.ExitCode != 0 {
 		t.Fatalf("exit=%d stderr=%q", r.ExitCode, r.Stderr)

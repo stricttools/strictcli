@@ -23,7 +23,7 @@ func errSpec(name string, tags ...string) CheckSpec {
 func newProviderApp(t *testing.T) *App {
 	t.Helper()
 	app := NewApp("testapp", "1.0.0", "test app")
-	app.SetCheckContext(func() CheckContext { return &testCheckContext{root: emptyProjectRoot} })
+	app.SetCheckContext(func(*Context) (CheckContext, error) { return &testCheckContext{root: emptyProjectRoot}, nil })
 	return app
 }
 
@@ -109,7 +109,7 @@ func TestProvider_CollisionWithToml(t *testing.T) {
 	app.RegisterErrorCheck("changelog-coverage", func(ctx CheckContext, _ *ErrorReporter) CheckOutcome {
 		return passOutcome("ok")
 	})
-	app.SetCheckContext(func() CheckContext { return &testCheckContext{root: emptyProjectRoot} })
+	app.SetCheckContext(func(*Context) (CheckContext, error) { return &testCheckContext{root: emptyProjectRoot}, nil })
 	app.RegisterCheckProvider(func() []CheckSpec { return []CheckSpec{errSpec("version-consistency")} })
 
 	assertPanicContains(t, "duplicate check definition", func() {

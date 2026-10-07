@@ -330,7 +330,12 @@ func (a *App) checkRun(frameworkCtx *Context, runAll bool, tagExpr, nameGlob str
 		return 1
 	}
 
-	ctx := a.wrapCheckContext(a.checkContextFactory(), frameworkCtx)
+	base, err := a.checkContextFactory(frameworkCtx)
+	if err != nil {
+		frameworkCtx.Error(err.Error())
+		return 1
+	}
+	ctx := a.wrapCheckContext(base, frameworkCtx)
 	results, impureListed, exitCode, err := a.runSelectedChecks(ctx, RunChecksOptions{
 		TagExpr:  tagExpr,
 		NameGlob: nameGlob,

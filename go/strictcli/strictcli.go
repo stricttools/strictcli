@@ -444,7 +444,7 @@ type App struct {
 	checksEmbed         []byte
 	checkDefs           map[string]*checkDef
 	checkOrder          []string // sorted check names for deterministic listing
-	checkContextFactory func() CheckContext
+	checkContextFactory func(*Context) (CheckContext, error)
 	// checkValueResolver assigns each check its value (SetCheckValueResolver);
 	// checkHooks holds the named hook selections checks.toml declares.
 	checkValueResolver func(name string) (CheckValue, bool)
@@ -2287,8 +2287,11 @@ func (a *App) registerCheckImpl(name, form string, run func(CheckContext) CheckO
 	def.implForm = form
 }
 
-// SetCheckContext sets the factory function that provides CheckContext to check implementations.
-func (a *App) SetCheckContext(factory func() CheckContext) {
+// SetCheckContext sets the factory that builds the CheckContext handed to
+// check implementations. The check and failing-checks commands call it once
+// per run with their own dispatch's *Context, so a context can be built over
+// that dispatch's effects handle; an error refuses the run with its message.
+func (a *App) SetCheckContext(factory func(*Context) (CheckContext, error)) {
 	a.checkContextFactory = factory
 }
 

@@ -882,7 +882,7 @@ arg  := strictcli.NewArg(name, help, opts ...ArgOption)
 | `app.ConfigField(name, opts...)` | Declare a typed config field |
 | `app.RegisterErrorCheck(name, fn)` | Register an error-severity check handler |
 | `app.RegisterWarnCheck(name, fn)` | Register a warn-severity check handler |
-| `app.SetCheckContext(factory)` | Set the check context factory |
+| `app.SetCheckContext(factory)` | Set the check context factory, `func(*Context) (CheckContext, error)`: `check` and `failing-checks` call it with their dispatch's `*Context`, effects handle included, and its error refuses the run |
 
 ### Core types
 

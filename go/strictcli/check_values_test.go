@@ -63,7 +63,7 @@ func cvApp(t *testing.T, toml string, outcomes map[string]CheckOutcome, resolver
 			})
 		}
 	}
-	app.SetCheckContext(func() CheckContext { return &testCheckContext{root: emptyProjectRoot} })
+	app.SetCheckContext(func(*Context) (CheckContext, error) { return &testCheckContext{root: emptyProjectRoot}, nil })
 	if resolver != nil {
 		app.SetCheckValueResolver(resolver)
 	}
@@ -300,7 +300,7 @@ func TestCheckValues_OffDoesNotRun(t *testing.T) {
 	app.RegisterWarnCheck("fmt", func(CheckContext, *WarnReporter) CheckOutcome { return passOutcome("fmt ok") })
 	app.RegisterErrorCheck("docs", func(CheckContext, *ErrorReporter) CheckOutcome { return passOutcome("docs ok") })
 	app.RegisterErrorCheck("bench", func(CheckContext, *ErrorReporter) CheckOutcome { return passOutcome("bench ok") })
-	app.SetCheckContext(func() CheckContext { return &testCheckContext{root: emptyProjectRoot} })
+	app.SetCheckContext(func(*Context) (CheckContext, error) { return &testCheckContext{root: emptyProjectRoot}, nil })
 	app.SetCheckValueResolver(cvValues(map[string][2]string{"lint": {"off", "demo:lint in options/quality.toml"}}))
 	r := app.Test([]string{"check", "--hook", "pre-push"})
 	if called || r.ExitCode != 0 || !strings.Contains(r.Stdout, "OFF   lint    off: demo:lint in options/quality.toml") {
@@ -423,7 +423,7 @@ func TestCheckValues_BrokenCheckResolvedWarnStillFails(t *testing.T) {
 	app := NewApp("testapp", "1.0.0", "test app", WithChecks(writeChecksFile(t, "app = \"testapp\"\n\n"+cvCheck("lint", []string{"t"}, "error"))))
 	dropBuiltinCheckProviders(app)
 	app.RegisterErrorCheck("lint", func(CheckContext, *ErrorReporter) CheckOutcome { panic(checkAborted{msg: "kaboom"}) })
-	app.SetCheckContext(func() CheckContext { return &testCheckContext{root: emptyProjectRoot} })
+	app.SetCheckContext(func(*Context) (CheckContext, error) { return &testCheckContext{root: emptyProjectRoot}, nil })
 	app.SetCheckValueResolver(cvValues(map[string][2]string{"lint": {"warn", "demo:lint"}}))
 	r := app.Test([]string{"failing-checks", "--name", "lint"})
 	if r.ExitCode != 1 || !strings.Contains(r.Stdout, `check "lint" aborted with checkAborted: kaboom`) {

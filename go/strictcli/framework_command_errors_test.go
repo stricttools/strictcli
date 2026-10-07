@@ -73,7 +73,7 @@ func TestCheckTagExpressionErrorGoesThroughTheWriter(t *testing.T) {
 	app.RegisterWarnCheck("check-deps", func(ctx CheckContext, _ *WarnReporter) CheckOutcome {
 		return passOutcome("ok")
 	})
-	app.SetCheckContext(func() CheckContext { return nil })
+	app.SetCheckContext(func(*Context) (CheckContext, error) { return nil, nil })
 	r := app.Test([]string{"check", "--tag", "(("})
 	if r.ExitCode != 1 || r.Stdout != "" || r.Stderr != "error: tag expression: unexpected end of expression at position 2\n" {
 		t.Fatalf("exit=%d stdout=%q stderr=%q", r.ExitCode, r.Stdout, r.Stderr)

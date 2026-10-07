@@ -310,7 +310,7 @@ func newConnCheckApp(t *testing.T) *App {
 		rep.Note("dsn=" + dsn)
 		return rep.Passed("connection env visible")
 	})
-	app.SetCheckContext(func() CheckContext { return &testCheckContext{root: emptyProjectRoot} })
+	app.SetCheckContext(func(*Context) (CheckContext, error) { return &testCheckContext{root: emptyProjectRoot}, nil })
 	return app
 }
 

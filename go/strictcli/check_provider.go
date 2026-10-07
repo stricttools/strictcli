@@ -17,8 +17,8 @@ import (
 //     with a provider gets a working `check` command).
 //
 //  2. Check-context factory (SetCheckContext) -- PROJECT CONSTRUCTION. Called
-//     once per run with no arguments to build the CheckContext handed to every
-//     check impl. It answers "what project are we checking?", independent of
+//     once per run with the dispatching command's *Context (its effects handle
+//     included) to build the CheckContext handed to every check impl. It answers "what project are we checking?", independent of
 //     which checks exist.
 //
 //  3. Scope adapter (Python-only, set_scope_adapter) -- PER-CHECK CONTEXT

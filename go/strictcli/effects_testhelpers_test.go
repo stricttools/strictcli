@@ -59,7 +59,7 @@ func dropBuiltinCheckProviders(app *App) *App {
 func TestBuiltinEffectsBypassProviderIsRegisteredWithChecks(t *testing.T) {
 	app := NewApp("testapp", "1.0.0", "test app")
 	app.RegisterCheckProvider(func() []CheckSpec { return nil })
-	app.SetCheckContext(func() CheckContext { return &testCheckContext{root: emptyProjectRoot} })
+	app.SetCheckContext(func(*Context) (CheckContext, error) { return &testCheckContext{root: emptyProjectRoot}, nil })
 	r := app.Test([]string{"check", "--list"})
 	if !strings.Contains(r.Stdout, "effects-bypass") {
 		t.Fatalf("expected the built-in effects-bypass check in --list, got %q", r.Stdout)

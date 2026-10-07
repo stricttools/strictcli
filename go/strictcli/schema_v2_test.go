@@ -759,7 +759,7 @@ depends_on = []
 			func(ctx CheckContext, r *ErrorReporter) CheckOutcome { return r.Passed("ok") },
 		)}
 	})
-	app.SetCheckContext(func() CheckContext { return &testCheckContext{root: dir} })
+	app.SetCheckContext(func(*Context) (CheckContext, error) { return &testCheckContext{root: dir}, nil })
 	// A provider materializes into the same registry lazily, so a dump taken
 	// after a check run used to differ from one taken before it.
 	app.Test([]string{"check", "--all"})
@@ -782,7 +782,7 @@ func TestTheChecksBlockIsOmittedWhenEveryCheckIsProviderSourced(t *testing.T) {
 			func(ctx CheckContext, r *ErrorReporter) CheckOutcome { return r.Passed("ok") },
 		)}
 	})
-	app.SetCheckContext(func() CheckContext { return &testCheckContext{root: t.TempDir()} })
+	app.SetCheckContext(func(*Context) (CheckContext, error) { return &testCheckContext{root: t.TempDir()}, nil })
 	app.Test([]string{"check", "--all"})
 	if _, present := dumpJSON(t, app)["checks"]; present {
 		t.Fatalf("an all-provider app published a checks block")

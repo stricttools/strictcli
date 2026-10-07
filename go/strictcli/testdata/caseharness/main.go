@@ -311,8 +311,8 @@ func main() {
 	_, hasProviders := appDef["providers"]
 	_, hasTestCoverage := appDef["source_tree_root"]
 	if hasToml || hasProviders || hasTestCoverage {
-		app.SetCheckContext(func() strictcli.CheckContext {
-			return &testCheckCtx{}
+		app.SetCheckContext(func(*strictcli.Context) (strictcli.CheckContext, error) {
+			return &testCheckCtx{}, nil
 		})
 	}
 

@@ -2,6 +2,7 @@ package strictcli
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -1390,8 +1391,8 @@ func TestCheckCommand_NoFlags_ShowsHelp(t *testing.T) {
 	app.RegisterErrorCheck("changelog-coverage", func(ctx CheckContext, _ *ErrorReporter) CheckOutcome {
 		return passOutcome("ok")
 	})
-	app.SetCheckContext(func() CheckContext {
-		return &testCheckContext{root: emptyProjectRoot}
+	app.SetCheckContext(func(*Context) (CheckContext, error) {
+		return &testCheckContext{root: emptyProjectRoot}, nil
 	})
 
 	r := app.Test([]string{"check"})
@@ -1487,8 +1488,8 @@ func TestCheckCommand_All_Passing(t *testing.T) {
 	app.RegisterErrorCheck("changelog-coverage", func(ctx CheckContext, _ *ErrorReporter) CheckOutcome {
 		return passOutcome("all commits covered")
 	})
-	app.SetCheckContext(func() CheckContext {
-		return &testCheckContext{root: emptyProjectRoot}
+	app.SetCheckContext(func(*Context) (CheckContext, error) {
+		return &testCheckContext{root: emptyProjectRoot}, nil
 	})
 
 	r := app.Test([]string{"check", "--all"})
@@ -1512,8 +1513,8 @@ func TestCheckCommand_All_WithFailure(t *testing.T) {
 		t.Fatal("changelog-coverage should not run if version-consistency fails")
 		return CheckOutcome{}
 	})
-	app.SetCheckContext(func() CheckContext {
-		return &testCheckContext{root: emptyProjectRoot}
+	app.SetCheckContext(func(*Context) (CheckContext, error) {
+		return &testCheckContext{root: emptyProjectRoot}, nil
 	})
 
 	r := app.Test([]string{"check", "--all"})
@@ -1539,8 +1540,8 @@ func TestCheckCommand_TagFilter(t *testing.T) {
 	app.RegisterErrorCheck("changelog-coverage", func(ctx CheckContext, _ *ErrorReporter) CheckOutcome {
 		return passOutcome("ok")
 	})
-	app.SetCheckContext(func() CheckContext {
-		return &testCheckContext{root: emptyProjectRoot}
+	app.SetCheckContext(func(*Context) (CheckContext, error) {
+		return &testCheckContext{root: emptyProjectRoot}, nil
 	})
 
 	// Only version-consistency has tag "release"
@@ -1564,8 +1565,8 @@ func TestCheckCommand_NameGlob(t *testing.T) {
 	app.RegisterErrorCheck("changelog-coverage", func(ctx CheckContext, _ *ErrorReporter) CheckOutcome {
 		return passOutcome("ok")
 	})
-	app.SetCheckContext(func() CheckContext {
-		return &testCheckContext{root: emptyProjectRoot}
+	app.SetCheckContext(func(*Context) (CheckContext, error) {
+		return &testCheckContext{root: emptyProjectRoot}, nil
 	})
 
 	r := app.Test([]string{"check", "--name", "version-*"})
@@ -1595,7 +1596,7 @@ func TestCheckCommand_DryRun_RunsThePureChecks(t *testing.T) {
 		ran = append(ran, "changelog-coverage")
 		return r.Passed("covered")
 	})
-	app.SetCheckContext(func() CheckContext { return &testCheckContext{root: emptyProjectRoot} })
+	app.SetCheckContext(func(*Context) (CheckContext, error) { return &testCheckContext{root: emptyProjectRoot}, nil })
 
 	r := app.Test([]string{"--dry-run", "check", "--all"})
 	if r.ExitCode != 0 {
@@ -1624,7 +1625,7 @@ func TestCheckCommand_DryRun_ListsTheImpureChecks(t *testing.T) {
 			return r.Passed(n + " ok")
 		})
 	}
-	app.SetCheckContext(func() CheckContext { return &testCheckContext{root: emptyProjectRoot} })
+	app.SetCheckContext(func(*Context) (CheckContext, error) { return &testCheckContext{root: emptyProjectRoot}, nil })
 
 	r := app.Test([]string{"--dry-run", "check", "--all"})
 	if r.ExitCode != 0 {
@@ -1658,7 +1659,7 @@ func TestCheckCommand_DryRun_FailingPureCheckFailsTheRun(t *testing.T) {
 	app.RegisterErrorCheck("changelog-coverage", func(ctx CheckContext, r *ErrorReporter) CheckOutcome {
 		return r.Passed("covered")
 	})
-	app.SetCheckContext(func() CheckContext { return &testCheckContext{root: emptyProjectRoot} })
+	app.SetCheckContext(func(*Context) (CheckContext, error) { return &testCheckContext{root: emptyProjectRoot}, nil })
 
 	r := app.Test([]string{"--dry-run", "check", "--all"})
 	if r.ExitCode != 1 {
@@ -1680,8 +1681,8 @@ func TestCheckCommand_All_JSON(t *testing.T) {
 	app.RegisterErrorCheck("changelog-coverage", func(ctx CheckContext, _ *ErrorReporter) CheckOutcome {
 		return passOutcome("covered")
 	})
-	app.SetCheckContext(func() CheckContext {
-		return &testCheckContext{root: emptyProjectRoot}
+	app.SetCheckContext(func(*Context) (CheckContext, error) {
+		return &testCheckContext{root: emptyProjectRoot}, nil
 	})
 
 	r := app.Test([]string{"check", "--all", "--json"})
@@ -1720,8 +1721,8 @@ func TestCheckCommand_All_Verbose(t *testing.T) {
 	app.RegisterErrorCheck("changelog-coverage", func(ctx CheckContext, _ *ErrorReporter) CheckOutcome {
 		return passOutcome("covered")
 	})
-	app.SetCheckContext(func() CheckContext {
-		return &testCheckContext{root: emptyProjectRoot}
+	app.SetCheckContext(func(*Context) (CheckContext, error) {
+		return &testCheckContext{root: emptyProjectRoot}, nil
 	})
 
 	// A passing outcome carries NO problems (Passed hard-errors if any were
@@ -1750,8 +1751,8 @@ func TestCheckCommand_IgnoreWarningsIsGone(t *testing.T) {
 	app.RegisterErrorCheck("changelog-coverage", func(ctx CheckContext, _ *ErrorReporter) CheckOutcome {
 		return passOutcome("ok")
 	})
-	app.SetCheckContext(func() CheckContext {
-		return &testCheckContext{root: emptyProjectRoot}
+	app.SetCheckContext(func(*Context) (CheckContext, error) {
+		return &testCheckContext{root: emptyProjectRoot}, nil
 	})
 
 	// A warning makes check exit 1: check is the full report.
@@ -3531,7 +3532,7 @@ func TestCheckCommand_DryRun_NoMatchingChecks(t *testing.T) {
 	checksPath := writeChecksFile(t, twoChecksToml)
 	app := makeAppWithChecks(t, checksPath)
 	registerAllPassing(t, app, "version-consistency", "changelog-coverage")
-	app.SetCheckContext(func() CheckContext { return &testCheckContext{root: emptyProjectRoot} })
+	app.SetCheckContext(func(*Context) (CheckContext, error) { return &testCheckContext{root: emptyProjectRoot}, nil })
 
 	r := app.Test([]string{"--dry-run", "check", "--tag", "nonexistent"})
 	if r.ExitCode != 0 {
@@ -3718,7 +3719,7 @@ func TestRunChecks_DurationFieldPresent(t *testing.T) {
 	app.RegisterErrorCheck("changelog-coverage", func(ctx CheckContext, _ *ErrorReporter) CheckOutcome {
 		return passOutcome("covered")
 	})
-	app.SetCheckContext(func() CheckContext { return &testCheckContext{root: emptyProjectRoot} })
+	app.SetCheckContext(func(*Context) (CheckContext, error) { return &testCheckContext{root: emptyProjectRoot}, nil })
 	results, _, _, err := app.RunChecks(&testCheckContext{root: emptyProjectRoot}, RunChecksOptions{RunAll: true})
 	if err != nil {
 		t.Fatalf("RunChecks error: %v", err)
@@ -3741,7 +3742,7 @@ func TestCheckCommand_Verbose_NotesDurationSummary(t *testing.T) {
 	app.RegisterErrorCheck("changelog-coverage", func(ctx CheckContext, _ *ErrorReporter) CheckOutcome {
 		return passOutcome("covered")
 	})
-	app.SetCheckContext(func() CheckContext { return &testCheckContext{root: emptyProjectRoot} })
+	app.SetCheckContext(func(*Context) (CheckContext, error) { return &testCheckContext{root: emptyProjectRoot}, nil })
 
 	r := app.Test([]string{"--verbose", "check", "--all"})
 	if r.ExitCode != 0 {
@@ -3785,3 +3786,68 @@ func TestCheckCommand_VerboseHelpText(t *testing.T) {
 		t.Fatalf("stale/lying verbose help text still present, got %q", r.Stdout)
 	}
 }
+
+// The check context factory receives the dispatching command's *Context, so a
+// tool can build its CheckContext over that dispatch's effects handle; both
+// framework commands that run checks hand it over.
+func TestCheckContextFactory_ReceivesDispatchContext(t *testing.T) {
+	for _, command := range []string{"check", "failing-checks"} {
+		checksPath := writeChecksFile(t, twoChecksToml)
+		app := NewApp("testapp", "1.0.0", "test app", WithChecks(checksPath))
+		dropBuiltinCheckProviders(app)
+		var seen *Effects
+		var ran bool
+		app.RegisterErrorCheck("version-consistency", func(ctx CheckContext, _ *ErrorReporter) CheckOutcome {
+			ran = ctx.(*effectsCheckContext).effects != nil
+			return passOutcome("ok")
+		})
+		app.RegisterErrorCheck("changelog-coverage", func(ctx CheckContext, _ *ErrorReporter) CheckOutcome {
+			return passOutcome("ok")
+		})
+		app.SetCheckContext(func(dispatch *Context) (CheckContext, error) {
+			seen = dispatch.Effects()
+			return &effectsCheckContext{root: emptyProjectRoot, effects: seen}, nil
+		})
+		r := app.Test([]string{command, "--all"})
+		if r.ExitCode != 0 {
+			t.Fatalf("%s: exit=%d stdout=%q stderr=%q", command, r.ExitCode, r.Stdout, r.Stderr)
+		}
+		if seen == nil || !ran {
+			t.Fatalf("%s: the factory did not receive the dispatch's effects handle (seen=%v ran=%v)", command, seen != nil, ran)
+		}
+	}
+}
+
+// A factory that cannot build the context refuses the run with its error, and
+// no check runs.
+func TestCheckContextFactory_ErrorRefusesRun(t *testing.T) {
+	for _, command := range []string{"check", "failing-checks"} {
+		checksPath := writeChecksFile(t, twoChecksToml)
+		app := NewApp("testapp", "1.0.0", "test app", WithChecks(checksPath))
+		dropBuiltinCheckProviders(app)
+		ran := false
+		for _, name := range []string{"version-consistency", "changelog-coverage"} {
+			app.RegisterErrorCheck(name, func(CheckContext, *ErrorReporter) CheckOutcome {
+				ran = true
+				return passOutcome("ok")
+			})
+		}
+		app.SetCheckContext(func(*Context) (CheckContext, error) {
+			return nil, errors.New("not inside a project")
+		})
+		r := app.Test([]string{command, "--all"})
+		if r.ExitCode != 1 || r.Stdout != "" || r.Stderr != "error: not inside a project\n" {
+			t.Fatalf("%s: exit=%d stdout=%q stderr=%q", command, r.ExitCode, r.Stdout, r.Stderr)
+		}
+		if ran {
+			t.Fatalf("%s: a check ran although the factory refused", command)
+		}
+	}
+}
+
+type effectsCheckContext struct {
+	root    string
+	effects *Effects
+}
+
+func (c *effectsCheckContext) ProjectRoot() string { return c.root }

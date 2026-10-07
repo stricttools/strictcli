@@ -52,7 +52,7 @@ func makeTestCoverageApp(t *testing.T) *App {
 	app.Command("build", "build the app", func(ctx *Context, args map[string]interface{}) Outcome {
 		return Exit(0)
 	}, WithEffect(EffectReadOnly))
-	app.SetCheckContext(func() CheckContext { return &testCheckCtx{root: dir} })
+	app.SetCheckContext(func(*Context) (CheckContext, error) { return &testCheckCtx{root: dir}, nil })
 	return app
 }
 
@@ -76,7 +76,7 @@ func makeGroupedCoverageApp(t *testing.T) *App {
 	app.Command("status", "show status", func(ctx *Context, args map[string]interface{}) Outcome {
 		return Exit(0)
 	}, WithEffect(EffectReadOnly))
-	app.SetCheckContext(func() CheckContext { return &testCheckCtx{root: dir} })
+	app.SetCheckContext(func(*Context) (CheckContext, error) { return &testCheckCtx{root: dir}, nil })
 	return app
 }
 
@@ -532,7 +532,7 @@ func TestCoverageDirectoryIsLazy_CheckSkipsWhenDirectoryAbsent(t *testing.T) {
 	app.Command("deploy", "deploy the app", func(ctx *Context, args map[string]interface{}) Outcome {
 		return Exit(0)
 	}, WithEffect(EffectReadOnly))
-	app.SetCheckContext(func() CheckContext { return &testCheckCtx{root: dir} })
+	app.SetCheckContext(func(*Context) (CheckContext, error) { return &testCheckCtx{root: dir}, nil })
 
 	if _, err := os.Stat(filepath.Join(dir, testCoverageRel, "shards")); !os.IsNotExist(err) {
 		t.Fatal("construction must not create coverage/")
@@ -573,7 +573,7 @@ func TestCoverageDeclaredDirAbsent_RegistersNoCheck(t *testing.T) {
 	app.Command("deploy", "deploy the app", func(ctx *Context, args map[string]interface{}) Outcome {
 		return Exit(0)
 	}, WithEffect(EffectReadOnly))
-	app.SetCheckContext(func() CheckContext { return &testCheckCtx{root: dir} })
+	app.SetCheckContext(func(*Context) (CheckContext, error) { return &testCheckCtx{root: dir}, nil })
 
 	// The check system never turned on, so `check` is not a command either.
 	r := app.Test([]string{"check", "--all"})
