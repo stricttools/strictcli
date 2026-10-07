@@ -2,6 +2,25 @@
 
 # Changelog
 
+## 0.46.0
+
+Test coverage is declared by the source-tree root: App(source_tree_root=...) replaces test_coverage_dir=, and the coverage state lives in .strictmetadata/.cli-test-coverage/ under it.
+
+<details>
+<summary>Context</summary>
+
+selfdoc's .strictmetadata/ layout gives strictcli's files a home under one source-tree root. Removing test_coverage_dir= is breaking, which in 0.x is a minor.
+
+</details>
+
+### Breaking
+
+- [strictcli] **Test coverage is declared by the source-tree root.** `App(source_tree_root=...)` replaces `test_coverage_dir=`: the app names the root of its source tree, and strictcli keeps the coverage state in `.strictmetadata/.cli-test-coverage/` under it, with per-process shard files in `shards/` (never committed) and the committed manifest in `manifest.json` (formerly `coverage/` and `test-coverage.json`). Coverage is on only when that directory exists at construction. `test_coverage_dir=` is now refused at registration, naming `source_tree_root`. To migrate, move `.strictcli/test-coverage.json` to `.strictmetadata/.cli-test-coverage/manifest.json` (`selfdoc layout migrate` does this) and declare the root instead of the directory.
+
+### Fixes
+
+- [strictcli] The README now says where an app's check list belongs: in the app's own package as package data, passed with `checks_path=`; strictcli has no standard folder or default path for it.
+
 ## 0.45.0
 
 Integer values accept only plain decimal digits with an optional leading minus sign: a plus sign and leading zeros are refused.
