@@ -73,6 +73,19 @@ type Grant struct {
 	Kind   string
 }
 
+// ErrTimedOut is matched, through errors.Is, by the error of an effects-handle
+// run, spawned child's wait, or HTTP request that exceeded its Timeout option,
+// and by no other error.
+var ErrTimedOut = errors.New("timed out")
+
+// timedOutError is the error of an effect that exceeded its Timeout; its
+// message names the effect, and it matches ErrTimedOut.
+type timedOutError struct{ msg string }
+
+func (e *timedOutError) Error() string { return e.msg }
+
+func (e *timedOutError) Is(target error) bool { return target == ErrTimedOut }
+
 // Forwarding declares that a handler deliberately accepts and forwards the
 // app's global flag values. In Go the declaration is inert beyond the schema
 // emission (guard v2's enforcement is Python-only, §10.3); it exists so the API
@@ -246,7 +259,7 @@ func (s Spawned) Wait(opts ...EffectOption) (_ Completed, err error) {
 				if killErr != nil {
 					return Completed{}, killErr
 				}
-				return Completed{}, errors.New(errEffectTimedOut(s.cmdPath, "spawn", s.argv, o.timeout.String()))
+				return Completed{}, &timedOutError{msg: errEffectTimedOut(s.cmdPath, "spawn", s.argv, o.timeout.String())}
 			}
 		}
 	}
@@ -1796,7 +1809,7 @@ func (e *Effects) execRun(ops []operand, joined string, o effectOpts, method str
 		capture.close()
 	}
 	if timedOut.Load() {
-		return Completed{}, errors.New(errEffectTimedOut(e.cmdPath, method, joined, o.timeout.String()))
+		return Completed{}, &timedOutError{msg: errEffectTimedOut(e.cmdPath, method, joined, o.timeout.String())}
 	}
 	var exitErr *exec.ExitError
 	if runErr != nil && !errors.As(runErr, &exitErr) {
@@ -1850,7 +1863,7 @@ func (e *Effects) execHTTP(method, url string, o effectOpts) (Response, error) {
 	}
 	timedOut := func() error {
 		if o.timeout > 0 && errors.Is(reqCtx.Err(), context.DeadlineExceeded) {
-			return errors.New(errEffectHTTPTimedOut(e.cmdPath, method, o.scrub(url), o.timeout.String()))
+			return &timedOutError{msg: errEffectHTTPTimedOut(e.cmdPath, method, o.scrub(url), o.timeout.String())}
 		}
 		return nil
 	}
