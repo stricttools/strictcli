@@ -673,6 +673,41 @@ Both keys are emitted only when declared, so a schema entry without them means
 dry run is supported. `--help` always beats the refusal: asking what a command
 does is never answered with a refusal to preview it.
 
+### A scratch directory with `WithScratchDir`
+
+Some programs a handler runs write for themselves even when they change nothing
+the user cares about: a package manager listing what it would publish still
+writes its cache and logs. A read_only command may not write, and a `--dry-run`
+runs observes for real, so neither can let such a program write where it would
+by default. A command that runs one declares a scratch directory:
+
+```go
+app.Command("list-package", "List the files the package would publish", listHandler,
+    strictcli.WithEffect(strictcli.EffectReadOnly),
+    strictcli.WithScratchDir(),
+)
+
+func listHandler(ctx *strictcli.Context, _ map[string]interface{}) strictcli.Outcome {
+    cache, err := ctx.ScratchDir()
+    if err != nil {
+        strictcli.ExitNow(1, err.Error())
+    }
+    // run the program with its cache pointed at cache
+    return strictcli.Exit(0)
+}
+```
+
+`ctx.ScratchDir()` makes a private directory under `~/.cache/strictcli/scratch/`
+the first time the handler asks, returns the same one on every later call, and
+the framework removes it when the dispatch ends, on every door. Making and
+removing it is the framework's own act, never an effect: it is legal in a
+read_only command, performed under `--dry-run`, and absent from the would-do
+log. Nothing in it outlives the command, so it is no place for a result, and
+what the handler itself writes there through the effects handle is an effect
+like any other write. A command that does not declare `WithScratchDir` is
+refused when it asks. The `check` and `failing-checks` commands declare one, so
+a check context factory can ask for it and hand it to its checks.
+
 ## Consequential Commands and the Confirm Protocol
 
 Classification says whether a dry run should record rather than perform.
