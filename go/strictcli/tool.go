@@ -99,6 +99,17 @@ func buildJSONSchema(cmd *Command) map[string]interface{} {
 		}
 	}
 
+	// The arguments after "--" (WithArgsAfterSeparator) are one list of
+	// strings under the receiver's name; never required, since a command line
+	// without "--" supplies none.
+	if r := cmd.argsAfterSeparator; r != nil {
+		properties[r.name] = map[string]interface{}{
+			"type":        "array",
+			"items":       map[string]interface{}{"type": "string"},
+			"description": r.help,
+		}
+	}
+
 	schema := map[string]interface{}{
 		"type":                 "object",
 		"properties":           properties,

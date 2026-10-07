@@ -174,6 +174,22 @@ app.Command("copy", "Copy files",
 )
 ```
 
+### Arguments after `--`
+
+A command that hands arguments on to another program declares `WithArgsAfterSeparator(name, help)`. Every token after the first bare `--` that is not a flag's value then reaches the handler unparsed, in order, through `ctx.ArgsAfterSeparator()`, including tokens such as `--dry-run` or a second `--`; without a `--` the list is empty. The tokens before the `--` parse as usual, so a stray word there is still refused as an unexpected argument unless the command declares args. Help lists the receiver under `Arguments:` as `-- <name>...`, the help document publishes it as `args_after_separator`, and `Call` and the MCP tools take it as a list of strings under `name`. A command without the declaration reads the tokens after `--` as positionals, and calling `ctx.ArgsAfterSeparator()` there panics. A passthrough command cannot declare it.
+
+```go
+app.Command("exec", "Run the tool in the sandbox",
+    func(ctx *strictcli.Context, kwargs map[string]interface{}) strictcli.Outcome {
+        toolArgs := ctx.ArgsAfterSeparator() // myapp exec --profile ci -- --verbose build
+        ...
+    },
+    strictcli.WithEffect(strictcli.EffectMutating),
+    strictcli.WithFlags(strictcli.StringFlag("profile", "Sandbox profile", strictcli.Required())),
+    strictcli.WithArgsAfterSeparator("tool-args", "Arguments for the tool, passed as they are"),
+)
+```
+
 ### Short flag aliases
 
 Single-character shortcuts for any flag.
@@ -829,6 +845,7 @@ arg  := strictcli.NewArg(name, help, opts ...ArgOption)
 | `WithArgs(args...)` | Add positional arguments |
 | `WithFlagSets(flagSets...)` | Attach flag set bundles |
 | `WithConstraints(cs...)` | Add AtLeastOne/AllOrNone/Requires/Implies constraints |
+| `WithArgsAfterSeparator(name, help)` | Receive the tokens after `--`, unparsed, through `ctx.ArgsAfterSeparator()` |
 | `WithPassthrough(handler)` | Mark as passthrough command |
 | `WithHidden()` | Hide from help output |
 | `WithEffect(effect)` | **Mandatory.** `EffectReadOnly` or `EffectMutating` |

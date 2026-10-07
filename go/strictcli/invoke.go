@@ -360,6 +360,20 @@ func (a *App) invoke(commandPath string, kwargs map[string]interface{}, opts ...
 		}
 	}
 
+	// The arguments after "--", under the receiver's own name: a list of
+	// strings, as a Go caller writes it or as JSON decodes it. Absent means
+	// none, as a command line without "--" means none.
+	afterSeparator := []string{}
+	if props.separator != "" {
+		if raw, ok := kwargs[props.separator]; ok {
+			list, valid := stringList(raw)
+			if !valid {
+				return invokeResult{exitCode: 1, err: errArgsAfterSeparatorNotStrings(props.separator, commandPath)}
+			}
+			afterSeparator = list
+		}
+	}
+
 	// Run validation and build final kwargs
 	var noStdin *string
 	validatedKwargs, postGlobalValues, sources, writes, errStr := validateAndBuildKwargs(cmd, store, preTypedPositionals(positionals), props.globalNames, a.infraRoots, est, cliByFlag, amb, &noStdin, unsets)
@@ -404,6 +418,7 @@ func (a *App) invoke(commandPath string, kwargs map[string]interface{}, opts ...
 	ctx.bindCommand(cmd)
 	ctx.writes = writes
 	ctx.unsets = unsets
+	ctx.argsAfterSeparator = afterSeparator
 
 	// Call the handler under the runtime seal.
 	code, truncErr, early := a.invokeSealed(ctx, func() int {
@@ -471,6 +486,9 @@ type flatProps struct {
 	globalNames map[string]bool
 	// args are the positional args, under their declared names.
 	args map[string]bool
+	// separator is the name of the receiver of the arguments after "--"
+	// (WithArgsAfterSeparator), empty on a command that declares none.
+	separator string
 }
 
 // declares reports whether one kwargs key names something this command has.
@@ -484,7 +502,31 @@ func (p *flatProps) declares(paramName string) bool {
 	if _, ok := p.globals[paramName]; ok {
 		return true
 	}
+	if p.separator != "" && paramName == p.separator {
+		return true
+	}
 	return p.args[paramName]
+}
+
+// stringList reads a programmatic door's list of strings: a []string, or a
+// []interface{} holding only strings (what JSON decodes an array into). Any
+// other value is refused.
+func stringList(raw interface{}) ([]string, bool) {
+	switch v := raw.(type) {
+	case []string:
+		return append([]string{}, v...), true
+	case []interface{}:
+		out := make([]string, len(v))
+		for i, item := range v {
+			s, ok := item.(string)
+			if !ok {
+				return nil, false
+			}
+			out[i] = s
+		}
+		return out, true
+	}
+	return nil, false
 }
 
 // buildFlatProps indexes one command's flat properties.
@@ -514,6 +556,9 @@ func buildFlatProps(a *App, cmd *Command) *flatProps {
 	}
 	for _, arg := range cmd.args {
 		p.args[arg.Name] = true
+	}
+	if cmd.argsAfterSeparator != nil {
+		p.separator = cmd.argsAfterSeparator.name
 	}
 	return p
 }

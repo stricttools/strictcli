@@ -40,6 +40,12 @@ type Context struct {
 	writes *updateState
 	unsets map[string]bool
 
+	// The tokens after a bare "--" on a command that declares
+	// WithArgsAfterSeparator (receivesSeparatorArgs), read through
+	// ArgsAfterSeparator. Empty when the command line carried no "--".
+	receivesSeparatorArgs bool
+	argsAfterSeparator    []string
+
 	// configData is the config file's data this dispatch's parse loaded, and
 	// configParseErr the parse error it hit instead; the config commands read
 	// both. Empty on the programmatic door, which loads no config.
@@ -144,6 +150,7 @@ func (c *Context) bindCommand(cmd *Command) {
 	c.payloadSchema = cmd.PayloadSchema
 	c.ownsStdout = cmd.OwnsStdout
 	c.renderer = cmd.PayloadRenderer
+	c.receivesSeparatorArgs = cmd.argsAfterSeparator != nil
 }
 
 // DryRun reports whether the framework-owned --dry-run flag was passed.
@@ -194,6 +201,21 @@ func (c *Context) Payload(value interface{}) {
 	}
 	c.payload = value
 	c.payloadSet = true
+}
+
+// ArgsAfterSeparator returns the tokens that followed the bare "--" on the
+// command line, unparsed and in order, for a command that declares
+// WithArgsAfterSeparator; on a programmatic door, the list supplied under the
+// receiver's name. It is empty, never nil, when there were none. The slice is
+// the caller's own copy.
+//
+// Calling it on a command that does not declare the receiver is a call-time
+// hard error: there, tokens after "--" are positionals and arrive in kwargs.
+func (c *Context) ArgsAfterSeparator() []string {
+	if !c.receivesSeparatorArgs {
+		panic(errArgsAfterSeparatorUndeclared(c.commandName))
+	}
+	return append([]string{}, c.argsAfterSeparator...)
 }
 
 // Effects returns the effects handle for this run. Panics when the Context was

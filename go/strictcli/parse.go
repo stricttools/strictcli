@@ -215,7 +215,12 @@ func resolveAtPrefix(flagName, raw string, stdinConsumedBy **string) (string, st
 // preGlobalSpellings carries each global flag's first pre-command occurrence
 // as typed, so a non-repeatable global given before AND after the command is
 // refused like any other repeated flag.
-func parseCommand(cmd *Command, tokens []string, globalFlags []Flag, configData map[string]interface{}, stdinConsumedBy **string, conflictMode string, hermetic bool, infraRoots map[string]string, preGlobalSpellings map[string]string, preGlobalValues map[string]interface{}) (map[string]interface{}, map[string]interface{}, map[string]string, *updateState, map[string]bool, string, []string) {
+//
+// afterSeparator receives, on a command that declares WithArgsAfterSeparator,
+// every token after the first bare "--" that is not a flag's value; those
+// tokens are not parsed at all. On any other command it is left untouched and
+// the tokens after "--" are positionals.
+func parseCommand(cmd *Command, tokens []string, globalFlags []Flag, configData map[string]interface{}, stdinConsumedBy **string, conflictMode string, hermetic bool, infraRoots map[string]string, preGlobalSpellings map[string]string, preGlobalValues map[string]interface{}, afterSeparator *[]string) (map[string]interface{}, map[string]interface{}, map[string]string, *updateState, map[string]bool, string, []string) {
 	// Build flag lookup maps over the command's WHOLE scope tree (contract
 	// §24.3): whether `--target` consumes the next argv element is decided
 	// before any choice is elected, which is why sibling scopes may reuse a name
@@ -296,6 +301,10 @@ func parseCommand(cmd *Command, tokens []string, globalFlags []Flag, configData 
 		}
 
 		if tok == "--" {
+			if cmd.argsAfterSeparator != nil {
+				*afterSeparator = append([]string{}, tokens[i+1:]...)
+				break
+			}
 			stopFlags = true
 			i++
 			continue

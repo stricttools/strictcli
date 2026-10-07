@@ -438,6 +438,11 @@ func serializeCommand(cmd *Command) *schemaObject {
 		}
 		m.set("args", args)
 	}
+	// Emitted only when declared (WithArgsAfterSeparator): without it the
+	// tokens after "--" are positionals, the baseline.
+	if r := cmd.argsAfterSeparator; r != nil {
+		m.set("args_after_separator", newSchemaObject().set("name", r.name).set("help", r.help))
+	}
 	if len(cmd.tags) > 0 {
 		sorted := make([]string, len(cmd.tags))
 		copy(sorted, cmd.tags)
@@ -619,6 +624,7 @@ func buildSchemaDefaults() *schemaObject {
 			set("flags", []interface{}{}).
 			set("flag_sets", []interface{}{}).
 			set("args", []interface{}{}).
+			set("args_after_separator", nil).
 			set("tags", []interface{}{}).
 			set("constraints", []interface{}{}).
 			set("hidden", false).

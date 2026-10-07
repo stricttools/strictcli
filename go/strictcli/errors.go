@@ -488,6 +488,25 @@ func errCommandPassthroughCannotHave(name string, parts string) string {
 	return fmt.Sprintf("command %q: passthrough commands cannot have %s", name, parts)
 }
 
+func errArgsAfterSeparatorNameEmpty(name string) string {
+	return fmt.Sprintf("command %q: the receiver of the arguments after -- needs a non-empty name", name)
+}
+
+func errArgsAfterSeparatorHelpEmpty(name string, receiver string) string {
+	return fmt.Sprintf("command %q: the receiver %q of the arguments after -- needs a non-empty help text", name, receiver)
+}
+
+func errArgsAfterSeparatorDeclaredTwice(name string) string {
+	return fmt.Sprintf("command %q: the arguments after -- may be received only once (WithArgsAfterSeparator given twice)", name)
+}
+
+// errArgsAfterSeparatorNameTaken fires when the receiver's name is a
+// parameter the command already has: the programmatic doors key the
+// receiver by its name, beside the args and the flags' parameter names.
+func errArgsAfterSeparatorNameTaken(name string, receiver string) string {
+	return fmt.Sprintf("command %q: the receiver %q of the arguments after -- has the name of another parameter of the command", name, receiver)
+}
+
 func errGlobalFlagNameReserved(name string) string {
 	return fmt.Sprintf("global flag name %q is reserved", name)
 }
@@ -996,6 +1015,10 @@ const errNoCommandSpecified = "no command specified"
 // ---------------------------------------------------------------------------
 
 const errPassthroughArgsNotStringSlice = "passthrough command: _args must be []string"
+
+func errArgsAfterSeparatorNotStrings(receiver string, commandPath string) string {
+	return fmt.Sprintf("parameter %q of command %q must be a list of strings (the arguments after --)", receiver, commandPath)
+}
 
 func errUnknownParameterForPassthroughCommand(key string, commandPath string) string {
 	return fmt.Sprintf("unknown parameter %q for passthrough command %q", key, commandPath)
@@ -1576,6 +1599,13 @@ const errEffectsUnavailable = "ctx.Effects() is unavailable: this Context was co
 // declaration can be named.
 func errPayloadNoSchema(name string) string {
 	return fmt.Sprintf("command %q: ctx.payload requires a declared payload schema", name)
+}
+
+// errArgsAfterSeparatorUndeclared fires when a handler reads the arguments
+// after -- on a command that never declared it receives them: without the
+// declaration they were parsed as positionals, so there is nothing to read.
+func errArgsAfterSeparatorUndeclared(name string) string {
+	return fmt.Sprintf("command %q: ctx.ArgsAfterSeparator requires the command to declare WithArgsAfterSeparator", name)
 }
 
 // errPayloadAlreadySet fires on a second payload call in one dispatch. Two

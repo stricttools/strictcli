@@ -252,7 +252,7 @@ func formatCommandHelp(app *App, cmd *Command, prefix string) string {
 		return strings.Join(lines, "\n")
 	}
 
-	if len(cmd.args) > 0 {
+	if len(cmd.args) > 0 || cmd.argsAfterSeparator != nil {
 		lines = append(lines, "")
 		lines = append(lines, "Arguments:")
 		// The content-keyed block rule reaches positional args too: an arg whose
@@ -306,6 +306,12 @@ func formatCommandHelp(app *App, cmd *Command, prefix string) string {
 					right: cv.Help,
 				})
 			}
+		}
+		// The receiver of the arguments after "--" (WithArgsAfterSeparator)
+		// renders last, spelled as it is typed. It always holds a list, empty
+		// without a "--", so its one presence part is [optional].
+		if r := cmd.argsAfterSeparator; r != nil {
+			rows = append(rows, flagHelpEntry{spec: "  -- " + r.name + "...", right: r.help + " [optional]"})
 		}
 		maxSpec := 0
 		for _, row := range rows {

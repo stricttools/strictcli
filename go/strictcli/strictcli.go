@@ -352,9 +352,13 @@ type Command struct {
 	// index is the command's whole declaration tree flattened by name, built
 	// once at registration (contract §24). It is what makes tokenization,
 	// election, scope validation and help rendering see every depth.
-	index              *flagIndex
-	tags               []string
-	configFields       []string // bound config field names
+	index        *flagIndex
+	tags         []string
+	configFields []string // bound config field names
+	// argsAfterSeparator is the declaration that the command receives the
+	// tokens after a bare "--" on its Context (WithArgsAfterSeparator); nil on
+	// every command that does not declare it.
+	argsAfterSeparator *separatorReceiver
 	Passthrough        bool
 	PassthroughHandler PassthroughHandler
 	Hidden             bool
@@ -1223,6 +1227,39 @@ func WithPassthrough(handler PassthroughHandler) CmdOption {
 	return func(c *Command) {
 		c.Passthrough = true
 		c.PassthroughHandler = handler
+	}
+}
+
+// separatorReceiver is a command's declaration that it receives the tokens
+// after a bare "--": the name and help its help page, help document, and tool
+// schema show.
+type separatorReceiver struct {
+	name string
+	help string
+}
+
+// WithArgsAfterSeparator declares that the command receives the tokens that
+// follow a bare "--" on its command line, unparsed, through
+// ctx.ArgsAfterSeparator(). The tokens before the "--" parse as they always do:
+// a stray positional is still refused unless the command declares args. The
+// first "--" that is not a flag's value is the separator; every token after it,
+// including another "--" or a reserved flag such as --dry-run, belongs to the
+// receiver. Without a "--" the receiver holds no arguments.
+//
+// name and help are mandatory: they label the receiver in the command's help
+// (`-- <name>...` under Arguments:), in the help document
+// (`args_after_separator`), and in the tool schema, where the programmatic
+// doors take the arguments as a list of strings under name. A command without
+// the declaration parses tokens after "--" as positionals, as before.
+//
+// Declaring it on a passthrough command is a registration-time hard error: a
+// passthrough already receives every token unparsed.
+func WithArgsAfterSeparator(name, help string) CmdOption {
+	return func(c *Command) {
+		if c.argsAfterSeparator != nil {
+			panic(errArgsAfterSeparatorDeclaredTwice(c.Name))
+		}
+		c.argsAfterSeparator = &separatorReceiver{name: name, help: help}
 	}
 }
 
@@ -2853,6 +2890,7 @@ func (a *invocation) newDispatchContext(stdout, stderr io.Writer, pr parseResult
 	})
 	ctx.writes = pr.writes
 	ctx.unsets = pr.unsets
+	ctx.argsAfterSeparator = pr.argsAfterSeparator
 	ctx.configData = a.configData
 	ctx.configParseErr = a.configParseErr
 	// The write set's human rendering: ONE unnumbered line between the log's
@@ -3350,7 +3388,10 @@ type parseResult struct {
 	globalKwargs    map[string]interface{}
 	sources         map[string]string // flag param name -> source label
 	passthroughArgs []string
-	helpText        string
+	// argsAfterSeparator is what followed "--" on a command that declares
+	// WithArgsAfterSeparator; empty when nothing did.
+	argsAfterSeparator []string
+	helpText           string
 	// frameworkDoc is the machine form of the help or version command: the
 	// document printed on stdout under --json, while the --json document goes
 	// to stderr as it does for a command that owns stdout (§19.6).
@@ -3864,7 +3905,10 @@ func (a *invocation) doParse(argv []string) parseResult {
 			preGlobalValues[f.Name] = globalValues[param]
 		}
 	}
-	kwargs, postGlobalValues, cmdSources, writes, unsets, err, skipped := parseCommand(cmd, cmdRest, a.globalFlags, a.configData, &a.stdinConsumedBy, a.configConflictMode, preScan.hermetic, a.infraRoots, preGlobalSpellings, preGlobalValues)
+	// Empty rather than nil: a command that declares the receiver reads no
+	// arguments when its command line carries no "--".
+	afterSeparator := []string{}
+	kwargs, postGlobalValues, cmdSources, writes, unsets, err, skipped := parseCommand(cmd, cmdRest, a.globalFlags, a.configData, &a.stdinConsumedBy, a.configConflictMode, preScan.hermetic, a.infraRoots, preGlobalSpellings, preGlobalValues, &afterSeparator)
 	if err != "" {
 		parts := append([]string{a.Name}, path...)
 		parts = append(parts, cmd.Name)
@@ -3891,7 +3935,7 @@ func (a *invocation) doParse(argv []string) parseResult {
 		}
 		cmdSources[k] = v
 	}
-	return parseResult{cmd: cmd, cmdPath: resolvedCmdPath, kwargs: kwargs, globalKwargs: globalValues, sources: cmdSources, hermetic: preScan.hermetic, skippedBindings: skipped, writes: writes, unsets: unsets}
+	return parseResult{cmd: cmd, cmdPath: resolvedCmdPath, kwargs: kwargs, globalKwargs: globalValues, sources: cmdSources, hermetic: preScan.hermetic, skippedBindings: skipped, writes: writes, unsets: unsets, argsAfterSeparator: afterSeparator}
 }
 
 // tokensContainHelp checks if --help or -h appears in tokens before any "--"
@@ -4417,7 +4461,7 @@ func buildAndValidateCommand(name, help string, handler func(ctx *Context, kwarg
 
 	// Passthrough commands cannot have flags, args or flag sets
 	if cmd.Passthrough {
-		if len(cmd.flags) > 0 || len(cmd.args) > 0 || len(cmd.flagSets) > 0 {
+		if len(cmd.flags) > 0 || len(cmd.args) > 0 || len(cmd.flagSets) > 0 || cmd.argsAfterSeparator != nil {
 			var parts []string
 			if len(cmd.flags) > 0 {
 				parts = append(parts, "flags")
@@ -4427,6 +4471,9 @@ func buildAndValidateCommand(name, help string, handler func(ctx *Context, kwarg
 			}
 			if len(cmd.flagSets) > 0 {
 				parts = append(parts, "flag sets")
+			}
+			if cmd.argsAfterSeparator != nil {
+				parts = append(parts, "a receiver of the arguments after --")
 			}
 			panic(errCommandPassthroughCannotHave(name, strings.Join(parts, ", ")))
 		}
@@ -4490,6 +4537,7 @@ func buildAndValidateCommand(name, help string, handler func(ctx *Context, kwarg
 		}
 		seenArgs[a.Name] = true
 	}
+	validateSeparatorReceiver(name, cmd, globalFlags)
 
 	// Validate variadic args: first check count, then check position
 	variadicCount := 0
@@ -4603,6 +4651,38 @@ func rejectDeprecatedEffect(name string, opts []CmdOption) {
 // flagParamName converts a flag name like "dry-run" to a parameter key "dry_run".
 func flagParamName(name string) string {
 	return strings.ReplaceAll(name, "-", "_")
+}
+
+// validateSeparatorReceiver checks a command's WithArgsAfterSeparator
+// declaration, if it has one: a name and a help text, and a name no other
+// parameter of the command (an arg, a flag at any depth, a global, or the
+// reserved consent parameter) already holds, since the programmatic doors
+// key the receiver by its name beside them.
+func validateSeparatorReceiver(name string, cmd *Command, globalFlags []Flag) {
+	r := cmd.argsAfterSeparator
+	if r == nil {
+		return
+	}
+	if strings.TrimSpace(r.name) == "" {
+		panic(errArgsAfterSeparatorNameEmpty(name))
+	}
+	if strings.TrimSpace(r.help) == "" {
+		panic(errArgsAfterSeparatorHelpEmpty(name, r.name))
+	}
+	param := flagParamName(r.name)
+	taken := param == reservedConsentParamName
+	for _, a := range cmd.args {
+		taken = taken || a.Name == r.name || flagParamName(a.Name) == param
+	}
+	for _, flagName := range cmd.index.order {
+		taken = taken || flagParamName(flagName) == param
+	}
+	for _, gf := range globalFlags {
+		taken = taken || flagParamName(gf.Name) == param
+	}
+	if taken {
+		panic(errArgsAfterSeparatorNameTaken(name, r.name))
+	}
 }
 
 // findCommandPrefix finds the group prefix for a command.

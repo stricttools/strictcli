@@ -953,6 +953,7 @@ const pythonMinimalDump = `{
       "flags": [],
       "flag_sets": [],
       "args": [],
+      "args_after_separator": null,
       "tags": [],
       "constraints": [],
       "hidden": false,
