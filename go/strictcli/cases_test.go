@@ -71,30 +71,30 @@ type protocolStep struct {
 // caseExpect is what a case asserts about its run.
 type caseExpect struct {
 	ExitCode                int                       `json:"exit_code"`
-	StdoutContains          stringList                `json:"stdout_contains"`
+	StdoutContains          caseStrings               `json:"stdout_contains"`
 	StdoutEquals            *string                   `json:"stdout_equals"`
-	StdoutNotContains       stringList                `json:"stdout_not_contains"`
-	StdoutMatches           stringList                `json:"stdout_matches"`
-	StderrContains          stringList                `json:"stderr_contains"`
+	StdoutNotContains       caseStrings               `json:"stdout_not_contains"`
+	StdoutMatches           caseStrings               `json:"stdout_matches"`
+	StderrContains          caseStrings               `json:"stderr_contains"`
 	StderrEquals            *string                   `json:"stderr_equals"`
-	StderrNotContains       stringList                `json:"stderr_not_contains"`
-	StderrMatches           stringList                `json:"stderr_matches"`
-	ConfigFileContains      stringList                `json:"config_file_contains"`
-	ConfigFileNotContains   stringList                `json:"config_file_not_contains"`
-	ConfigFileMatches       stringList                `json:"config_file_matches"`
+	StderrNotContains       caseStrings               `json:"stderr_not_contains"`
+	StderrMatches           caseStrings               `json:"stderr_matches"`
+	ConfigFileContains      caseStrings               `json:"config_file_contains"`
+	ConfigFileNotContains   caseStrings               `json:"config_file_not_contains"`
+	ConfigFileMatches       caseStrings               `json:"config_file_matches"`
 	EffectsEquals           *[]any                    `json:"effects_equals"`
 	SchemaCommandKeys       map[string]map[string]any `json:"schema_command_keys"`
 	SchemaCommandAbsentKeys map[string][]string       `json:"schema_command_absent_keys"`
 	SchemaBytesEqual        *string                   `json:"schema_bytes_equal"`
 }
 
-// stringList is a field written either as one string or as a list of them.
-type stringList []string
+// caseStrings is a field written either as one string or as a list of them.
+type caseStrings []string
 
-func (l *stringList) UnmarshalJSON(data []byte) error {
+func (l *caseStrings) UnmarshalJSON(data []byte) error {
 	var one string
 	if err := json.Unmarshal(data, &one); err == nil {
-		*l = stringList{one}
+		*l = caseStrings{one}
 		return nil
 	}
 	var many []string
