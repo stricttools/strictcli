@@ -38,6 +38,7 @@ dev = ["pytest", "allpairspy", "jsonschema"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+norecursedirs = ["*.egg", ".*", "_darcs", "build", "CVS", "dist", "node_modules", "venv", "{arch}", "experiments", "screenshots"]
 
 [project.urls]
 Homepage = "https://smmh.dev/strictcli/"
@@ -45,3 +46,22 @@ Documentation = "https://smmh.dev/strictcli/"
 Repository = "https://github.com/stricttools/strictcli"
 Issues = "https://github.com/stricttools/strictcli/issues"
 Changelog = "https://github.com/stricttools/strictcli/blob/main/CHANGELOG.md"
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+    "/todo/",
+    "/experiments/",
+    "/screenshots/",
+    "/stricttools/",
+    ".rlsbl/",
+    ".rlsbl-monorepo/",
+    ".strictmetadata/",
+    ".stricttools/",
+    ".claude/",
+    ".selfdoc/",
+    ".strictcli/",
+    "CLAUDE.md",
+    "AGENTS.md",
+    ".env*",
+    "*.local-only",
+]
