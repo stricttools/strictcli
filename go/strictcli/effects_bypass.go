@@ -269,7 +269,7 @@ func bypassPathIsSkipped(rel string) bool {
 }
 
 // bypassRepoFiles returns the repository-owned Go files under root, relative to
-// it, in sorted order.
+// it, in sorted order, leaving out _test.go files.
 //
 // The input set is what git reports: tracked files plus untracked files
 // .gitignore does not exclude. A release-blocking check reads only inputs the
@@ -289,6 +289,11 @@ func bypassRepoFiles(root string) ([]string, error) {
 	var rels []string
 	for _, rel := range strings.Split(string(out), "\x00") {
 		if rel == "" || seen[rel] || !strings.HasSuffix(rel, ".go") {
+			continue
+		}
+		// A _test.go file builds only into the test binary, never into the
+		// program whose handlers the check guards.
+		if strings.HasSuffix(rel, "_test.go") {
 			continue
 		}
 		if bypassPathIsSkipped(rel) {

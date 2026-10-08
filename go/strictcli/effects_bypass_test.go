@@ -240,6 +240,26 @@ func deploy(ctx *Ctx) int {
 	}
 }
 
+// A _test.go file is compiled only into the package's test binary, never into
+// the program whose handlers the check guards, so a test's handler writing a
+// fixture directly is not a bypass.
+func TestBypassLintSkipsTestFiles(t *testing.T) {
+	dir := gitTempDir(t)
+	writeGoFile(t, dir, "deploy_test.go", `package app
+
+import "os"
+
+func deploy(ctx *Ctx) int {
+	ctx.Effects().Run(nil)
+	os.RemoveAll("x")
+	return 0
+}
+`)
+	if findings := scanRepo(t, dir); len(findings) != 0 {
+		t.Fatalf("a _test.go file is not part of the program the check guards: %#v", findings)
+	}
+}
+
 func TestBypassLintMissingRootIsRefused(t *testing.T) {
 	missing := filepath.Join(t.TempDir(), "nope")
 	_, err := scanEffectsBypasses(missing)
