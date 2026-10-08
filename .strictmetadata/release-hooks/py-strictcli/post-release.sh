@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Post-release hook. Runs after a successful release (non-fatal).
+# Post-release hook. Runs after a successful release.
 # Environment: RLSBL_VERSION is set to the released version.
 
 set -euo pipefail
@@ -12,6 +12,6 @@ cd "$(git rev-parse --show-toplevel)"
 if command -v selfdoc &>/dev/null && [ -f selfdoc.json ]; then
   if python3 -c "import json; c=json.load(open('selfdoc.json')); exit(0 if c.get('assembly') or (c.get('topology') or {}).get('assembly') else 1)" 2>/dev/null; then
     echo "Pushing to documentation assembly..."
-    selfblog assembly push || echo "Warning: assembly push failed (non-fatal)"
+    selfdoc assembly push
   fi
 fi
