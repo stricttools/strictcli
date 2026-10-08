@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "name": "release-checkout",
+  "name": "strictcli",
   "slug": "strictcli",
   "version": "0.41.1",
   "description": "A CLI framework for the Era of Agents: nothing is inferred, everything is declared. First-class support for Go, Python, and TypeScript",
@@ -891,6 +891,11 @@
           "anchor": "refusing-dry-run-with-withdryrununsupported"
         },
         {
+          "level": 3,
+          "text": "A scratch directory with `WithScratchDir`",
+          "anchor": "a-scratch-directory-with-withscratchdir"
+        },
+        {
           "level": 2,
           "text": "Consequential Commands and the Confirm Protocol",
           "anchor": "consequential-commands-and-the-confirm-protocol"
@@ -1146,6 +1151,11 @@
           "level": 3,
           "text": "`WriteFullReplace`",
           "anchor": "writefullreplace"
+        },
+        {
+          "level": 3,
+          "text": "`ErrTimedOut`",
+          "anchor": "errtimedout"
         },
         {
           "level": 3,
@@ -1489,6 +1499,11 @@
         },
         {
           "level": 3,
+          "text": "`NewGrant`",
+          "anchor": "newgrant"
+        },
+        {
+          "level": 3,
           "text": "`Resource`",
           "anchor": "resource"
         },
@@ -1621,6 +1636,11 @@
           "level": 3,
           "text": "`WithRequires`",
           "anchor": "withrequires"
+        },
+        {
+          "level": 3,
+          "text": "`WithScratchDir`",
+          "anchor": "withscratchdir"
         },
         {
           "level": 3,
@@ -1924,6 +1944,11 @@
         },
         {
           "level": 3,
+          "text": "`WithArgsAfterSeparator`",
+          "anchor": "withargsafterseparator"
+        },
+        {
+          "level": 3,
           "text": "`WithHidden`",
           "anchor": "withhidden"
         },
@@ -2159,6 +2184,11 @@
         },
         {
           "level": 3,
+          "text": "`Context.ArgsAfterSeparator`",
+          "anchor": "contextargsafterseparator"
+        },
+        {
+          "level": 3,
           "text": "`Context.Effects`",
           "anchor": "contexteffects"
         },
@@ -2221,6 +2251,16 @@
           "level": 3,
           "text": "`Context.Unset`",
           "anchor": "contextunset"
+        },
+        {
+          "level": 3,
+          "text": "`timedOutError.Error`",
+          "anchor": "timedouterrorerror"
+        },
+        {
+          "level": 3,
+          "text": "`timedOutError.Is`",
+          "anchor": "timedouterroris"
         },
         {
           "level": 3,
@@ -2391,6 +2431,11 @@
           "level": 3,
           "text": "`App.DumpSchemaDict`",
           "anchor": "appdumpschemadict"
+        },
+        {
+          "level": 3,
+          "text": "`Context.ScratchDir`",
+          "anchor": "contextscratchdir"
         },
         {
           "level": 3,
@@ -12875,7 +12920,7 @@
     }
   ],
   "posts": [],
-  "last_gen": "2026-10-07T00:16:08.900542+00:00",
+  "last_gen": "2026-10-08T16:24:38.992342+00:00",
   "theme": "minimal",
   "vocabulary": {
     "accepted": [
