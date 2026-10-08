@@ -1235,6 +1235,10 @@ func errCheckValueAboveSeverity(name string, value string, source string, severi
 	return fmt.Sprintf("check %q: the check value resolver returned %q (from %s) for a check registered as %q; a check value may lower a check's severity, never raise it", name, value, source, severity)
 }
 
+func errCheckNoSelection(command string) string {
+	return fmt.Sprintf("%s selects no checks; select them with --all, --tag <expression>, --name <glob>, or --hook <name> (--list lists the checks without running them)", command)
+}
+
 const errCheckHookCombined = "--hook cannot be combined with --all, --tag, or --name"
 
 func errCheckHookUnknown(hook string, declared string) string {

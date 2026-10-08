@@ -663,7 +663,7 @@
     }
   },
   {
-    "name": "check values: failing-checks with no flags shows its help",
+    "name": "check values: failing-checks with no selector is refused",
     "app": {
       "name": "testapp",
       "version": "1.0.0",
@@ -697,8 +697,9 @@
       "failing-checks"
     ],
     "expect": {
-      "exit_code": 0,
-      "stdout_equals": "testapp failing-checks -- Run project checks and report only error-level failures, exiting nonzero when any exist\n\nFlags:\n  --all, --no-all      Run every registered check regardless of tag or name filters [default: false]\n  --tag <str>          Tag DSL expression to select checks (e.g. 'changelog & !quality') [default: ]\n  --name <str>         Glob pattern to filter checks by name (e.g. 'hash-*', '*coverage*') [default: ]\n  --hook <str>         Run the checks a hook declared in checks.toml selects: pre-push (tag 'prepush'), pre-release (tag 'preflight & !slow') [default: ]\n  --list, --no-list    List all registered checks with their tags and values and exit without running [default: false]\n"
+      "exit_code": 1,
+      "stdout_equals": "",
+      "stderr_equals": "error: failing-checks selects no checks; select them with --all, --tag <expression>, --name <glob>, or --hook <name> (--list lists the checks without running them)\n"
     }
   },
   {

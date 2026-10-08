@@ -512,10 +512,19 @@ func TestFailingChecks_WarningsAloneExitZero(t *testing.T) {
 	}
 }
 
-func TestFailingChecks_NoFlagsShowsHelp(t *testing.T) {
-	r := cvApp(t, cvToml(), nil, nil).Test([]string{"failing-checks"})
-	if r.ExitCode != 0 || !strings.HasPrefix(r.Stdout, "testapp failing-checks -- ") {
-		t.Fatalf("got %d %q", r.ExitCode, r.Stdout)
+func TestFailingChecks_NoSelectorRefused(t *testing.T) {
+	app := cvApp(t, cvToml(), nil, nil)
+	r := app.Test([]string{"failing-checks"})
+	if r.ExitCode != 1 || r.Stdout != "" {
+		t.Fatalf("got %d %q %q", r.ExitCode, r.Stdout, r.Stderr)
+	}
+	for _, flag := range []string{"--all", "--tag", "--name", "--hook"} {
+		if !strings.Contains(r.Stderr, flag) {
+			t.Fatalf("the refusal does not name %s: %q", flag, r.Stderr)
+		}
+	}
+	if fixed := app.Test([]string{"failing-checks", "--hook", "pre-push"}); fixed.ExitCode != 0 {
+		t.Fatalf("failing-checks --hook pre-push: %d %q", fixed.ExitCode, fixed.Stderr)
 	}
 }
 

@@ -1380,7 +1380,7 @@ func makeAppWithChecks(t *testing.T, checksPath string) *App {
 	return app
 }
 
-func TestCheckCommand_NoFlags_ShowsHelp(t *testing.T) {
+func TestCheckCommand_NoSelector_Refused(t *testing.T) {
 	checksPath := writeChecksFile(t, twoChecksToml)
 
 	app := NewApp("testapp", "1.0.0", "test app", WithChecks(checksPath))
@@ -1395,16 +1395,23 @@ func TestCheckCommand_NoFlags_ShowsHelp(t *testing.T) {
 		return &testCheckContext{root: emptyProjectRoot}, nil
 	})
 
+	// A run selecting no checks is a usage error, never a pass: an exit 0 would
+	// read as "every check passed" to an agent or a script.
 	r := app.Test([]string{"check"})
-	if r.ExitCode != 0 {
-		t.Fatalf("expected exit code 0, got %d; stderr=%q", r.ExitCode, r.Stderr)
+	if r.ExitCode != 1 {
+		t.Fatalf("expected exit code 1, got %d; stdout=%q stderr=%q", r.ExitCode, r.Stdout, r.Stderr)
 	}
-	if !strings.Contains(r.Stdout, "check") {
-		t.Fatalf("expected help output containing 'check', got %q", r.Stdout)
+	if r.Stdout != "" {
+		t.Fatalf("expected no stdout, got %q", r.Stdout)
 	}
-	// Should mention --all flag in help
-	if !strings.Contains(r.Stdout, "--all") {
-		t.Fatalf("expected help output containing '--all', got %q", r.Stdout)
+	for _, flag := range []string{"--all", "--tag", "--name", "--hook"} {
+		if !strings.Contains(r.Stderr, flag) {
+			t.Fatalf("expected the refusal to name %s, got %q", flag, r.Stderr)
+		}
+	}
+	// The fix the refusal names clears it.
+	if fixed := app.Test([]string{"check", "--all"}); fixed.ExitCode != 0 {
+		t.Fatalf("check --all: expected exit code 0, got %d; stderr=%q", fixed.ExitCode, fixed.Stderr)
 	}
 }
 

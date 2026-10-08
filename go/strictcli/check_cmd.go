@@ -114,11 +114,11 @@ func (a *App) registerOneCheckCommand(commandName string, failingOnly bool) {
 			tagExpr = expr
 		}
 
+		// A run selecting no checks is refused, never answered with the help
+		// and exit 0, which a caller would read as every check passing.
 		if !(runAll || tagExpr != "" || nameGlob != "") {
-			// No flags: show help
-			cmd := a.commands[commandName]
-			ctx.Info(formatCommandHelp(a, cmd, ""))
-			return Exit(0)
+			ctx.Error(errCheckNoSelection(commandName))
+			return Exit(1)
 		}
 
 		// --dry-run is not a separate branch: it selects the purity partition,

@@ -599,7 +599,7 @@
     }
   },
   {
-    "name": "machine_mode: check with no flags emits one envelope with the help text as a diagnostic",
+    "name": "machine_mode: check with no selector emits one envelope with the refusal as an error diagnostic",
     "app": {
       "name": "testapp",
       "version": "1.0.0",
@@ -619,12 +619,12 @@
       "check"
     ],
     "expect": {
-      "exit_code": 0,
+      "exit_code": 1,
       "stdout_matches": "^\\{\"interface_version\":3,[^\\n]*\\}\\n?\\z",
       "stdout_contains": [
         "\"command\":\"check\"",
-        "\"level\":\"info\"",
-        "Run project checks registered via the check framework"
+        "\"exit_code\":1",
+        "{\"level\":\"error\",\"message\":\"check selects no checks; select them with --all, --tag <expression>, --name <glob>, or --hook <name> (--list lists the checks without running them)\"}"
       ]
     }
   },
