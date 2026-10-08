@@ -1,9 +1,9 @@
 # The next release of go-strictcli. Fill in bump and description, then run `rlsbl release run --watch`.
 format_version = 2
 # How the release moves the version: patch, minor, major, or infra (moved as a patch, recorded as infra).
-bump = ""
+bump = "minor"
 # What this release is, in a sentence or two. Required.
-description = ""
+description = "Adds NewGrant, ErrTimedOut, declared scratch directories (WithScratchDir and ctx.ScratchDir), WithArgsAfterSeparator, HTTP bodies streamed from a file, declared reads, redaction, and the Stdin, Timeout, and Mode effect options; App.Test changes nothing process-wide; test coverage is declared by the source-tree root; the check context factory receives the dispatch's Context; the effects-bypass check skips _test.go files; go-toml-edit is required at its new path."
 # Why these changes were made. Optional.
 context = ""
 # The targets released, and the ones left out; between them they name every target of the releasable's members.
