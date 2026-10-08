@@ -1263,7 +1263,9 @@ RECOVERY OBLIGATION: no description was recoverable for this version (neither th
 
 ## go-strictcli
 
-### Unreleased
+### 0.39.0
+
+Adds NewGrant, ErrTimedOut, declared scratch directories (WithScratchDir and ctx.ScratchDir), WithArgsAfterSeparator, HTTP bodies streamed from a file, declared reads, redaction, and the Stdin, Timeout, and Mode effect options; App.Test changes nothing process-wide; test coverage is declared by the source-tree root; the check context factory receives the dispatch's Context; the effects-bypass check skips _test.go files; go-toml-edit is required at its new path.
 
 #### Breaking
 
@@ -1285,6 +1287,7 @@ RECOVERY OBLIGATION: no description was recoverable for this version (neither th
 
 - [go-strictcli] The README now says where an app's check list belongs: in the app's own package, passed with `WithChecks(path)` or embedded with `go:embed` and passed to `WithChecksEmbed`; strictcli has no standard folder or default path for it.
 - [go-strictcli] **go-toml-edit is required at its new path, `github.com/stricttools/go-toml-edit`, at 0.5.0.** A program using strictcli no longer pulls the module under its old path.
+- [go-strictcli] **The `effects-bypass` check skips `_test.go` files.** A test file builds only into the test binary, never into the program whose command handlers the check guards, so a test's handler or helper writing a fixture directly is no longer reported as a bypass.
 
 ### 0.38.0
 
