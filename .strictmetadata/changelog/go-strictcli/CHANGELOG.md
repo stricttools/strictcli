@@ -2,6 +2,14 @@
 
 # Changelog
 
+## 0.39.1
+
+The framework's check and failing-checks commands refuse a run that selects no checks with exit 1 and a message naming the selector flags, instead of printing their help and exiting 0.
+
+### Fixes
+
+- [go-strictcli] The framework's `check` and `failing-checks` commands refuse a run that selects no checks (none of `--all`, `--tag`, `--name`, `--hook`, and `--list`) with exit 1 and a message naming the selector flags, instead of printing their help and exiting 0, which read as a pass
+
 ## 0.39.0
 
 Adds NewGrant, ErrTimedOut, declared scratch directories (WithScratchDir and ctx.ScratchDir), WithArgsAfterSeparator, HTTP bodies streamed from a file, declared reads, redaction, and the Stdin, Timeout, and Mode effect options; App.Test changes nothing process-wide; test coverage is declared by the source-tree root; the check context factory receives the dispatch's Context; the effects-bypass check skips _test.go files; go-toml-edit is required at its new path.
