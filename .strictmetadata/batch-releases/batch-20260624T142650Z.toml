@@ -1,0 +1,7 @@
+format_version = 2
+[releasables.go-strictcli]
+bump = "patch"
+description = "Check command help text parity with Python."
+context = "Aligned all 9 check command help strings (command + 8 flags) between Go and Python for cross-language parity. All strings now meet the 50-character minimum."
+include = ["go"]
+exclude = []

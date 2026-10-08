@@ -1,0 +1,15 @@
+# strictspec document version gate (do not remove)
+format_version = 2
+# Version bump type: patch, minor, or major
+bump = "patch"
+# Short description of this release (required)
+description = "Fix keyword collision in flag parameter names"
+# Optional context explaining why these changes were made
+context = "Flags named after Python keywords (--global, --class, --import, etc.) now produce valid parameter names with a trailing underscore per PEP 8 convention."
+include = ["pypi", "npm"]
+exclude = []
+shipped_as = "strictcli@v0.20.1"
+release_commit = "1cb2b9f21be96efc8d568acda4165f8218f66f21"
+
+[released_trees]
+python = "c9943c7515015bfec7197919299bf7c7edebf5c8"

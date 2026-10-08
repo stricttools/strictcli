@@ -1,0 +1,15 @@
+# Archived by rlsbl at release time. This release had no unreleased.toml
+# (a batch member takes its metadata from the batch release file); the
+# archive is written so later changelog regenerations keep the
+# description and context.
+# strictspec document version gate (do not remove)
+format_version = 2
+bump = "minor"
+include = ["npm"]
+exclude = []
+description = "Receiver-aware `effects-bypass` lint: `RegExp.prototype.exec` is no longer a false positive."
+context = "The `effects-bypass` check matched the bare leaf name `exec`, so `pattern.exec(line)`\nin a handler was reported as an escaped effect. The leaf is now a finding only bare\nor through a child_process receiver (`cp`, `childProcess`, `child_process`, `execa`,\n`shelljs`), matching the receiver-aware resolution on the Python side.\n\nConsumers pick the fix up on their next lock bump."
+release_commit = "4dfe02218bf4967ce6bfed9c1060d52e24301281"
+
+[released_trees]
+typescript = "cbeaeaf6b48313025b98d68b1bb9170139d956e6"

@@ -1,0 +1,1 @@
+{"format_version":2,"id":"18dc8817b113df14cfda5c41ad414e929c6930d8df3d19be","commits":["096f6f92632439b642cdab5435e8558f90f3d90f"],"user_facing":false,"description":"CI: bump Go to 1.25","packages":["strictcli"]}

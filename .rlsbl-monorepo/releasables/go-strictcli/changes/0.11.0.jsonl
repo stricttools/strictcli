@@ -1,8 +1,0 @@
-{"format_version":1,"commits":["f0c1e7f1461cae46832b0c808d309b0626f0a3c4"],"user_facing":false,"packages":["go-strictcli"]}
-{"format_version":1,"commits":["d1bad7bd97edbc16026f1dbcb47c4093134448cb"],"user_facing":true,"description":"**Bug fix.** `WithConfigFormat(\"toml\")` now correctly parses TOML config files. Previously, config files were always parsed as JSON regardless of the format setting.","type":"fix","packages":["go-strictcli"]}
-{"format_version":1,"commits":["b475ee32ba1d8df5fbaccfb8802c148d54605028"],"user_facing":false,"packages":["go-strictcli"]}
-{"format_version":1,"commits":["a5370705a2150e55d857da4efb87a9a73daea1fb"],"user_facing":false,"packages":["go-strictcli"]}
-{"format_version":1,"commits":["1163e94f50d258dcec544c39848dec8a83caa564"],"user_facing":true,"description":"**Breaking.** `config set` now validates keys against registered flags and rejects unknown keys.","type":"breaking","packages":["go-strictcli"]}
-{"format_version":1,"commits":["1163e94f50d258dcec544c39848dec8a83caa564"],"user_facing":true,"description":"**New feature.** `config set` coerces values to the flag's declared type (int, bool, float) before writing to config.","type":"feature","packages":["go-strictcli"]}
-{"format_version":1,"commits":["b695a4f71365f62fb18d39cbd9bfa37833ad38aa"],"user_facing":false,"packages":["go-strictcli"]}
-{"format_version":1,"commits":["050a53f9af245a308f6d5895307beb7f479c9c27"],"user_facing":false,"packages":["go-strictcli"]}

@@ -1,2 +1,0 @@
-{"format_version":1,"commits":["c1d89a8062f38cbfec27f80a45e70b7c68781aac"],"user_facing":true,"description":"**New feature.** Schema dump (--dump-schema) now includes a project_id field read from go.mod, providing provenance for schema validation.","type":"feature","packages":["go-strictcli"]}
-{"format_version":1,"commits":["a50cf7899c938974b12e8e74201bdf58c0205a55"],"user_facing":false,"packages":["go-strictcli"]}

@@ -1,0 +1,24 @@
+# strictspec document version gate (do not remove)
+format_version = 2
+# Version bump type: patch, minor, or major
+bump = "minor"
+# Short description of this release (required)
+description = "Config lifecycle overhaul: parse-time loading, --config flag, --hermetic, conflict mode, hard-error loading, ctx.Source provenance API."
+# Optional context explaining why these changes were made
+context = """
+Major rework of the config system. Config files are now loaded at parse time rather than
+lazily, giving deterministic precedence (CLI > env > config > default). The new --config
+flag lets callers specify an explicit config path. --hermetic disables all config/env
+resolution for reproducible runs. Conflict mode makes a value set both in the config file
+and on the CLI (or env) a hard error instead of silently letting the CLI win. Hard-error
+config loading fails loudly on malformed config files instead of silently ignoring them.
+The ctx.Source provenance API lets handlers inspect where each flag value came from (cli,
+env, config, default). Reserved global flag enforcement prevents user code from shadowing
+built-in flags.\
+"""
+include = ["go"]
+exclude = []
+release_commit = "d91bd3f375180dfb7a41ccd6c45b1eb9c0c6cd71"
+
+[released_trees]
+go = "9240691ce3434d6d83921a5936ba2a575ef22ae3"

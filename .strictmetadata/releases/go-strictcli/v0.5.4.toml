@@ -1,0 +1,12 @@
+# strictspec document version gate (do not remove)
+format_version = 2
+bump = "patch"
+include = ["go"]
+exclude = []
+shipped_as = "go/v0.5.4"
+# description reconstructed by `rlsbl release backfill` from github-release:go/v0.5.4
+description = "**New feature.** Parse error help suggestions now include the subcommand name (e.g., `try 'myapp stream --help'` instead of `try 'myapp --help'`)."
+release_commit = "05185024686edbd917092b54d01044af3dd6176e"
+
+[released_trees]
+go = "dc3d6b87cdec6b224f020c94e07c5c67906a37f0"

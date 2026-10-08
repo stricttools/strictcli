@@ -1,0 +1,24 @@
+format_version = 2
+[releasables.strictcli]
+# Version bump type: patch, minor, major, hotfix, or prerelease
+bump = "minor"
+# Short description of this release (required)
+description = "Optional values skip choices validation; WARN check results satisfy depends_on; arg default-type validation."
+# Optional context explaining why these changes were made
+context = """
+Choices validation previously rejected optional flags/args that were not passed (None flowed into the choices check, producing "invalid value 'None'"). Validation is now skipped for absent optional values across flags, args, and globals via one shared helper. Check dependency semantics changed: a check that WARNs satisfies its dependents (WARN means passed-with-notes, not failed); only FAIL cascade-skips. Arg default-type validation gains str and list cases.
+"""
+include = ["pypi", "npm"]
+exclude = []
+
+[releasables.go-strictcli]
+# Version bump type: patch, minor, major, hotfix, or prerelease
+bump = "minor"
+# Short description of this release (required)
+description = "choices_from and required tags, pointer-compound registration errors, nil-safe choices validation, WARN satisfies depends_on."
+# Optional context explaining why these changes were made
+context = """
+Default(nil)+Choices flags/args no longer fail parse when omitted (nil skips choices validation via one shared validateChoices helper). Check dependency semantics: WARN satisfies depends_on; only FAIL cascade-skips. Tags API gains choices_from:"Method" (registration-time dynamic choices) and required:"false" (optional variadic slice args); pointer-to-slice/map handler fields become loud registration errors instead of dispatch-time panics. NewArg validates str and list default types.
+"""
+include = ["go"]
+exclude = []

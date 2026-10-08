@@ -1,5 +1,0 @@
-{"format_version":1,"commits":["8a7a74881b5730f8aa0dc9fdbbabe7ecf66dc531","d604e97d59fa0e252bfd179a2e4d0f0f62757677"],"user_facing":true,"description":"**Breaking.** `WithChecksPath(path)` renamed to `WithChecks(path)`. CWD auto-discovery of checks.toml removed; checks must be explicitly enabled. checks.toml now requires a top-level `app` field matching the app name.","type":"breaking","packages":["go-strictcli"]}
-{"format_version":1,"commits":["1521c56634138322707fbf9eec8845fc1641ff7d"],"user_facing":true,"description":"**Fix.** Removed double `checks.toml:` prefix in check system error messages.","type":"fix","packages":["go-strictcli"]}
-{"format_version":1,"commits":["1837f1f27e8a2a7960fc3eae1c87f5f4133873f6","19f762093bb4c4546d2c3da2437228660efa3d6d"],"user_facing":false,"packages":["go-strictcli"]}
-{"format_version":1,"commits":["fb4899a3e17880d31ac56b42aca24d359528c8af"],"user_facing":false,"packages":["go-strictcli"]}
-{"format_version":1,"commits":["77c66e219e5f73967d0de0e70c99b949bbae4696"],"user_facing":false,"packages":["go-strictcli"]}

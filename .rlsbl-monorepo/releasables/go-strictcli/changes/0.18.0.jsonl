@@ -1,1 +1,0 @@
-{"format_version":1,"commits":["a7bd35c8d98dad8f7a2936c0b4de9d042ece9fea","6e2180006179f3eddd394c05498f1f0ec6987d5e"],"user_facing":true,"description":"**New.** Registration-time ban on bare --force flag name and --no-* prefix. Flag names starting with no- are reserved for the negation system.","type":"feature","packages":["go-strictcli"]}

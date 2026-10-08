@@ -1,1 +1,0 @@
-{"format_version":1,"id":"18c527cfec9bbeedf25c5187df834cbaa9df92727f277839","commits":["d6e507174f2c4b8394b175f5874c75cb7f0c2c44"],"user_facing":true,"description":"**Fix.** App-level `--help` now lists global flags in a Global flags: section, matching the other implementations (command-level help already did).","type":"fix","packages":["go-strictcli"]}

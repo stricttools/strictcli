@@ -1,0 +1,42 @@
+format_version = 2
+[releasables.go-strictcli]
+# Version bump type: patch, minor, major, infra, or prerelease
+bump = "minor"
+# Short description of this release (required)
+description = "The Go implementation migrates to go-toml-edit 0.4.0, raising the transitive dependency floor for every consumer and rewording TOML syntax diagnostics."
+# Optional context explaining why these changes were made
+context = """
+go-toml-edit 0.4.0 reshaped its API: Unmarshal[T](data) returns the decoded
+value, *tomledit.Error replaces *tomledit.ParseError, and tomledit.Document
+replaces tomledit.DocumentNode. strictcli's config loader and checks.toml
+reader were ported to it. strictcli's own API is unchanged, but Go's minimal
+version selection means a consumer that also uses go-toml-edit directly is
+raised to 0.4.0 and must migrate with it, so this is a breaking change for
+that consumer even though nothing in strictcli's surface moved. The new
+parser also phrases syntax errors differently (`expected a value, got
+newline` in place of `expected value, got Newline`); the surrounding
+`config file <path>: ... (line N, column M)` sentence is unchanged.
+"""
+# Pre-release channel: alpha, beta, rc, or stable (ordered;
+# demotion is an error). Per package, so one workspace release
+# can ship some packages stable and others as alphas. See
+# docs/release-workflow.md#the-pre-release-channel.
+# preid = ""
+include = ["go"]
+exclude = []
+
+# py-strictcli: no unreleased commits since 0.41.1
+# [releasables.py-strictcli]
+# bump = ""
+# description = ""
+# context = ""
+# include = ["pypi"]
+# exclude = []
+
+# ts-strictcli: no unreleased commits since 0.40.1
+# [releasables.ts-strictcli]
+# bump = ""
+# description = ""
+# context = ""
+# include = ["npm"]
+# exclude = []

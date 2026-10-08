@@ -1,0 +1,13 @@
+# strictspec document version gate (do not remove)
+format_version = 2
+# Version bump type: patch, minor, or major
+bump = "minor"
+include = ["pypi", "npm"]
+exclude = []
+shipped_as = "strictcli@v0.12.0"
+# description reconstructed by `rlsbl release backfill` from github-release:strictcli@v0.12.0
+description = "**Breaking.** CWD auto-discovery of checks.toml removed; checks must be explicitly enabled via `checks_path=`. checks.toml now requires a top-level `app` field matching the app name."
+release_commit = "7a8dd0a3d9ecd82b62fbfdc7d15074f9317e0b44"
+
+[released_trees]
+python = "6ee74ab9acccc11ae9db4fa6597a6c20dd0d0e62"

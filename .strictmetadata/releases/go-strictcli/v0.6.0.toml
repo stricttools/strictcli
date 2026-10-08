@@ -1,0 +1,12 @@
+# strictspec document version gate (do not remove)
+format_version = 2
+bump = "minor"
+include = ["go"]
+exclude = []
+shipped_as = "go/v0.6.0"
+# description reconstructed by `rlsbl release backfill` from github-release:go/v0.6.0
+description = "**New feature.** Added config_path and config_format support (WithConfigPath, WithConfigFormat options)."
+release_commit = "fe98423450fccb431f9f6ddaf037dcb7966d8f89"
+
+[released_trees]
+go = "8cb4158649c1ed7c7f21da1ee587b06527119e1d"

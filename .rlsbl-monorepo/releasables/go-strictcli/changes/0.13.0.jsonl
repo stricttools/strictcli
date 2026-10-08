@@ -1,5 +1,0 @@
-{"format_version":1,"commits":["0a830959a869d11dac6654bc3646295052477607"],"user_facing":true,"description":"**Fix.** Explicit skip from check implementation no longer sets exit code to 1 or cascades to dependents.","type":"fix","packages":["go-strictcli"]}
-{"format_version":1,"commits":["7114752dd2eafd9f5e80027ca5196ca3a747c5e3","4bdbdf45fc0a9f7b92057eb065a9e1099cc84d8f","100df56782fc515a87a71e28e45c31eff13c9d1b"],"user_facing":true,"description":"**New.** Public API for running checks programmatically: `App.RunChecks()`, `FormatCheckResults()`, `FormatCheckResultsJSON()`, `CheckRunResult`, `RunChecksOptions`.","type":"feature","packages":["go-strictcli"]}
-{"format_version":1,"commits":["65d447fe88192ef0365db1bc1c2bd570ebfd9d5c","3eefee0ed85d19d53e52f561effe0e78809c5719","c6f6c055bf3e4034e764ccdb6ffcce598a25938f","b290307559494cdaf34859465e8857426a2353a1"],"user_facing":false,"packages":["go-strictcli"]}
-{"format_version":1,"commits":["67ee39ff3cdf4d09a9a29c0bdcb9853999878ee9"],"user_facing":false,"packages":["go-strictcli"]}
-{"format_version":1,"commits":["8df4fa21433ce63ac940569465fadd9dc58249dd"],"user_facing":false,"packages":["go-strictcli"]}

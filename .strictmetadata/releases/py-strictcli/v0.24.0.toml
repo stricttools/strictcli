@@ -1,0 +1,19 @@
+# Archived by rlsbl at release time. This release had no unreleased.toml
+# (a batch member takes its metadata from the batch release file); the
+# archive is written so later changelog regenerations keep the
+# description and context.
+# Backfilled 2026-08-08: this release predates archive synthesis, so the file
+# never existed. description/context/bump recovered from the GitHub Release
+# notes for strictcli@v0.24.0; include/exclude mirror v0.37.0.toml (not recoverable).
+# strictspec document version gate (do not remove)
+format_version = 2
+bump = "minor"
+include = ["pypi"]
+exclude = []
+description = "Optional values skip choices validation; WARN check results satisfy depends_on; arg default-type validation."
+context = "Choices validation previously rejected optional flags/args that were not passed (None flowed into the choices check, producing \"invalid value 'None'\"). Validation is now skipped for absent optional values across flags, args, and globals via one shared helper. Check dependency semantics changed: a check that WARNs satisfies its dependents (WARN means passed-with-notes, not failed); only FAIL cascade-skips. Arg default-type validation gains str and list cases."
+shipped_as = "strictcli@v0.24.0"
+release_commit = "117ec5465401cd216b4f9126f3016a4591e57fdf"
+
+[released_trees]
+python = "a52699e9e0b108e78801af296fe7ba5cd60d3800"

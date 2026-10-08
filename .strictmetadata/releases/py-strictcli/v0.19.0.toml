@@ -1,0 +1,15 @@
+# strictspec document version gate (do not remove)
+format_version = 2
+shipped_as = "strictcli@v0.19.0"
+# bump reconstructed by `rlsbl release backfill` from version arithmetic against 0.18.0
+bump = "minor"
+# include reconstructed by `rlsbl release backfill` from the targets detected at backfill time
+include = ["pypi"]
+# exclude reconstructed by `rlsbl release backfill` from the default: nothing excluded
+exclude = []
+# description reconstructed by `rlsbl release backfill` from github-release:strictcli@v0.19.0
+description = "Renamed Tag to FlagSet"
+release_commit = "ca79b6e6f0ef91a41c21965d297f8713d730e8aa"
+
+[released_trees]
+python = "f96254ff7a8511e80c9429002022ac6014a3ec94"

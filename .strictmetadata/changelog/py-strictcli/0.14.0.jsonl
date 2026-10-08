@@ -1,0 +1,3 @@
+{"format_version":2,"id":"18dc8817b0054aa2f0f3fbe648ca4cba8f7e97835f45f4b4","commits":["f2f2de83edc0b7fe24f46744201e8be1407f28a3"],"user_facing":false,"packages":["strictcli"]}
+{"format_version":2,"id":"18dc8817b0063a19d9175794df22497d91a5e6b4023be221","commits":["a2e1d64fb5f695169fafa63e5d1b69fe5c4e043d"],"user_facing":true,"description":"**New feature.** `checks_embed` parameter accepts raw TOML bytes, enabling inline checks configuration without a file on disk.","type":"feature","packages":["strictcli"]}
+{"format_version":2,"id":"18dc8817b007458bce96719d176d4a5fb1f3b2348f2a8bad","commits":["09799755dc2ef93a088f739a46001102bcb2aa5e"],"user_facing":false,"packages":["strictcli"]}

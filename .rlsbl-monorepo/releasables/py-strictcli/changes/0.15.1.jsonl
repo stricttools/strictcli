@@ -1,6 +1,0 @@
-{"format_version":1,"commits":["face7b1fcf296fcd3ba1d5d7b15194c71f79ac0c"],"user_facing":true,"description":"**Breaking.** Config set now accepts negative numeric values. Unknown single-dash tokens produce 'unexpected argument' instead of 'unknown flag'.","type":"breaking","packages":["strictcli"]}
-{"format_version":1,"commits":["d4bbb758e89f174279d3d1a281ded985c47c958a"],"user_facing":true,"description":"**Fix.** Config show now outputs lowercase true/false for bool values, matching Go implementation.","type":"fix","packages":["strictcli"]}
-{"format_version":1,"commits":["b2bdcfa7388ac5904c5da98a017c4248cc2737ea"],"user_facing":false,"packages":["strictcli"]}
-{"format_version":1,"commits":["053285501d0c135dffc782f038ac4f35881bcd89"],"user_facing":false,"packages":["strictcli"]}
-{"format_version":1,"commits":["48504dbc7255e89a73c663f4745eaf7a64ec0466"],"user_facing":false,"packages":["strictcli"]}
-{"format_version":1,"commits":["ca62cef3775568ecda2e7bdadf04ee813608d9d6"],"user_facing":false,"packages":["strictcli"]}

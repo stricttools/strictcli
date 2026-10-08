@@ -1,0 +1,16 @@
+format_version = 1
+rlsbl_version = "0.131.0"
+
+[files]
+"go/.github/workflows/ci.yml" = "a4eb37a8927ffda2aa646e45ac6f849648a53ea7fb4efe0df4fda3c9946c28f9"
+"go/.github/workflows/publish.yml" = "8e9155ca949b8c1d79d9900092604461425cec54bba25632ed93ae69ba00b44c"
+"go/.gitignore" = "6c67c60bb3d5f6e7fcf538f1f44b3652c2e6685b6979044f6a16ed537bf79a78"
+"go/.goreleaser.yml" = "d6588f4e6939e7c83eb8343ee59a6f26190d0e4fb098e935da189ac1c075352c"
+"go/VERSION" = "a68641c6aacd345c4931a6217331d2bf43398c7bc134666a2f756953eab407aa"
+"python/.github/workflows/ci.yml" = "bfcdec1fcd8ff944f7ba7eb114ab091d0c5158f499ed4632945c2c4ca2d868df"
+"python/.github/workflows/publish.yml" = "bfa60b4f497b67e71b31336e0373a3730aca9b16e6b35d1f7a3e003ee406c01a"
+"python/.gitignore" = "a102f466628d2d28aea6b2157c1b406b1911d788b596b5b84f4952f121539d42"
+"typescript/.github/workflows/ci.yml" = "354394b2a13169edb4deaca7d51dceed683368d321c1ce9733e46ef4cdcd3e3b"
+"typescript/.github/workflows/publish.yml" = "b66122a50b2dc53e26876def33f6991bea0f6a8c6f2be565c0cdcb1fdcada9b1"
+"typescript/.gitignore" = "c45e5963bda0144f9a38eca018406949d1cfc5f66ea86be43d478d6ecbaf6f3b"
+"typescript/.npmignore" = "7c0eea9785c0318aeb39bf8b670ce8384f4a5b812fde69ce23d7d018057325a3"

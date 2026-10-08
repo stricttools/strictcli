@@ -1,0 +1,12 @@
+# strictspec document version gate (do not remove)
+format_version = 2
+bump = "patch"
+include = ["pypi", "npm"]
+exclude = []
+shipped_as = "strictcli@v0.8.5"
+# description reconstructed by `rlsbl release backfill` from github-release:strictcli@v0.8.5
+description = "**New feature.** App-level and command-level help output now includes a 'Global flags' section."
+release_commit = "a04baeb73fbd9b132bdcb37ad3fca910b634ffc1"
+
+[released_trees]
+python = "e36d7597693fcdc91e3b2cff3686fcb393db6876"

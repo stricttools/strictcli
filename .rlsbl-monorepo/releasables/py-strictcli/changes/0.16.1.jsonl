@@ -1,3 +1,0 @@
-{"format_version":1,"commits":["cdc010316ce356628e2592b493ccc368dd782b48"],"user_facing":true,"description":"**Fix.** `config set` mutex error messages now include the `config set:` prefix for consistency.","type":"fix","packages":["strictcli"]}
-{"format_version":1,"commits":["98bfea68b1b971b42a31ecb1d08ecc3b55df86f2","1d9ee273ce05153c7c9e23b8297c6fccdb342c21"],"user_facing":false,"packages":["strictcli"]}
-{"format_version":1,"commits":["67b8d456d3e491b3d398ee7b0b7a4f3ba116cab1"],"user_facing":true,"description":"**Fix.** Config set help text now mentions backslash escaping for values containing commas in repeatable flags.","type":"fix","packages":["strictcli"]}

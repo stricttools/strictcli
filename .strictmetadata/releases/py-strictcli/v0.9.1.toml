@@ -1,0 +1,12 @@
+# strictspec document version gate (do not remove)
+format_version = 2
+bump = "patch"
+include = ["pypi", "npm"]
+exclude = []
+shipped_as = "strictcli@v0.9.1"
+# description reconstructed by `rlsbl release backfill` from github-release:strictcli@v0.9.1
+description = "**New feature.** Public `config_file_path` property on App."
+release_commit = "d76b56d24e8ca6644159fee033411f0a3c51230d"
+
+[released_trees]
+python = "31a3156efaf7ea686f8d893f0db61d15640e5824"

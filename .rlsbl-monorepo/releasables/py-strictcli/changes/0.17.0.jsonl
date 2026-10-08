@@ -1,3 +1,0 @@
-{"format_version":1,"commits":["5660d554d8a5dbb47bb6872d8513ba497fb04e7f"],"user_facing":false,"packages":["strictcli"]}
-{"format_version":1,"commits":["ba0ca0dd03644fa63f6ca6525ce81d814100a7a1"],"user_facing":true,"description":"**Breaking.** Repeatable flag defaults are now validated at registration: must be a list, `default=[]` is rejected as redundant, and element types must match the flag type.","type":"breaking","packages":["strictcli"]}
-{"format_version":1,"commits":["47de2e49ebd7248a5b16a54860ec9cdf1e5e98e9"],"user_facing":true,"description":"**New.** Help text now displays non-empty repeatable flag defaults as `[default: a, b, c]`.","type":"feature","packages":["strictcli"]}

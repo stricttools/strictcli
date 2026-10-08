@@ -1,0 +1,18 @@
+# Archived by rlsbl at release time. This release had no unreleased.toml
+# (a batch member takes its metadata from the batch release file); the
+# archive is written so later changelog regenerations keep the
+# description and context.
+# Backfilled 2026-08-08: this release predates archive synthesis, so the file
+# never existed. description/context/bump recovered from the GitHub Release
+# notes for ts-strictcli@v0.34.0; include/exclude mirror v0.36.0.toml (not recoverable).
+# strictspec document version gate (do not remove)
+format_version = 2
+bump = "minor"
+include = ["npm"]
+exclude = []
+description = "The effects regime: twin registration factories replacing defineCommand, framework-owned --dry-run/--yes/--quiet/--verbose, and side effects that flow through ctx.effects."
+context = "A consumer command once accepted a dry-run flag, ignored it, and published to a\npublic registry for real. Honoring a dry run was a convention, and conventions\nare forgettable. This release makes it structural, in lockstep with the Python\nand Go implementations.\n\nClassification is mandatory and has no default, so there is nothing left for\ndefineCommand to mean: it is removed, along with passthrough, in favour of the\ntwins defineReadOnlyCommand / defineMutatingCommand and readOnlyPassthrough /\nmutatingPassthrough. The twins pay for themselves at compile time -- a read-only\ncommand's ctx is narrowed to a context that has no mutating methods, so a stray\n.write() inside one is a type error, not a runtime surprise. Plain JavaScript\nconsumers get the same guarantee at runtime through a mandatory seal. The\nframework owns --dry-run, --yes, --quiet and --verbose, and declaring a flag by\none of those names is a registration error.\n\nSide effects ride ctx.effects: run, spawn, write, mkdir, remove, rename, chmod,\nhttp. In a dry run the handle records instead of performing and prints the\nwould-do log. What a recorded mutation returns is the hard part, and the answer\nis to refuse to guess: the handle returns a branded Unsettled carrier. Forward\nit into a later effect and the preview continues with the provenance rendered\ninline; read it or branch on it and the preview truncates with a message naming\nthe step and the reason.\n\nOne packaging change comes with this: the built-in effects-bypass check analyses\nconsumer sources through the TypeScript compiler API, so typescript moves from\ndevDependencies to dependencies and is installed alongside strictcli in\nproduction installs. That was a deliberate trade -- full AST fidelity in\nlockstep with the Python and Go checks was worth a dependency that most\nconsumers of a TypeScript CLI framework already have.\n\nThis breaks every consumer at its lock bump, deliberately: a silent grace period\nwould have preserved the exact bug class this regime exists to kill. The fleet\nmigrates in a dedicated wave immediately after this release."
+release_commit = "150b86ce2a8b4a48294c5dad02ad235acb9a518c"
+
+[released_trees]
+typescript = "ec9359c7371acf3f2e2242f2ba0513afb9adb133"

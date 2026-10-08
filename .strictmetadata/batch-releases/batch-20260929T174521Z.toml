@@ -1,0 +1,45 @@
+format_version = 2
+[releasables.py-strictcli]
+# Version bump type: patch, minor, major, infra, or prerelease
+bump = "minor"
+# Short description of this release (required)
+description = "Framework-owned exits and output, --json interface_version 3 with a stdout guard, check values with failing-checks, declared runtime requirements, help and version commands, and stricter flag and naming rules."
+# Optional context explaining why these changes were made
+context = "The three implementations move together toward one behavior contract. The framework now owns a command's whole exit path: an early exit raised from anywhere in the call stack, the answer written through ctx.out, the --json document's new output member (interface_version 3), a runtime guard that fails a machine-mode run when anything writes to stdout outside the framework, signal handling, and a --lint-framework-use scan that finds the bypasses statically. Checks gain per-check values, a failing-checks command, and named hook selections; commands gain declared runtime requirements; every app answers help and version commands, and help --json replaces --dump-schema. Several changes are breaking, which in 0.x is a minor: one naming rule refused at declaration, a non-repeatable flag given twice is refused instead of silently keeping the last value, a repeatable global given before and after the command collects every occurrence, check --ignore-warnings is removed in favor of failing-checks, warnings and errors carry prefixes in human mode, and a spawned child still running when its handler ends is killed."
+# Pre-release channel: alpha, beta, rc, or stable (ordered;
+# demotion is an error). Per package, so one workspace release
+# can ship some packages stable and others as alphas. See
+# docs/release-workflow.md#the-pre-release-channel.
+# preid = ""
+include = ["pypi"]
+exclude = []
+
+[releasables.go-strictcli]
+# Version bump type: patch, minor, major, infra, or prerelease
+bump = "minor"
+# Short description of this release (required)
+description = "Framework-owned exits and output, --json interface_version 3 with a stdout guard, check values with failing-checks, declared runtime requirements, help and version commands, and stricter flag and naming rules."
+# Optional context explaining why these changes were made
+context = "The three implementations move together toward one behavior contract. The framework now owns a command's whole exit path: an early exit raised from anywhere in the call stack, the answer written through ctx.out, the --json document's new output member (interface_version 3), a runtime guard that fails a machine-mode run when anything writes to stdout outside the framework, signal handling, and a --lint-framework-use scan that finds the bypasses statically. Checks gain per-check values, a failing-checks command, and named hook selections; commands gain declared runtime requirements; every app answers help and version commands, and help --json replaces --dump-schema. Several changes are breaking, which in 0.x is a minor: one naming rule refused at declaration, a non-repeatable flag given twice is refused instead of silently keeping the last value, a repeatable global given before and after the command collects every occurrence, check --ignore-warnings is removed in favor of failing-checks, warnings and errors carry prefixes in human mode, and a spawned child still running when its handler ends is killed."
+# Pre-release channel: alpha, beta, rc, or stable (ordered;
+# demotion is an error). Per package, so one workspace release
+# can ship some packages stable and others as alphas. See
+# docs/release-workflow.md#the-pre-release-channel.
+# preid = ""
+include = ["go"]
+exclude = []
+
+[releasables.ts-strictcli]
+# Version bump type: patch, minor, major, infra, or prerelease
+bump = "minor"
+# Short description of this release (required)
+description = "Framework-owned exits and output, --json interface_version 3 with a stdout guard, check values with failing-checks, declared runtime requirements, help and version commands, and stricter flag and naming rules."
+# Optional context explaining why these changes were made
+context = "The three implementations move together toward one behavior contract. The framework now owns a command's whole exit path: an early exit raised from anywhere in the call stack, the answer written through ctx.out, the --json document's new output member (interface_version 3), a runtime guard that fails a machine-mode run when anything writes to stdout outside the framework, signal handling, and a --lint-framework-use scan that finds the bypasses statically. Checks gain per-check values, a failing-checks command, and named hook selections; commands gain declared runtime requirements; every app answers help and version commands, and help --json replaces --dump-schema. Several changes are breaking, which in 0.x is a minor: one naming rule refused at declaration, a non-repeatable flag given twice is refused instead of silently keeping the last value, a repeatable global given before and after the command collects every occurrence, check --ignore-warnings is removed in favor of failing-checks, warnings and errors carry prefixes in human mode, and a spawned child still running when its handler ends is killed."
+# Pre-release channel: alpha, beta, rc, or stable (ordered;
+# demotion is an error). Per package, so one workspace release
+# can ship some packages stable and others as alphas. See
+# docs/release-workflow.md#the-pre-release-channel.
+# preid = ""
+include = ["npm"]
+exclude = []

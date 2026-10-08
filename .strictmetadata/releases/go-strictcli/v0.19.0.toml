@@ -1,0 +1,18 @@
+# Archived by rlsbl at release time. This release had no unreleased.toml
+# (a batch member takes its metadata from the batch release file); the
+# archive is written so later changelog regenerations keep the
+# description and context.
+# Backfilled 2026-08-08: this release predates archive synthesis, so the file
+# never existed. description/context/bump recovered from the GitHub Release
+# notes for go-strictcli@v0.19.0; include/exclude mirror v0.30.0.toml (not recoverable).
+# strictspec document version gate (do not remove)
+format_version = 2
+bump = "minor"
+include = ["go"]
+exclude = []
+description = "choices_from and required tags, pointer-compound registration errors, nil-safe choices validation, WARN satisfies depends_on."
+context = "Default(nil)+Choices flags/args no longer fail parse when omitted (nil skips choices validation via one shared validateChoices helper). Check dependency semantics: WARN satisfies depends_on; only FAIL cascade-skips. Tags API gains choices_from:\"Method\" (registration-time dynamic choices) and required:\"false\" (optional variadic slice args); pointer-to-slice/map handler fields become loud registration errors instead of dispatch-time panics. NewArg validates str and list default types."
+release_commit = "355ee5ff9814a00dc2e709054158dc45f2196bf6"
+
+[released_trees]
+go = "af86c2424351c22dd3c35aeda2dc6891f3b21a6d"

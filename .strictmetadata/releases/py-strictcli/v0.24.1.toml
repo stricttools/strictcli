@@ -1,0 +1,19 @@
+# Archived by rlsbl at release time. This release had no unreleased.toml
+# (a batch member takes its metadata from the batch release file); the
+# archive is written so later changelog regenerations keep the
+# description and context.
+# Backfilled 2026-08-08: this release predates archive synthesis, so the file
+# never existed. description/context/bump recovered from the GitHub Release
+# notes for strictcli@v0.24.1; include/exclude mirror v0.37.0.toml (not recoverable).
+# strictspec document version gate (do not remove)
+format_version = 2
+bump = "patch"
+include = ["pypi"]
+exclude = []
+description = "Recovered full release history and added MIT license"
+context = "53 pre-releasable versioned changelog files were recovered from saferm archive, restoring complete release history in CHANGELOG.md. Project now includes MIT license."
+shipped_as = "strictcli@v0.24.1"
+release_commit = "040633508871ce99520112bbe881e9fb3160c540"
+
+[released_trees]
+python = "63a6003d67a57dd0a8bf40f41e0d82b445fe46e0"

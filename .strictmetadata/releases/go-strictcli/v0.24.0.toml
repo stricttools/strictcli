@@ -1,0 +1,17 @@
+# Archived by rlsbl at release time. This release had no unreleased.toml
+# (a batch member takes its metadata from the batch release file); the
+# archive is written so later changelog regenerations keep the
+# description and context.
+# Backfilled 2026-08-08: this release predates archive synthesis, so the file
+# never existed. description/context/bump recovered from the GitHub Release
+# notes for go-strictcli@v0.24.0; include/exclude mirror v0.30.0.toml (not recoverable).
+# strictspec document version gate (do not remove)
+format_version = 2
+bump = "minor"
+include = ["go"]
+exclude = []
+description = "errors.go centralization, CLI test-coverage instrumentation, notes channel"
+release_commit = "b5141dac3b1310c5f73652f544d4ee63c68e16f9"
+
+[released_trees]
+go = "8112402462bfdf5e3e0af050594facf704da3c3b"

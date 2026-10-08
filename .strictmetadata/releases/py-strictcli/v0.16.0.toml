@@ -1,0 +1,15 @@
+# strictspec document version gate (do not remove)
+format_version = 2
+# Version bump type: patch, minor, or major
+bump = "minor"
+# Short description of this release (required)
+description = "unique and env_separator flag fields, config array coercion, config set repeatable support"
+# Optional context explaining why these changes were made
+context = "Breaking: config show now requires --plain or --json. New features: unique field enforces no duplicate values on repeatable flags, env_separator controls how env vars are split into arrays, config arrays are coerced to declared types, config set supports repeatable flags with --clear and --default."
+include = ["pypi", "npm"]
+exclude = []
+shipped_as = "strictcli@v0.16.0"
+release_commit = "29d73ea152f6d13542a173c01f97f9df4556cea1"
+
+[released_trees]
+python = "ad184af2536faa887a36ee878fff2f4c6f66d0fd"

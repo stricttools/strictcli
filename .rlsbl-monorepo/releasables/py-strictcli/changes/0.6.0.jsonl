@@ -1,3 +1,0 @@
-{"format_version":1,"commits":["fb099932c7e4fe6ce20f36191a16b9b0d507d84e"],"user_facing":true,"description":"**New feature.** Deprecated commands: declare a command name + message that prints the deprecation notice and exits when invoked, with a `Deprecated:` section in help output.","type":"feature","packages":["strictcli"]}
-{"format_version":1,"commits":["50d5c41c50d53f6b220168027248b7b8b08fb92a","bae8eebfc4fa877cef2f215e48f41350f573cdc5","fafc4d29617c01c336fdcbc5a9025c4bb6d16759","fc4f9ab1d67bd17e681e9de7209368561a6b66b5"],"user_facing":false,"packages":["strictcli"]}
-{"format_version":1,"commits":["fb61c5d99061f03017133e872fed6404d540131f"],"user_facing":false,"packages":["strictcli"]}

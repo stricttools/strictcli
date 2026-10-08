@@ -1,0 +1,17 @@
+# Archived by rlsbl at release time. This release had no unreleased.toml
+# (a batch member takes its metadata from the batch release file); the
+# archive is written so later changelog regenerations keep the
+# description and context.
+# Backfilled 2026-08-08: this release predates archive synthesis, so the file
+# never existed. description/context/bump recovered from the GitHub Release
+# notes for py-strictcli@v0.30.1; include/exclude mirror v0.37.0.toml (not recoverable).
+# strictspec document version gate (do not remove)
+format_version = 2
+bump = "patch"
+include = ["pypi"]
+exclude = []
+description = "Fix coverage shard directory creation in test contexts"
+release_commit = "43ca828ff1ffedd4894aa806e9491e30174066ef"
+
+[released_trees]
+python = "47bb7eb07d06d34d6eadc1be9e7e1d29fc2aaea5"

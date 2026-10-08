@@ -1,0 +1,18 @@
+# Archived by rlsbl at release time. This release had no unreleased.toml
+# (a batch member takes its metadata from the batch release file); the
+# archive is written so later changelog regenerations keep the
+# description and context.
+# Backfilled 2026-08-08: this release predates archive synthesis, so the file
+# never existed. description/context/bump recovered from the GitHub Release
+# notes for go-strictcli@v0.23.0; include/exclude mirror v0.30.0.toml (not recoverable).
+# strictspec document version gate (do not remove)
+format_version = 2
+bump = "minor"
+include = ["go"]
+exclude = []
+description = "Breaking: ctx-first handler signatures, Outcome return type, Get[T]/GetOpt[T] accessors, registration trio collapsed, notes channel, float canon, errors centralized, comment-preserving config writes"
+context = "Coordinated contract redesign across Python and Go implementations.\n\nMigration recipe:\n- Handler signatures: ctx is now the first parameter (was map[string]interface{})\n- Handlers return Outcome instead of error\n- Get[T]/GetOpt[T] typed accessors replace raw map access\n- Registration trio (Flag/Arg/Command) collapsed into unified API\n- Notes channel for non-error diagnostic output\n- Float canonicalization aligns cross-language behavior\n- All errors centralized in errors.go\n- Config writes preserve TOML comments via round-trip parsing"
+release_commit = "7dac2cec5653c2a884690739d74e22360baa680e"
+
+[released_trees]
+go = "7f528c1838b9b50bdef5e975719e1a44a70d2f15"

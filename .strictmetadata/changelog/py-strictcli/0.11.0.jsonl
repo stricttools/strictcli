@@ -1,0 +1,7 @@
+{"format_version":2,"id":"18dc8817aff402204004a859c85c4b66867ec0098e37cdbb","commits":["feae73fae6f1e08f1355bc7c1b9beae842397517"],"user_facing":false,"packages":["strictcli"]}
+{"format_version":2,"id":"18dc8817aff4608fcad400120aca41af91720b6ecccf6d5c","commits":["087bd6cb358bf6ebf99e2635e93a2fdc59ac5517"],"user_facing":false,"packages":["strictcli"]}
+{"format_version":2,"id":"18dc8817aff4e290f929673d2a4448caa820ded3f3bc5eff","commits":["f7e07e1d5ce69895df1a95da9c51ab686300e0b3"],"user_facing":false,"packages":["strictcli"]}
+{"format_version":2,"id":"18dc8817aff5366efbe54eb4ca794f8a95fc0c9114875023","commits":["f96d157204a50c577f78b99667be81472e23bfe7"],"user_facing":false,"packages":["strictcli"]}
+{"format_version":2,"id":"18dc8817aff5a158996433a1a7d74db999b4be2130d48fbc","commits":["c7ee8c1401de38d9e086c38284388497c54cca0a"],"user_facing":true,"description":"**New feature.** `checks_path` parameter on `App` for explicit checks.toml location, replacing CWD-based discovery.","type":"feature","packages":["strictcli"]}
+{"format_version":2,"id":"18dc8817aff6951dba08cd8151bf453d92af7ff7416c669d","commits":["dd7a103769db5bccfaabb2636fce0ef5082e2159","df35fbde862721ef8b01a483abf6b33e5387afa8"],"user_facing":false,"packages":["strictcli"]}
+{"format_version":2,"id":"18dc8817aff6f6a3a18f9014e2f7455fa01c052f16258b06","commits":["f94f50bad6401756ca75ee82b31fbfc7e85edc83"],"user_facing":false,"packages":["strictcli"]}

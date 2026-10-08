@@ -1,5 +1,0 @@
-{"format_version":1,"commits":["e595eaf58390d6b941b0362dfcbc65b9016054a9"],"user_facing":false,"packages":["strictcli"]}
-{"format_version":1,"commits":["36342216953c20b8f38c9517e4eebad0893d1718"],"user_facing":false,"packages":["strictcli"]}
-{"format_version":1,"commits":["fad001e35420a4aa0bd019a68448ce4c970d3f1e"],"user_facing":false,"packages":["strictcli"]}
-{"format_version":1,"commits":["bb95ff55342e50eeec9a20c417b96e76df99e9c0"],"user_facing":true,"description":"**New feature.** config_path and config_format options for TOML-based configuration file support.","type":"feature","packages":["strictcli"]}
-{"format_version":1,"commits":["0f0524d47831254eb0579b55ea14aff204043546"],"user_facing":false,"packages":["strictcli"]}

@@ -1,0 +1,18 @@
+# Archived by rlsbl at release time. This release had no unreleased.toml
+# (a batch member takes its metadata from the batch release file); the
+# archive is written so later changelog regenerations keep the
+# description and context.
+# Backfilled 2026-08-08: this release predates archive synthesis, so the file
+# never existed. description/context/bump recovered from the GitHub Release
+# notes for go-strictcli@v0.16.0; include/exclude mirror v0.30.0.toml (not recoverable).
+# strictspec document version gate (do not remove)
+format_version = 2
+bump = "minor"
+include = ["go"]
+exclude = []
+description = "Command declaration framework: structured handler returns, programmatic invocation, typed args, config fields, compound types, tool export, MCP projection, and scope-based check filtering."
+context = "This release transforms strictcli from a CLI framework into a command declaration framework with multiple output projections. Commands declared once can be invoked via CLI (existing), programmatic API (App.Call), tool export (AsTools with JSON Schema), and MCP server (--mcp flag).\n\nKey additions: DataCommand/HandlerResult for structured returns, typed positional args with choices, first-class ConfigField declarations with per-command binding and startup validation, compound types (ListOf/DictOf), command visibility (Hidden/Interactive), schema enrichment with versioning and constraint serialization, and declarative scope field on check definitions with SetScopeAdapter() for context-dependent pre-check filtering."
+release_commit = "c5202dce665e31eeaee46a5491158f9d919e1701"
+
+[released_trees]
+go = "74ccc43fdf0de9f2178172abd5deaedc87b98c27"

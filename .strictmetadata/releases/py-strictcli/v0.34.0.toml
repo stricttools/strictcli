@@ -1,0 +1,17 @@
+# Archived by rlsbl at release time. This release had no unreleased.toml
+# (a batch member takes its metadata from the batch release file); the
+# archive is written so later changelog regenerations keep the
+# description and context.
+# Backfilled 2026-08-08: this release predates archive synthesis, so the file
+# never existed. description/context/bump recovered from the GitHub Release
+# notes for py-strictcli@v0.34.0; include/exclude mirror v0.37.0.toml (not recoverable).
+# strictspec document version gate (do not remove)
+format_version = 2
+bump = "minor"
+include = ["pypi"]
+exclude = []
+description = "Add is_hermetic() to the check-side ConnectionEnvReader"
+release_commit = "9ac46f559c2c2c8a87d07e1c94c31f1f53586bfc"
+
+[released_trees]
+python = "24b862be3b4b34fa5923f2c2abe60f4075cb7918"

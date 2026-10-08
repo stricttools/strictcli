@@ -1,0 +1,14 @@
+format_version = 2
+shipped_as = "strictcli@v0.2.0"
+# bump reconstructed by `rlsbl release backfill` from version arithmetic against 0.1.1
+bump = "minor"
+# include reconstructed by `rlsbl release backfill` from the targets detected at backfill time
+include = ["pypi"]
+# exclude reconstructed by `rlsbl release backfill` from the default: nothing excluded
+exclude = []
+# description reconstructed by `rlsbl release backfill` from github-release:strictcli@v0.2.0
+description = "Integer flags: `type=int` on flags for automatic coercion and validation"
+release_commit = "43aec050961e8c1c8d1e486cb212eec21b14ae39"
+
+[released_trees]
+python = "1be4521175367ff8910651a3fcd0131eb7cf9e47"

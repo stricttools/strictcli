@@ -1,0 +1,137 @@
+format_version = 2
+[releasables.py-strictcli]
+bump = "minor"
+description = "Machine output becomes a framework-owned mode: reserved `--json`, one envelope as the sole stdout document, `ctx.payload()` against a declared JSON Schema replacing `outcome(data=...)`, plus the process trace store, command-line-only mutex election, `owns_stdout`, and MCP protocol `2026-07-28` with consequential confirmation over both eras."
+context = """
+Machine output used to be a per-command decision: a handler returned data
+through `outcome(data=...)` and the framework printed it, so every app invented
+its own `--json` flag and its own document shape. This release makes it a
+property of the framework. `--json` is reserved unconditionally at every
+declaration level, recognised anywhere in argv with the same two boundaries as
+the effects quartet, and delivered on the Context. Machine mode emits ONE
+envelope as the sole stdout document -- payload, exit code, the dry-run preview
+and every diagnostic the run emitted -- and `--quiet` cannot reach it. A
+command's payload is a declared closed-subset JSON Schema, validated where the
+envelope is written rather than at the `ctx.payload(...)` call, so a value the
+envelope could not carry never fails a human-mode run. Payloads are plain
+UTF-8: no ASCII escaping, byte-identical with the Go and TypeScript siblings.
+
+Three further pieces ride the same release. The process trace store records
+process ancestry at every real child-process start, chained through
+`STRICTCLI_TRACE_PARENT` with a ULID identity and JSONL partitions, and stays
+observational -- a forged ancestry identifier or an unwritable store leaves
+stdout, stderr and the exit code byte-identical. Mutex election becomes
+value-aware and command-line-only: a bool member elects only when it resolves
+to true, so `--no-x` declines instead of choosing, and an env- or
+config-sourced value neither elects a member nor reaches the handler.
+`owns_stdout=True` plus claimed rendering let a command whose stdout IS the
+artifact keep that stream clean while its diagnostics still reach the operator.
+
+The MCP server moves to protocol `2026-07-28`: stateless, no handshake,
+mandatory `server/discover`, per-request capabilities. A consequential
+`tools/call` is no longer taken on the caller's word -- the server asks, over
+the modern era's input-required `requestState` and over the retained
+`2025-11-25` handshake's `elicitation/create`, from one mint-and-verify path.
+The continuation is HMAC-protected, bound to the declared client and to a
+digest of that exact request, single-use and five minutes long, and every exit
+spends it, so a confirmation that was aborted cannot be re-answered later.
+
+The breaking changes are a minor bump under pre-1.0 versioning. This is the
+framework release the consumer projects' own releases depend on; the three
+implementations ship the same behavior in lockstep, verified by the conformance
+suite.
+"""
+include = ["pypi"]
+exclude = []
+
+[releasables.go-strictcli]
+bump = "minor"
+description = "Machine output becomes a framework-owned mode: reserved `--json`, one envelope as the sole stdout document, `ctx.Payload()` against a `PayloadSchema(...)` declaration replacing `ExitData`, plus the process trace store, command-line-only mutex election, `OwnsStdout()`, and MCP protocol `2026-07-28` with consequential confirmation over both eras."
+context = """
+Machine output used to be a per-command decision: a handler returned data
+through `ExitData(code, data)` and the framework printed it, so every app
+invented its own `--json` flag and its own document shape. This release makes
+it a property of the framework. `--json` is reserved unconditionally at every
+declaration level, recognised anywhere in argv with the same two boundaries as
+the effects quartet, and delivered on the Context. Machine mode emits ONE
+envelope as the sole stdout document -- payload, exit code, the dry-run preview
+and every diagnostic the run emitted -- and `--quiet` cannot reach it. A
+command's payload is a declared closed-subset JSON Schema, validated where the
+envelope is written rather than at the `ctx.Payload(...)` call, so a value the
+envelope could not carry never fails a human-mode run. Payloads are no longer
+HTML-escaped: `<`, `>` and `&` emit literally, byte-identically with the Python
+and TypeScript siblings.
+
+Three further pieces ride the same release. The process trace store records
+process ancestry at every real child-process start, chained through
+`STRICTCLI_TRACE_PARENT` with a ULID identity and JSONL partitions, and stays
+observational -- a forged ancestry identifier or an unwritable store leaves
+stdout, stderr and the exit code byte-identical. Mutex election becomes
+value-aware and command-line-only: a bool member elects only when it resolves
+to true, so `--no-x` declines instead of choosing, and an env- or
+config-sourced value neither elects a member nor reaches the handler.
+`OwnsStdout()` plus claimed rendering let a command whose stdout IS the
+artifact keep that stream clean while its diagnostics still reach the operator.
+
+The MCP server moves to protocol `2026-07-28`: stateless, no handshake,
+mandatory `server/discover`, per-request capabilities. A consequential
+`tools/call` is no longer taken on the caller's word -- the server asks, over
+the modern era's input-required `requestState` and over the retained
+`2025-11-25` handshake's `elicitation/create`, from one mint-and-verify path.
+The continuation is HMAC-protected, bound to the declared client and to a
+digest of that exact request, single-use and five minutes long, and every exit
+spends it, so a confirmation that was aborted cannot be re-answered later. MCP
+tool names are now the dotted command path in this implementation too.
+
+The breaking changes are a minor bump under pre-1.0 versioning. This is the
+framework release the consumer projects' own releases depend on; the three
+implementations ship the same behavior in lockstep, verified by the conformance
+suite.
+"""
+include = ["go"]
+exclude = []
+
+[releasables.ts-strictcli]
+bump = "minor"
+description = "Machine output becomes a framework-owned mode: reserved `--json`, one envelope as the sole stdout document, `ctx.payload()` against a `payloadSchema:` declaration replacing `outcome(exitCode, data)`, plus the process trace store, command-line-only mutex election, `ownsStdout`, and MCP protocol `2026-07-28` with consequential confirmation over both eras."
+context = """
+Machine output used to be a per-command decision: a handler returned data
+through `outcome(exitCode, data)` and the framework printed it, so every app
+invented its own `--json` flag and its own document shape. This release makes
+it a property of the framework. `--json` is reserved unconditionally at every
+declaration level, recognised anywhere in argv with the same two boundaries as
+the effects quartet, and delivered on the Context. Machine mode emits ONE
+envelope as the sole stdout document -- payload, exit code, the dry-run preview
+and every diagnostic the run emitted -- and `--quiet` cannot reach it. A
+command's payload is a declared closed-subset JSON Schema, validated where the
+envelope is written rather than at the `ctx.payload(...)` call, so a value the
+envelope could not carry never fails a human-mode run. Payloads are plain
+UTF-8, byte-identical with the Python and Go siblings.
+
+Three further pieces ride the same release. The process trace store records
+process ancestry at every real child-process start, chained through
+`STRICTCLI_TRACE_PARENT` with a ULID identity and JSONL partitions, and stays
+observational -- a forged ancestry identifier or an unwritable store leaves
+stdout, stderr and the exit code byte-identical. Mutex election becomes
+value-aware and command-line-only: a bool member elects only when it resolves
+to true, so `--no-x` declines instead of choosing, and an env- or
+config-sourced value neither elects a member nor reaches the handler.
+`ownsStdout: true` plus claimed rendering let a command whose stdout IS the
+artifact keep that stream clean while its diagnostics still reach the operator.
+
+The MCP server moves to protocol `2026-07-28`: stateless, no handshake,
+mandatory `server/discover`, per-request capabilities. A consequential
+`tools/call` is no longer taken on the caller's word -- the server asks, over
+the modern era's input-required `requestState` and over the retained
+`2025-11-25` handshake's `elicitation/create`, from one mint-and-verify path.
+The continuation is HMAC-protected, bound to the declared client and to a
+digest of that exact request, single-use and five minutes long, and every exit
+spends it, so a confirmation that was aborted cannot be re-answered later.
+
+The breaking changes are a minor bump under pre-1.0 versioning. This is the
+framework release the consumer projects' own releases depend on; the three
+implementations ship the same behavior in lockstep, verified by the conformance
+suite.
+"""
+include = ["npm"]
+exclude = []

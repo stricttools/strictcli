@@ -1,0 +1,15 @@
+# strictspec document version gate (do not remove)
+format_version = 2
+# Version bump type: patch, minor, or major
+bump = "minor"
+# Short description of this release (required)
+description = "Frozen Command, command tags, tag contracts"
+# Optional context explaining why these changes were made
+context = "Breaking: Command dataclass is now frozen=True with tuple fields (was mutable list). New: command tags (string labels with group inheritance) and tag contracts (registration-time validation that tagged commands have required flags)."
+include = ["pypi", "npm"]
+exclude = []
+shipped_as = "strictcli@v0.20.0"
+release_commit = "ef84c92c73a2ceb99c0379c350458161c3a8d0cf"
+
+[released_trees]
+python = "dbdd60362ec0c7cdba5703a5f5696f192c995b04"

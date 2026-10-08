@@ -1,0 +1,90 @@
+format_version = 2
+[releasables.py-strictcli]
+# Version bump type: patch, minor, major, infra, or prerelease
+bump = "patch"
+# Short description of this release (required)
+description = "Recognize the reserved flag quartet anywhere in argv"
+# Optional context explaining why these changes were made
+context = """
+The quartet (--dry-run, --yes, --quiet, --verbose) was extracted by a pre-scan
+that stopped at the first non-flag token, so it was only recognized BEFORE the
+command name -- while every documented invocation in this ecosystem writes these
+flags after it. `myapp deploy --dry-run` failed with `unknown flag '--dry-run'`,
+and the first consumer to migrate onto the effects regime had to rewrite argv
+before handing it to the framework to make its own documented commands work.
+
+The quartet is now recognized anywhere in argv, matching the framework's own
+existing precedent for --help/-h. Two boundaries are preserved: a bare `--`
+(everything after it is positional data) and a passthrough command's name (its
+args belong to the child process and are forwarded byte-for-byte, so a child's
+own --verbose is never eaten). --hermetic, --config, --dump-schema and --mcp
+stay pre-command-only. Effects contract §7.2 is amended accordingly (adoption
+ruling A1, §18.6).
+"""
+# Pre-release channel: alpha, beta, rc, or stable (ordered;
+# demotion is an error). Per package, so one workspace release
+# can ship some packages stable and others as alphas. See
+# docs/release-workflow.md#the-pre-release-channel.
+# preid = ""
+include = ["pypi"]
+exclude = []
+
+[releasables.go-strictcli]
+# Version bump type: patch, minor, major, infra, or prerelease
+bump = "patch"
+# Short description of this release (required)
+description = "Recognize the reserved flag quartet anywhere in argv"
+# Optional context explaining why these changes were made
+context = """
+The quartet (--dry-run, --yes, --quiet, --verbose) was extracted by a pre-scan
+that stopped at the first non-flag token, so it was only recognized BEFORE the
+command name -- while every documented invocation in this ecosystem writes these
+flags after it. `myapp deploy --dry-run` failed with `unknown flag '--dry-run'`,
+and the first consumer to migrate onto the effects regime had to rewrite argv
+before handing it to the framework to make its own documented commands work.
+
+The quartet is now recognized anywhere in argv, matching the framework's own
+existing precedent for --help/-h. Two boundaries are preserved: a bare `--`
+(everything after it is positional data) and a passthrough command's name (its
+args belong to the child process and are forwarded byte-for-byte, so a child's
+own --verbose is never eaten). --hermetic, --config, --dump-schema and --mcp
+stay pre-command-only. Effects contract §7.2 is amended accordingly (adoption
+ruling A1, §18.6).
+"""
+# Pre-release channel: alpha, beta, rc, or stable (ordered;
+# demotion is an error). Per package, so one workspace release
+# can ship some packages stable and others as alphas. See
+# docs/release-workflow.md#the-pre-release-channel.
+# preid = ""
+include = ["go"]
+exclude = []
+
+[releasables.ts-strictcli]
+# Version bump type: patch, minor, major, infra, or prerelease
+bump = "patch"
+# Short description of this release (required)
+description = "Recognize the reserved flag quartet anywhere in argv"
+# Optional context explaining why these changes were made
+context = """
+The quartet (--dry-run, --yes, --quiet, --verbose) was extracted by a pre-scan
+that stopped at the first non-flag token, so it was only recognized BEFORE the
+command name -- while every documented invocation in this ecosystem writes these
+flags after it. `myapp deploy --dry-run` failed with `unknown flag '--dry-run'`,
+and the first consumer to migrate onto the effects regime had to rewrite argv
+before handing it to the framework to make its own documented commands work.
+
+The quartet is now recognized anywhere in argv, matching the framework's own
+existing precedent for --help/-h. Two boundaries are preserved: a bare `--`
+(everything after it is positional data) and a passthrough command's name (its
+args belong to the child process and are forwarded byte-for-byte, so a child's
+own --verbose is never eaten). --hermetic, --config, --dump-schema and --mcp
+stay pre-command-only. Effects contract §7.2 is amended accordingly (adoption
+ruling A1, §18.6).
+"""
+# Pre-release channel: alpha, beta, rc, or stable (ordered;
+# demotion is an error). Per package, so one workspace release
+# can ship some packages stable and others as alphas. See
+# docs/release-workflow.md#the-pre-release-channel.
+# preid = ""
+include = ["npm"]
+exclude = []

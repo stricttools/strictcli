@@ -1,0 +1,15 @@
+# Archived by rlsbl at release time. This release had no unreleased.toml
+# (a batch member takes its metadata from the batch release file); the
+# archive is written so later changelog regenerations keep the
+# description and context.
+# strictspec document version gate (do not remove)
+format_version = 2
+bump = "patch"
+include = ["npm"]
+exclude = []
+description = "A member-spelled choice's member flag can declare a short, closing the gap that made converting a group of flags into a member-spelled selector drop every short they had."
+context = "The framework already promised this: §24.4 says a short declared on a member is an ordinary flag short, the refusal for a short on the selector itself says \"declare the short on a member\", and the short-claim table, the help renderer and the two sibling-scope short guards already read a member's short. Only Go could produce one. The short now goes on the declaration each member shape puts its electing flag on -- choice({value: {carrier, help, short}}) for a payload-carrying member, choice({help, short}) for a payload-less one -- and declaring it anywhere else is a compile error where the type system can see it and a registration error where it cannot."
+release_commit = "f4542becd21db1da99b441ac30d82ca8814646e6"
+
+[released_trees]
+typescript = "23b2c7aca40a349edefe3ac6d2dc46dc463ade55"

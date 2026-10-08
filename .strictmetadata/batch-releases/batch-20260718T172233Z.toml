@@ -1,0 +1,14 @@
+format_version = 2
+[releasables.py-strictcli]
+bump = "minor"
+description = "CLI test-coverage instrumentation, notes channel"
+context = ""
+include = ["pypi", "npm"]
+exclude = []
+
+[releasables.go-strictcli]
+bump = "minor"
+description = "errors.go centralization, CLI test-coverage instrumentation, notes channel"
+context = ""
+include = ["go"]
+exclude = []

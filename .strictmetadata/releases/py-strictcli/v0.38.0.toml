@@ -1,0 +1,15 @@
+# Archived by rlsbl at release time. This release had no unreleased.toml
+# (a batch member takes its metadata from the batch release file); the
+# archive is written so later changelog regenerations keep the
+# description and context.
+# strictspec document version gate (do not remove)
+format_version = 2
+bump = "minor"
+include = ["pypi"]
+exclude = []
+description = "Receiver-aware `effects-bypass` lint: `platform.system()` is no longer a false positive, and aliased or from-imported receivers are now caught."
+context = "The `effects-bypass` check matched bare leaf names, so any call named `system` was\nreported as an escaped effect -- including `platform.system()`, a pure in-process\nread whose suggested remediation could not be followed. The leaf is now a finding\nonly through the `os` receiver (`os.system`, `import os as o`, `from os import\nsystem`).\n\nResolution runs through the module's own imports, which also closes the opposite\ngap: `import requests as rq` + `rq.post(...)` and `from subprocess import run` +\n`run(...)` were previously missed and are now caught. Builtin `open` is answered\nbefore import resolution so it keeps its own verdict.\n\nConsumers pick the fix up on their next lock bump."
+release_commit = "592bb82fe7b6590b26276d9d278475dbeb59f1c9"
+
+[released_trees]
+python = "219d66cd02d16c58301d6b3b4b90444c5ea336a3"

@@ -1,0 +1,19 @@
+# Archived by rlsbl at release time. This release had no unreleased.toml
+# (a batch member takes its metadata from the batch release file); the
+# archive is written so later changelog regenerations keep the
+# description and context.
+# Backfilled 2026-08-08: this release predates archive synthesis, so the file
+# never existed. description/context/bump recovered from the GitHub Release
+# notes for strictcli@v0.22.0; include/exclude mirror v0.37.0.toml (not recoverable).
+# strictspec document version gate (do not remove)
+format_version = 2
+bump = "minor"
+include = ["pypi"]
+exclude = []
+description = "Required booleans, Context type, schema project_id guard, tag contract global flags fix"
+context = "Breaking change: Bool flags no longer auto-default to false. BoolFlag without explicit Default(false) is now required. New Context type for structured handler communication. Schema dump now validates project_id. TagContract now checks global flags."
+shipped_as = "strictcli@v0.22.0"
+release_commit = "f26db0e1a3ceaf7a1ca985314aca54c99b07ac9e"
+
+[released_trees]
+python = "758ccddf172f7705ea9fea6f5ada72a98d4f78cd"

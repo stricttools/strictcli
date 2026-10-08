@@ -1,0 +1,15 @@
+# strictspec document version gate (do not remove)
+format_version = 2
+shipped_as = "go/v0.14.0"
+# bump reconstructed by `rlsbl release backfill` from version arithmetic against 0.13.0
+bump = "minor"
+# include reconstructed by `rlsbl release backfill` from the targets detected at backfill time
+include = ["go"]
+# exclude reconstructed by `rlsbl release backfill` from the default: nothing excluded
+exclude = []
+# description reconstructed by `rlsbl release backfill` from github-release:go/v0.14.0
+description = "Renamed Tag to FlagSet"
+release_commit = "8c2d3d3899f7e146789a2ccd73d9d062b6f6ea5b"
+
+[released_trees]
+go = "4e3dc9cab01b305a8bc681b989992560e4725690"

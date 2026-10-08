@@ -1,0 +1,15 @@
+# strictspec document version gate (do not remove)
+format_version = 2
+# Version bump type: patch, minor, or major
+bump = "minor"
+# Short description of this release (required)
+description = "Repeatable flag default validation and help text display"
+# Optional context explaining why these changes were made
+context = ""
+include = ["pypi", "npm"]
+exclude = []
+shipped_as = "strictcli@v0.17.0"
+release_commit = "4dd6d9d9db4ebffcaa88ac8034e158a97d53982f"
+
+[released_trees]
+python = "70b1e4f7e826813fbc780892ee7c9453ae78a019"

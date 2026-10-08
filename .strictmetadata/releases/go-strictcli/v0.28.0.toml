@@ -1,0 +1,18 @@
+# Archived by rlsbl at release time. This release had no unreleased.toml
+# (a batch member takes its metadata from the batch release file); the
+# archive is written so later changelog regenerations keep the
+# description and context.
+# Backfilled 2026-08-08: this release predates archive synthesis, so the file
+# never existed. description/context/bump recovered from the GitHub Release
+# notes for go-strictcli@v0.28.0; include/exclude mirror v0.30.0.toml (not recoverable).
+# strictspec document version gate (do not remove)
+format_version = 2
+bump = "minor"
+include = ["go"]
+exclude = []
+description = "The effects regime: mandatory WithEffect classification, framework-owned --dry-run/--yes/--quiet/--verbose, and side effects that flow through ctx.Effects()."
+context = "A consumer command once accepted a dry-run flag, ignored it, and published to a\npublic registry for real. Honoring a dry run was a convention, and conventions\nare forgettable. This release makes it structural, in lockstep with the Python\nand TypeScript implementations.\n\nEvery command now declares WithEffect(EffectReadOnly) or\nWithEffect(EffectMutating) at registration -- no default, no inference, a panic\nif you omit it. The framework owns --dry-run, --yes, --quiet and --verbose, so\nthey mean the same thing in every strictcli program, and declaring a flag by one\nof those names is a registration error. Side effects ride ctx.Effects(): Run,\nSpawn, Write, Mkdir, Remove, Rename, Chmod, HTTP. In a dry run the handle\nrecords instead of performing and the framework prints the would-do log; in a\nreal run the same handler code executes for real.\n\nWhat a recorded mutation returns is the hard part, and the answer here is to\nrefuse to guess. The handle returns an Unsettled carrier -- a non-comparable\nstruct whose extractors panic. Forward it into a later effect and the preview\ncontinues with the provenance rendered inline; read it or branch on it and the\npreview truncates with a message naming the step and the reason. A short honest\npreview beats a long invented one.\n\nThe effects-bypass check follows the call graph reachable from every registered\nhandler and reports direct ambient effects; observe-allowlist-breadth names any\nobserve prefix broad enough to exempt a whole binary.\n\nThis breaks every consumer at its lock bump, deliberately: a silent grace period\nwould have preserved the exact bug class this regime exists to kill. The fleet\nmigrates in a dedicated wave immediately after this release."
+release_commit = "150b86ce2a8b4a48294c5dad02ad235acb9a518c"
+
+[released_trees]
+go = "ebacbd6d562fd56a6e9f585d0c9cba66a7691426"

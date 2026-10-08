@@ -1,0 +1,15 @@
+# strictspec document version gate (do not remove)
+format_version = 2
+# Version bump type: patch, minor, or major
+bump = "patch"
+# Short description of this release (required)
+description = "Config show bool parity and negative values in config set"
+# Optional context explaining why these changes were made
+context = "config show now outputs lowercase true/false matching Go. config set accepts negative numeric values."
+include = ["pypi", "npm"]
+exclude = []
+shipped_as = "strictcli@v0.15.1"
+release_commit = "a90248c1d505b097c3033e3d12117ad7e0122d23"
+
+[released_trees]
+python = "309b140698503c84168608f55e96f31cfaeb717f"

@@ -1,2 +1,0 @@
-{"format_version":1,"commits":["495cf93ada5d5870e1fa83594b7c856f2f493f19","d604e97d59fa0e252bfd179a2e4d0f0f62757677"],"user_facing":true,"description":"**Breaking.** CWD auto-discovery of checks.toml removed; checks must be explicitly enabled via `checks_path=`. checks.toml now requires a top-level `app` field matching the app name.","type":"breaking","packages":["strictcli"]}
-{"format_version":1,"commits":["fb4899a3e17880d31ac56b42aca24d359528c8af"],"user_facing":false,"packages":["strictcli"]}

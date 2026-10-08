@@ -1,6 +1,0 @@
-{"format_version":1,"commits":["81c9f3996c118362a9a3952eeddb3a12310479e0"],"user_facing":true,"description":"**New feature.** Parse error messages now suggest the correct subcommand help (e.g., `try 'app stream --help'` instead of `try 'app --help'`).","type":"feature","packages":["strictcli"]}
-{"format_version":1,"commits":["8089797a28ed0dc23c6f1365df464d1b2d5a9e0f","dda8012e14645ac6653b1599e41a609ea8f77b42"],"user_facing":false,"packages":["strictcli"]}
-{"format_version":1,"commits":["8f71653fe5d65a735aff24c5e5367b0227e93c1b"],"user_facing":false,"packages":["strictcli"]}
-{"format_version":1,"commits":["f65b5a5859bb26db246b4b1e786eecf0ad78cd5e"],"user_facing":false,"packages":["strictcli"]}
-{"format_version":1,"commits":["dda8012e14645ac6653b1599e41a609ea8f77b42","6e990245b1d0ef8cb056e71cc0fdda97229fd395","d21c48ee1cc8f02357dae2b9ed28c646c461760b","f67895e847ab4d19fc95c2c21a47d8b033d31370"],"user_facing":false,"packages":["strictcli"]}
-{"format_version":1,"commits":["33cf59b2bc27d4bac9fc8dd820668d51a35cb9c6"],"user_facing":false,"packages":["strictcli"]}

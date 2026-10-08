@@ -1,0 +1,18 @@
+# Archived by rlsbl at release time. This release had no unreleased.toml
+# (a batch member takes its metadata from the batch release file); the
+# archive is written so later changelog regenerations keep the
+# description and context.
+# Backfilled 2026-08-08: this release predates archive synthesis, so the file
+# never existed. description/context/bump recovered from the GitHub Release
+# notes for py-strictcli@v0.35.0; include/exclude mirror v0.37.0.toml (not recoverable).
+# strictspec document version gate (do not remove)
+format_version = 2
+bump = "minor"
+include = ["pypi"]
+exclude = []
+description = "The effects regime: mandatory command classification, framework-owned --dry-run/--yes/--quiet/--verbose, and side effects that flow through ctx.effects."
+context = "A consumer command once accepted --dry-run into **kwargs, dropped it on the\nfloor, and published a package to a public registry. Nothing in the framework\ncould have caught that: honoring a dry run was a convention, and a convention is\nsomething a handler can forget. This release makes it structural.\n\nEvery command now declares effect=\"read_only\" or effect=\"mutating\" at\nregistration -- no default, no inference from names or tags, a hard error if you\nomit it. The four reserved flags stop being something each app spells for\nitself; the framework owns --dry-run, --yes, --quiet and --verbose, so they mean\nthe same thing in every strictcli program, and declaring a flag by one of those\nnames is now a registration error. Side effects ride ctx.effects: run, spawn,\nwrite, mkdir, remove, rename, chmod, http. In a dry run the handle records\ninstead of performing and the framework prints the would-do log; in a real run\nthe same handler code executes for real. Handlers never branch on a dry_run\nkwarg again, because the mode lives in the handle rather than in an argument\nsomebody has to remember to read.\n\nThe hard part of previewing is what a recorded mutation returns. Rather than\nguess, the handle returns an Unsettled carrier. Forward it into a later effect\nand the preview continues with the provenance rendered inline -- step-output and\nstale-value brands appear in the log line itself. Try to read it or branch on it\nand you get a hard error and a truncated preview that says exactly where the\npreview stopped and why. A short honest preview beats a long invented one, and\nno amount of inference would have made the guess trustworthy.\n\nTwo shipped checks keep the seam visible: effects-bypass follows the call graph\nreachable from every registered handler and reports direct ambient effects, and\nobserve-allowlist-breadth names any single-token observe prefix broad enough to\nexempt a whole binary.\n\nThis is a breaking release by design: every consumer's commands are unclassified\ntoday and will fail registration at their lock bump. That is deliberate -- a\nsilent grace period would have left exactly the bug class this regime exists to\nkill. The fleet migrates in a dedicated wave right after this release, and the\nsame regime lands in the Go and TypeScript implementations in this same\ncoordinated release, so the three stay in lockstep."
+release_commit = "150b86ce2a8b4a48294c5dad02ad235acb9a518c"
+
+[released_trees]
+python = "8da2d27c0ac9dd7a12f96870aeedc65bccd013c3"

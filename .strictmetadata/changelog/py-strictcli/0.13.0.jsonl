@@ -1,0 +1,3 @@
+{"format_version":2,"id":"18dc8817affba75c3606b88ad5254a1dbdf5da0770b3661e","commits":["12ad7c022938b07cf1f44b20bdbe9de0ae6a84be"],"user_facing":true,"description":"**New feature.** Schema dump (--dump-schema) now includes a project_id field read from pyproject.toml, providing provenance for schema validation.","type":"feature","packages":["strictcli"]}
+{"format_version":2,"id":"18dc8817affd783d284e2c7a2a4d4b9daa1652d0acefd29b","commits":["a50cf7899c938974b12e8e74201bdf58c0205a55"],"user_facing":false,"packages":["strictcli"]}
+{"format_version":2,"id":"18dc8817b00390ec1e322f3ee5434e1aa93342a8f8ed5b7f","commits":["214721745a82a47189a13b2443fb9ddc59826347"],"user_facing":false,"packages":["strictcli"]}

@@ -1,0 +1,23 @@
+format_version = 2
+[releasables.strictcli]
+bump = "minor"
+description = "Required booleans, Context type, schema project_id guard, tag contract global flags fix"
+context = """
+Breaking change: Bool flags no longer auto-default to false. BoolFlag without explicit \
+Default(false) is now required. New Context type for structured handler communication. \
+Schema dump now validates project_id. TagContract now checks global flags.
+"""
+include = ["pypi", "npm"]
+exclude = []
+
+[releasables.go-strictcli]
+bump = "minor"
+description = "Required booleans, Context type, RegisterHandler, RegisterGlobals, schema project_id guard, tag contract global flags fix"
+context = """
+Breaking change: Bool flags no longer auto-default to false. BoolFlag without explicit \
+Default(false) is now required. New Context type, RegisterHandler struct API, and \
+RegisterGlobals[T] for typed global flag access. Schema dump now validates project_id. \
+TagContract now checks global flags.
+"""
+include = ["go"]
+exclude = []

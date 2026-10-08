@@ -1,8 +1,0 @@
-[releasables.go-strictcli]
-bump = "patch"
-description = "Config field parity fixes and error message alignment with Python."
-context = """
-Fixes config field operations for dot-name fields (nested TOML/JSON), aligns schema format (dict keyed by name, bound_commands), config show output (JSON metadata, plain section header), and error messages with Python. Splits config field validation into bound-field and unknown-key checks with correct gates. Adds 30 conformance test cases for typed args, compound types, visibility, and config fields.
-"""
-include = ["go"]
-exclude = []

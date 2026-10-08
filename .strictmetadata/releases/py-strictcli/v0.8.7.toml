@@ -1,0 +1,12 @@
+# strictspec document version gate (do not remove)
+format_version = 2
+bump = "patch"
+include = ["pypi", "npm"]
+exclude = []
+shipped_as = "strictcli@v0.8.7"
+# description reconstructed by `rlsbl release backfill` from github-release:strictcli@v0.8.7
+description = "**New feature.** Go implementation now includes subcommand name in parse error help suggestions, matching Python."
+release_commit = "1ef21c3bd3795d8845221466d5f0ce07c2baf4ce"
+
+[released_trees]
+python = "a4cc1b553474fa427c8452c9321e165f6ef63310"

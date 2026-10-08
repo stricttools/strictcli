@@ -1,0 +1,17 @@
+# Archived by rlsbl at release time. This release had no unreleased.toml
+# (a batch member takes its metadata from the batch release file); the
+# archive is written so later changelog regenerations keep the
+# description and context.
+# Backfilled 2026-08-08: this release predates archive synthesis, so the file
+# never existed. description/context/bump recovered from the GitHub Release
+# notes for ts-strictcli@v0.33.0; include/exclude mirror v0.36.0.toml (not recoverable).
+# strictspec document version gate (do not remove)
+format_version = 2
+bump = "minor"
+include = ["npm"]
+exclude = []
+description = "Add isHermetic() to the check-side ConnectionEnvReader"
+release_commit = "5d6a5eeac0ab0a44b9a9ffc4bed9a230c237afa0"
+
+[released_trees]
+typescript = "519fc2f924f62402610968d18d76501717bddf22"

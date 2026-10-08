@@ -1,6 +1,0 @@
-{
-  "publish_mode": "ci",
-  "batch_limits": {
-    "exclusions": []
-  }
-}

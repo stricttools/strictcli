@@ -1,0 +1,14 @@
+format_version = 2
+[releasables.py-strictcli]
+bump = "patch"
+description = "Fix coverage shard directory creation in test contexts"
+context = ""
+include = ["pypi", "npm"]
+exclude = []
+
+[releasables.go-strictcli]
+bump = "patch"
+description = "Fix coverage shard directory creation in test contexts"
+context = ""
+include = ["go"]
+exclude = []

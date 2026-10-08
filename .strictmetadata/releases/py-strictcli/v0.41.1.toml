@@ -1,0 +1,15 @@
+# Archived by rlsbl at release time. This release had no unreleased.toml
+# (a batch member takes its metadata from the batch release file); the
+# archive is written so later changelog regenerations keep the
+# description and context.
+# strictspec document version gate (do not remove)
+format_version = 2
+bump = "patch"
+include = ["pypi"]
+exclude = []
+description = "A member-spelled choice's member flag can declare a short, closing the gap that made converting a group of flags into a member-spelled selector drop every short they had."
+context = "The framework already promised this: §24.4 says a short declared on a member is an ordinary flag short, the refusal for a short on the selector itself says \"declare the short on a member\", and three machinery sites -- the cross-scope short-claim table, the help renderer and the two sibling-scope short guards -- already read a member's short. Only Go could produce one. A consumer making the conversion the previous release asked for lost -c, -r and -p with no migration that keeps the argv, because under member spelling the members ARE the flags. The short now goes on the declaration each member shape puts its electing flag on -- member_value(short=...) for a payload-carrying member, @choice(short=...) for a payload-less one -- and declaring it anywhere else is a registration error. Shipped beside it: a scoped short with no value after it now names the token as it was typed, matching the root-scope path and both siblings."
+release_commit = "f4542becd21db1da99b441ac30d82ca8814646e6"
+
+[released_trees]
+python = "5c5693edb4a584e66149e8d29624e49fdddd7f8a"

@@ -1,0 +1,15 @@
+# Archived by rlsbl at release time. This release had no unreleased.toml
+# (a batch member takes its metadata from the batch release file); the
+# archive is written so later changelog regenerations keep the
+# description and context.
+# strictspec document version gate (do not remove)
+format_version = 2
+bump = "patch"
+include = ["go"]
+exclude = []
+description = "Dry-run previews render on every exit path out of a handler"
+context = "A consumer migrating onto the effects regime found that a dry-run preview vanished whenever the handler left through anything other than a normal return. The would-do log was rendered only on the success path, so a handler that recorded its intended writes and then exited non-zero -- the ordinary shape of a validation command -- printed nothing at all. Safety was never at risk (dry mode still executed nothing), but the preview property was: silence is indistinguishable from 'this command would do nothing', and those runs are exactly the ones a reader most wants to see. The render is now owned by the single seam every dispatch already passes through in each language, so it cannot be missed by a path that forgets to call it. An unexpected crash still renders what was recorded, followed by a new stderr marker saying the preview may be incomplete; the exception itself is never swallowed. A handler that terminates the process itself (Go os.Exit, Node process.exit) remains outside the guarantee and is recorded as a ceiling in the effects contract."
+release_commit = "06ffc9fe4d460064669ac20fa1e4edbe55b5b9f5"
+
+[released_trees]
+go = "4010263e53d8b66a333e81a203bf12a259a1b402"

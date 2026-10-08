@@ -1,0 +1,15 @@
+# Archived by rlsbl at release time. This release had no unreleased.toml
+# (a batch member takes its metadata from the batch release file); the
+# archive is written so later changelog regenerations keep the
+# description and context.
+# strictspec document version gate (do not remove)
+format_version = 2
+bump = "minor"
+include = ["npm"]
+exclude = []
+description = "The declaration-regime release: mandatory presence declarations, scoped selectors replacing mutex groups, real-JSON-Schema value fragments (schema v2), the co-occurrence constraint system, and the update-command construct."
+context = "The declaration-regime campaign closes the last places where strictcli inferred something the developer had not written down: presence is now declared on every flag and arg, exactly-one selection is a scoped choice flag rather than a mutex group, `--dump-schema` publishes real JSON Schema value fragments at schema version 2, co-occurrence rules are one named constraint container, and an update command declares the resource, write mode, identity and properties it writes. Consumers must migrate their declarations before adopting this version: the new rules are registration-time hard errors, so an unmigrated app fails to build rather than misbehaving, and a repo that has not migrated simply stays on the previous floor until it does."
+release_commit = "b56f8148cc9d48e0b4b147e920b013d43eb3260f"
+
+[released_trees]
+typescript = "e291f2bb41e2882c5678b1738807ae2ac930e70c"

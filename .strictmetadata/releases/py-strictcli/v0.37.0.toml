@@ -1,0 +1,15 @@
+# Archived by rlsbl at release time. This release had no unreleased.toml
+# (a batch member takes its metadata from the batch release file); the
+# archive is written so later changelog regenerations keep the
+# description and context.
+# strictspec document version gate (do not remove)
+format_version = 2
+bump = "minor"
+include = ["pypi"]
+exclude = []
+description = "Adds the `dry_run_supported=False` command declaration -- a mutating command can now refuse `--dry-run` with a mandatory reason carried into help and the schema -- and corrects a Python README that documented a handler signature, a check API and a dependency claim the framework no longer has."
+context = "`--dry-run` is a promise: the preview must describe what the real run would do.\nSome mutating commands cannot keep that promise, because their effects are not\nrepresentable ahead of time. Until now such a command either rendered a preview\nthat misrepresented it or hand-rolled a refusal inside the handler -- after\nparsing, invisible to `--help` and to `--dump-schema`. `dry_run_supported` moves\nthe refusal to the registration site, where the framework can enforce it: the\nreason is mandatory, it is rendered in a dedicated `Dry run:` help section, it is\nemitted in the schema, and declaring it on a `read_only` command is a\nregistration-time error (a command that changes nothing has nothing to preview).\n\nThe same release completes a documentation truth pass. Every registration example\nwas re-checked against the shipped API, and the reserved flag quartet, the effects\nregime and the `consequential` confirm protocol -- previously explained nowhere --\nare now documented. Examples are no longer trusted by inspection: the\nself-contained example programs are marked `validate`, and `selfdoc check` now\nassembles and RUNS each one against the checkout, so documentation that stops\nworking fails the release rather than rotting quietly."
+release_commit = "0e45de867fff43483ba0881391769842c553d5ba"
+
+[released_trees]
+python = "db8faa2fbe0f9f7dddee9f9bd4895fa442c5b757"

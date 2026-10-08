@@ -1,6 +1,0 @@
-{"format_version":1,"commits":["86f1ad11667cddac3e5a238451efa2b09d113c93"],"user_facing":true,"description":"**Fix.** Harmonize Implies and deprecated command error messages with Go for exact parity.","type":"fix","packages":["strictcli"]}
-{"format_version":1,"commits":["a4e49967821065a4e0965d16d2f04e12df3f88e2","ddd893b8435b1242b23ad92a4bd5d8ffb842f052"],"user_facing":false,"packages":["strictcli"]}
-{"format_version":1,"commits":["82999a197c243a10bd322a5636b9b9ec9c436ad6"],"user_facing":false,"packages":["strictcli"]}
-{"format_version":1,"commits":["b4b0795124ae8080206947058d43129d69dc3e22"],"user_facing":false,"packages":["strictcli"]}
-{"format_version":1,"commits":["b7d7c6f9b57efe59e5a8990150ee5b2d87e8bc88"],"user_facing":false,"packages":["strictcli"]}
-{"format_version":1,"commits":["8371e2cec3197528c9badabfe545c2eb9ce6f291"],"user_facing":false,"packages":["strictcli"]}

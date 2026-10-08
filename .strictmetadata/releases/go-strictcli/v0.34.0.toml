@@ -1,0 +1,15 @@
+# Archived by rlsbl at release time. This release had no unreleased.toml
+# (a batch member takes its metadata from the batch release file); the
+# archive is written so later changelog regenerations keep the
+# description and context.
+# strictspec document version gate (do not remove)
+format_version = 2
+bump = "minor"
+include = ["go"]
+exclude = []
+description = "The Go implementation migrates to go-toml-edit 0.4.0, raising the transitive dependency floor for every consumer and rewording TOML syntax diagnostics."
+context = "go-toml-edit 0.4.0 reshaped its API: Unmarshal[T](data) returns the decoded\nvalue, *tomledit.Error replaces *tomledit.ParseError, and tomledit.Document\nreplaces tomledit.DocumentNode. strictcli's config loader and checks.toml\nreader were ported to it. strictcli's own API is unchanged, but Go's minimal\nversion selection means a consumer that also uses go-toml-edit directly is\nraised to 0.4.0 and must migrate with it, so this is a breaking change for\nthat consumer even though nothing in strictcli's surface moved. The new\nparser also phrases syntax errors differently (`expected a value, got\nnewline` in place of `expected value, got Newline`); the surrounding\n`config file <path>: ... (line N, column M)` sentence is unchanged."
+release_commit = "670babbe831434e522bbe06632ed0593ebd58228"
+
+[released_trees]
+go = "9460d6c3b4b5ac0fab94c290d34909fbf56df219"

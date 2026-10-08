@@ -1,0 +1,6 @@
+{"format_version":2,"id":"18dc8817b116f1ccf29758e1e25a4e28bbde64d3d5cd9739","commits":["eef4bcb494b80009b2e471f2b1465af98aa476e3"],"user_facing":true,"description":"**Fix.** Auto-registered `check` command no longer collides with app-level global flags (e.g., `--dry-run`).","type":"fix","packages":["strictcli"]}
+{"format_version":2,"id":"18dc8817b117d6d00002d64169b5408a9ab8d0598ab8b27a","commits":["88d7f9e747085d7b1237e39e7f45ccec34c7a3bf","8facbdd35c2b52023005a051d0417ff62878b940"],"user_facing":false,"packages":["strictcli"]}
+{"format_version":2,"id":"18dc8817b11847d5fd54bad80d3544c28e5ef53945aa1021","commits":["00a96ace74f0ccadf55bd5cf6b820102ff504320"],"user_facing":false,"packages":["strictcli"]}
+{"format_version":2,"id":"18dc8817b118acb93e10655b95704f90905002094065f77d","commits":["5df4af02759154eb4cbf3abb2a47950a02b7d3ec"],"user_facing":false,"packages":["strictcli"]}
+{"format_version":2,"id":"18dc8817b119073d8165f2b45d6c49aba2693acf7270af18","commits":["b6f72994086bf8ed38dba1550cc1a977d12e988b"],"user_facing":false,"packages":["strictcli"]}
+{"format_version":2,"id":"18dc8817b11959580b1a236dcbae4e0a85404eb1906c440e","commits":["e2e9804dd8b20925b04bdf7dc7ffbe774d7982df"],"user_facing":false,"packages":["strictcli"]}

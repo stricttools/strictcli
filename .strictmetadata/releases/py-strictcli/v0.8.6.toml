@@ -1,0 +1,12 @@
+# strictspec document version gate (do not remove)
+format_version = 2
+bump = "patch"
+include = ["pypi", "npm"]
+exclude = []
+shipped_as = "strictcli@v0.8.6"
+# description reconstructed by `rlsbl release backfill` from github-release:strictcli@v0.8.6
+description = "**New feature.** Parse error messages now suggest the correct subcommand help (e.g., `try 'app stream --help'` instead of `try 'app --help'`)."
+release_commit = "9a0e7dcfcde8ddf09274fadf2d129598db23b3cb"
+
+[released_trees]
+python = "68057985056da2286df14d32cf47f9de81c0676a"

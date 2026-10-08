@@ -1,6 +1,0 @@
-{"format_version":1,"commits":["057edc5200703fe2a2d37d28f488833b35254a06"],"user_facing":false,"packages":["strictcli"]}
-{"format_version":1,"commits":["e6af4e228227d55585c09ec9012cca846eff2651"],"user_facing":false,"packages":["strictcli"]}
-{"format_version":1,"commits":["e5dc999d0d920ba0737d2c565be818af8465de1c"],"user_facing":true,"description":"**Breaking.** `config set` now validates keys against registered flags and rejects unknown keys.","type":"breaking","packages":["strictcli"]}
-{"format_version":1,"commits":["e5dc999d0d920ba0737d2c565be818af8465de1c"],"user_facing":true,"description":"**New feature.** `config set` coerces values to the flag's declared type (int, bool, float) before writing to config.","type":"feature","packages":["strictcli"]}
-{"format_version":1,"commits":["4cf2df20f76491a8d9b504307de8d78ca514e7ab"],"user_facing":false,"packages":["strictcli"]}
-{"format_version":1,"commits":["050a53f9af245a308f6d5895307beb7f479c9c27"],"user_facing":false,"packages":["strictcli"]}

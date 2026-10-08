@@ -1,0 +1,69 @@
+format_version = 1
+repository_layout = "workspace"
+release_branches = ["main", "master"]
+
+[timeouts]
+push_seconds = 300
+
+[[releasables]]
+name = "py-strictcli"
+tag_format = "{name}@v{version}"
+publish_mode = "ci"
+hooks = { post_release = ["bash ../.strictmetadata/release-hooks/py-strictcli/post-release.sh"] }
+
+[[releasables]]
+name = "go-strictcli"
+tag_format = "{name}@v{version}"
+publish_mode = "ci"
+hooks = { post_release = ["bash ../.strictmetadata/release-hooks/go-strictcli/post-release.sh"] }
+
+[[releasables]]
+name = "ts-strictcli"
+tag_format = "{name}@v{version}"
+publish_mode = "ci"
+hooks = { post_release = ["bash ../.strictmetadata/release-hooks/ts-strictcli/post-release.sh"] }
+
+[[members]]
+path = "."
+name = "root"
+releasable = false
+dev_only = true
+
+[[members]]
+path = "go"
+name = "go-strictcli"
+releasable = "go-strictcli"
+targets = [{ name = "go" }]
+
+[[members.pipelines]]
+name = "go"
+type = "go"
+target = "go"
+local = false
+artifact = "library"
+
+[[members]]
+path = "python"
+name = "strictcli"
+releasable = "py-strictcli"
+targets = [{ name = "pypi" }]
+
+[[members.pipelines]]
+name = "pypi"
+type = "pypi"
+target = "pypi"
+local = false
+artifact = "package"
+
+[[members]]
+path = "typescript"
+name = "ts-strictcli"
+releasable = "ts-strictcli"
+targets = [{ name = "npm" }]
+
+[[members.pipelines]]
+name = "npm"
+type = "npm"
+target = "npm"
+local = false
+artifact = "package"

@@ -1,0 +1,15 @@
+# strictspec document version gate (do not remove)
+format_version = 2
+# Version bump type: patch, minor, or major
+bump = "minor"
+# Short description of this release (required)
+description = "Config set type coercion and key validation"
+# Optional context explaining why these changes were made
+context = "config set now validates keys against registered flags and coerces string values to the flag's declared type before writing. This is a breaking change: unknown keys are rejected."
+include = ["pypi", "npm"]
+exclude = []
+shipped_as = "strictcli@v0.15.0"
+release_commit = "d19e7da992714b8a2e6dd0e9a4dd3c605a7350f2"
+
+[released_trees]
+python = "77b1b451edfe78901cd38f9bb40e4ce197abd134"

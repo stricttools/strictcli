@@ -1,0 +1,12 @@
+{"format_version":2,"id":"18dc8817b10b28cd08e9f5c1a32e41929a6f26fdaa8e43b3","commits":["e53c143df838b957f68c204072dfb95571669b9e"],"user_facing":false,"packages":["strictcli"]}
+{"format_version":2,"id":"18dc8817b10b7faedd6b39626ce84a179dc6bbc15289a4fd","commits":["58a1a7d0d42e33dc4e4ac9a1fc495e14c377df36"],"user_facing":false,"packages":["strictcli"]}
+{"format_version":2,"id":"18dc8817b10bcecfce1b5c63f43f4b04b7dd30f20dba7390","commits":["65e89fa1dfcc702e02f2e25868320d74bf4b35bc"],"user_facing":false,"packages":["strictcli"]}
+{"format_version":2,"id":"18dc8817b10c21ef5649e3a78ad94c53a83158d423e62942","commits":["0ab3b1b3c763ef341587171b94cd138108a2434d"],"user_facing":true,"description":"**New feature.** Handlers with `**kwargs` signatures are accepted without strict parameter validation.","type":"feature","packages":["strictcli"]}
+{"format_version":2,"id":"18dc8817b10c8b98a673d4bdebb345cd921e2942c75581ac","commits":["14808c98f9276c4c42afba4c99c6fad6c795fef4"],"user_facing":false,"packages":["strictcli"]}
+{"format_version":2,"id":"18dc8817b10cda5541ef272e802b4beba348b23a9675e0b2","commits":["49b4145d9e4c685ac43bef71885e6adac8a4ec2a"],"user_facing":false,"packages":["strictcli"]}
+{"format_version":2,"id":"18dc8817b10d20c7b7802226d63e4c99b34d7b96ea47243a","commits":["57c18b5f460ad867fb510a1b9c559a660505a9da"],"user_facing":false,"packages":["strictcli"]}
+{"format_version":2,"id":"18dc8817b10d64486bd2df07d41141d186029fe416eeaf8e","commits":["8329210c3952a9cbcfba0592517aaa5900d4881b"],"user_facing":false,"packages":["strictcli"]}
+{"format_version":2,"id":"18dc8817b10dad270a7f1f2410d24e6ba2a4066e0bc865c6","commits":["c2a12fda757f2394718c02fe56c481f0a548bf14"],"user_facing":false,"packages":["strictcli"]}
+{"format_version":2,"id":"18dc8817b10e0e48c50fbfdc8ccd4871b5f39ecad418f1d6","commits":["c8986f4a376e486471e3f577bb8983341405924b"],"user_facing":false,"packages":["strictcli"]}
+{"format_version":2,"id":"18dc8817b10e62ee51d447392aac409e9e1b5fc445a25232","commits":["6239b69e9558afa49e1c7e9b9ddd0b9aa08d7072"],"user_facing":false,"packages":["strictcli"]}
+{"format_version":2,"id":"18dc8817b10eb3aa68ef1ffdb0d24891b0bb4c13c900cde5","commits":["8b9e28981ddb8f8e5bc8cf69d205dd22dcbbfae0"],"user_facing":false,"packages":["strictcli"]}

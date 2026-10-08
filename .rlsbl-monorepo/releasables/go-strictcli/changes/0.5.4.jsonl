@@ -1,8 +1,0 @@
-{"format_version":1,"commits":["eef4bcb494b80009b2e471f2b1465af98aa476e3","e2e9804dd8b20925b04bdf7dc7ffbe774d7982df"],"user_facing":false,"packages":["go-strictcli"]}
-{"format_version":1,"commits":["40478a9bc123d086ade4d0838d3fcb95918ff562"],"user_facing":true,"description":"**New feature.** Parse error help suggestions now include the subcommand name (e.g., `try 'myapp stream --help'` instead of `try 'myapp --help'`).","type":"feature","packages":["go-strictcli"]}
-{"format_version":1,"commits":["9e2a6468ee2e82338ccec5131f9aac83483c2c7d","cde530a82247eb67190fed61a35fc688eb6192b0","1ebf9fba80adee78890f15c2ca9c4db518677092","16abca558f7d9616b74f1be92cf7f78625dbf21f"],"user_facing":false,"packages":["go-strictcli"]}
-{"format_version":1,"commits":["2764197393cb7d2031e926ed29c920a24f6c8214"],"user_facing":false,"packages":["go-strictcli"]}
-{"format_version":1,"commits":["f6535f8fa57163b334657d99dc1e3e3c37de9f47","2764197393cb7d2031e926ed29c920a24f6c8214","f8c7b3859ac51b2567f075b23651f771211f7066","4e19e432ae7f209c109db64f8ee233556ec37e0e"],"user_facing":false,"packages":["go-strictcli"]}
-{"format_version":1,"commits":["e595eaf58390d6b941b0362dfcbc65b9016054a9"],"user_facing":false,"packages":["go-strictcli"]}
-{"format_version":1,"commits":["36342216953c20b8f38c9517e4eebad0893d1718"],"user_facing":false,"packages":["go-strictcli"]}
-{"format_version":1,"commits":["81c9f3996c118362a9a3952eeddb3a12310479e0","8f71653fe5d65a735aff24c5e5367b0227e93c1b","c33baefc772e1ada47d927423ad48d1556d13f53","dda8012e14645ac6653b1599e41a609ea8f77b42","f65b5a5859bb26db246b4b1e786eecf0ad78cd5e"],"user_facing":false,"packages":["go-strictcli"]}

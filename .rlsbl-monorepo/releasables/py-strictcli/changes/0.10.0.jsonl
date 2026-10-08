@@ -1,6 +1,0 @@
-{"format_version":1,"commits":["faa8f348f03793084361365f15bd9f8be06046ff"],"user_facing":true,"description":"**New feature.** `--dump-schema` omits fields matching defaults and includes a top-level `defaults` object documenting what missing fields mean.","type":"feature","packages":["strictcli"]}
-{"format_version":1,"commits":["ef852d540829f5fb248c380b649e8c15e56b849b"],"user_facing":true,"description":"**New feature.** `@`-prefix for string flag values: `@path` reads from file, `@-` reads from stdin, `@@` escapes. 1 MB size limit, trailing whitespace stripped.","type":"feature","packages":["strictcli"]}
-{"format_version":1,"commits":["4294effc300d83eeba90c3cb90c6429fc443c929","e7e5bc79004fe8c0883fdc5c34a1f36eb8d97e75","6bf56e841883195ea6045386b21f93a4d1c8ee2d"],"user_facing":false,"packages":["strictcli"]}
-{"format_version":1,"commits":["05d896e80e8df10ee737f50ae735e99695bbc213","1e354f1681539c39d71e4df7d57090d6b32d3f59","5f8b3d49ab264aa26dbe8c6c1d1f1bebb955d73b"],"user_facing":false,"packages":["strictcli"]}
-{"format_version":1,"commits":["33dfbe42738b308dc01df908c8286b48eb97e12f"],"user_facing":false,"packages":["strictcli"]}
-{"format_version":1,"commits":["f2b61b9ca7eb86207a0631d01cb672c39dcb89a0"],"user_facing":false,"packages":["strictcli"]}

@@ -1,0 +1,75 @@
+format_version = 1
+[[lifecycle]]
+subject = "py-strictcli"
+status = "active"
+from = 2026-10-08
+reason = "active when rlsbl's records moved to the .strictmetadata layout"
+[[licenses]]
+subject = "py-strictcli"
+license = "MIT"
+from = 2026-10-08
+reason = "read from the package manifests when rlsbl's records moved to the .strictmetadata layout"
+[[lifecycle]]
+subject = "go-strictcli"
+status = "active"
+from = 2026-10-08
+reason = "active when rlsbl's records moved to the .strictmetadata layout"
+[[licenses]]
+subject = "go-strictcli"
+license = "MIT"
+from = 2026-10-08
+reason = "declared by the owner when rlsbl's records moved to the .strictmetadata layout"
+[[lifecycle]]
+subject = "ts-strictcli"
+status = "active"
+from = 2026-10-08
+reason = "active when rlsbl's records moved to the .strictmetadata layout"
+[[licenses]]
+subject = "ts-strictcli"
+license = "MIT"
+from = 2026-10-08
+reason = "read from the package manifests when rlsbl's records moved to the .strictmetadata layout"
+[[lifecycle]]
+subject = "conformance"
+status = "retired"
+from = 2026-09-05
+reason = "the conformance suite stopped versioning separately; its history ended at its last release"
+[[registry_names]]
+registry = "pypi"
+name = "strictcli"
+subject = "py-strictcli"
+recorded_since = 2026-10-08
+[[registry_names]]
+registry = "go"
+name = "github.com/stricttools/strictcli/go"
+subject = "go-strictcli"
+recorded_since = 2026-10-08
+[[registry_names]]
+registry = "npm"
+name = "strictcli"
+subject = "ts-strictcli"
+recorded_since = 2026-10-08
+[[identities]]
+subject = "py-strictcli"
+facet = "releasable-name"
+value = "py-strictcli"
+registry = ""
+tag_patterns = ["py-strictcli@v*"]
+from = 2026-05-12
+reason = "recorded when rlsbl's records moved to the .strictmetadata layout"
+[[identities]]
+subject = "go-strictcli"
+facet = "releasable-name"
+value = "go-strictcli"
+registry = ""
+tag_patterns = ["go-strictcli@v*"]
+from = 2026-05-12
+reason = "recorded when rlsbl's records moved to the .strictmetadata layout"
+[[identities]]
+subject = "ts-strictcli"
+facet = "releasable-name"
+value = "ts-strictcli"
+registry = ""
+tag_patterns = ["ts-strictcli@v*"]
+from = 2026-05-12
+reason = "recorded when rlsbl's records moved to the .strictmetadata layout"

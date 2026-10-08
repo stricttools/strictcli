@@ -1,6 +1,0 @@
-{"format_version":1,"commits":["feae73fae6f1e08f1355bc7c1b9beae842397517"],"user_facing":false,"packages":["go-strictcli"]}
-{"format_version":1,"commits":["087bd6cb358bf6ebf99e2635e93a2fdc59ac5517","f7e07e1d5ce69895df1a95da9c51ab686300e0b3"],"user_facing":false,"packages":["go-strictcli"]}
-{"format_version":1,"commits":["f96d157204a50c577f78b99667be81472e23bfe7"],"user_facing":false,"packages":["go-strictcli"]}
-{"format_version":1,"commits":["7b04e748b4b2eeb08196952f3471f528efda9132"],"user_facing":true,"description":"**New feature.** `WithChecksPath` option for explicit checks.toml location, replacing CWD-based discovery.","type":"feature","packages":["go-strictcli"]}
-{"format_version":1,"commits":["4028c1624d3c3592ca28a1693b4445d325e9fcfb","dd7a103769db5bccfaabb2636fce0ef5082e2159","df35fbde862721ef8b01a483abf6b33e5387afa8"],"user_facing":false,"packages":["go-strictcli"]}
-{"format_version":1,"commits":["f94f50bad6401756ca75ee82b31fbfc7e85edc83"],"user_facing":false,"packages":["go-strictcli"]}

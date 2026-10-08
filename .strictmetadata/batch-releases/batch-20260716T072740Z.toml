@@ -1,0 +1,36 @@
+format_version = 2
+[releasables.strictcli]
+bump = "minor"
+description = "Check outcome model (sealed reporters, per-problem severity, purity partition), check providers, InfraEnv location roots, global-flag conflict fix, conformance parity."
+context = """
+Breaking changes (minor bump in 0.x):
+
+- CheckResult deleted. Check handlers now receive a ceiling-typed reporter
+  (ErrorReporter for error-severity checks, WarnReporter for warn-severity)
+  and return outcomes via reporter.passed / reporter.found / reporter.skipped.
+- @app.check replaced by @app.error_check / @app.warn_check decorators that
+  enforce the severity-form contract at registration time.
+- Check implementations change from fn(ctx) -> CheckResult to
+  fn(ctx, reporter) -> outcome.
+- Scope adapters return SkipCheck(reason=...) instead of CheckResult("skip", ...).
+"""
+include = ["pypi", "npm"]
+exclude = []
+
+[releasables.go-strictcli]
+bump = "minor"
+description = "Check outcome model (sealed reporters, per-problem severity, purity partition), check providers, InfraEnv location roots, global-flag conflict fix, conformance parity."
+context = """
+Breaking changes (minor bump in 0.x):
+
+- CheckResult deleted. Check handlers now receive a ceiling-typed reporter
+  (ErrorReporter for error-severity checks, WarnReporter for warn-severity)
+  and return outcomes via reporter.Passed / Reporter.Found / Reporter.Skipped.
+- RegisterCheck replaced by RegisterErrorCheck / RegisterWarnCheck methods
+  that enforce the severity-form contract at registration time.
+- Check implementations change from fn(ctx) CheckResult to
+  fn(ctx, reporter) outcome.
+- Scope adapters return SkipCheck instead of CheckResult.
+"""
+include = ["go"]
+exclude = []

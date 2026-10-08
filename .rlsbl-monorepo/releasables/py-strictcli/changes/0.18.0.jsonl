@@ -1,4 +1,0 @@
-{"format_version":1,"commits":["ab63f2e29d95b834aef6e3307d23b53e3f845afe","fc7ae2927aa12b7627c3119c818d9a7e89209e39","db1924cbd143285c857324a8fcf2110718080bfa"],"user_facing":true,"description":"**New.** Public API for running checks programmatically: `App.run_checks()`, `format_check_results()`, `format_check_results_json()`, `CheckRunResult`.","type":"feature","packages":["strictcli"]}
-{"format_version":1,"commits":["6407ea33c3a16a83dcd7c362cda8e98980074a73","edfcf45b0eb1ba4896fcff1d31ea9993c9b363a1","fcaae9bb7895805308a6b9299158ada7f6d45f3b","b6720d2dd1063bff0b49f6d5624608672c0cac33"],"user_facing":false,"packages":["strictcli"]}
-{"format_version":1,"commits":["9cc04830fa5b7eef0d87b249e57248415fd769a5","4e89101a5fdb8c0a6f46b62829f22e09b79ec2d1"],"user_facing":false,"packages":["strictcli"]}
-{"format_version":1,"commits":["67ee39ff3cdf4d09a9a29c0bdcb9853999878ee9"],"user_facing":false,"packages":["strictcli"]}

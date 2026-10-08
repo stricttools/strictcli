@@ -1,2 +1,0 @@
-{"format_version":1,"commits":["41055551975a98e68c08b1d654cd09f4e78ac2a9"],"user_facing":false,"description":"**Improvement.** Expanded check command help text to be more descriptive.","type":"feature","packages":["go-strictcli"]}
-{"format_version":1,"commits":["e171b6a16b36232f2f6d4b73828e467993edb690"],"user_facing":true,"description":"**Fix.** Aligned check command help text between Python and Go for cross-language parity.","type":"fix","packages":["go-strictcli"]}

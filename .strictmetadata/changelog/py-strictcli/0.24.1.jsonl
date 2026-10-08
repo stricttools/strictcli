@@ -1,0 +1,5 @@
+{"format_version":2,"id":"18dc8817b03413dd72a40c8417b346a38c4b4ae989aad3ec","commits":["5687a011c30ce7fea46c86e96de9ccbfbcc5ffe7"],"user_facing":false,"packages":["strictcli"]}
+{"format_version":2,"id":"18dc8817b034cf0bf1dc28012d424c63ae1f1c57cb82497b","commits":["93b2d16aaec4914594d6b85f5b27583d0058986b"],"user_facing":false,"packages":["strictcli"]}
+{"format_version":2,"id":"18dc8817b03569faa8da72dc646e4db0b664eb4c17d22b02","commits":["a96f8ec72ef101f72a8cede7f523103c8842d522"],"user_facing":false,"packages":["strictcli"]}
+{"format_version":2,"id":"18dc8817b035fe9248c130f485ca4ff68f776faf89b33a87","commits":["f6cfeed32281f09327a6b2f21d988d38b51d9512"],"user_facing":true,"description":"**New feature.** Project now includes MIT license.","type":"feature","packages":["strictcli"]}
+{"format_version":2,"id":"18dc8817b036d2b8c02e3979919643d89b8585a56a00fa5a","commits":["b2a87e5b8f0e1afde0e60ad548f8f5edba42b9be"],"user_facing":false,"packages":["strictcli"]}

@@ -1,0 +1,14 @@
+format_version = 2
+shipped_as = "v0.1.0"
+# bump reconstructed by `rlsbl release backfill` from version arithmetic against 0.0.0
+bump = "minor"
+# include reconstructed by `rlsbl release backfill` from the targets detected at backfill time
+include = ["pypi"]
+# exclude reconstructed by `rlsbl release backfill` from the default: nothing excluded
+exclude = []
+# description reconstructed by `rlsbl release backfill` from github-release:v0.1.0
+description = "Decorator-based command registration with `@app.command` and `@strictcli.flag`/`@strictcli.arg`"
+release_commit = "2d1d2813bc590d500c48ac41fad89dd763b2fd4f"
+
+[released_trees]
+"." = "525aabe0bbd8e21137da5e3cf4573264ec9e28fb"

@@ -1,0 +1,15 @@
+# Archived by rlsbl at release time. This release had no unreleased.toml
+# (a batch member takes its metadata from the batch release file); the
+# archive is written so later changelog regenerations keep the
+# description and context.
+# strictspec document version gate (do not remove)
+format_version = 2
+bump = "minor"
+include = ["pypi"]
+exclude = []
+description = "Confirmation keys on a declared `consequential`, not on `mutating`"
+context = "The shipped regime INFERRED \"mutating => must confirm\". Adoption across six\nconsumers falsified that inference by an order of magnitude: 391 of 624\ncommands (63%) classify `mutating`, so two thirds of every CLI in the fleet\nprompted -- including `safegit commit`, `rlsbl changelog add`, `selfdoc gen`,\n`saferm delete` (the safe, undoable deletion) and `claudewheel launch`, which\nhad to be special-cased or every session would have opened with a\n`Proceed? [y/N]`. The genuinely dangerous commands are roughly 5-10% of that\nset: a ~1:10 signal-to-noise ratio, which guarantees the skip flag gets passed\nreflexively and leaves the guardrail dead while it still looks present.\n\nThe diagnosis: one field was answering two questions. `effect` correctly\nanswers \"should a dry run record rather than execute?\" -- that is working and\nis unchanged. Consequence asks \"are these effects worth interrupting someone\nfor?\" Almost everything has effects; very little is consequential. `effect` was\nonly ever a proxy for the second question, and the proxy is off by 10x.\n\nCommands now declare `consequential=True` and the framework prompts for those\nand no others. The declaration is deliberately named after a property of the\nCOMMAND rather than after the framework's reaction, so other behaviours can\nhang off the same fact later. The skip flag `--approve-consequential` is\ndeliberately unwieldy: a flag that cannot become muscle memory stays a\ndecision. `yes` stays on the banned-names list so nobody reintroduces a private\n`--yes` meaning the same thing."
+release_commit = "de835716b9e891787680a8a7b22dac2f37804efc"
+
+[released_trees]
+python = "f9deae9ce4b469f210271c3f7729e99a18a95451"

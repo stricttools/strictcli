@@ -1,0 +1,12 @@
+# strictspec document version gate (do not remove)
+format_version = 2
+bump = "minor"
+include = ["go"]
+exclude = []
+shipped_as = "go/v0.7.0"
+# description reconstructed by `rlsbl release backfill` from github-release:go/v0.7.0
+description = "**New feature.** `WithChecksPath` option for explicit checks.toml location, replacing CWD-based discovery."
+release_commit = "80d2c5efd1414b0d787775bfd6a3ff948ad2defd"
+
+[released_trees]
+go = "43d9d068b70969cd7b73543b315b41abe4099cee"

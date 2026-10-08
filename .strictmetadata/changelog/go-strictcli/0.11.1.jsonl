@@ -1,0 +1,6 @@
+{"format_version":2,"id":"18dc8817b27b389b3d3e6165d42a48f78e2b21573ba0831a","commits":["755fe69bff7b37b25d981cd96245312e7e55363e"],"user_facing":true,"description":"**Breaking.** Config set now accepts negative numeric values. Unknown single-dash tokens produce 'unexpected argument' instead of 'unknown flag'.","type":"breaking","packages":["go-strictcli"]}
+{"format_version":2,"id":"18dc8817b27b9aa37dd8019bcbb44eb990971ac2db96094e","commits":["4091ec42801e9bf0c52ed63cd84c841e4fbf4cd6"],"user_facing":false,"packages":["go-strictcli"]}
+{"format_version":2,"id":"18dc8817b27bddb7cc8b267de59f46329c6d766203e52ac0","commits":["56b50441a4fab1bb1ee1d991e6759101a5afa8a7"],"user_facing":false,"packages":["go-strictcli"]}
+{"format_version":2,"id":"18dc8817b27c203435a7c825408642edb538addb5df10f0b","commits":["9ffbb8b5711462f6f4bb83f181a7fb3a791c5d9b"],"user_facing":false,"packages":["go-strictcli"]}
+{"format_version":2,"id":"18dc8817b27c625723230e0ac439459483cec513d9da0d7e","commits":["48504dbc7255e89a73c663f4745eaf7a64ec0466"],"user_facing":false,"packages":["go-strictcli"]}
+{"format_version":2,"id":"18dc8817b27ca8ab2359cc3069ca409fb484c155f172508a","commits":["cf9f776c5d3a18c391c336178d88aa8eca099462"],"user_facing":false,"packages":["go-strictcli"]}

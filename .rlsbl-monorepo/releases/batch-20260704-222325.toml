@@ -1,6 +1,0 @@
-[releasables.strictcli]
-bump = "infra"
-description = "Fix publish router CI gate regex to match actual CI check run names."
-context = "The publish gate used CI_CHECK_REGEX '^(strictcli) / ' but the CI Router produces check runs named 'strictcli-ci / ...' and 'strictcli-ci-pypi / ...'. The gate timed out waiting for non-existent check runs."
-include = ["pypi", "npm"]
-exclude = []

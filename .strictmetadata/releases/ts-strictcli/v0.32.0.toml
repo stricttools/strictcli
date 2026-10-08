@@ -1,0 +1,18 @@
+# Archived by rlsbl at release time. This release had no unreleased.toml
+# (a batch member takes its metadata from the batch release file); the
+# archive is written so later changelog regenerations keep the
+# description and context.
+# Backfilled 2026-08-08: this release predates archive synthesis, so the file
+# never existed. description/context/bump recovered from the GitHub Release
+# notes for ts-strictcli@v0.32.0; include/exclude mirror v0.36.0.toml (not recoverable).
+# strictspec document version gate (do not remove)
+format_version = 2
+bump = "minor"
+include = ["npm"]
+exclude = []
+description = "Connection env vars: a hermetic-suppressed, app-level env primitive for connection URLs"
+context = "Adds a third infra-env kind alongside infra roots and handshake vars. A connection env (e.g. a database DSN) is declared once at app level via createApp connectionEnv, read lazily with no default, and suppressed under --hermetic so connection-dependent behavior (including checks) skips visibly. Flags bind to it via connectionUrl/connectionEnv and check functions can read it through the ConnectionEnvReader capability."
+release_commit = "8acca8410f819f8f17395d2d9d122098a80216cf"
+
+[released_trees]
+typescript = "2f3f6634ebb20dec5756af8fef944ffbbcc7751b"

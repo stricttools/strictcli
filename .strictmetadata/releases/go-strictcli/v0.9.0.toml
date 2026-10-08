@@ -1,0 +1,13 @@
+# strictspec document version gate (do not remove)
+format_version = 2
+# Version bump type: patch, minor, or major
+bump = "minor"
+include = ["go"]
+exclude = []
+shipped_as = "go/v0.9.0"
+# description reconstructed by `rlsbl release backfill` from github-release:go/v0.9.0
+description = "**New feature.** Schema dump (--dump-schema) now includes a project_id field read from go.mod, providing provenance for schema validation."
+release_commit = "f4a922a3a67efbc12b6617a1b84f4c1ae4fbafe1"
+
+[released_trees]
+go = "723d85aff079c3bfb3248df8e2c41856693ac1b2"

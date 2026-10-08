@@ -1,0 +1,15 @@
+# strictspec document version gate (do not remove)
+format_version = 2
+# Version bump type: patch, minor, or major
+bump = "patch"
+# Short description of this release (required)
+description = "Error message fixes and help text improvements"
+# Optional context explaining why these changes were made
+context = ""
+include = ["pypi", "npm"]
+exclude = []
+shipped_as = "strictcli@v0.16.1"
+release_commit = "7d1dc97d68b1d8bdf11df0c6eaae5c79f054d39f"
+
+[released_trees]
+python = "80702bb75012cfcc6ee0baaec962402ccb0a96e5"

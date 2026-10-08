@@ -1,0 +1,15 @@
+# strictspec document version gate (do not remove)
+format_version = 2
+# Version bump type: patch, minor, or major
+bump = "minor"
+# Short description of this release (required)
+description = "TOML config support and config set type coercion"
+# Optional context explaining why these changes were made
+context = "WithConfigFormat(\"toml\") now correctly parses TOML config files (previously always JSON-parsed). config set validates keys and coerces values to flag types. Both are breaking: TOML configs that silently fell back to defaults will now resolve values, and unknown keys in config set are rejected."
+include = ["go"]
+exclude = []
+shipped_as = "go/v0.11.0"
+release_commit = "a6dff298b7a2dad7fa928b088eeb4f3f9c0b2cf5"
+
+[released_trees]
+go = "d890fa117d1aaaf42d13d7d5294a132f3c34ad48"

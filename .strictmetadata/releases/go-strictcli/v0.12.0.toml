@@ -1,0 +1,20 @@
+# strictspec document version gate (do not remove)
+format_version = 2
+# Version bump type: patch, minor, or major
+bump = "minor"
+# Short description of this release (required)
+description = "Array config support, unique flag enforcement, env var delimiter, config set repeatable"
+# Optional context explaining why these changes were made
+context = """
+Major additions: Unique field on repeatable flags enforces no duplicates at parse time \
+and in config. EnvSeparator controls how env var values split into arrays. Config values \
+for repeatable flags are coerced from strings to declared types. config set now supports \
+repeatable flags with --clear and --default. Breaking: config show requires --plain or --json.\
+"""
+include = ["go"]
+exclude = []
+shipped_as = "go/v0.12.0"
+release_commit = "983c472212ba45683d88d2c8da95158f4f886975"
+
+[released_trees]
+go = "49df73092aa1ebbe88dd23988cda319d73250100"

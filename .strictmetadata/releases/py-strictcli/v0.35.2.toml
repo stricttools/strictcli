@@ -1,0 +1,51 @@
+# strictspec document version gate (do not remove)
+format_version = 2
+# Version bump type: patch, minor, major, infra, or prerelease
+#   prerelease: advance an existing pre-release (0.6.0-beta.0 -> -beta.1)
+bump = "infra"
+# Short description of this release (required)
+description = "Ship the 0.35.0 library content to PyPI, which neither 0.35.0 nor 0.35.1 reached."
+# Optional context explaining why these changes were made
+context = """
+0.35.0 and 0.35.1 are both phantom versions: each has a git tag and a GitHub
+Release, and neither has an artifact on PyPI. This release ships that same
+library content -- unchanged since 0.35.0 -- to the registry.
+
+0.35.0 failed because it was released as a three-releasable batch that pushed
+three separate candidate commits, and all three tags ended up on the final
+candidate. That commit changed nothing under `python/`, so the CI Router's paths
+filter skipped `strictcli-ci`, and the publish gate refused: a skipped check
+proves nothing about the commit. The batch defect is fixed upstream in rlsbl,
+which now commits every member and pushes exactly once.
+
+0.35.1 failed differently. Its candidate was pushed and CI went green on it, but
+a commit from a concurrent session landed on the branch during the CI wait and
+the release aborted at its foreign-commit guard -- correctly. Resuming that
+release then tagged the branch tip instead of the CI-verified candidate it had
+recorded, so the tag pointed at a commit that had never produced any CI check
+runs at all, and the gate refused again. Both refusals were the gate working as
+designed; nothing was relaxed or bypassed.
+
+This release is a clean single-releasable run from a quiet branch. Its version
+bump touches `python/`, so `strictcli-ci` runs on the tagged candidate and the
+gate can pass honestly.
+
+There are no user-facing changes. 0.35.0's user-facing entries are already
+finalized into its own changelog, and the library code is byte-identical to what
+0.35.0 and 0.35.1 would have shipped. This is infrastructure only: its sole
+purpose is getting that content to the registry.
+"""
+# Pre-release channel: alpha, beta, rc, or stable (ordered;
+# demotion is an error). With patch/minor/major it ENTERS the
+# channel (0.5.2 + minor + alpha -> 0.6.0-alpha.0); with
+# bump = "prerelease" it promotes, and "stable" strips the
+# suffix. See docs/release-workflow.md#the-pre-release-channel.
+# preid = ""
+# Set to true to generate a blog post for this release
+# blog = false
+include = ["pypi"]
+exclude = []
+release_commit = "93e396451ca94e3bd7ace10ec452a44cbce08101"
+
+[released_trees]
+python = "d1a9f23ae29b1770b0457bd94cde392c5f4a9c03"

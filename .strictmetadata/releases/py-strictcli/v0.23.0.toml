@@ -1,0 +1,19 @@
+# Archived by rlsbl at release time. This release had no unreleased.toml
+# (a batch member takes its metadata from the batch release file); the
+# archive is written so later changelog regenerations keep the
+# description and context.
+# Backfilled 2026-08-08: this release predates archive synthesis, so the file
+# never existed. description/context/bump recovered from the GitHub Release
+# notes for strictcli@v0.23.0; include/exclude mirror v0.37.0.toml (not recoverable).
+# strictspec document version gate (do not remove)
+format_version = 2
+bump = "minor"
+include = ["pypi"]
+exclude = []
+description = "Registration-time ban on bare --force flag name and --no-* prefix"
+context = "Flag names 'force' (exact) and names starting with 'no-' are now rejected at registration time. Bare --force encourages agents to bypass guardrails without thinking; qualified names like --force-overwrite make the intent explicit. The no- prefix is reserved for strictcli's auto-generated negation system (--no-flag for negatable bools)."
+shipped_as = "strictcli@v0.23.0"
+release_commit = "6c3943d618c7d9ae8e996fefcb282b40d4b7e01d"
+
+[released_trees]
+python = "c808729542cac639ae5b877d78c85040ecea5680"

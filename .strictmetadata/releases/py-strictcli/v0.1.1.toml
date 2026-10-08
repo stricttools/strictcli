@@ -1,0 +1,14 @@
+format_version = 2
+shipped_as = "v0.1.1"
+# bump reconstructed by `rlsbl release backfill` from version arithmetic against 0.1.0
+bump = "patch"
+# include reconstructed by `rlsbl release backfill` from the targets detected at backfill time
+include = ["pypi"]
+# exclude reconstructed by `rlsbl release backfill` from the default: nothing excluded
+exclude = []
+# description reconstructed by `rlsbl release backfill` from github-release:v0.1.1
+description = "Fix: str flag values starting with hyphen (e.g. `--offset -5`) no longer rejected"
+release_commit = "30c1a8db24cefbe6fe1be5f89e6a9f59c4cf0893"
+
+[released_trees]
+"." = "6523a693829baef9bd4a997b25c43eea5f9d349d"

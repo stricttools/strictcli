@@ -1,0 +1,15 @@
+# Archived by rlsbl at release time. This release had no unreleased.toml
+# (a batch member takes its metadata from the batch release file); the
+# archive is written so later changelog regenerations keep the
+# description and context.
+# strictspec document version gate (do not remove)
+format_version = 2
+bump = "minor"
+include = ["pypi"]
+exclude = []
+description = "Consequential commands now require explicit consent on the programmatic and MCP channels, tool descriptors publish their effects classification, and `approve_consequential` becomes a reserved parameter name."
+context = "The confirmation requirement was a CLI-only property: a command marked\n`consequential` prompted (or refused) when it was reached through argv, but the\nsame command was reachable with no consent at all through `as_tools()`,\n`call()`, `acall()`, `Tool.execute` and MCP `tools/call`. An agent driving the\napp over MCP therefore ran exactly the commands the requirement exists to stop\nfor a human decision. This release makes consent a property of the command\nrather than of the channel: every call path refuses a `consequential` command\nunless the caller states consent, and the descriptors published to tool and MCP\nconsumers carry `effect` and `consequential` so a caller can see the\nrequirement before it calls.\n\nReserving `approve_consequential` follows from that. The name is now framework\nvocabulary in all three implementations, so a command declaring its own flag or\npositional arg of that name would shadow the consent parameter -- and in Python\na positional arg of that name was already unreachable over `call()` while the\nsame command stayed callable over MCP. Registration now rejects it outright.\n\nBoth changes are breaking, which under pre-1.0 versioning is a minor bump. The\nthree implementations ship the same behavior in lockstep, verified by the\nconformance suite."
+release_commit = "f162d4d0a7c49d465c049d640fb4ca60a4b1848e"
+
+[released_trees]
+python = "7b96db24009330d66b1c95df80201460057465f9"
