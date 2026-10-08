@@ -2,7 +2,7 @@
 
 ## Context
 
-Multiple strictcli-based projects (ClaudeTimeline, rlsbl) need persistent configuration beyond CLI flags and env vars. Currently each project must implement its own TOML loading, precedence chain, and config management subcommands.
+Multiple strictcli-based projects (rlsbl and a private project) need persistent configuration beyond CLI flags and env vars. Currently each project must implement its own TOML loading, precedence chain, and config management subcommands.
 
 ## Problem
 

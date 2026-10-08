@@ -19,7 +19,7 @@ Design the format and document it.
 ### Consumer rollout
 
 Roll out `.strictcli/` to all consumers:
-- Python: rlsbl, claudewheel, predraw, selfdoc, ClaudeTimeline, claudestream
+- Python: rlsbl, claudewheel, predraw, selfdoc, claudestream, and a private project
 - Go: safegit, howmuchleft, migrable, saferm
 
 For each: run `--dump-schema`, create `config.json`, commit both.
