@@ -2,6 +2,14 @@
 
 # Changelog
 
+## 0.39.2
+
+A declared HTTP read, `strictcli.Read()`, is refused on any method other than GET, HEAD, or OPTIONS, so a read_only command or a dry run can no longer send a mutating request as a read.
+
+### Fixes
+
+- [go-strictcli] `strictcli.Read()` on an HTTP method other than `GET`, `HEAD`, or `OPTIONS` is now a hard error naming the method, returned before any request is sent. Before, a read_only command could declare a `DELETE` (or any other method) a read, and under `--dry-run` the request was really sent while the preview said no changes were made.
+
 ## 0.39.1
 
 The framework's check and failing-checks commands refuse a run that selects no checks with exit 1 and a message naming the selector flags, instead of printing their help and exiting 0.
