@@ -553,8 +553,11 @@ everything it touches. A read is declared per call, never inferred:
 - `strictcli.Read()` (on `HTTP`) declares that the request changes nothing on
   the server. A declared read is legal in a read-only command, is never
   written to the would-do log or the effect record, and is sent for real under
-  `--dry-run`. Without `Read()` every request is a recorded mutation, whatever
-  its HTTP method: a `GET` is not assumed to be safe.
+  `--dry-run`. `Read()` is accepted only on `GET`, `HEAD`, and `OPTIONS`,
+  spelled in capitals: on any other method the call returns a hard error
+  naming the method, before any request is sent, in a dry run and a live run
+  alike. Without `Read()` every request is a recorded mutation, whatever its
+  HTTP method: a `GET` is not assumed to be safe.
 - `strictcli.Observe()` (on `Run`) declares the same of a subprocess. It means
   what an argv matching the app's `WithProcObserveAllowlist` prefixes means;
   the allowlist declares it for a whole family of argv, `Observe()` for one

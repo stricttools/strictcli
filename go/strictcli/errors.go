@@ -1560,6 +1560,10 @@ func errEffectGrantOnDeclaredRead(name string, grant string, method string, opt 
 	return fmt.Sprintf("command %q: grant '%s' cannot be used on effects.%s declared with option '%s' (a declared read changes nothing)", name, grant, method, opt)
 }
 
+func errEffectReadOnMutatingMethod(name string, method string) string {
+	return fmt.Sprintf("command %q: effects.http option 'read' cannot be used with method %q (a declared read allows only GET, HEAD, or OPTIONS)", name, method)
+}
+
 func errEffectRedactEmptyValue(name string, method string) string {
 	return fmt.Sprintf("command %q: effects.%s option 'redact' was given an empty value", name, method)
 }

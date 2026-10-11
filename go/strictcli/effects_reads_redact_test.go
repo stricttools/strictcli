@@ -143,6 +143,76 @@ func TestReadWithAGrantIsRefused(t *testing.T) {
 	}
 }
 
+// A declared read on a method that changes the server (DELETE in a read_only
+// command under --dry-run) is refused before any request is sent, in dry and
+// live mode alike, and also after a mutation was recorded, where a declared
+// read would otherwise return a stale brand.
+func TestReadOnAMutatingMethodIsRefusedBeforeAnyRequest(t *testing.T) {
+	cases := []struct {
+		name   string
+		effect string
+		argv   []string
+		method string
+		before bool
+	}{
+		{"read_only dry-run DELETE", EffectReadOnly, []string{"--dry-run", "go"}, "DELETE", false},
+		{"read_only live DELETE", EffectReadOnly, []string{"go"}, "DELETE", false},
+		{"mutating live POST", EffectMutating, []string{"go"}, "POST", false},
+		{"mutating dry-run PUT after a recorded mutation", EffectMutating, []string{"--dry-run", "go"}, "PUT", true},
+		{"read_only dry-run lowercase get", EffectReadOnly, []string{"--dry-run", "go"}, "get", false},
+	}
+	for _, c := range cases {
+		var hits atomic.Int64
+		srv := okServer(t, &hits)
+		var err error
+		app, transport := httpFixture(c.effect, func(ctx *Context) Outcome {
+			if c.before {
+				ctx.Effects().Run([]interface{}{"make", "deploy"})
+			}
+			_, err = ctx.Effects().HTTP(c.method, srv.URL+"/account", Read())
+			return Exit(0)
+		})
+		app.Test(c.argv)
+		want := `command "go": effects.http option 'read' cannot be used with method "` + c.method + `" (a declared read allows only GET, HEAD, or OPTIONS)`
+		if err == nil || err.Error() != want {
+			t.Fatalf("%s: got %v want %q", c.name, err, want)
+		}
+		if hits.Load() != 0 || transport.trips.Load() != 0 {
+			t.Fatalf("%s: a refused declared read must not be sent, got hits=%d trips=%d", c.name, hits.Load(), transport.trips.Load())
+		}
+	}
+}
+
+// The two fixes the refusal names clear it: the same request as a GET, HEAD,
+// or OPTIONS keeps Read(), and the same DELETE without Read() is a recorded
+// mutation.
+func TestReadOnAMutatingMethodFixesClearTheRefusal(t *testing.T) {
+	for _, method := range []string{"GET", "HEAD", "OPTIONS"} {
+		var hits atomic.Int64
+		srv := okServer(t, &hits)
+		var err error
+		app, _ := httpFixture(EffectReadOnly, func(ctx *Context) Outcome {
+			_, err = ctx.Effects().HTTP(method, srv.URL+"/account", Read())
+			return Exit(0)
+		})
+		app.Test([]string{"--dry-run", "go"})
+		if err != nil || hits.Load() != 1 {
+			t.Fatalf("%s with Read() is a declared read, got err=%v hits=%d", method, err, hits.Load())
+		}
+	}
+	var hits atomic.Int64
+	srv := okServer(t, &hits)
+	var err error
+	app, _ := httpFixture(EffectMutating, func(ctx *Context) Outcome {
+		_, err = ctx.Effects().HTTP("DELETE", srv.URL+"/account")
+		return Exit(0)
+	})
+	r := app.Test([]string{"--dry-run", "go"})
+	if err != nil || hits.Load() != 0 || !strings.Contains(r.Stdout, "1. net: DELETE "+srv.URL+"/account") {
+		t.Fatalf("a DELETE without Read() is a recorded mutation, got err=%v hits=%d stdout=%q", err, hits.Load(), r.Stdout)
+	}
+}
+
 // --- declared process reads -------------------------------------------------
 
 func TestObserveRunInReadOnlyIsPerformedUnderDryRun(t *testing.T) {

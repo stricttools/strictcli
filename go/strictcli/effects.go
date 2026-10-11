@@ -588,11 +588,18 @@ func Timeout(d time.Duration) EffectOption {
 // is performed for real under --dry-run, the same as an observe. After a
 // mutation has been recorded in a dry run it is not performed and returns a
 // stale brand instead, because what it would read depends on effects that did
-// not happen. It never carries a grant. The framework never infers a read from
-// the HTTP method: without Read, every request is a recorded mutation.
+// not happen. It never carries a grant. Read is accepted only on GET, HEAD, and
+// OPTIONS, spelled in capitals: on any other method the call is a hard error
+// naming the method, returned before any request is sent. The framework never
+// infers a read from the HTTP method: without Read, every request is a recorded
+// mutation.
 func Read() EffectOption {
 	return EffectOption{name: "read", value: true}
 }
+
+// declaredReadMethods are the HTTP methods Read may declare, matched as
+// written: Read on any other method is a call-time hard error.
+var declaredReadMethods = map[string]bool{"GET": true, "HEAD": true, "OPTIONS": true}
 
 // Observe declares that a run changes nothing. It means what an argv matching
 // the app's proc_observe_allowlist means: legal in a read_only command, never
@@ -1648,7 +1655,12 @@ func (e *Effects) HTTP(method string, url interface{}, opts ...EffectOption) (_ 
 
 	if o.read {
 		// A declared read changes nothing: it is legal in a read_only command,
-		// never written to the would-do log, and never carries a grant.
+		// never written to the would-do log, and never carries a grant. Only a
+		// method that changes nothing may carry the declaration; it is refused
+		// before anything is sent, in every mode.
+		if !declaredReadMethods[method] {
+			return Response{}, errors.New(errEffectReadOnMutatingMethod(e.cmdPath, method))
+		}
 		if o.hasGrant {
 			return Response{}, errors.New(errEffectGrantOnDeclaredRead(e.cmdPath, o.grant, "http", "read"))
 		}
